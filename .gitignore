@@ -43,3 +43,7 @@ local.properties
 *.apk
 *.aab
 captures/
+
+# Thêm thủ công cho các file khóa
+*.jks
+*.txt
