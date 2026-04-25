@@ -1,0 +1,57 @@
+buildscript {
+    // 1. Đặt thẳng phiên bản 2.1.0 vào đây là chắc chắn 100% Gradle đọc được
+    ext.kotlin_version = '2.1.0'
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.6.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+// 2. Lệnh đọc variables đưa xuống dưới khối buildscript
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                // 1. Cách chuẩn để thiết lập Java version trong Android
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+
+                // 2. Thiết lập cho Kotlin (nếu module có dùng Kotlin)
+                // Thay vì dùng tasks.withType, dùng block này sẽ an toàn hơn
+                if (project.plugins.hasPlugin('kotlin-android')) {
+                    kotlinOptions {
+                        jvmTarget = "17"
+                    }
+                }
+            }
+        }
+
+        // XÓA ĐOẠN NÀY: options.release.set(17) gây lỗi
+        // THAY BẰNG: Ép Java version cho các task JavaCompile mà không dùng .release
+        tasks.withType(JavaCompile).configureEach {
+            sourceCompatibility = JavaVersion.VERSION_17.toString()
+            targetCompatibility = JavaVersion.VERSION_17.toString()
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

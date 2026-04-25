@@ -1,0 +1,32 @@
+/* For information on how to create your own theme, please refer to:
+http://ionicframework.com/docs/theming/ */
+/* Thu nhỏ ô chọn ngày cho khớp với InputText */
+:deep(.p-datepicker) {
+    font-size: 0.8rem;
+}
+
+:deep(.p-datepicker-input) {
+    padding: 5px 10px !important;
+    font-size: 0.8rem;
+}
+
+/* Ép các ô filter sát nhau hơn nữa */
+:deep(.p-datatable-filter-row td) {
+    padding: 4px !important;
+    /* Thu hẹp tối đa khoảng cách */
+}
+
+/* Ghi đè margin mặc định của list MD */
+ion-list {
+    padding: 0 !important;
+}
+
+
+/* --- TỔNG THỂ --- */
+.header-container {
+    margin-top: 35px;
+}
+
+.no-padding {
+    padding: 5px 0 !important;
+}

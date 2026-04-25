@@ -1,0 +1,10 @@
+{
+  "common": {
+    "welcome": "Chào mừng",
+    "save": "Lưu",
+    "cancel": "Hủy"
+  },
+  "home": {
+    "title": "Trang chủ"
+  }
+}

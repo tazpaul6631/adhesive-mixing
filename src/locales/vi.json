@@ -1,0 +1,20 @@
+{
+  "common": {
+    "welcome": "Chào mừng",
+    "save": "Lưu",
+    "cancel": "Hủy"
+  },
+  "home": {
+    "title": "Trang chủ"
+  },
+  "valid": {
+    "required": "Vui lòng không để trống",
+    "min_reason": "Vui lòng chọn ít nhất {n} lý do",
+    "max_reason": "Tối đa chỉ được {n} lý do",
+    "rating_required": "Vui lòng đánh giá mục này"
+  },
+  "messages": {
+    "notifi": "Thông báo!",
+    "submitted": "Đã gửi thành công, cám ơn!"
+  }
+}
