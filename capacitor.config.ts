@@ -1,25 +1,24 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.thuan.exit.interview',
-  appName: 'exit-interview',
+  appId: 'com.thuan.adhesive.mixing',
+  appName: 'adhesive-mixing',
   webDir: 'dist',
   plugins: {
     CapacitorHttp: {
-      enabled: false, // Kích hoạt HTTP native nhớ sửa thành false
+      enabled: false,
     },
     CapacitorSQLite: {
       iosIsEncryption: false,
-      iosKeychainPrefix: 'exit-interview',
+      iosKeychainPrefix: 'adhesive-mixing',
       androidIsEncryption: false,
-      logging: false, // Tắt log nội bộ của SQLite để console sạch hơn
+      logging: false,
     },
   },
   server: {
-    // 10.0.2.2 là địa chỉ IP máy tính host khi nhìn từ Emulator
     url: 'http://10.0.149.28:8100',
-    cleartext: true, // Cho phép chạy HTTP (không cần HTTPS)
-    allowNavigation: ['10.0.149.28']
+    cleartext: true,
+    allowNavigation: ['10.0.149.28', '*.10.0.149.28']
   }
 };
 
