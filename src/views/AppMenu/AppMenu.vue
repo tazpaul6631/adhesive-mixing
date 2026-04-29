@@ -39,7 +39,7 @@
               <ion-icon :icon="qrCodeOutline" color="secondary"></ion-icon>
             </div>
             <div class="card-content">
-              <h3>Quét Mã (Chỉ Mobile)</h3>
+              <h3>Chuyền xác nhận keo & trả keo</h3>
               <p>Sử dụng camera điện thoại để quét mã vạch.</p>
             </div>
           </div>
