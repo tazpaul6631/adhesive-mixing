@@ -41,7 +41,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/mobile',
-    component: () => import('@/views/Mobile/mobileIndex.vue'),
+    component: () => import('@/views/Mobile/GlueConfirm.vue'),
     meta: { requiresAuth: true }
   },
   {

@@ -3,7 +3,7 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
+          <ion-back-button default-href="/mobile"></ion-back-button>
         </ion-buttons>
         <ion-title>Chuyền xác nhận keo & trả keo</ion-title>
       </ion-toolbar>
@@ -28,7 +28,7 @@
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !lineQrText }]">
                     {{ lineQrText || 'Quét mã QR thùng keo chuyền' }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="qrCodeOutline" color="primary"></ion-icon>
+                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -43,12 +43,12 @@
                   class="qr-scan-field"
                   :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
                   :disabled="isFirstTwoQrMatched"
-                  @click="openScanner('issue')"
+                  @click="openScanner('allocated')"
                 >
-                  <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !issueQrText }]">
-                    {{ issueQrText || 'Quét mã QR thùng keo phát' }}
+                  <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !allocatedQrText }]">
+                    {{ allocatedQrText || 'Quét mã QR thùng keo phát' }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="qrCodeOutline" color="primary"></ion-icon>
+                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -63,7 +63,7 @@
               Xác nhận trả về
             </ion-button>
 
-            <ion-card v-if="showReturnQrSection" class="qr-container">
+            <ion-card class="qr-container">
               <ion-card-header>
                 <ion-card-title>Mã QR thùng keo trả về</ion-card-title>
               </ion-card-header>
@@ -72,7 +72,7 @@
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !returnQrText }]">
                     {{ returnQrText || 'Quét mã QR thùng keo trả về' }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="qrCodeOutline" color="primary"></ion-icon>
+                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -81,8 +81,7 @@
           <div v-if="statusMessage" class="status-box" :class="statusClass">
             <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
             <div class="status-box__content">
-              <strong>Trạng thái:</strong>
-              <span>{{ statusMessage }}</span>
+              <strong>Trạng thái: <span>{{ statusMessage }}</span></strong>
             </div>
           </div>
         </section>
@@ -90,7 +89,7 @@
 
       <ion-toast
         :is-open="showSuccessToast"
-        message="Xác nhận thành công"
+        :message="toastMessage"
         duration="1800"
         color="success"
         @didDismiss="showSuccessToast = false"
@@ -117,28 +116,30 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/vue';
-import { alertCircle, checkmarkCircle, qrCodeOutline, qrCodeSharp, scanOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { Haptics } from '@capacitor/haptics';
 
-type ScanTarget = 'line' | 'issue' | 'return';
+type ConfirmScanTarget = 'line' | 'allocated';
+type ScanTarget = ConfirmScanTarget | 'return';
 
 const lineQrText = ref('');
-const issueQrText = ref('');
+const allocatedQrText = ref('');
 const returnQrText = ref('');
 
-const showReturnQrSection = ref(false);
 const showSuccessToast = ref(false);
+const toastMessage = ref('');
 
 const isFirstTwoQrReady = computed(() => {
-  return !!lineQrText.value && !!issueQrText.value;
+  return !!lineQrText.value && !!allocatedQrText.value;
 });
 
 const isFirstTwoQrMatched = computed(() => {
-  return isFirstTwoQrReady.value && normalizeQrText(lineQrText.value) === normalizeQrText(issueQrText.value);
+  return isFirstTwoQrReady.value && normalizeQrText(lineQrText.value) === normalizeQrText(allocatedQrText.value);
 });
 
 const isConfirmButtonDisabled = computed(() => {
-  return !isFirstTwoQrMatched.value || showReturnQrSection.value;
+  return !isFirstTwoQrMatched.value;
 });
 
 const statusMessage = computed(() => {
@@ -146,8 +147,8 @@ const statusMessage = computed(() => {
     return 'Mã QR thùng keo trên chuyền không khớp với keo trên thùng keo phát';
   }
 
-  if (isFirstTwoQrMatched.value && !showReturnQrSection.value) {
-    return 'Mã QR hợp lệ.';
+  if (isFirstTwoQrMatched.value) {
+    return 'Mã QR thùng keo trên chuyền khớp với keo trên thùng keo phát';
   }
 });
 
@@ -156,7 +157,7 @@ const statusClass = computed(() => {
     return 'status-box--danger';
   }
 
-  if (isFirstTwoQrMatched.value || returnQrText.value) {
+  if (isFirstTwoQrMatched.value) {
     return 'status-box--success';
   }
 
@@ -171,8 +172,20 @@ function normalizeQrText(value: string) {
   return value.trim();
 }
 
+async function triggerMismatchVibrationIfNeeded() {
+  if (!isFirstTwoQrReady.value || isFirstTwoQrMatched.value) {
+    return;
+  }
+
+  try {
+    await Haptics.vibrate({ duration: 350 });
+  } catch (error) {
+    console.error('Không thể kích hoạt rung cảnh báo:', error);
+  }
+}
+
 async function openScanner(target: ScanTarget) {
-  if ((target === 'line' || target === 'issue') && isFirstTwoQrMatched.value) {
+  if ((target === 'line' || target === 'allocated') && isFirstTwoQrMatched.value) {
     return;
   }
 
@@ -190,18 +203,21 @@ async function openScanner(target: ScanTarget) {
       const scannedValue = barcodes[0].rawValue;
 
       if (scannedValue) {
-        handleScanResult(target, scannedValue);
+        if (target === 'return') {
+          handleReturnScanResult(scannedValue);
+        } else {
+          await handleConfirmScanResult(target, scannedValue);
+        }
       } else {
         alert('Mã QR không hợp lệ hoặc không có dữ liệu!');
       }
     }
   } catch (error) {
     console.error('Lỗi khi quét mã QR:', error);
-    alert('Vui lòng quét mã QR phù hợp.');
   }
 }
 
-function handleScanResult(target: ScanTarget, value: string) {
+async function handleConfirmScanResult(target: ConfirmScanTarget, value: string) {
   const normalizedValue = normalizeQrText(value);
 
   if (!normalizedValue) {
@@ -210,19 +226,26 @@ function handleScanResult(target: ScanTarget, value: string) {
 
   if (target === 'line') {
     lineQrText.value = normalizedValue;
-    resetReturnStep();
-    return;
   }
 
-  if (target === 'issue') {
-    issueQrText.value = normalizedValue;
-    resetReturnStep();
+  if (target === 'allocated') {
+    allocatedQrText.value = normalizedValue;
+  }
+
+  closeCurrentToast();
+  await triggerMismatchVibrationIfNeeded();
+}
+
+function handleReturnScanResult(value: string) {
+  const normalizedValue = normalizeQrText(value);
+
+  if (!normalizedValue) {
     return;
   }
 
   returnQrText.value = normalizedValue;
-  showSuccessToast.value = true;
-  resetForm();
+  showToast('Xác nhận thành công');
+  resetReturnField();
 }
 
 function handleConfirmReturn() {
@@ -230,20 +253,32 @@ function handleConfirmReturn() {
     return;
   }
 
-  showReturnQrSection.value = true;
+  const confirmedReturnValue = allocatedQrText.value;
+
+  if (!confirmedReturnValue) {
+    return;
+  }
+
+  resetConfirmFields();
+  showToast('Trả về thành công');
 }
 
-function resetReturnStep() {
-  returnQrText.value = '';
-  showReturnQrSection.value = false;
-  showSuccessToast.value = false;
-}
-
-function resetForm() {
+function resetConfirmFields() {
   lineQrText.value = '';
-  issueQrText.value = '';
+  allocatedQrText.value = '';
+}
+
+function resetReturnField() {
   returnQrText.value = '';
-  showReturnQrSection.value = false;
+}
+
+function showToast(message: string) {
+  toastMessage.value = message;
+  showSuccessToast.value = true;
+}
+
+function closeCurrentToast() {
+  showSuccessToast.value = false;
 }
 </script>
 
