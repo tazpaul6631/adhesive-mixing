@@ -19,10 +19,14 @@
                 <ion-icon :icon="qrCodeOutline" class="scan-icon pulse-animation"></ion-icon>
               </div>
               <h4>Đăng nhập bằng thẻ</h4>
-              <p>Vui lòng quét mã QR hoặc Mã vạch/Barcode trên thẻ nhân viên của bạn để vào hệ thống.</p>
+              <p v-if="!errorLogin">Vui lòng quét mã QR hoặc Mã vạch/Barcode trên thẻ nhân viên của bạn để vào hệ
+                thống.</p>
+              <p v-else class="text-danger">{{ errorMessage }}</p>
 
-              <div v-if="code" class="scanned-result animate__animated animate__fadeIn">
-                <ion-icon :icon="checkmarkCircleOutline" color="success"></ion-icon>
+              <div v-if="code" class="animate__animated animate__fadeIn"
+                :class="errorLogin ? 'scanned-result-error' : 'scanned-result'">
+                <ion-icon :icon="errorLogin ? closeCircleOutline : checkmarkCircleOutline"
+                  :color="errorLogin ? 'danger' : 'success'"></ion-icon>
                 <span>Mã NV: {{ code }}</span>
               </div>
             </div>
@@ -45,13 +49,25 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { IonIcon, IonButton } from '@ionic/vue';
-import { qrCodeOutline, cameraOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { qrCodeOutline, cameraOutline, checkmarkCircleOutline, closeCircleOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import employee from '@/api/employee';
+import { useAuthStore } from '@/store/auth';
+import { useRouter } from 'vue-router';
+import { Capacitor } from '@capacitor/core';
 
-const emit = defineEmits(['doLogin']);
 const code = ref('');
+const authStore = useAuthStore();
+const router = useRouter();
+const isNative = Capacitor.isNativePlatform();
+const errorLogin = ref(false);
+const errorMessage = ref('');
 
 const startScan = async () => {
+  errorLogin.value = false;
+  code.value = '';
+  errorMessage.value = '';
+
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
     if (camera !== 'granted' && camera !== 'limited') {
@@ -59,16 +75,12 @@ const startScan = async () => {
       return;
     }
 
-    // Bật giao diện Native của điện thoại lên để quét
     const { barcodes } = await BarcodeScanner.scan();
 
-    // Lấy kết quả đầu tiên (nếu có quét trúng)
     if (barcodes && barcodes.length > 0) {
       const scannedValue = barcodes[0].rawValue;
-
-      // KIỂM TRA: Nếu có giá trị mới xử lý đăng nhập
       if (scannedValue) {
-        processScannedData(scannedValue);
+        await processScannedData(scannedValue);
       } else {
         alert("Mã thẻ không hợp lệ hoặc không có dữ liệu!");
       }
@@ -79,13 +91,35 @@ const startScan = async () => {
   }
 };
 
-const processScannedData = (scannedText: string) => {
-  code.value = scannedText;
+const processScannedData = async (scannedCode: string) => {
+  code.value = scannedCode;
 
-  emit('doLogin', {
-    code: scannedText,
-    password: scannedText
-  });
+  if (!scannedCode) {
+    alert('Vui lòng nhập mã nhân viên!');
+    return;
+  }
+
+  try {
+    const response = await employee.employeeLogin({ employeeId: scannedCode });
+
+    if (response.data && response.data.success) {
+      authStore.setToken(response.data.data.employeeId);
+
+      if (isNative) {
+        router.push('/app-menu');
+      } else {
+        router.push('/dashboard');
+      }
+    } else {
+      errorLogin.value = true;
+      errorMessage.value = response.data?.message;
+      console.log('Login failed:', errorLogin.value);
+    }
+  } catch (error: any) {
+    console.error('Lỗi gọi API đăng nhập:', error);
+    errorLogin.value = true;
+    errorMessage.value = 'Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)';
+  }
 };
 </script>
 
@@ -247,6 +281,24 @@ const processScannedData = (scannedText: string) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-weight: 700;
+}
+
+.scanned-result-error {
+  margin-top: 15px;
+  background: #fee2e2;
+  color: #b84040;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.text-danger {
+  color: #b84040 !important;
   font-weight: 700;
 }
 

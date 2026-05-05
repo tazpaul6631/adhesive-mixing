@@ -87,19 +87,5 @@ export default defineConfig({
         }
       }
     }
-  },
-
-  // server: {
-  //   host: '0.0.0.0',
-  //   port: 8100,
-  //   // VITE RELOAD KHI ANDROID BUILD
-  //   watch: {
-  //     ignored: ['**/android/**'], // Không theo dõi các file trong thư mục android
-  //   },
-  //   // hmr: {
-  //   //   host: '10.0.149.28',
-  //   //   // port: 8101
-  //   // },
-  //   strictPort: false,
-  // }
+  }
 })

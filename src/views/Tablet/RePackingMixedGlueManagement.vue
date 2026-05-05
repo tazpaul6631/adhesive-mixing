@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border">
+    <ion-header class="header-container ion-no-border">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
@@ -16,12 +16,7 @@
         <div class="surface-card p-3 shadow-1 border-round-xl">
           <div
             class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
-            <div class="flex align-items-center gap-3">
-              <div class="w-3rem h-3rem flex align-items-center justify-content-center bg-blue-100 border-circle">
-                <i class="pi pi-user text-blue-600 text-xl"></i>
-              </div>
-              <span class="font-bold text-lg text-700">Người vận hành</span>
-            </div>
+            <user-avatar />
             <div class="flex gap-2">
               <Button label="Lưu" icon="pi pi-save" outlined size="large" />
               <Button label="Xác nhận hoàn thành" icon="pi pi-check-circle" severity="success" size="large" />
@@ -246,6 +241,7 @@ import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle
 } from '@ionic/vue';
 import BackToTop from '@/components/BackToTop.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
 
 // Loading states
 const isLoadingLine = ref(true);
