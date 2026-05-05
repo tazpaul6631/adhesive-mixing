@@ -81,7 +81,7 @@
           <div v-if="statusMessage" class="status-box" :class="statusClass">
             <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
             <div class="status-box__content">
-              <strong>Trạng thái: <span>{{ statusMessage }}</span></strong>
+              <p><strong>Trạng thái: </strong>{{ statusMessage }}</p>
             </div>
           </div>
         </section>
@@ -409,7 +409,7 @@ function closeCurrentToast() {
 
 .status-box {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   margin-top: 18px;
   padding: 18px 20px;
@@ -418,14 +418,16 @@ function closeCurrentToast() {
 
   &__icon {
     flex-shrink: 0;
-    margin-top: 1px;
     font-size: 1.25rem;
   }
 
   &__content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex: 1;
+  }
+
+  &__content p {
+    margin: 0;
+    line-height: 1.45;
   }
 
   strong {
