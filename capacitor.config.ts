@@ -15,11 +15,11 @@ const config: CapacitorConfig = {
       logging: false,
     },
   },
-  server: {
-    url: 'http://10.144.100.68:8100',
-    cleartext: true,
-    allowNavigation: ['10.144.100.68', '*.10.144.100.68']
-  }
+  // server: {
+  //   url: 'http://10.0.111.9:8100',
+  //   cleartext: true,
+  //   allowNavigation: ['10.0.111.9', '*.10.0.111.9']
+  // }
 };
 
 export default config;
