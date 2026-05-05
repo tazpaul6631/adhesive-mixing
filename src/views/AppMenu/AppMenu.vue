@@ -24,15 +24,18 @@
 
         <div class="feature-grid animate__animated animate__fadeInUp">
 
-          <div v-if="isTablet" class="feature-card shadow-sm" @click="goTablet">
-            <div class="icon-wrapper">
-              <ion-icon :icon="scaleOutline" color="primary"></ion-icon>
+          <template v-if="isTablet">
+            <div v-for="(feature, index) in tabletFeatures" :key="index" class="feature-card shadow-sm"
+              @click="navigate(feature.path)">
+              <div class="icon-wrapper" :style="{ background: feature.bgLight }">
+                <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
+              </div>
+              <div class="card-content">
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+              </div>
             </div>
-            <div class="card-content">
-              <h3>Test Cân (Chỉ Tablet)</h3>
-              <p>Kiểm tra kết nối và lấy dữ liệu từ cân điện tử.</p>
-            </div>
-          </div>
+          </template>
 
           <div v-if="!isTablet" class="feature-card shadow-sm" @click="goMobile">
             <div class="icon-wrapper" style="background: #e0f2fe;">
@@ -54,7 +57,11 @@ import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonIcon, IonButtons, IonButton
 } from '@ionic/vue';
-import { scaleOutline, logOutOutline, qrCodeOutline } from 'ionicons/icons';
+import {
+  scaleOutline, logOutOutline, qrCodeOutline,
+  colorPaletteOutline, checkmarkDoneOutline,
+  cubeOutline, documentTextOutline
+} from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { ref, onMounted, onUnmounted } from 'vue';
@@ -63,27 +70,68 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
-// Mặc định: Thiết bị có chiều rộng >= 768px sẽ được coi là Tablet
 const isTablet = ref(window.innerWidth >= 768);
 
-// Hàm cập nhật lại trạng thái khi xoay màn hình
 const updateDeviceType = () => {
   isTablet.value = window.innerWidth >= 768;
 };
 
-// Lắng nghe sự kiện xoay/thay đổi kích thước màn hình
 onMounted(() => {
   window.addEventListener('resize', updateDeviceType);
 });
 
-// Gỡ bỏ lắng nghe khi rời khỏi trang để tránh rò rỉ bộ nhớ
 onUnmounted(() => {
   window.removeEventListener('resize', updateDeviceType);
 });
 // --------------------------------
 
-const goTablet = async () => {
-  router.push('/testCan');
+// --- DATA MÔ PHỎNG API CHO TABLET FEATURES ---
+const tabletFeatures = ref([
+  {
+    path: '/mix-glue-management',
+    title: 'Mix Glue Management',
+    description: 'Quản lý trộn keo, kiểm tra kết nối và lấy dữ liệu từ cân.',
+    icon: scaleOutline,
+    color: '#0ea5e9',
+    bgLight: '#e0f2fe'
+  },
+  {
+    path: '/repacking-mixed-glue-management',
+    title: 'Repacking Mixed Glue',
+    description: 'Quản lý việc đóng gói lại keo đã trộn.',
+    icon: cubeOutline,
+    color: '#f59e0b',
+    bgLight: '#fef3c7'
+  },
+  {
+    path: '/qip-confirm-mix-glue',
+    title: 'QIP Confirm Mix Glue',
+    description: 'Xác nhận chất lượng keo trộn (QIP).',
+    icon: checkmarkDoneOutline,
+    color: '#10b981',
+    bgLight: '#d1fae5'
+  },
+  {
+    path: '/qip-confirm-repacking-mixed-glue',
+    title: 'QIP Confirm Repacking',
+    description: 'Xác nhận chất lượng keo đóng gói lại.',
+    icon: documentTextOutline,
+    color: '#8b5cf6',
+    bgLight: '#ede9fe'
+  },
+  {
+    path: '/glue-form-production',
+    title: 'Glue Form Production',
+    description: 'Quy trình sản xuất mẫu keo.',
+    icon: colorPaletteOutline,
+    color: '#f43f5e',
+    bgLight: '#ffe4e6'
+  }
+]);
+
+// Hàm điều hướng chung
+const navigate = (path: string) => {
+  router.push(path);
 };
 
 const goMobile = async () => {

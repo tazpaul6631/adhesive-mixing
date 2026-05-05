@@ -16,9 +16,9 @@ const config: CapacitorConfig = {
     },
   },
   server: {
-    url: 'http://10.0.149.28:8100',
+    url: 'http://10.144.100.68:8100',
     cleartext: true,
-    allowNavigation: ['10.0.149.28', '*.10.0.149.28']
+    allowNavigation: ['10.144.100.68', '*.10.144.100.68']
   }
 };
 

@@ -30,3 +30,30 @@ ion-list {
 .no-padding {
     padding: 5px 0 !important;
 }
+
+.main-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 1. TẮT CHỚP XANH MẶC ĐỊNH CỦA IOS/ANDROID (Tap Highlight) */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* 2. TẮT VIỀN FOCUS (BOX-SHADOW) CỦA PRIMEVUE */
+:deep(.p-button:focus),
+:deep(.p-button:focus-visible),
+:deep(.p-menuitem-link:focus),
+:deep(.p-menuitem-link:focus-visible),
+:deep(.p-paginator-page:focus),
+:deep(.p-paginator-next:focus),
+:deep(.p-paginator-prev:focus) {
+    box-shadow: none !important;
+    outline: none !important;
+}
