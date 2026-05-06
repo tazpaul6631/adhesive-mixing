@@ -35,11 +35,6 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/testCan',
-    component: () => import('@/views/test.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/mix-glue-management',
     component: () => import('@/views/Tablet/MixGlueManagement.vue'),
     meta: { requiresAuth: true }

@@ -118,20 +118,7 @@
                   class="w-full font-bold text-primary border-blue-200" />
               </div>
 
-              <div class="col-12 sm:col-7 lg:col-4 lg:mb-0">
-                <label class="text-800 font-medium mb-2 block">Trọng lượng cân thực tế</label>
-                <div class="flex align-items-center">
-                  <div class="p-inputgroup">
-                    <InputText v-model="mixingProcess.weight" readonly
-                      class="text-right font-bold text-primary bg-white" />
-                    <span class="p-inputgroup-addon font-bold px-1">Kg</span>
-                  </div>
-                  <div class="ml-1 flex flex-column justify-content-center min-w-max border-left-1 border-300 pl-3">
-                    <div class="text-red-500 font-bold text-xs">-5 g</div>
-                    <div class="text-green-600 font-bold text-xs">+5 g</div>
-                  </div>
-                </div>
-              </div>
+              <ElectronicScale @update:weight="handleWeightChange" @connection-status="handleConnectionStatus" />
 
               <div class="col-12 sm:col-12 lg:col-4 sm:mt-3 lg:mt-0 flex justify-content-end">
                 <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" />
@@ -224,6 +211,7 @@ import {
 } from '@ionic/vue';
 import BackToTop from '@/components/BackToTop.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
+import ElectronicScale from '@/components/ElectronicScale.vue';
 
 interface LineDetail {
   id?: number;
@@ -290,6 +278,19 @@ const generateComponentData = (index: number) => {
     thoiGianCan: isKeo7911 ? '13:15 16/04/2026' : ''
   };
 };
+
+const handleWeightChange = (newWeight: string) => {
+  console.log("Trọng lượng cân đang là:", newWeight);
+  // Gán vào biến form của bạn ở ngoài này...
+}
+
+const handleConnectionStatus = (status: boolean) => {
+  if (status) {
+    console.log("Cân đã kết nối!");
+  } else {
+    console.log("Mất kết nối với cân!");
+  }
+}
 
 // BackToTop logic
 const contentRef = ref<any>(null);
