@@ -131,14 +131,26 @@ const connectToScale = async () => {
         const line = dataBuffer.trim();
 
         // Kiểm tra ST (Stable) / US (Unstable)
-        // Chèn thêm một chút delay nhỏ để tránh isStable chớp quá nhanh
         const newStable = line.startsWith("ST");
         if (isStable.value !== newStable) isStable.value = newStable;
 
         const matches = line.match(/[-+]?\d*\.?\d+/);
         if (matches) {
-          const val = parseFloat(matches[0]).toFixed(3);
-          // Chỉ cập nhật nếu số thực sự thay đổi để tránh UI Re-render thừa
+          // Lấy giá trị số thô
+          let rawValue = parseFloat(matches[0]);
+
+          // Chuyển chuỗi thành chữ thường để dễ kiểm tra đơn vị
+          const lowerLine = line.toLowerCase();
+
+          // Kiểm tra đơn vị: Nếu chuỗi KHÔNG chứa 'kg' mà có chứa 'g' thì chia 1000
+          if (!lowerLine.includes('kg') && lowerLine.includes('g')) {
+            rawValue = rawValue / 1000;
+          }
+
+          // Format lại hiển thị 3 số thập phân
+          const val = rawValue.toFixed(3);
+
+          // Chỉ cập nhật nếu số thực sự thay đổi
           if (currentWeight.value !== val) currentWeight.value = val;
         }
         dataBuffer = '';

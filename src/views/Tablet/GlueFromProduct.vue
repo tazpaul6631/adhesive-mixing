@@ -23,7 +23,8 @@
           <div class="grid formgrid p-fluid border-bottom-1 surface-border pb-3 mb-3">
             <div class="col-12 sm:col-6 lg:col-3">
               <label class="text-800 font-medium mb-1 block">Keo thu về</label>
-              <InputText v-model="headerInfo.orderNo" fluid readonly class="font-bold text-blue-600" />
+              <Select v-model="headerInfo.orderNo" :options="orderOptions" optionLabel="label" optionValue="value"
+                placeholder="Chọn đơn điều công" class="w-full font-bold" />
             </div>
             <div class="col-12 sm:col-6 lg:col-2">
               <label class="text-800 font-medium mb-1 block">Tên keo</label>
@@ -98,6 +99,14 @@ const bottomInfo = ref({
   donDieuCong: 'C2 R26216 Keo bôi đế',
   donYeuCau: 'Chuyền 1 C2 R26216'
 });
+
+const orderOptions = ref([
+  { label: 'C2R26216', value: 'C2R26216' },
+  { label: 'C2R26217', value: 'C2R26217' },
+  { label: 'C2R26218', value: 'C2R26218' },
+  { label: 'C2R26219', value: 'C2R26219' }
+
+]);
 
 // BackToTop logic
 const contentRef = ref<any>(null);
