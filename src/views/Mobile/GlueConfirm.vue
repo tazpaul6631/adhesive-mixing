@@ -63,7 +63,16 @@
               Xác nhận trả về
             </ion-button>
 
-            <ion-card class="qr-container">
+            <ion-button
+              expand="block"
+              class="confirm-button"
+              @click="openScanner('return')"
+            >
+              <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
+              Quét Mã QR thùng keo trả về
+            </ion-button>
+
+            <!-- <ion-card class="qr-container">
               <ion-card-header>
                 <ion-card-title>Mã QR thùng keo trả về</ion-card-title>
               </ion-card-header>
@@ -75,7 +84,7 @@
                   <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
               </ion-card-content>
-            </ion-card>
+            </ion-card> -->
           </div>
 
           <div v-if="statusMessage" class="status-box" :class="statusClass">
@@ -157,7 +166,7 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/vue';
-import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from 'ionicons/icons';
+import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics } from '@capacitor/haptics';
 
@@ -470,7 +479,6 @@ function closeCurrentToast() {
 }
 
 .confirm-button {
-  margin: 8px 0 10px;
   overflow: hidden;
   border-radius: 16px;
   font-weight: 500;
@@ -601,7 +609,7 @@ function closeCurrentToast() {
   }
 
   .qr-panel__body {
-    gap: 20px;
+    gap: 16px;
   }
 
   .qr-container {
@@ -636,7 +644,6 @@ function closeCurrentToast() {
 
   .confirm-button {
     min-height: 82px;
-    margin: 10px 0 12px;
     border-radius: 18px;
     font-size: 1.5rem;
     --border-radius: 18px;
