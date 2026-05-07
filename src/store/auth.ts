@@ -2,30 +2,41 @@ import { defineStore } from 'pinia';
 import storageService from '@/services/storage.service';
 import router from '@/router';
 
+export interface UserData {
+  employeeId: string;
+  name?: string;
+  [key: string]: any;
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null as any,
-    token: localStorage.getItem('web_token_backup') || '',
+    user: null as UserData | null,
+    token: '',
     isOnline: true,
     lastSync: null as string | null,
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    getUserName: (state) => state.user?.name || 'Guest',
+    getUserName: (state) => state.user?.name || state.user?.employeeId || 'Guest',
   },
 
   actions: {
-    setToken(token: string) {
-      this.token = token;
-      localStorage.setItem('web_token_backup', token);
+    setAuthData(userData: UserData) {
+      this.token = userData.employeeId;
+      this.user = userData;
+
+      localStorage.setItem('web_token_backup', userData.employeeId);
     },
+
     setNetworkStatus(status: boolean) {
       this.isOnline = status;
     },
+
     async logout() {
       this.token = '';
       this.user = null;
+      this.lastSync = null;
 
       localStorage.removeItem('web_token_backup');
 
@@ -38,8 +49,8 @@ export const useAuthStore = defineStore('auth', {
   persist: {
     key: 'patrol_auth_storage',
     storage: {
-      getItem: (key: string) => storageService.get(key, false, true),
-      setItem: (key: string, value: string) => storageService.set(key, value, true),
+      getItem: async (key: string) => await storageService.get(key, false, true),
+      setItem: async (key: string, value: string) => await storageService.set(key, value, true),
     } as any,
     pick: ['token', 'user', 'lastSync'],
   },

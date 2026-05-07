@@ -88,8 +88,8 @@ onUnmounted(() => {
 // --- DATA MÔ PHỎNG API CHO TABLET FEATURES ---
 const tabletFeatures = ref([
   {
-    path: '/mix-glue-management',
-    title: 'Mix Glue Management',
+    path: '/list-mix-glue',
+    title: 'List Mix Glue Management',
     description: 'Quản lý trộn keo, kiểm tra kết nối và lấy dữ liệu từ cân.',
     icon: scaleOutline,
     color: '#0ea5e9',
@@ -97,7 +97,7 @@ const tabletFeatures = ref([
   },
   {
     path: '/repacking-mixed-glue-management',
-    title: 'Repacking Mixed Glue',
+    title: 'Repacking Mixed Glue Management',
     description: 'Quản lý việc đóng gói lại keo đã trộn.',
     icon: cubeOutline,
     color: '#f59e0b',
@@ -138,9 +138,8 @@ const goMobile = async () => {
   router.push('/mobile');
 };
 
-const handleLogout = () => {
-  authStore.setToken('');
-  router.push('/login');
+const handleLogout = async () => {
+  await authStore.logout();
 };
 </script>
 

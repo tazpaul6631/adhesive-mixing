@@ -13,6 +13,9 @@ import DatePicker from 'primevue/datepicker';
 import Button from 'primevue/button';
 import RadioButton from 'primevue/radiobutton';
 import Skeleton from 'primevue/skeleton';
+import InputNumber from 'primevue/inputnumber';
+import Dialog from 'primevue/dialog';
+import Toast from 'primevue/toast';
 
 import 'primeicons/primeicons.css';
 
@@ -31,5 +34,8 @@ export default {
         app.component('Button', Button);
         app.component('RadioButton', RadioButton);
         app.component('Skeleton', Skeleton);
+        app.component('InputNumber', InputNumber);
+        app.component('Dialog', Dialog);
+        app.component('Toast', Toast);
     }
 };

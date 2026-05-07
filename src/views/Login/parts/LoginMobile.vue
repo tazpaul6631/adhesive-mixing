@@ -100,29 +100,20 @@ const processScannedData = async (scannedCode: string) => {
   }
 
   try {
-    // const response = await employee.employeeLogin({ employeeId: scannedCode });
+    const response = await employee.employeeLogin({ employeeId: scannedCode });
 
-    // if (response.data && response.data.success) {
-    //   authStore.setToken(response.data.data.employeeId);
+    if (response.data && response.data.success) {
+      authStore.setAuthData(response.data.data);
 
-    //   if (isNative) {
-    //     router.push('/app-menu');
-    //   } else {
-    //     router.push('/dashboard');
-    //   }
-    // } else {
-    //   errorLogin.value = true;
-    //   errorMessage.value = response.data?.message;
-    //   console.log('Login failed:', errorLogin.value);
-    // }
-
-    authStore.setToken('fake-token-bypass-api');
-
-    // Chuyển hướng thẳng dựa trên nền tảng
-    if (isNative) {
-      router.push('/app-menu'); // Vào thẳng App
+      if (isNative) {
+        router.push('/app-menu');
+      } else {
+        router.push('/dashboard');
+      }
     } else {
-      router.push('/dashboard'); // Vào thẳng Web
+      errorLogin.value = true;
+      errorMessage.value = response.data?.message;
+      console.log('Login failed:', errorMessage.value);
     }
   } catch (error: any) {
     console.error('Lỗi gọi API đăng nhập:', error);
