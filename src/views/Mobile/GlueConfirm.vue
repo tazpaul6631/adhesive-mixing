@@ -53,6 +53,13 @@
               </ion-card-content>
             </ion-card>
 
+            <div v-if="statusMessage" class="status-box" :class="statusClass">
+              <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
+              <div class="status-box__content">
+                <p><strong>Trạng thái: </strong>{{ statusMessage }}</p>
+              </div>
+            </div>
+
             <ion-button
               expand="block"
               class="confirm-button"
@@ -87,12 +94,12 @@
             </ion-card> -->
           </div>
 
-          <div v-if="statusMessage" class="status-box" :class="statusClass">
+          <!-- <div v-if="statusMessage" class="status-box" :class="statusClass">
             <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
             <div class="status-box__content">
               <p><strong>Trạng thái: </strong>{{ statusMessage }}</p>
             </div>
-          </div>
+          </div> -->
         </section>
       </div>
 
@@ -480,6 +487,7 @@ function closeCurrentToast() {
 
 .confirm-button {
   overflow: hidden;
+  margin: 0;
   border-radius: 16px;
   font-weight: 500;
   text-transform: none;
@@ -503,7 +511,6 @@ function closeCurrentToast() {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-top: 18px;
   padding: 18px 20px;
   border-radius: 16px;
   font-size: 0.875rem;
