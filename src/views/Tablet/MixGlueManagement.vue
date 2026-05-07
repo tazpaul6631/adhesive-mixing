@@ -3,13 +3,16 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
+          <ion-back-button default-href="/list-mix-glue"></ion-back-button>
         </ion-buttons>
         <ion-title>Mix Glue Management</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
+
+      <Toast position="top-right" />
+
       <div class="main-container max-w-full mx-auto">
 
         <!-- Thông tin header -->
@@ -33,68 +36,64 @@
               <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
-              <label class="text-800 font-medium mb-1 block">Hình thể</label>
-              <InputText v-model="headerInfo.model" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
               <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
               <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
             </div>
           </div>
         </div>
 
+        <!-- BẢNG 1 -->
         <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>Chi tiết dây chuyền</span>
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="700px" tableStyle="min-width: 70rem" stripedRows class="modern-table" :paginator="true"
-              :rows="5" :rowsPerPageOptions="[5, 10, 25, 50]">
+            <DataTable :value="isLoadingLine ? skeletons : lineDetails" scrollable scrollHeight="700px"
+              tableStyle="min-width: 70rem" stripedRows class="modern-table">
 
-              <Column field="xuong" header="Xưởng" style="min-width: 100px; height: 60px">
+              <Column field="productLineName" header="Xưởng" style="min-width: 100px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
-                  <span v-else>{{ data.xuong }}</span>
+                  <span v-else>{{ data.productLineName }}</span>
                 </template>
               </Column>
 
-              <Column field="donYeuCau" header="Đơn yêu cầu" style="min-width: 180px; height: 60px">
+              <Column field="workOrderMasterName" header="Đơn yêu cầu" style="min-width: 180px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.donYeuCau }}</span>
+                  <span v-else>{{ data.workOrderMasterName }}</span>
                 </template>
               </Column>
 
-              <Column field="hinhThe" header="Hình thể" style="min-width: 150px; height: 60px">
+              <Column field="styleName" header="Hình thể" style="min-width: 150px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
-                  <span v-else>{{ data.hinhThe }}</span>
+                  <span v-else>{{ data.styleName }}</span>
                 </template>
               </Column>
 
-              <Column field="chuyen" header="Chuyền" style="min-width: 120px; height: 60px">
+              <Column field="requestDetailName" header="Chuyền" style="min-width: 120px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1.5rem" class="border-round-md" />
                   <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm">
-                    {{ data.chuyen }}
+                    {{ data.requestDetailName }}
                   </span>
                 </template>
               </Column>
 
-              <Column field="trongLuong" header="Trọng lượng" style="min-width: 120px; height: 60px">
+              <Column field="workOrderWeight" header="Trọng lượng" style="min-width: 120px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <span v-else>{{ data.trongLuong }}</span>
+                  <span v-else>{{ data.workOrderWeight }} {{ data.workOrderWeightUnit }}</span>
                 </template>
               </Column>
 
-              <Column field="thoiGianLanh" header="Thời gian lãnh" style="min-width: 180px; height: 60px">
+              <Column field="requestTime" header="Thời gian lãnh" style="min-width: 180px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="90%" height="1rem" />
                   <span v-else class="text-500">
-                    <i class="pi pi-clock text-xs mr-1"></i>{{ data.thoiGianLanh }}
+                    <i class="pi pi-clock text-xs mr-1"></i>{{ format.formatDate(data.requestTime) }}
                   </span>
                 </template>
               </Column>
@@ -102,6 +101,7 @@
           </div>
         </div>
 
+        <!-- BẢNG 2 -->
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
           <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
             <span class="font-bold text-700 text-lg">
@@ -111,90 +111,112 @@
 
           <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
             <div class="grid formgrid align-items-end">
-
               <div class="col-12 sm:col-5 lg:col-4 lg:mb-0">
                 <label class="text-800 font-medium mb-2 block">Mã thành phần</label>
                 <InputText v-model="mixingProcess.component" readonly
                   class="w-full font-bold text-primary border-blue-200" />
               </div>
 
-              <ElectronicScale @update:weight="handleWeightChange" @connection-status="handleConnectionStatus" />
-
-              <div class="col-12 sm:col-12 lg:col-4 sm:mt-3 lg:mt-0 flex justify-content-end">
-                <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" />
-              </div>
-
+              <!-- Truyền dữ liệu target, lower, upper từ activeComponent vào ElectronicScale -->
+              <ElectronicScale :target-weight="activeComponent?.requiredWeight || 0"
+                :lower-tolerance="activeComponent?.lowerTolerance || 0"
+                :upper-tolerance="activeComponent?.upperTolerance || 0" @update:weight="handleWeightChange"
+                @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
             </div>
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="componentDetailsFull" lazy :totalRecords="totalComponentRecords" @page="onPageComponent"
-              scrollable scrollHeight="700px" stripedRows class="modern-table" tableStyle="min-width: 70rem"
-              @row-click="onRowClick" :paginator="true" :rows="5" :rowsPerPageOptions="[5, 10, 25, 50]">
+            <DataTable :value="isLoadingComponent ? skeletons : componentDetailsFull" scrollable scrollHeight="700px"
+              stripedRows class="modern-table" tableStyle="min-width: 70rem" @row-click="onRowClick"
+              selectionMode="single">
 
-              <template #paginatorstart>
+              <template #footer>
                 <div class="flex justify-start">
-                  <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="refreshData" />
+                  <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="openNew"
+                    :disabled="isAddButtonDisabled" />
                 </div>
               </template>
 
-              <Column field="stt" header="#" style="width: 50px; text-align: center; height: 60px">
-                <template #body="{ data }">
+              <Column header="#" style="width: 50px; text-align: center; height: 60px">
+                <template #body="{ index }">
                   <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" class="mx-auto" />
-                  <span v-else>{{ data.stt }}</span>
+                  <span v-else>{{ index + 1 }}</span>
                 </template>
               </Column>
 
-              <Column field="thanhPhan" header="Mã TP" style="min-width: 120px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="70%" height="1rem" />
-                  <span v-else>{{ data.thanhPhan }}</span>
-                </template>
-              </Column>
-
-              <Column field="ten" header="Tên thành phần" class="font-medium" style="min-width: 180px; height: 60px">
+              <Column field="materialName" header="Tên thành phần" class="font-medium"
+                style="min-width: 180px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingComponent" width="80%" height="1rem" />
-                  <span v-else>{{ data.ten }}</span>
+                  <span v-else>{{ data.materialName }}</span>
                 </template>
               </Column>
 
-              <Column field="trongLuong" header="TL Yêu cầu (Kg)" style="min-width: 150px; height: 60px">
-                <template #body="{ data }">
+              <Column header="TL Yêu cầu (Kg)" style="min-width: 150px; height: 60px">
+                <template #body="{ data, index }">
                   <Skeleton v-if="isLoadingComponent" width="50%" height="1rem" />
-                  <span v-else>{{ data.trongLuong }}</span>
+                  <span v-else>{{ index === 0 ? headerInfo.totalWeight : data.requiredWeight }}</span>
                 </template>
               </Column>
 
-              <Column field="trongLuongThucTe" header="TL Thực tế (Kg)" style="min-width: 150px; height: 60px">
+              <Column header="TL Thực tế (Kg)" style="min-width: 150px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
-                  <template v-else>
-                    <span v-if="data.trongLuongThucTe" class="text-green-600 font-bold">{{ data.trongLuongThucTe
-                    }}</span>
-                    <span v-else class="text-400 font-italic">Chưa cân</span>
-                  </template>
+                  <span v-else>{{ data.actualWeight || 0 }}</span>
                 </template>
               </Column>
 
-              <Column field="nguoiThaoTac" header="Người thao tác" style="min-width: 150px; height: 60px">
+              <Column header="Người thao tác" style="min-width: 150px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
-                  <span v-else>{{ data.nguoiThaoTac }}</span>
+                  <span v-else>{{ data.operator }}</span>
                 </template>
               </Column>
 
-              <Column field="thoiGianCan" header="Thời gian cân" style="min-width: 180px; height: 60px">
+              <Column header="Thời gian cân" style="min-width: 180px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingComponent" width="90%" height="1rem" />
-                  <span v-else-if="data && data.thoiGianCan" class="text-500">
-                    <i class="pi pi-clock text-xs mr-1"></i>{{ data.thoiGianCan }}
-                  </span>
+                  <span v-else class="text-500">{{ data.weighingTime }}</span>
                 </template>
               </Column>
 
               <template #paginatorend></template>
             </DataTable>
+
+            <!-- MODAL THÊM THÀNH PHẦN -->
+            <Dialog v-model:visible="productDialog" :style="{ width: '450px' }" header="Thêm thành phần" :modal="true"
+              class="p-fluid">
+              <!-- Dùng flex-column để các trường xếp dọc đều nhau -->
+              <div class="flex flex-column gap-4 pt-3">
+
+                <!-- Trường: Tên thành phần -->
+                <div class="flex flex-column gap-2">
+                  <label for="name" class="font-bold text-900">Tên thành phần</label>
+                  <InputText id="name" v-model.trim="product.name" required="true" autofocus
+                    :invalid="submitted && !product.name" class="w-full" />
+                  <small v-if="submitted && !product.name" class="text-red-500">
+                    Tên thành phần là bắt buộc.
+                  </small>
+                </div>
+
+                <!-- Trường: Phần trăm (%) -->
+                <div class="flex flex-column gap-2">
+                  <label for="percentage" class="font-bold text-900">Phần trăm (%)</label>
+                  <InputNumber id="percentage" v-model="product.percentage" suffix=" %"
+                    :invalid="submitted && product.percentage === null" class="w-full" />
+                  <small v-if="submitted && product.percentage === null" class="text-red-500">
+                    Vui lòng nhập phần trăm.
+                  </small>
+                </div>
+
+              </div>
+
+              <template #footer>
+                <Button label="Hủy" icon="pi pi-times" text severity="secondary" @click="hideDialog" />
+                <Button label="Lưu" icon="pi pi-check" @click="saveProduct" />
+              </template>
+            </Dialog>
+
           </div>
         </div>
         <div class="h-3rem flex-shrink-0"></div>
@@ -205,84 +227,112 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton,
+  IonTitle
 } from '@ionic/vue';
+import { useRoute } from 'vue-router';
 import BackToTop from '@/components/BackToTop.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import ElectronicScale from '@/components/ElectronicScale.vue';
+import workOrder from '@/api/workOrder';
+import format from '@/mixins/format';
 
+const route = useRoute();
+
+// --- INTERFACES ---
 interface LineDetail {
-  id?: number;
-  xuong?: string;
-  donYeuCau?: string;
-  hinhThe?: string;
-  chuyen?: string;
-  trongLuong?: string;
-  thoiGianLanh?: string;
+  productLineName?: string;
+  workOrderMasterName?: string;
+  styleName?: string;
+  requestDetailName?: string;
+  workOrderWeight?: number;
+  workOrderWeightUnit?: string;
+  requestTime?: string;
 }
 
 interface ComponentDetail {
-  stt?: number;
-  thanhPhan?: string;
-  ten?: string;
-  trongLuong?: string;
-  trongLuongThucTe?: string;
-  nguoiThaoTac?: string;
-  thoiGianCan?: string;
+  materialName?: string;
+  requiredWeight?: number | string;
+  actualWeight?: number;
+  operator?: string;
+  weighingTime?: string;
+  lowerTolerance?: number;
+  upperTolerance?: number;
+  mixingRatio?: number;
 }
 
-const headerInfo = ref({
-  orderNo: 'C2R26216',
-  glue: 'Keo bôi đế',
-  model: 'C2 R26216',
-  totalWeight: '31.5'
-});
+// --- REFS & STATE ---
+const headerInfo = ref({ orderNo: '', glue: '', totalWeight: '' });
+const mixingProcess = ref({ component: '', weight: '' });
 
-const mixingProcess = ref({
-  component: '351',
-  weight: '1.501'
-});
+// Component Đang Chọn Từ Bảng Để Truyền Qua Cân Điện Tử
+const activeComponent = ref<ComponentDetail | null>(null);
 
+const lineDetails = ref<LineDetail[]>([]);
+const componentDetailsFull = ref<ComponentDetail[]>([]);
+
+const isLoadingLine = ref(true);
+const isLoadingComponent = ref(true);
+
+const skeletons = ref(new Array(5).fill({}));
+
+// Dialog States
+const productDialog = ref(false);
+const product = ref<{ name?: string, percentage?: number | null }>({});
+const submitted = ref(false);
+
+// --- FUNCTIONS & LOGIC ---
 const onRowClick = (event: { data: ComponentDetail }) => {
-  if (!isLoadingLine.value && event.data && event.data.thanhPhan) {
-    mixingProcess.value.component = event.data.thanhPhan;
+  if (!isLoadingComponent.value && event.data && event.data.materialName) {
+    mixingProcess.value.component = event.data.materialName;
+
+    // Tìm index của row được click để gán đúng Target Weight
+    const rowIndex = componentDetailsFull.value.findIndex(item => item === event.data);
+    activeComponent.value = { ...event.data }; // Cập nhật Component đang tương tác
+
+    // Nếu là dòng đầu tiên, Target weight = headerInfo.totalWeight
+    if (rowIndex === 0) {
+      activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
+    }
   }
 };
 
-// Bảng 1
-const generateData = (index: number) => {
-  const isChuyen1 = index % 2 === 0;
-  return {
-    id: index,
-    xuong: `BU${index % 3 + 1}`,
-    donYeuCau: `Chuyền ${isChuyen1 ? '1' : '2'} C2 R26216`,
-    hinhThe: 'C2 R26216',
-    chuyen: `Chuyền ${isChuyen1 ? '1' : '2'}`,
-    trongLuong: isChuyen1 ? '20' : '10',
-    thoiGianLanh: isChuyen1 ? '10:15 10/04/2026' : '11:30 10/04/2026'
-  };
-};
+// Nút thêm bị vô hiệu hóa nếu mảng rỗng, hoặc dòng cuối cùng chưa có số kg thực tế
+const isAddButtonDisabled = computed(() => {
+  if (componentDetailsFull.value.length === 0) return true;
 
-// Bảng 2
-const generateComponentData = (index: number) => {
-  const isKeo7911 = index % 2 !== 0;
-  return {
-    stt: index,
-    thanhPhan: Math.random().toString(36).substring(2, 7).toUpperCase(),
-    ten: 'Keo ' + Math.random().toFixed(5).substring(2, 7).toUpperCase(),
-    trongLuong: isKeo7911 ? '30' : '1.5',
-    trongLuongThucTe: isKeo7911 ? '30.1' : '',
-    nguoiThaoTac: isKeo7911 ? 'R79xxx' : '',
-    thoiGianCan: isKeo7911 ? '13:15 16/04/2026' : ''
-  };
-};
+  const lastItem = componentDetailsFull.value[componentDetailsFull.value.length - 1];
+  return !lastItem.actualWeight || lastItem.actualWeight <= 0;
+});
 
 const handleWeightChange = (newWeight: string) => {
   console.log("Trọng lượng cân đang là:", newWeight);
-  // Gán vào biến form của bạn ở ngoài này...
-}
+  mixingProcess.value.weight = newWeight;
+};
+
+// Hàm xử lý khi con báo xác nhận thành công
+const handleConfirmWeight = (actualWeight: number) => {
+  if (activeComponent.value) {
+    // Tìm vị trí của thành phần đang cân trong mảng data của bảng
+    const index = componentDetailsFull.value.findIndex(
+      item => item.materialName === activeComponent.value?.materialName
+    );
+
+    if (index !== -1) {
+      // Cập nhật TL Thực tế (Kg)
+      componentDetailsFull.value[index].actualWeight = actualWeight;
+
+      // (Tùy chọn) Có thể cập nhật thêm tên người thao tác và thời gian tại đây
+      // componentDetailsFull.value[index].operator = 'Nguyễn Văn A'; 
+      // componentDetailsFull.value[index].weighingTime = format.formatDate(new Date().toISOString());
+
+      // Cập nhật lại activeComponent để đồng bộ
+      activeComponent.value = { ...componentDetailsFull.value[index] };
+    }
+  }
+};
 
 const handleConnectionStatus = (status: boolean) => {
   if (status) {
@@ -290,89 +340,121 @@ const handleConnectionStatus = (status: boolean) => {
   } else {
     console.log("Mất kết nối với cân!");
   }
-}
+};
 
-// BackToTop logic
+const fetchWorkOrderDetail = async (id: string | number) => {
+  isLoadingLine.value = true;
+  isLoadingComponent.value = true;
+
+  try {
+    const response = await workOrder.getWorkOrder(id);
+
+    if (response.data && response.data.success) {
+      const data = response.data.data;
+
+      headerInfo.value = {
+        orderNo: data.workOrderMasterName || '',
+        glue: data.chemicalMasterName || '',
+        totalWeight: data.workOrderWeight ? data.workOrderWeight.toString() : ''
+      };
+
+      lineDetails.value = data.orderDetails || [];
+
+      // Mapping data chemicals kèm các default props nếu không có
+      componentDetailsFull.value = (data.chemicals || []).map((item: any) => ({
+        ...item,
+        requiredWeight: item.requiredWeight || item.netWeight || 0, // Fallback vào netWeight theo JSON của bạn nếu có
+        actualWeight: item.actualWeight || 0,
+        lowerTolerance: item.lowerTolerance || 0,
+        upperTolerance: item.upperTolerance || 0,
+        mixingRatio: item.mixingRatio || 100
+      }));
+
+      // Khi tải xong, Gán mặc định dòng đầu tiên vào Electronic Scale
+      if (componentDetailsFull.value.length > 0) {
+        componentDetailsFull.value[0].requiredWeight = Number(headerInfo.value.totalWeight);
+
+        const firstItem = componentDetailsFull.value[0];
+        mixingProcess.value.component = firstItem.materialName || '';
+        activeComponent.value = { ...firstItem };
+      }
+    }
+  } catch (error) {
+    console.error('Lỗi khi tải dữ liệu chi tiết:', error);
+  } finally {
+    isLoadingLine.value = false;
+    isLoadingComponent.value = false;
+  }
+};
+
+// Mở Modal
+const openNew = () => {
+  product.value = { name: '', percentage: null };
+  submitted.value = false;
+  productDialog.value = true;
+};
+
+// Ẩn Modal
+const hideDialog = () => {
+  productDialog.value = false;
+  submitted.value = false;
+};
+
+// Lưu thông tin từ Modal
+const saveProduct = () => {
+  submitted.value = true;
+
+  if (product.value.name?.trim() && product.value.percentage != null) {
+    // 1. Lấy dòng đầu tiên
+    const firstItem = componentDetailsFull.value[0];
+
+    // 2. Lấy TL thực tế và mixingRatio của dòng đầu tiên
+    const baseActualWeight = Number(firstItem?.actualWeight || 0);
+    const baseMixingRatio = Number(firstItem?.mixingRatio || 100); // Đề phòng lỗi chia 0 thì set mặc định 100
+
+    // 3. Tính toán theo công thức mới: (Phần trăm * TL thực tế) / mixingRatio
+    const calculatedRequiredWeight = (product.value.percentage * baseActualWeight) / baseMixingRatio;
+
+    componentDetailsFull.value.push({
+      materialName: product.value.name,
+      requiredWeight: Number(calculatedRequiredWeight.toFixed(3)),
+      actualWeight: 0,
+      operator: '',
+      weighingTime: '',
+      lowerTolerance: 5,
+      upperTolerance: 5,
+      mixingRatio: product.value.percentage
+    });
+
+    productDialog.value = false;
+    product.value = {};
+    submitted.value = false;
+  }
+};
+
+// --- SCROLL TO TOP LOGIC ---
 const contentRef = ref<any>(null);
 const showScrollButton = ref(false);
 
 const handleScroll = (event: CustomEvent) => {
-  if (event.detail.scrollTop > 100) {
-    showScrollButton.value = true;
-  } else {
-    showScrollButton.value = false;
-  }
+  showScrollButton.value = event.detail.scrollTop > 100;
 };
 
 const scrollToTop = () => {
   contentRef.value?.$el?.scrollToTop(500);
 };
-///////////////////////
 
-// 2. Khởi tạo mảng có định dạng kiểu dữ liệu
-const lineDetails = ref<LineDetail[]>(Array.from({ length: 5 }).map(() => ({})));
-const componentDetailsFull = ref<ComponentDetail[]>(Array.from({ length: 5 }).map(() => ({})));
-
-const isLoadingLine = ref(true);
-const isLoadingComponent = ref(true);
-
-const totalRecords = 100;
-const totalComponentRecords = 100;
-
-// 3. Xử lý clear Timeout để chống Spam Click
-let lineTimeout: any = null;
-const onPageLine = (event: any) => {
-  isLoadingLine.value = true;
-  lineDetails.value = Array.from({ length: event.rows }).map(() => ({}));
-
-  if (lineTimeout) clearTimeout(lineTimeout);
-
-  lineTimeout = setTimeout(() => {
-    lineDetails.value = Array.from({ length: event.rows }).map((_, i) =>
-      generateData(event.first + i + 1)
-    );
-    isLoadingLine.value = false;
-  }, 1000);
-};
-
-let componentTimeout: any = null;
-const onPageComponent = (event: any) => {
-  isLoadingComponent.value = true;
-  componentDetailsFull.value = Array.from({ length: event.rows }).map(() => ({}));
-
-  if (componentTimeout) clearTimeout(componentTimeout);
-
-  componentTimeout = setTimeout(() => {
-    componentDetailsFull.value = Array.from({ length: event.rows }).map((_, i) =>
-      generateComponentData(event.first + i + 1)
-    );
-    isLoadingComponent.value = false;
-  }, 1000);
-};
-
+// --- LIFECYCLE ---
 onMounted(() => {
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: 5 }).map((_, i) => generateData(i + 1));
+  const workOrderMasterId = route.query.workOrderMasterId as string;
+  if (workOrderMasterId) {
+    fetchWorkOrderDetail(workOrderMasterId);
+  } else {
+    console.error("Không tìm thấy mã Đơn điều công (workOrderMasterId) trên URL!");
     isLoadingLine.value = false;
-  }, 1500);
-
-  setTimeout(() => {
-    componentDetailsFull.value = Array.from({ length: 5 }).map((_, i) => generateComponentData(i + 1));
     isLoadingComponent.value = false;
-  }, 1500);
+  }
 });
-
-const refreshData = () => {
-  isLoadingComponent.value = true;
-  componentDetailsFull.value = Array.from({ length: 5 }).map(() => ({}));
-
-  if (componentTimeout) clearTimeout(componentTimeout);
-
-  componentTimeout = setTimeout(() => {
-    componentDetailsFull.value = Array.from({ length: 5 }).map((_, i) => generateComponentData(i + 1));
-    isLoadingComponent.value = false;
-  }, 1000);
-};
 </script>
 
 <style scoped></style>

@@ -14,9 +14,7 @@
         <div class="surface-card p-3 shadow-1 border-round-xl">
           <div class="flex flex-wrap align-items-center justify-content-between surface-border">
             <user-avatar />
-            <div class="flex gap-2">
-              <Button label="In Mã QR" icon="pi pi-print" outlined size="large" />
-            </div>
+            <ConnectBluetooth />
           </div>
         </div>
 
@@ -138,6 +136,7 @@
 
 <script setup lang="ts">
 import BackToTop from '@/components/BackToTop.vue';
+import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton,

@@ -17,19 +17,42 @@
         <span class="p-inputgroup-addon font-bold px-1">Kg</span>
       </div>
       <div class="ml-1 flex flex-column justify-content-center min-w-max border-left-1 border-300 pl-3">
-        <div class="text-red-500 font-bold text-xs">-5 g</div>
-        <div class="text-green-600 font-bold text-xs">+5 g</div>
+        <div class="text-red-500 font-bold text-xs">-{{ lowerTolerance || 0 }} g</div>
+        <div class="text-green-600 font-bold text-xs">+{{ upperTolerance || 0 }} g</div>
       </div>
     </div>
+  </div>
+
+  <div class="col-12 sm:col-12 lg:col-4 sm:mt-3 lg:mt-0 flex justify-content-end">
+    <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { registerPlugin, WebPlugin, Capacitor } from '@capacitor/core';
+import { useToast } from 'primevue/usetoast';
+
+const toast = useToast();
+
+// --- NHẬN PROPS TỪ CHA ---
+const props = defineProps({
+  targetWeight: {
+    type: [Number, String],
+    default: 0
+  },
+  lowerTolerance: {
+    type: [Number, String],
+    default: 5
+  },
+  upperTolerance: {
+    type: [Number, String],
+    default: 5
+  }
+});
 
 // --- KẾT NỐI VỚI COMPONENT CHA ---
-const emit = defineEmits(['update:weight', 'connection-status']);
+const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
 
 // --- STATE ---
 const mixingProcess = ref({
@@ -43,6 +66,25 @@ let dataBuffer = '';
 let dataListener: any = null;
 let watchdog: any = null;
 let autoConnectInterval: any = null;
+
+// ==========================================
+// THÊM WATCH ĐỂ GÁN TRỌNG LƯỢNG YÊU CẦU VÀO INPUT
+// ==========================================
+watch(
+  () => props.targetWeight,
+  (newTargetWeight) => {
+    if (newTargetWeight !== undefined && newTargetWeight !== null) {
+      // Ép kiểu về số và làm tròn 3 chữ số thập phân cho đẹp
+      const formattedWeight = Number(newTargetWeight).toFixed(3);
+      mixingProcess.value.weight = formattedWeight;
+
+      // Emit ngược lại cho cha biết số đã được set mặc định
+      emit('update:weight', formattedWeight);
+    }
+  },
+  { immediate: true } // immediate: true giúp chạy ngay lần đầu tiên component được render
+);
+
 
 // --- PLUGIN CONFIG ---
 const SerialScale = registerPlugin<any>('SerialScale', {
@@ -84,29 +126,26 @@ const setDisconnected = () => {
     emit('connection-status', false); // Báo ra cha là mất kết nối
   }
   isStable.value = false;
-  mixingProcess.value.weight = '0.000';
-  emit('update:weight', '0.000');
+  // Không set lại '0.000' ở đây nữa để giữ nguyên số targetWeight trên màn hình nếu mất kết nối
+  // mixingProcess.value.weight = '0.000'; 
+  // emit('update:weight', '0.000');
 };
 
 const connectToScale = async () => {
-  // Nếu đang kết nối rồi thì không làm gì cả để tránh gọi API liên tục
   if (isConnected.value) return;
 
   try {
     if (dataListener) await dataListener.remove();
 
     dataListener = await SerialScale.addListener('onScaleData', (result: any) => {
-      // 1. Kick watchdog & Cập nhật trạng thái kết nối
       if (!isConnected.value) {
         isConnected.value = true;
-        emit('connection-status', true); // Emit báo cha biết đã kết nối
+        emit('connection-status', true);
       }
       clearTimeout(watchdog);
-      watchdog = setTimeout(() => setDisconnected(), 2000); // Mất data 2s -> ngắt
+      watchdog = setTimeout(() => setDisconnected(), 2000);
 
       let raw = result.data;
-
-      // 2. Lọc chuỗi dữ liệu rác
       let cleanRaw = "";
       if (raw.length > 15) {
         for (let i = 0; i < raw.length; i += 3) cleanRaw += raw[i];
@@ -114,31 +153,27 @@ const connectToScale = async () => {
 
       dataBuffer += cleanRaw;
 
-      // 3. Phân tích chuỗi khi nhận đủ dòng
       if (dataBuffer.includes('\n') || dataBuffer.includes('\r')) {
         const line = dataBuffer.trim();
 
-        // Kiểm tra tính ổn định (ST/US)
         const newStable = line.startsWith("ST");
         if (isStable.value !== newStable) isStable.value = newStable;
 
-        // Trích xuất số
         const matches = line.match(/[-+]?\d*\.?\d+/);
         if (matches) {
           let rawValue = parseFloat(matches[0]);
           const lowerLine = line.toLowerCase();
 
-          // Xử lý đơn vị
           if (!lowerLine.includes('kg') && lowerLine.includes('g')) {
             rawValue = rawValue / 1000;
           }
 
           const val = rawValue.toFixed(3);
 
-          // Chỉ cập nhật và emit nếu số thực sự thay đổi
+          // Cập nhật lại số nếu cân phát hiện số kg thực tế mới
           if (mixingProcess.value.weight !== val) {
             mixingProcess.value.weight = val;
-            emit('update:weight', val); // Trả dữ liệu cân ra page cha
+            emit('update:weight', val);
           }
         }
         dataBuffer = '';
@@ -154,10 +189,8 @@ const connectToScale = async () => {
   }
 };
 
-// Hàm bắt đầu vòng lặp tự động kết nối
 const startAutoConnect = () => {
   connectToScale();
-  // Cứ mỗi 3 giây kiểm tra lại, nếu rớt kết nối thì gọi lại hàm connect
   autoConnectInterval = setInterval(() => {
     if (!isConnected.value) {
       connectToScale();
@@ -165,12 +198,59 @@ const startAutoConnect = () => {
   }, 3000);
 };
 
+// ==========================================
+// LOGIC KIỂM TRA & XÁC NHẬN TRỌNG LƯỢNG
+// ==========================================
+const confirmWeight = () => {
+  // Lấy số liệu hiện tại
+  const currentWeight = parseFloat(mixingProcess.value.weight || '0');
+  const target = parseFloat(props.targetWeight.toString() || '0');
+
+  // Chuyển đổi dung sai từ gram sang Kg để so sánh
+  const lowerKg = parseFloat(props.lowerTolerance.toString() || '0') / 1000;
+  const upperKg = parseFloat(props.upperTolerance.toString() || '0') / 1000;
+
+  // Tính khoảng cho phép
+  const minAcceptable = target - lowerKg;
+  const maxAcceptable = target + upperKg;
+
+  // Kiểm tra điều kiện
+  if (currentWeight >= minAcceptable && currentWeight <= maxAcceptable) {
+    // Nếu nằm trong khoảng -> Hợp lệ
+    emit('confirm-weight', currentWeight);
+    toast.add({
+      severity: 'success',
+      summary: 'Thành công',
+      detail: 'Trọng lượng đạt yêu cầu',
+      life: 3000
+    });
+  } else {
+    // Nếu ngoài khoảng -> Báo lỗi
+    toast.add({
+      severity: 'error',
+      summary: 'Không đạt yêu cầu',
+      detail: `Trọng lượng thực tế phải nằm trong khoảng từ ${minAcceptable.toFixed(3)} Kg đến ${maxAcceptable.toFixed(3)} Kg.`,
+      life: 5000
+    });
+  }
+};
+
+watch(
+  () => props.targetWeight,
+  (newTargetWeight) => {
+    if (newTargetWeight !== undefined && newTargetWeight !== null) {
+      const formattedWeight = Number(newTargetWeight).toFixed(3);
+      mixingProcess.value.weight = formattedWeight;
+      emit('update:weight', formattedWeight);
+    }
+  },
+  { immediate: true }
+);
+
 onMounted(() => {
-  // Tự động quét và kết nối ngay khi component render
   if (Capacitor.getPlatform() === 'android') {
     setTimeout(() => startAutoConnect(), 500);
   } else {
-    // Vẫn chạy tự động kết nối trên web (cho mục đích giả lập/test)
     setTimeout(() => startAutoConnect(), 500);
   }
 });
@@ -200,7 +280,6 @@ onUnmounted(async () => {
   }
 }
 
-/* Thêm màu viền xanh khi số đã đứng yên (stable) */
 .border-green-500 {
   border-color: #22c55e !important;
   transition: border-color 0.3s ease;
