@@ -1,6 +1,5 @@
 import { App } from 'vue';
 
-// Import các Component bạn cần
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
@@ -12,6 +11,12 @@ import MultiSelect from 'primevue/multiselect';
 import Checkbox from 'primevue/checkbox';
 import DatePicker from 'primevue/datepicker';
 import Button from 'primevue/button';
+import RadioButton from 'primevue/radiobutton';
+import Skeleton from 'primevue/skeleton';
+import InputNumber from 'primevue/inputnumber';
+import Dialog from 'primevue/dialog';
+import Toast from 'primevue/toast';
+
 import 'primeicons/primeicons.css';
 
 export default {
@@ -27,5 +32,10 @@ export default {
         app.component('Checkbox', Checkbox);
         app.component('DatePicker', DatePicker);
         app.component('Button', Button);
+        app.component('RadioButton', RadioButton);
+        app.component('Skeleton', Skeleton);
+        app.component('InputNumber', InputNumber);
+        app.component('Dialog', Dialog);
+        app.component('Toast', Toast);
     }
 };

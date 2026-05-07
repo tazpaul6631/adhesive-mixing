@@ -35,13 +35,38 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/testCan',
-    component: () => import('@/views/test.vue'),
+    path: '/list-mix-glue',
+    component: () => import('@/views/Tablet/ListMixGlue.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/mix-glue-management',
+    component: () => import('@/views/Tablet/MixGlueManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/repacking-mixed-glue-management',
+    component: () => import('@/views/Tablet/RePackingMixedGlueManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/qip-confirm-mix-glue',
+    component: () => import('@/views/Tablet/QIPConfirmMixGlue.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/qip-confirm-repacking-mixed-glue',
+    component: () => import('@/views/Tablet/QIPConfirmRePackingMixedGlue.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/glue-form-production',
+    component: () => import('@/views/Tablet/GlueFromProduct.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/mobile',
-    component: () => import('@/views/Mobile/mobileIndex.vue'),
+    component: () => import('@/views/Mobile/GlueConfirm.vue'),
     meta: { requiresAuth: true }
   },
   {

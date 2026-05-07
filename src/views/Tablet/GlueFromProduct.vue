@@ -1,0 +1,131 @@
+<template>
+  <ion-page>
+    <ion-header class="header-container">
+      <ion-toolbar color="primary">
+        <ion-buttons slot="start">
+          <ion-back-button default-href="/app-menu"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Glue from Product</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
+      <div class="main-container max-w-full mx-auto">
+        <div class="surface-card p-3 shadow-1 border-round-xl">
+          <div
+            class="flex flex-wrap align-items-center justify-content-between surface-border border-bottom-1 surface-border pb-3 mb-3">
+            <user-avatar />
+            <div class="flex gap-2">
+              <Button label="Lưu" icon="pi pi-save" outlined size="large" />
+            </div>
+          </div>
+
+          <div class="grid formgrid p-fluid border-bottom-1 surface-border pb-3 mb-3">
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">Keo thu về</label>
+              <Select v-model="headerInfo.orderNo" :options="orderOptions" optionLabel="label" optionValue="value"
+                placeholder="Chọn đơn điều công" class="w-full font-bold" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-2">
+              <label class="text-800 font-medium mb-1 block">Tên keo</label>
+              <InputText v-model="headerInfo.glue" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-1 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Xưởng</label>
+              <InputText v-model="headerInfo.xuong" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
+              <InputText v-model="headerInfo.donDieuCong" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Đơn yêu cầu</label>
+              <InputText v-model="headerInfo.donYeuCau" fluid readonly class="font-bold text-blue-600" />
+            </div>
+          </div>
+
+          <div class="grid formgrid p-fluid">
+            <div class="col-12 sm:col-6 lg:col-2">
+              <label class="text-800 font-medium mb-1 block">Hình thể</label>
+              <InputText v-model="bottomInfo.orderNo" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-2">
+              <label class="text-800 font-medium mb-1 block">Dây chuyền</label>
+              <InputText v-model="bottomInfo.glue" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-2 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Trọng lượng thu về</label>
+              <InputText v-model="bottomInfo.xuong" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Người thao tác</label>
+              <InputText v-model="bottomInfo.donDieuCong" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Thời gian hoàn thành</label>
+              <InputText v-model="bottomInfo.donYeuCau" fluid readonly class="font-bold text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div class="h-3rem flex-shrink-0"></div>
+      </div>
+      <back-to-top slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
+    </ion-content>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import {
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton,
+  IonTitle
+} from '@ionic/vue';
+import { ref } from 'vue';
+import BackToTop from '@/components/BackToTop.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
+
+const headerInfo = ref({
+  orderNo: 'Chọn keo thu về',
+  glue: 'Keo bôi đế',
+  xuong: 'BU2',
+  donDieuCong: 'C2 R26216 Keo bôi đế',
+  donYeuCau: 'Chuyền 1 C2 R26216'
+});
+
+const bottomInfo = ref({
+  orderNo: 'Chọn keo thu về',
+  glue: 'Keo bôi đế',
+  xuong: 'BU2',
+  donDieuCong: 'C2 R26216 Keo bôi đế',
+  donYeuCau: 'Chuyền 1 C2 R26216'
+});
+
+const orderOptions = ref([
+  { label: 'C2R26216', value: 'C2R26216' },
+  { label: 'C2R26217', value: 'C2R26217' },
+  { label: 'C2R26218', value: 'C2R26218' },
+  { label: 'C2R26219', value: 'C2R26219' }
+
+]);
+
+// BackToTop logic
+const contentRef = ref<any>(null);
+const showScrollButton = ref(false);
+
+const handleScroll = (event: CustomEvent) => {
+  if (event.detail.scrollTop > 100) {
+    showScrollButton.value = true;
+  } else {
+    showScrollButton.value = false;
+  }
+};
+
+const scrollToTop = () => {
+  if (contentRef.value) {
+    contentRef.value.$el.scrollToTop(500);
+  }
+};
+///////////////////////
+</script>
+
+<style scoped></style>

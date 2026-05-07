@@ -4,12 +4,13 @@ import router from './router';
 import i18n from '@/i18n';
 import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
-import PrimeVue from 'primevue/config';
-import Aura from '@primeuix/themes/aura';
+
 import { IonicVue } from '@ionic/vue';
 
-// --- IMPORT FILE PLUGIN VỪA TẠO ---
 import PrimeComponents from '@/plugins/prime';
+import ToastService from 'primevue/toastservice';
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
 
 import '@ionic/vue/css/core.css';
 import './theme/variables.css';
@@ -40,7 +41,8 @@ const app = createApp(App)
     }
   })
   // --- KÍCH HOẠT ĐĂNG KÝ COMPONENT TẠI ĐÂY ---
-  .use(PrimeComponents);
+  .use(PrimeComponents)
+  .use(ToastService);
 
 router.isReady().then(() => {
   app.mount('#app');
