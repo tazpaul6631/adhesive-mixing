@@ -3,7 +3,9 @@
     <ion-header class="header-container ion-no-border">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
+          <ion-button @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+          </ion-button>
         </ion-buttons>
         <ion-title>Re-Packing Mixed Glue Management</ion-title>
       </ion-toolbar>
@@ -49,31 +51,31 @@
 
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" stripedRows
-              class="modern-table" tableStyle="min-width: 70rem" :paginator="true" :rows="5"
+              class="modern-table" tableStyle="width: 100%; table-layout: fixed;" :paginator="true" :rows="5"
               :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px">
 
-              <Column field="xuong" header="Xưởng" style="min-width: 100px; height: 60px">
+              <Column field="xuong" header="Xưởng" style="width: 10%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.xuong }}</span>
                 </template>
               </Column>
 
-              <Column field="donYeuCau" header="Đơn yêu cầu" style="min-width: 180px; height: 60px">
+              <Column field="donYeuCau" header="Đơn yêu cầu" style="width: 18%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <span v-else>{{ data.donYeuCau }}</span>
                 </template>
               </Column>
 
-              <Column field="hinhThe" header="Hình thể" style="min-width: 150px; height: 60px">
+              <Column field="hinhThe" header="Hình thể" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
                   <span v-else>{{ data.hinhThe }}</span>
                 </template>
               </Column>
 
-              <Column field="dayChuyen" header="Dây Chuyền" style="min-width: 120px; height: 60px">
+              <Column field="dayChuyen" header="Dây Chuyền" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1.5rem" class="border-round-md" />
                   <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm">
@@ -82,7 +84,7 @@
                 </template>
               </Column>
 
-              <Column field="thungChua" header="Thùng chứa" style="min-width: 260px; height: 60px">
+              <Column field="thungChua" header="Thùng chứa" style="width: 20%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1.5rem" />
                   <div v-else class="flex flex-wrap gap-3">
@@ -97,14 +99,14 @@
                 </template>
               </Column>
 
-              <Column field="nguoiThaoTac" header="Người thao tác" style="min-width: 150px; height: 60px">
+              <Column field="nguoiThaoTac" header="Người thao tác" style="width: 18%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.nguoiThaoTac }}</span>
                 </template>
               </Column>
 
-              <Column field="thoiGianHoanThanh" header="Thời gian hoàn thành" style="min-width: 180px; height: 60px">
+              <Column field="thoiGianHoanThanh" header="Thời gian hoàn thành" style="width: 14%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="90%" height="1rem" />
                   <span v-else-if="data.thoiGianHoanThanh" class="text-500">
@@ -139,10 +141,6 @@
               </div>
 
               <ElectronicScale @update:weight="handleWeightChange" @connection-status="handleConnectionStatus" />
-
-              <div class="col-12 sm:col-4 lg:col-2 flex justify-content-end">
-                <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" />
-              </div>
             </div>
           </div>
 
@@ -226,11 +224,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
 } from '@ionic/vue';
 import BackToTop from '@/components/BackToTop.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import ElectronicScale from '@/components/ElectronicScale.vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // Loading states
 const isLoadingLine = ref(true);
@@ -273,6 +274,8 @@ const handleConnectionStatus = (status: boolean) => {
     console.log("Mất kết nối với cân!");
   }
 }
+
+const goBack = () => router.back();
 
 // BackToTop logic
 const contentRef = ref<any>(null);

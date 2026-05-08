@@ -121,6 +121,26 @@ const processScannedData = async (scannedCode: string) => {
       errorMessage.value = response.data?.message;
       console.log('Login failed:', errorMessage.value);
     }
+
+    // const fakeResponse = {
+    //   data: {
+    //     success: true,
+    //     data: {
+    //       employeeId: scannedCode,
+    //       name: 'Nhân viên giả lập',
+    //       token: 'fake-token-bypass-api'
+    //     }
+    //   }
+    // };
+
+    // authStore.setAuthData(fakeResponse.data.data);
+
+    // // Chuyển hướng thẳng dựa trên nền tảng
+    // if (isNative) {
+    //   router.push('/app-menu'); // Vào thẳng App
+    // } else {
+    //   router.push('/dashboard'); // Vào thẳng Web
+    // }
   } catch (error: any) {
     console.error('Lỗi gọi API đăng nhập:', error);
     errorLogin.value = true;

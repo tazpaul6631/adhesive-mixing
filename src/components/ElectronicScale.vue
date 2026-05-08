@@ -10,24 +10,24 @@
       </span>
     </label>
 
-    <div class="flex align-items-center">
-      <div class="p-inputgroup">
-        <InputText v-model="mixingProcess.weight" readonly class="text-right font-bold bg-white" :class="{
-          'border-green-500': isStable && isConnected,
-          'text-red-500': isExceedingLimit,
-          'text-primary': !isExceedingLimit
-        }" />
+    <div class="flex justify-content-between align-items-end">
+      <div class="p-inputgroup flex align-items-center">
+        <InputText v-model="mixingProcess.weight" readonly class="text-right font-bold bg-white" style="width: 250px;"
+          :class="{
+            'border-green-500': isStable && isConnected,
+            'text-red-500': isExceedingLimit,
+            'text-primary': !isExceedingLimit
+          }" />
         <span class="p-inputgroup-addon font-bold px-1">Kg</span>
+        <div class="ml-1 min-w-max border-left-1 border-300 pl-3">
+          <div class="text-red-500 font-bold text-xs">-{{ lowerTolerance || 0 }} g</div>
+          <div class="text-green-600 font-bold text-xs">+{{ upperTolerance || 0 }} g</div>
+        </div>
       </div>
-      <div class="ml-1 flex flex-column justify-content-center min-w-max border-left-1 border-300 pl-3">
-        <div class="text-red-500 font-bold text-xs">-{{ lowerTolerance || 0 }} g</div>
-        <div class="text-green-600 font-bold text-xs">+{{ upperTolerance || 0 }} g</div>
-      </div>
-    </div>
-  </div>
 
-  <div class="col-12 sm:col-12 lg:col-2 sm:mt-3 lg:mt-0 flex justify-content-end">
-    <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
+
+      <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
+    </div>
   </div>
 </template>
 

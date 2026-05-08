@@ -46,7 +46,8 @@ import format from '@/mixins/format';
 import { printOutline } from 'ionicons/icons';
 
 const props = defineProps<{
-    weight: string;
+    templateType: 'chemical' | 'model'; // Khai báo các loại tem bạn có
+    printData: Record<string, any>;     // Object chứa data truyền vào
     disabledPrint?: boolean;
 }>();
 
@@ -113,24 +114,60 @@ const printLabel = () => {
 
     isPrinting.value = true;
     const formattedDate = format.formatDate(new Date().toISOString());
+    let tspl = '';
 
-    const tspl = `
+    // --- TEMPLATE 1: TEM HÓA CHẤT ---
+    if (props.templateType === 'chemical') {
+        const { xuong, chuyen, tenHoaChat, thanhPhan, hieuLuc } = props.printData;
+        const qrData = `${xuong}|${chuyen}|${tenHoaChat}|${thanhPhan}`;
+
+        tspl = `
 SIZE 80 mm, 50 mm
 GAP 0 mm, 0 mm
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-TEXT 40,30,"ARIAL.TTF",0,15,15,"JIA HSIN CO., LTD"
-TEXT 40,80,"ARIAL.TTF",0,30,30,"${props.weight} kg"
-BARCODE 40,180,"128",80,0,0,2,4,"${props.weight}"
-TEXT 40,290,"ARIAL.TTF",0,10,10,"Người in: Thuận Developer"
-TEXT 40,320,"ARIAL.TTF",0,10,10,"Ngày in: ${formattedDate}"
+BOX 16,16,624,384,4
+TEXT 40,40,"ARIAL.TTF",0,12,12,"廠區 Xưởng: ${xuong || ''}"
+TEXT 40,90,"ARIAL.TTF",0,12,12,"線別 Chuyền: ${chuyen || ''}"
+TEXT 40,140,"ARIAL.TTF",0,12,12,"化學品名稱 Tên hóa chất: ${tenHoaChat || ''}"
+TEXT 40,190,"ARIAL.TTF",0,12,12,"成分 Thành phần: ${thanhPhan || ''}"
+TEXT 40,240,"ARIAL.TTF",0,12,12,"有效時間 Thời gian hiệu lực: ${hieuLuc || ''}"
+TEXT 40,340,"ARIAL.TTF",0,10,10,"Ngày in: ${formattedDate}"
+QRCODE 450,40,H,5,A,0,"${qrData}"
 PRINT 1,1
 `;
+    }
+    // --- TEMPLATE 2: TEM HÌNH THỂ (Mẫu thứ 2 của bạn) ---
+    else if (props.templateType === 'model') {
+        const { hinhThe, hieuLucTu, hieuLucDen } = props.printData;
+        const qrData = `${hinhThe}|${hieuLucTu}|${hieuLucDen}`;
+
+        tspl = `
+SIZE 80 mm, 50 mm
+GAP 0 mm, 0 mm
+DIRECTION 1
+CODEPAGE UTF-8
+CLS
+BOX 16,16,624,384,4
+TEXT 40,50,"ARIAL.TTF",0,14,14,"型體名稱 Hình thể: ${hinhThe || ''}"
+TEXT 40,120,"ARIAL.TTF",0,14,14,"效期開始 Hiệu lực từ: ${hieuLucTu || ''}"
+TEXT 40,190,"ARIAL.TTF",0,14,14,"效期結束 Hiệu lực đến: ${hieuLucDen || ''}"
+QRCODE 450,50,H,6,A,0,"${qrData}"
+PRINT 1,1
+`;
+    }
+
+    // Gửi lệnh in
+    if (!tspl) {
+        addLog("Lỗi: Không tìm thấy mẫu tem phù hợp!");
+        isPrinting.value = false;
+        return;
+    }
 
     const dataArray = new TextEncoder().encode(tspl);
     bt.write(dataArray.buffer, () => {
-        addLog(`Đã in: ${props.weight} kg`);
+        addLog(`Đã in thành công mẫu: ${props.templateType}`);
         isPrinting.value = false;
     }, (err: any) => {
         addLog("Lỗi in: " + JSON.stringify(err));

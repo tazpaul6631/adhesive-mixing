@@ -3,7 +3,9 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
+          <ion-button @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+          </ion-button>
         </ion-buttons>
         <ion-title>List Mix Glue Management</ion-title>
       </ion-toolbar>
@@ -26,40 +28,39 @@
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <!-- Table được gắn tổng số record (totalRecords) từ API -->
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="700px" stripedRows class="modern-table" tableStyle="min-width: 70rem"
+              scrollHeight="700px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
               @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]">
 
-              <Column field="workOrderMasterName" header="Đơn điều công" style="min-width: 180px; height: 60px">
+              <Column field="workOrderMasterName" header="Đơn điều công" style="width: 20%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.workOrderMasterName }}</span>
+                  <span v-else class="text-wrap">{{ data.workOrderMasterName }}</span>
                 </template>
               </Column>
 
-              <Column field="chemicalMasterName" header="Keo" style="min-width: 100px; height: 60px">
+              <Column field="chemicalMasterName" header="Keo" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
-                  <span v-else>{{ data.chemicalMasterName }}</span>
+                  <span v-else class="text-wrap">{{ data.chemicalMasterName }}</span>
                 </template>
               </Column>
 
-              <Column field="workOrderWeight" header="Tổng trọng lượng (kg)" style="min-width: 100px; height: 60px">
+              <Column field="workOrderWeight" header="Tổng trọng lượng (kg)" style="width: 30%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.workOrderWeight }}</span>
                 </template>
               </Column>
 
-              <Column field="createrId" header="Người tạo" style="min-width: 150px; height: 60px">
+              <Column field="createrId" header="Người tạo" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
                   <span v-else>{{ data.createrId }}</span>
                 </template>
               </Column>
 
-              <Column field="createDate" header="Ngày tạo" style="min-width: 120px; height: 60px">
+              <Column field="createDate" header="Ngày tạo" style="width: 20%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <span v-else>{{ format.formatDate(data.createDate) }}</span>
@@ -78,7 +79,7 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
 } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
@@ -181,10 +182,17 @@ const onPageLine = (event: any) => {
   fetchWorkOrders(currentPage.value, rowsPerPage.value);
 };
 
+const goBack = () => router.back();
+
 onMounted(() => {
   // Khi load trang lần đầu, gọi API ở page 1
   fetchWorkOrders(currentPage.value, rowsPerPage.value);
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.text-wrap {
+  word-break: break-word;
+  white-space: normal;
+}
+</style>
