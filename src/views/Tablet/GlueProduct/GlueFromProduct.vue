@@ -3,7 +3,9 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
+          <ion-button @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+          </ion-button>
         </ion-buttons>
         <ion-title>Glue from Product</ion-title>
       </ion-toolbar>
@@ -77,13 +79,15 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton,
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
   IonTitle
 } from '@ionic/vue';
 import { ref } from 'vue';
 import BackToTop from '@/components/BackToTop.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const headerInfo = ref({
   orderNo: 'Chọn keo thu về',
   glue: 'Keo bôi đế',
@@ -107,6 +111,8 @@ const orderOptions = ref([
   { label: 'C2R26219', value: 'C2R26219' }
 
 ]);
+
+const goBack = () => router.back();
 
 // BackToTop logic
 const contentRef = ref<any>(null);

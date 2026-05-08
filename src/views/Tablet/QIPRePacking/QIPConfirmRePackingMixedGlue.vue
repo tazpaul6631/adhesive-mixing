@@ -3,7 +3,9 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
+          <ion-button @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+          </ion-button>
         </ion-buttons>
         <ion-title>QIP Confirm Re-Packing Mixed Glue</ion-title>
       </ion-toolbar>
@@ -11,11 +13,9 @@
 
     <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
       <div class="main-container max-w-full mx-auto">
-        <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div class="flex flex-wrap align-items-center justify-content-between surface-border">
-            <user-avatar />
-            <ConnectBluetooth />
-          </div>
+        <div class="flex flex-wrap align-items-center justify-content-between surface-border">
+          <user-avatar />
+          <ConnectBluetooth templateType="repacking" :printData="selectedItem" />
         </div>
 
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
@@ -28,7 +28,8 @@
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" stripedRows
               class="custom-bordered-table" tableStyle="min-width: 70rem" :paginator="true" :rows="5"
-              :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px">
+              :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px" selectionMode="single"
+              v-model:selection="selectedItem" dataKey="id">
 
               <Column field="xuong" header="Xưởng" style="min-width: 100px">
                 <template #body="{ data }">
@@ -106,14 +107,14 @@
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton,
-  IonTitle
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
 } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
-
+import { useRouter } from 'vue-router';
+const router = useRouter();
 const isLoadingLine = ref(true);
 const totalRecords = 100;
-
+const selectedItem = ref<any>(null);
 const lineDetails = ref<any[]>([]);
 
 const generateData = (index: number) => {
@@ -171,6 +172,8 @@ const scrollToTop = () => {
   }
 };
 ///////////////////////
+
+const goBack = () => router.back(); 
 </script>
 
 <style scoped></style>
