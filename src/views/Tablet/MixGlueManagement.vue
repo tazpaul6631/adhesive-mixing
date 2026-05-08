@@ -27,15 +27,15 @@
           </div>
 
           <div class="grid formgrid p-fluid">
-            <div class="col-12 sm:col-6 lg:col-3">
+            <div class="col-12 sm:col-6 lg:col-4">
               <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
               <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
             </div>
-            <div class="col-12 sm:col-6 lg:col-3">
+            <div class="col-12 sm:col-6 lg:col-4">
               <label class="text-800 font-medium mb-1 block">Keo</label>
               <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
             </div>
-            <div class="col-12 sm:col-6 lg:col-3 sm:mt-2 lg:mt-0">
+            <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
               <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
               <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
             </div>
@@ -126,62 +126,67 @@
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="isLoadingComponent ? skeletons : componentDetailsFull" scrollable scrollHeight="700px"
-              stripedRows class="modern-table" tableStyle="min-width: 70rem" @row-click="onRowClick"
-              selectionMode="single">
+            <div ref="table2Ref" class="table-wrapper">
+              <DataTable :value="isLoadingComponent ? skeletons : componentDetailsFull" scrollable scrollHeight="700px"
+                stripedRows class="modern-table" tableStyle="min-width: 70rem" @row-click="onRowClick"
+                selectionMode="single">
 
-              <template #footer>
-                <div class="flex justify-start">
-                  <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="openNew"
-                    :disabled="isAddButtonDisabled" />
-                </div>
-              </template>
-
-              <Column header="#" style="width: 50px; text-align: center; height: 60px">
-                <template #body="{ index }">
-                  <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" class="mx-auto" />
-                  <span v-else>{{ index + 1 }}</span>
+                <template #footer>
+                  <div class="flex justify-start">
+                    <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="openNew"
+                      :disabled="false" />
+                  </div>
                 </template>
-              </Column>
 
-              <Column field="materialName" header="Tên thành phần" class="font-medium"
-                style="min-width: 180px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="80%" height="1rem" />
-                  <span v-else>{{ data.materialName }}</span>
-                </template>
-              </Column>
+                <Column header="#" style="width: 50px; text-align: center; height: 60px">
+                  <template #body="{ index }">
+                    <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" class="mx-auto" />
+                    <span v-else>{{ index + 1 }}</span>
+                  </template>
+                </Column>
 
-              <Column header="TL Yêu cầu (Kg)" style="min-width: 150px; height: 60px">
-                <template #body="{ data, index }">
-                  <Skeleton v-if="isLoadingComponent" width="50%" height="1rem" />
-                  <span v-else>{{ index === 0 ? headerInfo.totalWeight : data.requiredWeight }}</span>
-                </template>
-              </Column>
+                <Column field="materialName" header="Tên thành phần" class="font-medium"
+                  style="min-width: 180px; height: 60px">
+                  <template #body="{ data }">
+                    <Skeleton v-if="isLoadingComponent" width="80%" height="1rem" />
+                    <span v-else>{{ data.materialName }}</span>
+                  </template>
+                </Column>
 
-              <Column header="TL Thực tế (Kg)" style="min-width: 150px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
-                  <span v-else>{{ data.actualWeight || 0 }}</span>
-                </template>
-              </Column>
+                <Column header="TL Yêu cầu (Kg)" style="min-width: 150px; height: 60px">
+                  <template #body="{ data, index }">
+                    <Skeleton v-if="isLoadingComponent" width="50%" height="1rem" />
+                    <span v-else>{{ index === 0 ? headerInfo.totalWeight : data.requiredWeight }}</span>
+                  </template>
+                </Column>
 
-              <Column header="Người thao tác" style="min-width: 150px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
-                  <span v-else>{{ data.operator }}</span>
-                </template>
-              </Column>
+                <Column header="TL Thực tế (Kg)" style="min-width: 150px; height: 60px">
+                  <template #body="{ data }">
+                    <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
+                    <span v-else
+                      :class="data.actualWeight ? 'bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm' : ''">
+                      {{ data.actualWeight || '' }}
+                    </span>
+                  </template>
+                </Column>
 
-              <Column header="Thời gian cân" style="min-width: 180px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="90%" height="1rem" />
-                  <span v-else class="text-500">{{ data.weighingTime }}</span>
-                </template>
-              </Column>
+                <Column header="Người thao tác" style="min-width: 150px; height: 60px">
+                  <template #body="{ data }">
+                    <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
+                    <span v-else>{{ data.operator }}</span>
+                  </template>
+                </Column>
 
-              <template #paginatorend></template>
-            </DataTable>
+                <Column header="Thời gian cân" style="min-width: 180px; height: 60px">
+                  <template #body="{ data }">
+                    <Skeleton v-if="isLoadingComponent" width="90%" height="1rem" />
+                    <span v-else class="text-500">{{ data.weighingTime }}</span>
+                  </template>
+                </Column>
+
+                <template #paginatorend></template>
+              </DataTable>
+            </div>
 
             <!-- MODAL THÊM THÀNH PHẦN -->
             <Dialog v-model:visible="productDialog" :style="{ width: '450px' }" header="Thêm thành phần" :modal="true"
@@ -189,17 +194,17 @@
               <!-- Dùng flex-column để các trường xếp dọc đều nhau -->
               <div class="flex flex-column gap-4 pt-3">
 
-                <!-- Trường: Tên thành phần -->
                 <div class="flex flex-column gap-2">
                   <label for="name" class="font-bold text-900">Tên thành phần</label>
-                  <InputText id="name" v-model.trim="product.name" required="true" autofocus
-                    :invalid="submitted && !product.name" class="w-full" />
+                  <Select id="name" v-model="product.name" :options="materialsList" optionLabel="materialName"
+                    optionValue="materialName" placeholder="Chọn thành phần" class="w-full"
+                    :invalid="submitted && !product.name" :loading="isLoadingMaterials" @show="fetchMaterials"
+                    showClear />
                   <small v-if="submitted && !product.name" class="text-red-500">
                     Tên thành phần là bắt buộc.
                   </small>
                 </div>
 
-                <!-- Trường: Phần trăm (%) -->
                 <div class="flex flex-column gap-2">
                   <label for="percentage" class="font-bold text-900">Phần trăm (%)</label>
                   <InputNumber id="percentage" v-model="product.percentage" suffix=" %"
@@ -227,10 +232,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, nextTick } from 'vue';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonBackButton,
-  IonTitle
+  IonTitle, onIonViewDidEnter
 } from '@ionic/vue';
 import { useRoute } from 'vue-router';
 import BackToTop from '@/components/BackToTop.vue';
@@ -238,8 +243,29 @@ import UserAvatar from '@/components/UserAvatar.vue';
 import ElectronicScale from '@/components/ElectronicScale.vue';
 import workOrder from '@/api/workOrder';
 import format from '@/mixins/format';
+import { useAuthStore } from '@/store/auth';
+import materialApi from '@/api/material';
+import { useToast } from 'primevue/usetoast';
 
+const toast = useToast();
+const authStore = useAuthStore();
 const route = useRoute();
+const materialsList = ref<any[]>([]);
+const isLoadingMaterials = ref(false);
+const table2Ref = ref<HTMLDivElement | null>(null);
+
+onIonViewDidEnter(async () => {
+  // nextTick đảm bảo rằng DOM đã được render hoàn toàn trước khi thao tác
+  await nextTick();
+
+  if (table2Ref.value) {
+    // 3. Cuộn mượt mà đến bảng 2
+    table2Ref.value.scrollIntoView({
+      behavior: 'smooth', // Cuộn mượt (không bị giật cục)
+      block: 'start'      // Cuộn sao cho mép trên của bảng nằm ở mép trên màn hình
+    });
+  }
+});
 
 // --- INTERFACES ---
 interface LineDetail {
@@ -299,14 +325,6 @@ const onRowClick = (event: { data: ComponentDetail }) => {
   }
 };
 
-// Nút thêm bị vô hiệu hóa nếu mảng rỗng, hoặc dòng cuối cùng chưa có số kg thực tế
-const isAddButtonDisabled = computed(() => {
-  if (componentDetailsFull.value.length === 0) return true;
-
-  const lastItem = componentDetailsFull.value[componentDetailsFull.value.length - 1];
-  return !lastItem.actualWeight || lastItem.actualWeight <= 0;
-});
-
 const handleWeightChange = (newWeight: string) => {
   console.log("Trọng lượng cân đang là:", newWeight);
   mixingProcess.value.weight = newWeight;
@@ -321,12 +339,32 @@ const handleConfirmWeight = (actualWeight: number) => {
     );
 
     if (index !== -1) {
-      // Cập nhật TL Thực tế (Kg)
+      // ========================================================
+      // 1. CHỈ ÁP DỤNG CHO DÒNG ĐANG ĐƯỢC CHỌN ĐỂ CÂN (DÒNG HIỆN TẠI)
+      // Cập nhật TL Thực tế, Người thao tác và Thời gian cân
+      // ========================================================
       componentDetailsFull.value[index].actualWeight = actualWeight;
+      componentDetailsFull.value[index].operator = authStore.user?.employeeName || 'Chưa xác định';
+      componentDetailsFull.value[index].weighingTime = format.formatDate(new Date().toISOString());
 
-      // (Tùy chọn) Có thể cập nhật thêm tên người thao tác và thời gian tại đây
-      // componentDetailsFull.value[index].operator = 'Nguyễn Văn A'; 
-      // componentDetailsFull.value[index].weighingTime = format.formatDate(new Date().toISOString());
+      // 2. CHỈ TÍNH TOÁN LẠI "TL YÊU CẦU" CHO CÁC DÒNG CÒN LẠI
+      const baseItem = componentDetailsFull.value[0];
+      const baseActualWeight = Number(baseItem.actualWeight || 0);
+      const baseMixingRatio = Number(baseItem.mixingRatio || 100);
+
+      // Nếu dòng 1 đã có TL Thực tế (đã cân dòng 1)
+      if (baseActualWeight > 0) {
+        componentDetailsFull.value.forEach((item, i) => {
+          // Bỏ qua dòng đầu tiên
+          if (i !== 0) {
+            const currentRatio = Number(item.mixingRatio || 0);
+            const newRequiredWeight = (currentRatio * baseActualWeight) / baseMixingRatio;
+
+            // CHỈ cập nhật con số Yêu cầu, giữ nguyên trạng thái trống của Người thao tác/Thời gian
+            item.requiredWeight = Number(newRequiredWeight.toFixed(3)) || '';
+          }
+        });
+      }
 
       // Cập nhật lại activeComponent để đồng bộ
       activeComponent.value = { ...componentDetailsFull.value[index] };
@@ -363,8 +401,8 @@ const fetchWorkOrderDetail = async (id: string | number) => {
       // Mapping data chemicals kèm các default props nếu không có
       componentDetailsFull.value = (data.chemicals || []).map((item: any) => ({
         ...item,
-        requiredWeight: item.requiredWeight || item.netWeight || 0, // Fallback vào netWeight theo JSON của bạn nếu có
-        actualWeight: item.actualWeight || 0,
+        requiredWeight: item.requiredWeight || item.netWeight || '',
+        actualWeight: item.actualWeight || '',
         lowerTolerance: item.lowerTolerance || 0,
         upperTolerance: item.upperTolerance || 0,
         mixingRatio: item.mixingRatio || 100
@@ -417,7 +455,7 @@ const saveProduct = () => {
 
     componentDetailsFull.value.push({
       materialName: product.value.name,
-      requiredWeight: Number(calculatedRequiredWeight.toFixed(3)),
+      requiredWeight: Number(calculatedRequiredWeight.toFixed(3)) || '',
       actualWeight: 0,
       operator: '',
       weighingTime: '',
@@ -429,6 +467,26 @@ const saveProduct = () => {
     productDialog.value = false;
     product.value = {};
     submitted.value = false;
+  }
+};
+
+const fetchMaterials = async () => {
+  isLoadingMaterials.value = true;
+  try {
+    const payload = {
+      factoryId: authStore.user?.factoryId || ''
+    };
+
+    const response = await materialApi.postMaterial(payload);
+
+    if (response.data && response.data.success) {
+      materialsList.value = response.data.data || [];
+    }
+  } catch (error) {
+    console.error("Lỗi khi tải danh sách thành phần:", error);
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể tải danh sách thành phần', life: 3000 });
+  } finally {
+    isLoadingMaterials.value = false;
   }
 };
 

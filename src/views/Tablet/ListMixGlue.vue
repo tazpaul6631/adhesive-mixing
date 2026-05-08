@@ -148,7 +148,6 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
 
   try {
     const payload = {
-      // Lấy factoryId từ store, nếu null thì gán mặc định để tránh lỗi API
       factoryId: authStore.user?.factoryId,
       isMixGlue: true,
       mixGlueComplete: false,

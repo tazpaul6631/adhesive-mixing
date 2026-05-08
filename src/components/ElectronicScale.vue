@@ -1,5 +1,5 @@
 <template>
-  <div class="col-12 sm:col-7 lg:col-4 lg:mb-0">
+  <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
     <label class="text-800 font-medium mb-2 block">
       Trọng lượng cân thực tế
       <span v-if="isConnected" class="text-green-500 font-normal text-sm ml-2">
@@ -12,8 +12,11 @@
 
     <div class="flex align-items-center">
       <div class="p-inputgroup">
-        <InputText v-model="mixingProcess.weight" readonly class="text-right font-bold text-primary bg-white"
-          :class="{ 'border-green-500': isStable && isConnected }" />
+        <InputText v-model="mixingProcess.weight" readonly class="text-right font-bold bg-white" :class="{
+          'border-green-500': isStable && isConnected,
+          'text-red-500': isExceedingLimit,
+          'text-primary': !isExceedingLimit
+        }" />
         <span class="p-inputgroup-addon font-bold px-1">Kg</span>
       </div>
       <div class="ml-1 flex flex-column justify-content-center min-w-max border-left-1 border-300 pl-3">
@@ -23,13 +26,13 @@
     </div>
   </div>
 
-  <div class="col-12 sm:col-12 lg:col-4 sm:mt-3 lg:mt-0 flex justify-content-end">
+  <div class="col-12 sm:col-12 lg:col-2 sm:mt-3 lg:mt-0 flex justify-content-end">
     <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { registerPlugin, WebPlugin, Capacitor } from '@capacitor/core';
 import { useToast } from 'primevue/usetoast';
 
@@ -85,7 +88,6 @@ watch(
   { immediate: true } // immediate: true giúp chạy ngay lần đầu tiên component được render
 );
 
-
 // --- PLUGIN CONFIG ---
 const SerialScale = registerPlugin<any>('SerialScale', {
   web: () => new SerialScaleWeb(),
@@ -118,6 +120,25 @@ class SerialScaleWeb extends WebPlugin {
     if (this.port) await this.port.close();
   }
 }
+
+const isExceedingLimit = computed(() => {
+  const currentWeight = parseFloat(mixingProcess.value.weight || '0');
+  const target = parseFloat(props.targetWeight.toString() || '0');
+
+  // Chuyển đổi dung sai từ gram sang Kg để so sánh
+  const lowerKg = parseFloat(props.lowerTolerance.toString() || '0') / 1000;
+  const upperKg = parseFloat(props.upperTolerance.toString() || '0') / 1000;
+
+  // Tính khoảng cho phép
+  const minAcceptable = target - lowerKg;
+  const maxAcceptable = target + upperKg;
+
+  // Nếu chưa có TL yêu cầu thì không check
+  if (target <= 0) return false;
+
+  // Trả về true nếu cân thực tế nằm ngoài khoảng cho phép
+  return currentWeight < minAcceptable || currentWeight > maxAcceptable;
+});
 
 // --- CORE LOGIC ---
 const setDisconnected = () => {

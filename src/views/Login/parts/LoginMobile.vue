@@ -31,9 +31,10 @@
               </div>
             </div>
 
-            <ion-button expand="block" class="login-btn scan-btn" @click="startScan">
-              <ion-icon slot="start" :icon="cameraOutline"></ion-icon>
-              MỞ CAMERA QUÉT MÃ
+            <ion-button expand="block" class="login-btn scan-btn" @click="startScan" :disabled="isLoading">
+              <ion-spinner v-if="isLoading" name="crescent" slot="start"></ion-spinner>
+              <ion-icon v-else slot="start" :icon="cameraOutline"></ion-icon>
+              {{ isLoading ? 'ĐANG XỬ LÝ...' : 'QUÉT MÃ' }}
             </ion-button>
           </div>
         </div>
@@ -48,7 +49,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonIcon, IonButton } from '@ionic/vue';
+import { IonIcon, IonButton, IonSpinner } from '@ionic/vue';
 import { qrCodeOutline, cameraOutline, checkmarkCircleOutline, closeCircleOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import employee from '@/api/employee';
@@ -62,8 +63,10 @@ const router = useRouter();
 const isNative = Capacitor.isNativePlatform();
 const errorLogin = ref(false);
 const errorMessage = ref('');
+const isLoading = ref(false);
 
 const startScan = async () => {
+  isLoading.value = true;
   errorLogin.value = false;
   code.value = '';
   errorMessage.value = '';
@@ -72,6 +75,7 @@ const startScan = async () => {
     const { camera } = await BarcodeScanner.requestPermissions();
     if (camera !== 'granted' && camera !== 'limited') {
       alert('Cần cấp quyền camera để quét thẻ!');
+      isLoading.value = false;
       return;
     }
 
@@ -88,6 +92,8 @@ const startScan = async () => {
   } catch (error) {
     console.error("Lỗi khi quét:", error);
     alert('Có lỗi xảy ra khi mở camera.');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -124,6 +130,7 @@ const processScannedData = async (scannedCode: string) => {
 </script>
 
 <style scoped>
+/* Giữ nguyên toàn bộ CSS của bạn */
 .mobile-login-wrapper {
   background: #f4f7f9;
   min-height: 100vh;

@@ -1,26 +1,43 @@
 /* For information on how to create your own theme, please refer to:
 http://ionicframework.com/docs/theming/ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- CẤU HÌNH FONT GLOBAL --- */
+:root {
+    /* Kích hoạt font cho Ionic */
+    --ion-font-family: 'Inter', sans-serif !important;
+
+    /* Kích hoạt font cho PrimeVue 4 (Dùng tiền tố --p-) */
+    --p-font-family: 'Inter', sans-serif !important;
+}
+
+/* Kế thừa xuống toàn bộ app, tuyệt đối KHÔNG dùng * */
+html,
+body {
+    font-family: var(--ion-font-family);
+}
+
+/* --- TÙY CHỈNH PRIMEVUE (Bỏ :deep vì đây là Global CSS) --- */
 /* Thu nhỏ ô chọn ngày cho khớp với InputText */
-:deep(.p-datepicker) {
+.p-datepicker {
     font-size: 0.8rem;
 }
 
-:deep(.p-datepicker-input) {
+.p-datepicker-input {
     padding: 5px 10px !important;
     font-size: 0.8rem;
 }
 
 /* Ép các ô filter sát nhau hơn nữa */
-:deep(.p-datatable-filter-row td) {
+.p-datatable-filter-row td {
     padding: 4px !important;
-    /* Thu hẹp tối đa khoảng cách */
 }
 
+/* --- TÙY CHỈNH IONIC --- */
 /* Ghi đè margin mặc định của list MD */
 ion-list {
     padding: 0 !important;
 }
-
 
 /* --- TỔNG THỂ --- */
 .header-container {
@@ -47,13 +64,31 @@ ion-list {
 }
 
 /* 2. TẮT VIỀN FOCUS (BOX-SHADOW) CỦA PRIMEVUE */
-:deep(.p-button:focus),
-:deep(.p-button:focus-visible),
-:deep(.p-menuitem-link:focus),
-:deep(.p-menuitem-link:focus-visible),
-:deep(.p-paginator-page:focus),
-:deep(.p-paginator-next:focus),
-:deep(.p-paginator-prev:focus) {
+.p-button:focus,
+.p-button:focus-visible,
+.p-menuitem-link:focus,
+.p-menuitem-link:focus-visible,
+.p-paginator-page:focus,
+.p-paginator-next:focus,
+.p-paginator-prev:focus {
     box-shadow: none !important;
     outline: none !important;
+}
+
+:root {
+    /* 1. Tăng font cho các Component của Ionic (Mặc định thường là 16px) */
+    --ion-font-size: 19px !important;
+}
+
+/* 2. Tăng gốc rễ của trang web để các component PrimeVue (dùng đơn vị rem) tự động phình to ra theo tỉ lệ chuẩn */
+html {
+    /* Mặc định trình duyệt là 16px. Bạn tăng lên 18px hoặc 20px tùy ý */
+    font-size: 19px !important;
+}
+
+/* Kế thừa xuống toàn bộ app */
+html,
+body {
+    font-family: var(--ion-font-family);
+    font-size: var(--ion-font-size);
 }
