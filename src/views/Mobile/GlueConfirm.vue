@@ -430,7 +430,7 @@ function closeCurrentToast() {
   ion-card-title {
     color: #081a36;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.5rem;
   }
 
   ion-card-content {
@@ -470,13 +470,13 @@ function closeCurrentToast() {
     color: #081a36;
     font-weight: 600;
     line-height: 1.35;
-    font-size: 0.875rem;
+    font-size: 1rem;
     word-break: break-all;
   }
 
   &__text--empty {
     color: #8a9099;
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
 
   &__icon {
@@ -584,14 +584,14 @@ function closeCurrentToast() {
   &__title {
     margin: 0 0 10px;
     color: #081a36;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 700;
   }
 
   &__message {
     margin: 0;
     color: #475569;
-    font-size: 0.95rem;
+    font-size: 1.5rem;
     line-height: 1.5;
     word-break: break-word;
 
