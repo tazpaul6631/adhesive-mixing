@@ -431,7 +431,7 @@ function closeCurrentToast() {
   ion-card-title {
     color: #081a36;
     font-weight: 700;
-    font-size: 1.25rem !important;
+    font-size: 18px !important;
   }
 
   ion-card-content {
@@ -471,18 +471,18 @@ function closeCurrentToast() {
     color: #081a36;
     font-weight: 600;
     line-height: 1.35;
-    font-size: 1rem !important;
+    font-size: 16px !important;
     word-break: break-all;
   }
 
   &__text--empty {
     color: #8a9099;
-    font-size: 0.875rem !important;
+    font-size: 14px !important;
   }
 
   &__icon {
     flex-shrink: 0;
-    font-size: 1.25rem;
+    font-size: 18px !important;
   }
 }
 
@@ -492,7 +492,7 @@ function closeCurrentToast() {
   border-radius: 16px;
   font-weight: 500;
   text-transform: none;
-  font-size: 0.875rem !important;
+  font-size: 14px !important;
   min-height: 50px;
 
   ion-icon {
@@ -514,11 +514,11 @@ function closeCurrentToast() {
   gap: 14px;
   padding: 18px 20px;
   border-radius: 16px;
-  font-size: 0.875rem !important;
+  font-size: 14px !important;
 
   &__icon {
     flex-shrink: 0;
-    font-size: 1.25rem;
+    font-size: 18px !important;
   }
 
   &__content {
@@ -585,14 +585,14 @@ function closeCurrentToast() {
   &__title {
     margin: 0 0 10px;
     color: #081a36;
-    font-size: 1rem !important;
+    font-size: 16px !important;
     font-weight: 700;
   }
 
   &__message {
     margin: 0;
     color: #475569;
-    font-size: 0.875rem !important;
+    font-size: 14px !important;
     line-height: 1.5;
     word-break: break-word;
 
