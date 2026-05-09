@@ -4,7 +4,7 @@ export default {
     postWorkOrderList(data: any) {
         return request.post(`api/mobile/workorder/getlist`, data)
     },
-    getWorkOrder(id: any) {
-        return request.get(`api/mobile/workorder/getone/${id}`)
+    getWorkOrder(id: any, stepId: any) {
+        return request.get(`api/mobile/workorder/getone/${id}/${stepId}`)
     }
 };

@@ -19,14 +19,14 @@
             'text-primary': !isExceedingLimit
           }" />
         <span class="p-inputgroup-addon font-bold px-1">Kg</span>
-        <div class="ml-1 min-w-max border-left-1 border-300 pl-3">
-          <div class="text-red-500 font-bold text-xs">-{{ lowerTolerance || 0 }} g</div>
-          <div class="text-green-600 font-bold text-xs">+{{ upperTolerance || 0 }} g</div>
+        <div v-if="lowerTolerance !== '' && upperTolerance !== ''" class="ml-1 min-w-max border-left-1 border-300 pl-3">
+          <div class="text-red-500 font-bold text-xs">-{{ lowerTolerance }} g</div>
+          <div class="text-green-600 font-bold text-xs">+{{ upperTolerance }} g</div>
         </div>
       </div>
 
-
-      <Button label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
+      <Button :disabled="!isConnected || !isStable || isExceedingLimit" label="Xác nhận" icon="pi pi-check" size="large"
+        severity="success" @click="confirmWeight" />
     </div>
   </div>
 </template>
@@ -46,11 +46,11 @@ const props = defineProps({
   },
   lowerTolerance: {
     type: [Number, String],
-    default: 5
+    default: ''
   },
   upperTolerance: {
     type: [Number, String],
-    default: 5
+    default: ''
   }
 });
 
@@ -59,7 +59,7 @@ const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight'
 
 // --- STATE ---
 const mixingProcess = ref({
-  weight: '0.000'
+  weight: ''
 });
 const isConnected = ref(false);
 const isStable = ref(false);
@@ -123,21 +123,26 @@ class SerialScaleWeb extends WebPlugin {
 
 const isExceedingLimit = computed(() => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
-  const target = parseFloat(props.targetWeight.toString() || '0');
+  const target = parseFloat(props.targetWeight?.toString() || '0');
 
-  // Chuyển đổi dung sai từ gram sang Kg để so sánh
-  const lowerKg = parseFloat(props.lowerTolerance.toString() || '0') / 1000;
-  const upperKg = parseFloat(props.upperTolerance.toString() || '0') / 1000;
-
-  // Tính khoảng cho phép
-  const minAcceptable = target - lowerKg;
-  const maxAcceptable = target + upperKg;
-
-  // Nếu chưa có TL yêu cầu thì không check
+  // Nếu không có target thì không check
   if (target <= 0) return false;
 
-  // Trả về true nếu cân thực tế nằm ngoài khoảng cho phép
-  return currentWeight < minAcceptable || currentWeight > maxAcceptable;
+  const current = Number(currentWeight.toFixed(3));
+
+  // Điều kiện 1: Cấm tuyệt đối cân hụt (thấp hơn target)
+  if (current < target) return true;
+
+  // Điều kiện 2: Nếu CÓ cấu hình upperTolerance thì mới check giới hạn trên
+  if (props.upperTolerance !== '' && props.upperTolerance !== null && props.upperTolerance !== undefined) {
+    const upperKg = (parseFloat(props.upperTolerance.toString()) || 0) / 1000;
+    const maxAcceptable = Number((target + upperKg).toFixed(3));
+
+    if (current > maxAcceptable) return true;
+  }
+
+  // Nếu qua hết các bài test thì là hợp lệ
+  return false;
 });
 
 // --- CORE LOGIC ---
@@ -177,7 +182,9 @@ const connectToScale = async () => {
       if (dataBuffer.includes('\n') || dataBuffer.includes('\r')) {
         const line = dataBuffer.trim();
 
-        const newStable = line.startsWith("ST");
+        const upperLine = line.toUpperCase();
+        const newStable = upperLine.includes("ST") || !upperLine.includes("US");
+
         if (isStable.value !== newStable) isStable.value = newStable;
 
         const matches = line.match(/[-+]?\d*\.?\d+/);
@@ -223,37 +230,36 @@ const startAutoConnect = () => {
 // LOGIC KIỂM TRA & XÁC NHẬN TRỌNG LƯỢNG
 // ==========================================
 const confirmWeight = () => {
-  // Lấy số liệu hiện tại
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
-  const target = parseFloat(props.targetWeight.toString() || '0');
+  const target = parseFloat(props.targetWeight?.toString() || '0');
+  const current = Number(currentWeight.toFixed(3));
 
-  // Chuyển đổi dung sai từ gram sang Kg để so sánh
-  const lowerKg = parseFloat(props.lowerTolerance.toString() || '0') / 1000;
-  const upperKg = parseFloat(props.upperTolerance.toString() || '0') / 1000;
-
-  // Tính khoảng cho phép
-  const minAcceptable = target - lowerKg;
-  const maxAcceptable = target + upperKg;
-
-  // Kiểm tra điều kiện
-  if (currentWeight >= minAcceptable && currentWeight <= maxAcceptable) {
-    // Nếu nằm trong khoảng -> Hợp lệ
-    emit('confirm-weight', currentWeight);
-    toast.add({
-      severity: 'success',
-      summary: 'Thành công',
-      detail: 'Trọng lượng đạt yêu cầu',
-      life: 3000
-    });
-  } else {
-    // Nếu ngoài khoảng -> Báo lỗi
-    toast.add({
-      severity: 'error',
-      summary: 'Không đạt yêu cầu',
-      detail: `Trọng lượng thực tế phải nằm trong khoảng từ ${minAcceptable.toFixed(3)} Kg đến ${maxAcceptable.toFixed(3)} Kg.`,
-      life: 5000
-    });
+  if (target <= 0) {
+    emit('confirm-weight', current.toFixed(3));
+    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã xác nhận trọng lượng', life: 3000 });
+    return;
   }
+
+  // Nếu cân hụt -> Báo lỗi ngay lập tức
+  if (current < target) {
+    toast.add({ severity: 'error', summary: 'Không đạt yêu cầu', detail: `Trọng lượng không được thấp hơn ${target.toFixed(3)} Kg.`, life: 5000 });
+    return;
+  }
+
+  // Nếu có upperTolerance -> Kiểm tra xem có bị vượt mức cho phép không
+  if (props.upperTolerance !== '' && props.upperTolerance !== null && props.upperTolerance !== undefined) {
+    const upperKg = (parseFloat(props.upperTolerance.toString()) || 0) / 1000;
+    const maxAcceptable = Number((target + upperKg).toFixed(3));
+
+    if (current > maxAcceptable) {
+      toast.add({ severity: 'error', summary: 'Vượt giới hạn', detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} Kg.`, life: 5000 });
+      return;
+    }
+  }
+
+  // Nếu lớn hơn hoặc bằng target (và nằm trong mức dư cho phép nếu có)
+  emit('confirm-weight', current.toFixed(3));
+  toast.add({ severity: 'success', summary: 'Thành công', detail: 'Trọng lượng đạt yêu cầu', life: 3000 });
 };
 
 watch(

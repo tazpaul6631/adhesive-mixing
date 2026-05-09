@@ -322,7 +322,7 @@ const generateComponentData = (index: number) => {
     xuong: `BU${index % 3 + 1}`,
     hinhThe: Math.random().toString(36).substring(2, 7).toUpperCase(),
     keo: 'Keo ' + Math.random().toFixed(5).substring(2, 7).toUpperCase(),
-    trongLuongThucTe: isKeo7911 ? '30.1' : '',
+    trongLuongThucTe: isKeo7911 ? '1.6' : '',
     nguoiThaoTac: isKeo7911 ? 'R79xxx' : '',
     thoiGianHoanThanh: isKeo7911 ? '13:15 16/04/2026' : '',
     chiet: isKeo7911 ? true : false

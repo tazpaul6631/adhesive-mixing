@@ -88,6 +88,10 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!authStore.token;
   const isApp = Capacitor.isNativePlatform();
 
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+
   // 1. Nếu trang yêu cầu đăng nhập NHƯNG chưa đăng nhập -> Đẩy về Login
   if (to.meta.requiresAuth && !isAuthenticated) {
     return next('/login');
