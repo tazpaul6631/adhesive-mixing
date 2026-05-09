@@ -147,6 +147,7 @@
         :is-open="showSuccessToast"
         :message="toastMessage"
         duration="1800"
+        position="top"
         color="success"
         @didDismiss="showSuccessToast = false"
       ></ion-toast>
@@ -430,7 +431,7 @@ function closeCurrentToast() {
   ion-card-title {
     color: #081a36;
     font-weight: 700;
-    font-size: 1.5rem !important;
+    font-size: 1.25rem !important;
   }
 
   ion-card-content {
@@ -476,12 +477,12 @@ function closeCurrentToast() {
 
   &__text--empty {
     color: #8a9099;
-    font-size: 1rem !important;
+    font-size: 0.875rem !important;
   }
 
   &__icon {
     flex-shrink: 0;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 }
 
@@ -491,7 +492,7 @@ function closeCurrentToast() {
   border-radius: 16px;
   font-weight: 500;
   text-transform: none;
-  font-size: 1rem !important;
+  font-size: 0.875rem !important;
   min-height: 50px;
 
   ion-icon {
@@ -513,7 +514,7 @@ function closeCurrentToast() {
   gap: 14px;
   padding: 18px 20px;
   border-radius: 16px;
-  font-size: 0.925rem !important;
+  font-size: 0.875rem !important;
 
   &__icon {
     flex-shrink: 0;
@@ -584,14 +585,14 @@ function closeCurrentToast() {
   &__title {
     margin: 0 0 10px;
     color: #081a36;
-    font-size: 1.25rem !important;
+    font-size: 1rem !important;
     font-weight: 700;
   }
 
   &__message {
     margin: 0;
     color: #475569;
-    font-size: 1.5rem !important;
+    font-size: 0.875rem !important;
     line-height: 1.5;
     word-break: break-word;
 
