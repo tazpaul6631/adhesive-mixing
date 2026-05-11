@@ -5,19 +5,21 @@
     <div class="flex flex-column gap-4 pt-3">
       <div class="flex flex-column gap-2">
         <label for="name" class="font-bold text-900">Tên thành phần</label>
-        <Select id="name" v-model="product.name" :options="materialsList" optionLabel="materialName"
-          optionValue="materialName" placeholder="Chọn thành phần" class="w-full" :invalid="submitted && !product.name"
+
+        <Select id="name" v-model="selectedMaterial" :options="materialsList" optionLabel="materialName"
+          placeholder="Chọn thành phần" class="w-full" :invalid="submitted && !selectedMaterial"
           :loading="isLoadingMaterials" @show="$emit('fetch-materials')" showClear />
-        <small v-if="submitted && !product.name" class="text-red-500">
+
+        <small v-if="submitted && !selectedMaterial" class="text-red-500">
           Tên thành phần là bắt buộc.
         </small>
       </div>
 
       <div class="flex flex-column gap-2">
         <label for="percentage" class="font-bold text-900">Phần trăm (%)</label>
-        <InputNumber id="percentage" v-model="product.percentage" suffix=" %"
-          :invalid="submitted && product.percentage === null" class="w-full" />
-        <small v-if="submitted && product.percentage === null" class="text-red-500">
+        <InputNumber id="percentage" v-model="percentage" suffix=" %" :invalid="submitted && percentage === null"
+          class="w-full" />
+        <small v-if="submitted && percentage === null" class="text-red-500">
           Vui lòng nhập phần trăm.
         </small>
       </div>
@@ -41,13 +43,14 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:visible', 'save', 'fetch-materials']);
 
-const product = ref<{ name?: string; percentage?: number | null }>({ name: '', percentage: null });
+const selectedMaterial = ref<any>(null);
+const percentage = ref<number | null>(null);
 const submitted = ref(false);
 
-// Reset form mỗi khi mở lại modal
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    product.value = { name: '', percentage: null };
+    selectedMaterial.value = null;
+    percentage.value = null;
     submitted.value = false;
   }
 });
@@ -58,8 +61,14 @@ const hideDialog = () => {
 
 const saveForm = () => {
   submitted.value = true;
-  if (product.value.name?.trim() && product.value.percentage != null) {
-    emit('save', { name: product.value.name, percentage: product.value.percentage });
+
+  if (selectedMaterial.value && percentage.value != null) {
+    emit('save', {
+      name: selectedMaterial.value.materialName,
+      percentage: percentage.value,
+      materialCode: selectedMaterial.value.materialCode,
+      weightUnit: selectedMaterial.value.weightUnit || 'Kg'
+    });
     hideDialog();
   }
 };

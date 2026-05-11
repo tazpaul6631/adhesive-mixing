@@ -39,31 +39,32 @@
                 </template>
               </Column>
 
-              <Column field="chemicalMasterName" header="Keo" style="width: 15%; height: 60px">
+              <Column field="chemicalMasterName" header="Keo" style="width: 20%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else class="text-wrap">{{ data.chemicalMasterName }}</span>
                 </template>
               </Column>
 
-              <Column field="workOrderWeight" header="Tổng trọng lượng (kg)" style="width: 30%; height: 60px">
+              <Column field="workOrderWeight" header="Tổng trọng lượng (kg)" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.workOrderWeight }}</span>
                 </template>
               </Column>
 
-              <Column field="createrId" header="Người tạo" style="width: 15%; height: 60px">
+              <Column field="createrId" header="Người tạo" style="width: 20%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
                   <span v-else>{{ data.createrId }}</span>
                 </template>
               </Column>
 
-              <Column field="createDate" header="Ngày tạo" style="width: 20%; height: 60px">
+              <Column field="createDate" header="Ngày tạo" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <span v-else>{{ format.formatDate(data.createDate) }}</span>
+                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.createDate ?
+                    format.formatDate(data.createDate) : '' }}</span>
                 </template>
               </Column>
             </DataTable>
@@ -88,49 +89,69 @@ import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
 import { useRouter } from 'vue-router';
+import { p } from 'vue-router/dist/router-CWoNjPRp.mjs';
 
 const router = useRouter();
-
-// --- Khởi tạo Store ---
 const authStore = useAuthStore();
 
-// --- BackToTop logic ---
 const contentRef = ref<any>(null);
 const showScrollButton = ref(false);
 
 const handleScroll = (event: CustomEvent) => {
-  if (event.detail.scrollTop > 100) {
-    showScrollButton.value = true;
-  } else {
-    showScrollButton.value = false;
-  }
+  showScrollButton.value = event.detail.scrollTop > 100;
 };
 
 const scrollToTop = () => {
   contentRef.value?.$el?.scrollToTop(500);
 };
 
-// --- Khai báo Interface Data API ---
-interface LineDetail {
-  workOrderMasterName?: string;
-  chemicalMasterName?: string;
-  createrId?: string;
-  createDate?: string;
-  workOrderWeight?: number;
-  [key: string]: any; // Chứa thêm các field khác từ API (vd: factoryId, workOrderMasterId...)
+// --- KHAI BÁO INTERFACE DỰA TRÊN CẤU TRÚC JSON CỦA BACKEND ---
+export interface WorkOrderMaster {
+  orderDetails: any[];
+  mixChemicals: any[];
+  noMixChemicals: any[];
+  factoryId: string;
+  workOrderMasterId: string;
+  workOrderMasterName: string;
+  recordStatus: string;
+  createrId: string;
+  createDate: string;
+  updaterId: string;
+  updateDate: string;
+  chemicalMasterName: string;
+  hourlyValidity: string;
+  workOrderWeight: string;
+  isMixGlue: boolean;
+  isNoMixGlue: boolean;
+  mixGlueComplete: boolean;
+  qipConfirm: boolean;
 }
 
-// --- Logic Call API & Phân Trang ---
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: string;
+  page: string;
+  pageSize: string;
+  totalPage: string;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ApiResponse<T> {
+  data: PagedResult<T>;
+  success: boolean;
+  message: string;
+}
+
 const isLoadingLine = ref(true);
-const lineDetails = ref<LineDetail[]>([]);
+const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(20);
 
-const onRowClick = (event: { data: LineDetail }) => {
+const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
   if (workOrderMasterId) {
-    // Chỉ chuyển trang và đẩy ID lên URL
     router.push({
       path: '/mix-glue-management',
       query: { workOrderMasterId: workOrderMasterId }
@@ -140,52 +161,48 @@ const onRowClick = (event: { data: LineDetail }) => {
   }
 };
 
-// Hàm gọi API
 const fetchWorkOrders = async (page: number, pageSize: number) => {
   isLoadingLine.value = true;
-
-  // Dựng placeholder Skeleton cho mảng khi đang load
   lineDetails.value = Array.from({ length: pageSize }).map(() => ({}));
 
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
-      isMixGlue: true,
       mixGlueComplete: false,
+      qipConfirm: false,
       page: page,
       pageSize: pageSize
     };
 
     const response = await workOrder.postWorkOrderList(payload);
+    const resData = response.data as ApiResponse<WorkOrderMaster>;
 
-    if (response.data && response.data.success) {
-      // Đổ dữ liệu thật vào table
-      lineDetails.value = response.data.data.items;
-      totalRecords.value = response.data.data.totalCount;
+    if (resData && resData.success) {
+      lineDetails.value = resData.data.items;
+      totalRecords.value = Number(resData.data.totalCount) || 0;
     } else {
-      console.error("Lấy dữ liệu thất bại", response.data?.message);
+      console.error("Lấy dữ liệu thất bại:", resData?.message);
       lineDetails.value = [];
+      totalRecords.value = 0;
     }
   } catch (error) {
     console.error("Lỗi gọi API getWorkOrderList:", error);
     lineDetails.value = [];
+    totalRecords.value = 0;
   } finally {
     isLoadingLine.value = false;
   }
 };
 
-// Hàm xử lý sự kiện khi click chuyển trang trên PrimeVue DataTable
 const onPageLine = (event: any) => {
   currentPage.value = event.page + 1;
   rowsPerPage.value = event.rows;
-
   fetchWorkOrders(currentPage.value, rowsPerPage.value);
 };
 
-const goBack = () => router.back();
+const goBack = () => router.push('/app-menu');
 
 onMounted(() => {
-  // Khi load trang lần đầu, gọi API ở page 1
   fetchWorkOrders(currentPage.value, rowsPerPage.value);
 });
 </script>
