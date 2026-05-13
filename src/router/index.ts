@@ -76,7 +76,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/mobile/glue-returned',
-    component: () => import('@/views/Mobile/GlueReturned.vue'),
+    component: () => import('@/views/Mobile/GlueInfoCheck.vue'),
     meta: { requiresAuth: true }
   },
   {

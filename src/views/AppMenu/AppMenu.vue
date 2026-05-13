@@ -37,25 +37,18 @@
             </div>
           </template>
 
-          <div v-if="!isTablet" class="feature-card shadow-sm" @click="goMobile">
-            <div class="icon-wrapper" style="background: #e0f2fe;">
-              <ion-icon :icon="qrCodeOutline" color="secondary"></ion-icon>
+          <template v-if="!isTablet">
+            <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card shadow-sm"
+              @click="navigate(feature.path)">
+              <div class="icon-wrapper" :style="{ background: feature.bgLight }">
+                <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
+              </div>
+              <div class="card-content">
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+              </div>
             </div>
-            <div class="card-content">
-              <h3>Xác nhận thùng keo chuyền & thùng keo phát</h3>
-              <p>Sử dụng camera điện thoại để quét mã vạch.</p>
-            </div>
-          </div>
-
-          <div v-if="!isTablet" class="feature-card shadow-sm" @click="goGlueReturned">
-            <div class="icon-wrapper" style="background: #d1fae5;">
-              <ion-icon :icon="qrCodeOutline" style="color: #10b981;"></ion-icon>
-            </div>
-            <div class="card-content">
-              <h3>Xác nhận thùng keo trả về</h3>
-              <p>Quét mã QR để xác nhận thùng keo trả về.</p>
-            </div>
-          </div>
+          </template>
         </div>
       </div>
     </ion-content>
@@ -139,18 +132,31 @@ const tabletFeatures = ref([
   }
 ]);
 
+// --- DATA CHO MOBILE FEATURES ---
+const mobileFeatures = ref([
+  {
+    path: '/mobile',
+    title: 'Chuyền xác nhận phát keo & trả keo',
+    description: 'Sử dụng camera điện thoại để quét mã vạch.',
+    icon: qrCodeOutline,
+    color: '#0ea5e9',
+    bgLight: '#e0f2fe'
+  },
+  {
+    path: '/mobile/glue-returned',
+    title: 'Tra cứu thông tin thùng keo',
+    description: 'Kiểm tra thông tin thùng keo',
+    icon: qrCodeOutline,
+    color: '#2563eb',
+    bgLight: '#dbeafe'
+  }
+]);
+
 // Hàm điều hướng chung
 const navigate = (path: string) => {
   router.push(path);
 };
 
-const goMobile = async () => {
-  router.push('/mobile');
-};
-
-const goGlueReturned = async () => {
-  router.push('/mobile/glue-returned');
-};
 
 const handleLogout = async () => {
   await authStore.logout();
