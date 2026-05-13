@@ -96,7 +96,7 @@ const tabletFeatures = ref([
     bgLight: '#e0f2fe'
   },
   {
-    path: '/repacking-mixed-glue-management',
+    path: '/list-repacking-mixed-glue-management',
     title: 'Repacking Mixed Glue Management',
     description: 'Quản lý việc đóng gói lại keo đã trộn.',
     icon: cubeOutline,

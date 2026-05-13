@@ -33,9 +33,46 @@
   </div>
 </template>
 
+<script lang="ts">
+import { registerPlugin, WebPlugin } from '@capacitor/core';
+
+class SerialScaleWeb extends WebPlugin {
+  private port: any = null;
+  private reader: any = null;
+  async connect() {
+    this.port = await (navigator as any).serial.requestPort();
+    await this.port.open({ baudRate: 9600 });
+    this.readLoop();
+    return { value: 'connected' };
+  }
+  async readLoop() {
+    while (this.port.readable) {
+      this.reader = this.port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await this.reader.read();
+          if (done) break;
+          this.notifyListeners('onScaleData', { data: new TextDecoder().decode(value) });
+        }
+      } catch (e) { this.notifyListeners('onScaleError', { error: e }); }
+      finally { this.reader.releaseLock(); }
+    }
+  }
+  async disconnect() {
+    if (this.reader) await this.reader.cancel();
+    if (this.port) await this.port.close();
+  }
+}
+
+// Đăng ký Plugin ở đây, nó sẽ không bị gọi lại 2 lần nữa
+const SerialScale = registerPlugin<any>('SerialScale', {
+  web: () => new SerialScaleWeb(),
+});
+</script>
+
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { registerPlugin, WebPlugin, Capacitor } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { useToast } from 'primevue/usetoast';
 
 const toast = useToast();
@@ -104,39 +141,6 @@ watch(
   },
   { immediate: true } // immediate: true giúp chạy ngay lần đầu tiên component được render
 );
-
-// --- PLUGIN CONFIG ---
-const SerialScale = registerPlugin<any>('SerialScale', {
-  web: () => new SerialScaleWeb(),
-});
-
-class SerialScaleWeb extends WebPlugin {
-  private port: any = null;
-  private reader: any = null;
-  async connect() {
-    this.port = await (navigator as any).serial.requestPort();
-    await this.port.open({ baudRate: 9600 });
-    this.readLoop();
-    return { value: 'connected' };
-  }
-  async readLoop() {
-    while (this.port.readable) {
-      this.reader = this.port.readable.getReader();
-      try {
-        while (true) {
-          const { value, done } = await this.reader.read();
-          if (done) break;
-          this.notifyListeners('onScaleData', { data: new TextDecoder().decode(value) });
-        }
-      } catch (e) { this.notifyListeners('onScaleError', { error: e }); }
-      finally { this.reader.releaseLock(); }
-    }
-  }
-  async disconnect() {
-    if (this.reader) await this.reader.cancel();
-    if (this.port) await this.port.close();
-  }
-}
 
 const isExceedingLimit = computed(() => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
