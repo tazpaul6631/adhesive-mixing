@@ -80,6 +80,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/mobile/glue-returned',
+    component: () => import('@/views/Mobile/GlueReturned.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:catchAll(.*)',
     redirect: '/404'
   }

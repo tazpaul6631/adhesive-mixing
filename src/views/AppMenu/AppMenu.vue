@@ -42,8 +42,18 @@
               <ion-icon :icon="qrCodeOutline" color="secondary"></ion-icon>
             </div>
             <div class="card-content">
-              <h3>Chuyền xác nhận keo & trả keo</h3>
+              <h3>Xác nhận thùng keo chuyền & thùng keo phát</h3>
               <p>Sử dụng camera điện thoại để quét mã vạch.</p>
+            </div>
+          </div>
+
+          <div v-if="!isTablet" class="feature-card shadow-sm" @click="goGlueReturned">
+            <div class="icon-wrapper" style="background: #d1fae5;">
+              <ion-icon :icon="qrCodeOutline" style="color: #10b981;"></ion-icon>
+            </div>
+            <div class="card-content">
+              <h3>Xác nhận thùng keo trả về</h3>
+              <p>Quét mã QR để xác nhận thùng keo trả về.</p>
             </div>
           </div>
         </div>
@@ -136,6 +146,10 @@ const navigate = (path: string) => {
 
 const goMobile = async () => {
   router.push('/mobile');
+};
+
+const goGlueReturned = async () => {
+  router.push('/mobile/glue-returned');
 };
 
 const handleLogout = async () => {
