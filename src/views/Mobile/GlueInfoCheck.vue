@@ -249,7 +249,7 @@ function handleReturnScanResult(value: string) {
     }
 
     ion-card-title {
-      font-size: 1.72rem;
+      font-size: 16px !important;
     }
 
     ion-card-content {
@@ -263,11 +263,11 @@ function handleReturnScanResult(value: string) {
     border-radius: 18px;
 
     &__text {
-      font-size: 1.28rem;
+      font-size: 16px !important;
     }
 
     &__icon {
-      font-size: 2.25rem;
+      font-size: 18px !important;
     }
   }
 
