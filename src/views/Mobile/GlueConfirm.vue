@@ -55,61 +55,9 @@
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               Xác nhận trả về
             </ion-button>
-
-            <ion-button expand="block" class="confirm-button" @click="openScanner('return')">
-              <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
-              Quét Mã QR thùng keo trả về
-            </ion-button>
-
-            <!-- <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>Mã QR thùng keo trả về</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner('return')">
-                  <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !returnQrText }]">
-                    {{ returnQrText || 'Quét mã QR thùng keo trả về' }}
-                  </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
-                </button>
-              </ion-card-content>
-            </ion-card> -->
           </div>
-
-          <!-- <div v-if="statusMessage" class="status-box" :class="statusClass">
-            <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
-            <div class="status-box__content">
-              <p><strong>Trạng thái: </strong>{{ statusMessage }}</p>
-            </div>
-          </div> -->
         </section>
       </div>
-
-      <ion-modal :is-open="isReturnConfirmDialogOpen" class="return-confirm-modal" :backdrop-dismiss="false"
-        @didDismiss="handleReturnDialogDismiss">
-        <div class="return-confirm-dialog">
-          <div class="return-confirm-dialog__icon">
-            <ion-icon :icon="alertCircle"></ion-icon>
-          </div>
-
-          <h2 class="return-confirm-dialog__title">Xác nhận trả về</h2>
-
-          <p class="return-confirm-dialog__message">
-            Xác nhận trả về thùng keo
-            <strong>{{ pendingReturnQrText }}</strong>
-            ?
-          </p>
-
-          <div class="return-confirm-dialog__actions">
-            <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="cancelReturnConfirm">
-              HỦY
-            </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click="confirmReturnQr">
-              OK
-            </ion-button>
-          </div>
-        </div>
-      </ion-modal>
 
       <ion-toast
         :is-open="showSuccessToast"
@@ -136,28 +84,22 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonModal,
   IonPage,
   IonTitle,
   IonToast,
   IonToolbar,
 } from '@ionic/vue';
-import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics } from '@capacitor/haptics';
 
 type ConfirmScanTarget = 'line' | 'allocated';
-type ScanTarget = ConfirmScanTarget | 'return';
 
 const lineQrText = ref('');
 const allocatedQrText = ref('');
-const returnQrText = ref('');
-const pendingReturnQrText = ref('');
 
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
-const isReturnConfirmDialogOpen = ref(false);
-const isSubmittingReturn = ref(false);
 
 const isFirstTwoQrReady = computed(() => {
   return !!lineQrText.value && !!allocatedQrText.value;
@@ -213,8 +155,8 @@ async function triggerMismatchVibrationIfNeeded() {
   }
 }
 
-async function openScanner(target: ScanTarget) {
-  if ((target === 'line' || target === 'allocated') && isFirstTwoQrMatched.value) {
+async function openScanner(target: ConfirmScanTarget) {
+  if (isFirstTwoQrMatched.value) {
     return;
   }
 
@@ -232,11 +174,7 @@ async function openScanner(target: ScanTarget) {
       const scannedValue = barcodes[0].rawValue;
 
       if (scannedValue) {
-        if (target === 'return') {
-          handleReturnScanResult(scannedValue);
-        } else {
-          await handleConfirmScanResult(target, scannedValue);
-        }
+        await handleConfirmScanResult(target, scannedValue);
       } else {
         alert('Mã QR không hợp lệ hoặc không có dữ liệu!');
       }
@@ -265,57 +203,6 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
   await triggerMismatchVibrationIfNeeded();
 }
 
-function handleReturnScanResult(value: string) {
-  const normalizedValue = normalizeQrText(value);
-
-  if (!normalizedValue) {
-    return;
-  }
-
-  returnQrText.value = normalizedValue;
-  pendingReturnQrText.value = normalizedValue;
-  isReturnConfirmDialogOpen.value = true;
-}
-
-function handleReturnDialogDismiss() {
-  if (!isReturnConfirmDialogOpen.value) {
-    return;
-  }
-
-  cancelReturnConfirm();
-}
-
-function cancelReturnConfirm() {
-  isReturnConfirmDialogOpen.value = false;
-  isSubmittingReturn.value = false;
-  resetReturnField();
-}
-
-async function confirmReturnQr() {
-  if (!pendingReturnQrText.value || isSubmittingReturn.value) {
-    return;
-  }
-
-  isSubmittingReturn.value = true;
-
-  try {
-    await submitReturnQrMock(pendingReturnQrText.value);
-    isReturnConfirmDialogOpen.value = false;
-    showToast('Xác nhận thành công');
-    resetReturnField();
-  } catch (error) {
-    console.error('Không thể xác nhận trả về thùng keo:', error);
-    alert('Không thể xác nhận trả về thùng keo. Vui lòng thử lại!');
-  } finally {
-    isSubmittingReturn.value = false;
-  }
-}
-
-async function submitReturnQrMock(qrText: string) {
-  console.info('Mock submit return QR:', qrText);
-  await new Promise((resolve) => setTimeout(resolve, 300));
-}
-
 function handleConfirmReturn() {
   if (isConfirmButtonDisabled.value) {
     return;
@@ -334,11 +221,6 @@ function handleConfirmReturn() {
 function resetConfirmFields() {
   lineQrText.value = '';
   allocatedQrText.value = '';
-}
-
-function resetReturnField() {
-  returnQrText.value = '';
-  pendingReturnQrText.value = '';
 }
 
 function showToast(message: string) {
@@ -521,63 +403,6 @@ function closeCurrentToast() {
   }
 }
 
-.return-confirm-modal {
-  --width: min(90vw, 360px);
-  --height: auto;
-  --border-radius: 20px;
-  --box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
-}
-
-.return-confirm-dialog {
-  padding: 26px 22px 12px;
-  border-radius: 20px;
-  background: #ffffff;
-  text-align: center;
-
-  &__icon {
-    width: 48px;
-    height: 48px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    border-radius: 50%;
-    background: #eaf2ff;
-    color: #0b72ed;
-
-    ion-icon {
-      font-size: 1.8rem;
-    }
-  }
-
-  &__title {
-    margin: 0 0 10px;
-    color: #081a36;
-    font-size: 16px !important;
-    font-weight: 700;
-  }
-
-  &__message {
-    margin: 0;
-    color: #475569;
-    font-size: 14px !important;
-    line-height: 1.5;
-    word-break: break-word;
-
-    strong {
-      color: #081a36;
-      font-weight: 700;
-    }
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 22px;
-  }
-}
-
 @media (min-width: 768px) {
   .menu-container {
     max-width: 660px;
@@ -633,42 +458,6 @@ function closeCurrentToast() {
 
     &__icon {
       font-size: 2.8rem;
-    }
-  }
-
-  .return-confirm-modal {
-    --width: min(82vw, 460px);
-    --border-radius: 24px;
-  }
-
-  .return-confirm-dialog {
-    padding: 34px 30px 16px;
-    border-radius: 24px;
-
-    &__icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 18px;
-
-      ion-icon {
-        font-size: 2.4rem;
-      }
-    }
-
-    &__title {
-      font-size: 1.7rem;
-    }
-
-    &__message {
-      font-size: 1.18rem;
-    }
-
-    &__actions {
-      margin-top: 28px;
-
-      ion-button {
-        font-size: 1.05rem;
-      }
     }
   }
 }
