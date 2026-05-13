@@ -3,7 +3,7 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/mobile"></ion-back-button>
+          <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>Chuyền xác nhận keo & trả keo</ion-title>
       </ion-toolbar>
@@ -18,13 +18,8 @@
                 <ion-card-title>Mã QR thùng keo chuyền</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
-                  :disabled="isFirstTwoQrMatched"
-                  @click="openScanner('line')"
-                >
+                <button type="button" class="qr-scan-field" :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
+                  :disabled="isFirstTwoQrMatched" @click="openScanner('line')">
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !lineQrText }]">
                     {{ lineQrText || 'Quét mã QR thùng keo chuyền' }}
                   </span>
@@ -38,13 +33,8 @@
                 <ion-card-title>Mã QR thùng keo phát</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
-                  :disabled="isFirstTwoQrMatched"
-                  @click="openScanner('allocated')"
-                >
+                <button type="button" class="qr-scan-field" :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
+                  :disabled="isFirstTwoQrMatched" @click="openScanner('allocated')">
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !allocatedQrText }]">
                     {{ allocatedQrText || 'Quét mã QR thùng keo phát' }}
                   </span>
@@ -60,21 +50,13 @@
               </div>
             </div>
 
-            <ion-button
-              expand="block"
-              class="confirm-button"
-              :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn"
-            >
+            <ion-button expand="block" class="confirm-button" :disabled="isConfirmButtonDisabled"
+              @click="handleConfirmReturn">
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               Xác nhận trả về
             </ion-button>
 
-            <ion-button
-              expand="block"
-              class="confirm-button"
-              @click="openScanner('return')"
-            >
+            <ion-button expand="block" class="confirm-button" @click="openScanner('return')">
               <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
               Quét Mã QR thùng keo trả về
             </ion-button>
@@ -103,12 +85,8 @@
         </section>
       </div>
 
-      <ion-modal
-        :is-open="isReturnConfirmDialogOpen"
-        class="return-confirm-modal"
-        :backdrop-dismiss="false"
-        @didDismiss="handleReturnDialogDismiss"
-      >
+      <ion-modal :is-open="isReturnConfirmDialogOpen" class="return-confirm-modal" :backdrop-dismiss="false"
+        @didDismiss="handleReturnDialogDismiss">
         <div class="return-confirm-dialog">
           <div class="return-confirm-dialog__icon">
             <ion-icon :icon="alertCircle"></ion-icon>
@@ -123,33 +101,18 @@
           </p>
 
           <div class="return-confirm-dialog__actions">
-            <ion-button
-              fill="clear"
-              color="medium"
-              :disabled="isSubmittingReturn"
-              @click="cancelReturnConfirm"
-            >
+            <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="cancelReturnConfirm">
               HỦY
             </ion-button>
-            <ion-button
-              fill="clear"
-              color="primary"
-              :disabled="isSubmittingReturn"
-              @click="confirmReturnQr"
-            >
+            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click="confirmReturnQr">
               OK
             </ion-button>
           </div>
         </div>
       </ion-modal>
 
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        color="success"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
+      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" color="success"
+        @didDismiss="showSuccessToast = false"></ion-toast>
     </ion-content>
   </ion-page>
 </template>

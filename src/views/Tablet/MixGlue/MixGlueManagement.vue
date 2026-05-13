@@ -21,6 +21,9 @@
             class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
             <user-avatar />
             <div class="flex gap-2">
+              <Button :label="hidenTable1 ? 'Hiện chi tiết dây chuyền' : 'Ẩn chi tiết dây chuyền'"
+                :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
+                @click="handleHidenTable1" />
               <Button label="Lưu" icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
               <Button label="Xác nhận hoàn thành" icon="pi pi-check-circle" severity="success" size="large"
                 @click="handleComplete" />
@@ -44,7 +47,7 @@
         </div>
 
         <!-- BẢNG 1 -->
-        <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
+        <div v-show="hidenTable1" class="surface-card p-0 shadow-1 mt-4 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>Chi tiết dây chuyền</span>
           </div>
@@ -196,6 +199,7 @@ const noMixComponents = ref<ComponentDetail[]>([]);
 const isLoadingLine = ref(true);
 const isLoadingComponent = ref(true);
 const hourlyValidity = ref<string>('0');
+const hidenTable1 = ref(false);
 
 watch(componentDetailsFull, () => {
   if (!isLoadingComponent.value) isDirty.value = true;
@@ -290,14 +294,14 @@ const buildPayload = (recordStatus: string) => {
 
   return {
     factoryId: factoryId,
-    workOrderMasterId: Number(currentWorkOrderId.value),
+    workOrderMasterId: currentWorkOrderId.value,
     recordStatus: recordStatus,
     hourlyValidity: Number(hourlyValidity.value),
     createrId: employeeId,
     updaterId: employeeId,
     mixGlues: componentDetailsFull.value.map(item => ({
       factoryId: factoryId,
-      materialCode: Number(item.materialCode) || 0,
+      materialCode: item.materialCode || 0,
       mixGlueWeight: Number(item.actualWeight) || 0,
       mixGlueWeightUnit: item.weightUnit || 'Kg',
       glueExtra: item.glueExtra || false,
@@ -307,6 +311,10 @@ const buildPayload = (recordStatus: string) => {
       weightCompleteDate: item.weighingTime ? dayjs(item.weighingTime, VI_FORMATS).toISOString() : null
     }))
   };
+};
+
+const handleHidenTable1 = () => {
+  hidenTable1.value = !hidenTable1.value;
 };
 
 const handleSaveDraft = async () => {
@@ -331,7 +339,7 @@ const handleSaveDraft = async () => {
     });
 
     const payload = buildPayload("0");
-    await mixGlueApi.postMixGlueMasterCommand(payload);
+    await mixGlueApi.postMixGlueCommand(payload);
 
     isDirty.value = false;
     toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu bản nháp lên server', life: 3000 });
@@ -360,7 +368,7 @@ const handleComplete = async () => {
   // 2. GỬI API
   try {
     const payload = buildPayload("1");
-    await mixGlueApi.postMixGlueMasterCommand(payload);
+    await mixGlueApi.postMixGlueCommand(payload);
 
     draftStore.clearDraft(currentWorkOrderId.value);
     isDirty.value = false;
@@ -543,6 +551,7 @@ const alertKhongChoPhepThoat = async (nextFunction?: any) => {
         role: 'confirm',
         cssClass: 'text-red-500',
         handler: () => {
+          draftStore.clearDraft(currentWorkOrderId.value);
           isDirty.value = false;
           nextFunction ? nextFunction() : router.back();
         }

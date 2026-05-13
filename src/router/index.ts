@@ -50,6 +50,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/list-qip-confirm-mix-glue',
+    component: () => import('@/views/Tablet/QIPMixGlue/ListQIPMixGlue.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/qip-confirm-mix-glue',
     component: () => import('@/views/Tablet/QIPMixGlue/QIPConfirmMixGlue.vue'),
     meta: { requiresAuth: true }

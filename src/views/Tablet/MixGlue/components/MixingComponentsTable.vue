@@ -66,8 +66,8 @@
 
       <Column header="Thao tác" :exportable="false" style="width: 12%; height: 60px">
         <template #body="slotProps">
-          <Button v-if="slotProps.data.glueExtra" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
-            @click.stop="$emit('delete-row', slotProps.data)" />
+          <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
+            text rounded aria-label="Delete" @click.stop="$emit('delete-row', slotProps.data)" />
         </template>
       </Column>
     </DataTable>
