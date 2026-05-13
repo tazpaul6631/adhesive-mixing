@@ -176,7 +176,7 @@
                 </template>
               </Column>
 
-              <Column field="trongLuongThucTe" header="TL Thực tế (Kg)" style="min-width: 150px; height: 60px">
+              <Column field="trongLuongThucTe" header="TL thực tế (Kg)" style="min-width: 150px; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
                   <template v-else>

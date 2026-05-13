@@ -1,72 +1,101 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* ==========================================================================
+   GLOBAL CSS - IONIC & PRIMEVUE
+   ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- CẤU HÌNH FONT GLOBAL --- */
-:root {
-    /* Kích hoạt font cho Ionic */
-    --ion-font-family: 'Inter', sans-serif !important;
-
-    /* Kích hoạt font cho PrimeVue 4 (Dùng tiền tố --p-) */
-    --p-font-family: 'Inter', sans-serif !important;
-}
-
-/* Kế thừa xuống toàn bộ app, tuyệt đối KHÔNG dùng * */
-html,
-body {
-    font-family: var(--ion-font-family);
-}
-
-/* Tùy chỉnh màu sắc cho Alert lỗi */
-.custom-error-alert {
-    --backdrop-opacity: 0.6;
-}
-
-/* Đổi màu tiêu đề (Header) */
-.custom-error-alert .alert-sub-title {
-    color: #eb445a !important;
-    /* Màu đỏ của Ionic */
-    font-weight: bold !important;
-    text-transform: uppercase;
-}
-
-/* Đổi màu nội dung (Message) */
-.custom-error-alert .alert-message {
-    color: #333 !important;
+/* --- 1. BASE HTML & BODY --- */
+html {
+    /* Đặt mốc 18px làm chuẩn. Suy ra 1rem = 18px. 
+       Toàn bộ PrimeVue sẽ tự động scale to lên dựa trên mức này */
     font-size: 16px !important;
 }
 
-/* Tùy chỉnh riêng cho cái tên điểm cần quét (nếu bạn dùng thẻ b ở bước 1) */
-.custom-error-alert .highlight-point {
-    color: #2fdf75;
-    /* Màu xanh lá nổi bật hoặc màu vàng tùy bạn */
-    font-size: 1.2em;
-    text-decoration: underline;
+body {
+    font-family: 'Inter', sans-serif !important;
+    /* Ionic thường dựa vào biến này, ta đồng bộ luôn là 18px */
+    --ion-font-size: 18px !important;
+    font-size: var(--ion-font-size);
 }
 
-/* --- TÙY CHỈNH PRIMEVUE (Bỏ :deep vì đây là Global CSS) --- */
-/* Thu nhỏ ô chọn ngày cho khớp với InputText */
+/* Tắt chớp xanh mặc định của iOS/Android khi tap vào màn hình */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* --- 2. PRIMEVUE OVERRIDES --- */
+
+/* Đảm bảo mọi root component của PrimeVue đều nhận font-size chuẩn */
+.p-component {
+    /* Mặc định PrimeVue dùng 1rem, nên nó sẽ tự lấy 18px từ thẻ html ở trên */
+    font-size: 1.4rem !important;
+}
+
+/* Ghi đè cụ thể cho các input/dropdown của PrimeVue để tránh việc browser tự style */
+.p-inputtext,
+.p-dropdown,
+.p-button,
+.p-menuitem-link {
+    font-size: 1rem !important;
+}
+
+/* Tắt viền focus mặc định của PrimeVue */
+.p-button:focus,
+.p-button:focus-visible,
+.p-menuitem-link:focus,
+.p-menuitem-link:focus-visible,
+.p-paginator-page:focus,
+.p-paginator-next:focus,
+.p-paginator-prev:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Tùy chỉnh DatePicker (Đã tăng size so với code cũ của bạn) */
 .p-datepicker {
-    font-size: 0.8rem;
+    font-size: 1rem !important;
+    /* Đổi từ 0.8rem lên 1rem để to đều */
 }
 
 .p-datepicker-input {
-    padding: 5px 10px !important;
-    font-size: 0.8rem;
+    padding: 8px 12px !important;
+    /* Tăng padding để cân đối với font chữ to */
+    font-size: 1rem !important;
 }
 
-/* Ép các ô filter sát nhau hơn nữa */
 .p-datatable-filter-row td {
-    padding: 4px !important;
+    padding: 6px !important;
+    /* Nhích padding lên 1 chút để chữ không dính viền */
 }
 
-/* --- TÙY CHỈNH IONIC --- */
-/* Ghi đè margin mặc định của list MD */
+/* --- 3. IONIC OVERRIDES --- */
 ion-list {
     padding: 0 !important;
 }
 
-/* --- TỔNG THỂ --- */
+.custom-error-alert {
+    --backdrop-opacity: 0.6;
+}
+
+.custom-error-alert .alert-sub-title {
+    color: #eb445a !important;
+    font-weight: bold !important;
+    text-transform: uppercase;
+}
+
+.custom-error-alert .alert-message {
+    color: #333 !important;
+    font-size: 1rem !important;
+    /* Đồng bộ với hệ thống 1rem = 18px */
+}
+
+.custom-error-alert .highlight-point {
+    color: #2fdf75;
+    font-size: 1.2em;
+    /* 1.2 x 18px = 21.6px */
+    text-decoration: underline;
+}
+
+/* --- 4. UTILITY & LAYOUT CLASSES --- */
 .header-container {
     margin-top: 35px;
 }
@@ -83,39 +112,4 @@ ion-list {
     padding: 20px;
     max-width: 1400px;
     margin: 0 auto;
-}
-
-/* 1. TẮT CHỚP XANH MẶC ĐỊNH CỦA IOS/ANDROID (Tap Highlight) */
-* {
-    -webkit-tap-highlight-color: transparent !important;
-}
-
-/* 2. TẮT VIỀN FOCUS (BOX-SHADOW) CỦA PRIMEVUE */
-.p-button:focus,
-.p-button:focus-visible,
-.p-menuitem-link:focus,
-.p-menuitem-link:focus-visible,
-.p-paginator-page:focus,
-.p-paginator-next:focus,
-.p-paginator-prev:focus {
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-:root {
-    /* 1. Tăng font cho các Component của Ionic (Mặc định thường là 16px) */
-    --ion-font-size: 19px !important;
-}
-
-/* 2. Tăng gốc rễ của trang web để các component PrimeVue (dùng đơn vị rem) tự động phình to ra theo tỉ lệ chuẩn */
-html {
-    /* Mặc định trình duyệt là 16px */
-    font-size: 20px !important;
-}
-
-/* Kế thừa xuống toàn bộ app */
-html,
-body {
-    font-family: var(--ion-font-family);
-    font-size: var(--ion-font-size);
 }

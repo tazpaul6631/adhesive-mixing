@@ -13,193 +13,225 @@
 
     <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
       <div class="main-container max-w-full mx-auto">
-        <div class="flex flex-wrap align-items-center justify-content-between surface-border">
-          <user-avatar />
-          <ConnectBluetooth templateType="mix_glue" :printData="selectedItem" />
+        <!-- Thông tin Header -->
+        <div class="surface-card p-3 shadow-1 border-round-xl">
+          <div
+            class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
+            <user-avatar />
+            <ConnectBluetooth templateType="mix_glue" :printData="selectedItem" />
+          </div>
+
+          <div class="grid formgrid p-fluid">
+            <div class="col-12 sm:col-6 lg:col-4">
+              <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
+              <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600 bg-gray-50" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-4">
+              <label class="text-800 font-medium mb-1 block">Keo</label>
+              <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600 bg-gray-50" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
+              <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
+              <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600 bg-gray-50" />
+            </div>
+          </div>
         </div>
 
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
-          <div class="surface-100 p-3 border-round-top-xl bg-white">
+          <div class="surface-100 p-3 border-round-top-xl bg-white border-bottom-1 surface-border">
             <span class="font-bold text-900 text-xl">
-              <i class="pi pi-list mr-2"></i>Danh sách trộn keo chờ xác nhận
+              <i class="pi pi-list mr-2 text-primary"></i>Danh sách trộn keo chờ xác nhận
             </span>
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" stripedRows
-              class="custom-bordered-table" tableStyle="min-width: 70rem" :paginator="true" :rows="5"
-              :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px" selectionMode="single"
-              v-model:selection="selectedItem" dataKey="id">
+            <DataTable :value="isLoadingLine ? skeletonData : mixGlues" stripedRows class="custom-bordered-table"
+              tableStyle="width: 100%; table-layout: fixed;" rowGroupMode="rowspan" groupRowsBy="totalMixGlueWeight">
 
-              <Column header="Đơn điều công" style="min-width: 210px">
+              <template #empty>
+                <div style="text-align: center; padding: 3.3rem;">
+                  <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                  <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+                </div>
+              </template>
+
+              <Column header="#" style="width: 5%; height: 60px">
+                <template #body="{ index }">
+                  <Skeleton v-if="isLoadingLine" width="60%" height="1rem" class="mx-auto" />
+                  <span v-else>{{ index + 1 }}</span>
+                </template>
+              </Column>
+
+              <Column header="Tên thành phần" field="materialName" style="width: 20%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
-                  <span v-else>{{ data.donDieuCong }}</span>
+                  <span v-else class="font-medium text-800">{{ data.materialName }}</span>
                 </template>
               </Column>
 
-              <Column header="Hình thể" style="min-width: 130px">
+              <Column header="Loại keo" style="width: 13%; height: 60px" bodyStyle="text-align: center">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
-                  <span v-else>{{ data.hinhThe }}</span>
+                  <Tag v-else :value="data.glueExtra ? 'Keo thêm' : 'Keo chính'" :severity="getSeverity(data.glueExtra)"
+                    class="font-medium text-sm" />
                 </template>
               </Column>
 
-              <Column header="Keo" style="min-width: 120px">
+              <Column header="TL thực tế" style="width: 13%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
-                  <span v-else>{{ data.keo }}</span>
-                </template>
-              </Column>
-
-              <Column header="Thành phần" style="min-width: 150px">
-                <template #body="{ data }">
-                  <div v-if="isLoadingLine" class="flex flex-column gap-2 p-2 w-full">
-                    <Skeleton height="1.5rem" />
-                    <Skeleton height="1.5rem" />
-                  </div>
-                  <div v-else class="flex flex-column h-full w-full">
-                    <div v-for="(item, idx) in data.thanhPhan" :key="idx"
-                      class="flex-1 flex align-items-center justify-content-center p-2"
-                      :class="{ 'border-bottom-1 border-black-alpha-30': idx !== data.thanhPhan.length - 1 }">
-                      {{ item }}
-                    </div>
+                  <div v-else class="flex align-items-center gap-2">
+                    <span class="font-bold text-blue-600 text-lg">{{ data.mixGlueWeight }}</span>
+                    <span class="text-500 font-medium">{{ data.mixGlueWeightUnit }}</span>
                   </div>
                 </template>
               </Column>
 
-              <Column header="Trọng lượng" style="min-width: 150px">
-                <template #body="{ data }">
-                  <div v-if="isLoadingLine" class="flex flex-column gap-2 p-2 w-full">
-                    <Skeleton height="1.5rem" />
-                    <Skeleton height="1.5rem" />
-                  </div>
-                  <div v-else class="flex flex-column h-full w-full">
-                    <div v-for="(item, idx) in data.trongLuong" :key="idx"
-                      class="flex-1 flex align-items-center justify-content-center p-2"
-                      :class="{ 'border-bottom-1 border-black-alpha-30': idx !== data.trongLuong.length - 1 }">
-                      {{ item }}
-                    </div>
-                  </div>
-                </template>
-              </Column>
-
-              <Column header="Tên" style="min-width: 150px">
-                <template #body="{ data }">
-                  <div v-if="isLoadingLine" class="flex flex-column gap-2 p-2 w-full">
-                    <Skeleton height="1.5rem" />
-                    <Skeleton height="1.5rem" />
-                  </div>
-                  <div v-else class="flex flex-column h-full w-full">
-                    <div v-for="(item, idx) in data.ten" :key="idx"
-                      class="flex-1 flex align-items-center justify-content-center p-2"
-                      :class="{ 'border-bottom-1 border-black-alpha-30': idx !== data.ten.length - 1 }">
-                      {{ item }}
-                    </div>
-                  </div>
-                </template>
-              </Column>
-
-              <Column header="Trọng lượng thực tế" headerStyle="text-align: center" style="min-width: 150px"
+              <Column field="totalMixGlueWeight" header="Tổng (KG)" style="width: 13%; height: 60px"
                 bodyStyle="text-align: center">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
-                  <span v-else>{{ data.trongLuongThucTe }}</span>
+                  <span v-else class="font-bold text-green-600 text-lg">{{ totalMixGlueWeight }}</span>
                 </template>
               </Column>
 
-              <Column header="Người cân" style="min-width: 150px" headerStyle="text-align: center"
+              <Column header="Người cân" field="updaterId" style="width: 13%; height: 60px"
                 bodyStyle="text-align: center">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
-                  <span v-else>{{ data.nguoiCan }}</span>
+                  <span v-else class="text-700">{{ data.updaterId }}</span>
                 </template>
               </Column>
 
-              <Column header="Thời gian hoàn thành" style="min-width: 150px" headerStyle="text-align: center"
-                bodyStyle="text-align: center">
+              <Column header="Thời gian hoàn thành" field="weightCompleteDate" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
-                  <span v-else>{{ data.thoiGianHoanThanh }}</span>
+                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ format.formatDate(data.weightCompleteDate)
+                  }}</span>
                 </template>
               </Column>
-
             </DataTable>
           </div>
         </div>
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
+
       <back-to-top slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useToast } from 'primevue/usetoast';
+import {
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
+} from '@ionic/vue';
+
 import BackToTop from '@/components/BackToTop.vue';
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, IonBackButton
-} from '@ionic/vue';
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 
+import workOrder from '@/api/workOrder';
+import format from '@/mixins/format';
+
+// --- INTERFACES ---
+interface MixGlueItem {
+  factoryId: string;
+  mixGlueId: string;
+  mixGlueMasterId: string;
+  materialCode: string;
+  materialName: string;
+  mixGlueWeight: string;
+  mixGlueWeightUnit: string;
+  glueExtra: boolean;
+  weightCompleteDate: string;
+  updaterId: string;
+}
+
+interface HeaderInfo {
+  orderNo: string;
+  glue: string;
+  totalWeight: string;
+}
+
+// --- STATE ---
 const router = useRouter();
-const isLoadingLine = ref(true);
-const totalRecords = 100;
-const selectedItem = ref<any>(null);
+const route = useRoute();
+const toast = useToast();
 
-const lineDetails = ref<any[]>([]);
-
-const generateData = (index: number) => {
-  return {
-    id: index,
-    donDieuCong: 'C2R26216 Keo bồi đế',
-    hinhThe: 'C2 R26216',
-    keo: 'Keo bồi đế',
-    thanhPhan: ['7911', '352'],
-    trongLuong: ['30.1 Kg', '1.5 Kg'],
-    ten: ['Keo A', 'Keo B'],
-    trongLuongThucTe: '32.5 Kg',
-    nguoiCan: '',
-    thoiGianHoanThanh: ''
-  };
-};
-
-const goBack = () => router.back();
-
-const onPageLine = (event: any) => {
-  isLoadingLine.value = true;
-  lineDetails.value = Array.from({ length: event.rows }).map(() => ({}));
-
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: event.rows }).map((_, i) =>
-      generateData(event.first + i + 1)
-    );
-    isLoadingLine.value = false;
-  }, 1000);
-};
-
-onMounted(() => {
-  lineDetails.value = Array.from({ length: 5 }).map(() => ({}));
-
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: 5 }).map((_, i) => generateData(i + 1));
-    isLoadingLine.value = false;
-  }, 1000);
-});
-
-// BackToTop logic
 const contentRef = ref<any>(null);
 const showScrollButton = ref(false);
+const isLoadingLine = ref(true);
+
+const selectedItem = ref<any>(null);
+const headerInfo = ref<HeaderInfo>({ orderNo: '', glue: '', totalWeight: '' });
+const mixGlues = ref<MixGlueItem[]>([]);
+const totalMixGlueWeight = ref<any>(null);
+
+const skeletonData = ref(new Array(5).fill({}));
+
+// --- METHODS ---
+const fetchWorkOrderDetail = async (id: string) => {
+  isLoadingLine.value = true;
+
+  try {
+    const { data } = await workOrder.getWorkOrder(id, 2);
+
+    if (data?.success && data?.data) {
+      const respData = data.data;
+
+      selectedItem.value = {
+        workOrderMasterId: respData.workOrderMasterId,
+        mixGlueMasterId: respData.mixGlueMasterId,
+        workOrderMasterName: respData.workOrderMasterName
+      };
+
+      totalMixGlueWeight.value = respData.totalMixGlueWeight;
+
+      headerInfo.value = {
+        orderNo: respData.workOrderMasterName || '',
+        glue: respData.chemicalMasterName || '',
+        totalWeight: respData.mixGlueWeight || respData.workOrderWeight || '0.00'
+      };
+
+      mixGlues.value = (respData.mixGlues || []).map((item: any) => ({
+        factoryId: item.factoryId || '',
+        mixGlueId: item.mixGlueId || '',
+        mixGlueMasterId: item.mixGlueMasterId || '',
+        materialCode: item.materialCode || '',
+        materialName: item.materialName || '',
+        mixGlueWeight: item.mixGlueWeight || '0.00',
+        mixGlueWeightUnit: item.mixGlueWeightUnit || 'Kg',
+        glueExtra: item.glueExtra || false,
+        weightCompleteDate: item.weightCompleteDate || '',
+        updaterId: item.updaterId || ''
+      }));
+    }
+  } catch (error) {
+    console.error('Lỗi khi tải dữ liệu chi tiết:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Lỗi hệ thống',
+      detail: 'Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau.',
+      life: 3000
+    });
+  } finally {
+    isLoadingLine.value = false;
+  }
+};
+
+const getSeverity = (isExtra: boolean) => {
+  return isExtra ? 'warning' : 'success';
+};
+
+// --- NAVIGATION & SCROLL ---
+const goBack = () => router.back();
 
 const handleScroll = (event: CustomEvent) => {
-  if (event.detail.scrollTop > 100) {
-    showScrollButton.value = true;
-  } else {
-    showScrollButton.value = false;
-  }
+  showScrollButton.value = event.detail.scrollTop > 100;
 };
 
 const scrollToTop = () => {
@@ -207,6 +239,16 @@ const scrollToTop = () => {
     contentRef.value.$el.scrollToTop(500);
   }
 };
+
+// --- LIFECYCLE ---
+onMounted(() => {
+  const workOrderMasterId = route.query.workOrderMasterId as string;
+  if (workOrderMasterId) {
+    fetchWorkOrderDetail(workOrderMasterId);
+  } else {
+    isLoadingLine.value = false;
+  }
+});
 </script>
 
 <style scoped></style>

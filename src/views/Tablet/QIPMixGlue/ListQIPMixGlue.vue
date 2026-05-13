@@ -7,7 +7,7 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>List Mix Glue Management</ion-title>
+        <ion-title>List QIP Mix Glue</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -23,7 +23,7 @@
         <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-list mr-2"></i>List Mix Glue
+              <i class="pi pi-list mr-2"></i>List QIP Confirm Mix Glue
             </span>
           </div>
 
@@ -161,7 +161,7 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
   if (workOrderMasterId) {
     router.push({
-      path: '/mix-glue-management',
+      path: '/qip-confirm-mix-glue',
       query: { workOrderMasterId: workOrderMasterId }
     });
   } else {
@@ -176,7 +176,7 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
-      mixGlueComplete: false,
+      mixGlueComplete: true,
       qipConfirm: false,
       page: page,
       pageSize: pageSize
@@ -212,7 +212,7 @@ const goBack = () => router.push('/app-menu');
 
 onIonViewWillEnter(() => {
   fetchWorkOrders(currentPage.value, rowsPerPage.value);
-}) 
+})
 </script>
 
 <style scoped>

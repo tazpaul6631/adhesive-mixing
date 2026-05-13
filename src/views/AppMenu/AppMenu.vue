@@ -104,7 +104,7 @@ const tabletFeatures = ref([
     bgLight: '#fef3c7'
   },
   {
-    path: '/qip-confirm-mix-glue',
+    path: '/list-qip-confirm-mix-glue',
     title: 'QIP Confirm Mix Glue',
     description: 'Xác nhận chất lượng keo trộn (QIP).',
     icon: checkmarkDoneOutline,

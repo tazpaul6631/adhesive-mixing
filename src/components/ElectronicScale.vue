@@ -19,9 +19,11 @@
             'text-primary': !isExceedingLimit
           }" />
         <span class="p-inputgroup-addon font-bold px-1">Kg</span>
-        <div v-if="lowerTolerance !== '' && upperTolerance !== ''" class="ml-1 min-w-max border-left-1 border-300 pl-3">
-          <div class="text-red-500 font-bold text-xs">-{{ lowerTolerance }} g</div>
-          <div class="text-green-600 font-bold text-xs">+{{ upperTolerance }} g</div>
+
+        <!-- Luôn hiển thị sai số do đã có mặc định 5g -->
+        <div class="ml-1 min-w-max border-left-1 border-300 pl-3">
+          <div class="text-red-500 font-bold text-xs">-{{ effectiveLowerTolerance }} g</div>
+          <div class="text-green-600 font-bold text-xs">+{{ effectiveUpperTolerance }} g</div>
         </div>
       </div>
 
@@ -56,6 +58,21 @@ const props = defineProps({
 
 // --- KẾT NỐI VỚI COMPONENT CHA ---
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
+
+// --- TÍNH TOÁN SAI SỐ MẶC ĐỊNH LÀ 5g CHO THÀNH PHẦN MỚI ---
+const effectiveLowerTolerance = computed(() => {
+  if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) {
+    return 5;
+  }
+  return props.lowerTolerance;
+});
+
+const effectiveUpperTolerance = computed(() => {
+  if (props.upperTolerance === '' || props.upperTolerance === null || props.upperTolerance === undefined) {
+    return 5;
+  }
+  return props.upperTolerance;
+});
 
 // --- STATE ---
 const mixingProcess = ref({
@@ -130,18 +147,18 @@ const isExceedingLimit = computed(() => {
 
   const current = Number(currentWeight.toFixed(3));
 
-  // Điều kiện 1: Cấm tuyệt đối cân hụt (thấp hơn target)
-  if (current < target) return true;
+  // --- KIỂM TRA GIỚI HẠN DƯỚI (Dùng effectiveTolerance) ---
+  const lowerKg = (parseFloat(effectiveLowerTolerance.value.toString()) || 0) / 1000;
+  const minAcceptable = Number((target - lowerKg).toFixed(3));
 
-  // Điều kiện 2: Nếu CÓ cấu hình upperTolerance thì mới check giới hạn trên
-  if (props.upperTolerance !== '' && props.upperTolerance !== null && props.upperTolerance !== undefined) {
-    const upperKg = (parseFloat(props.upperTolerance.toString()) || 0) / 1000;
-    const maxAcceptable = Number((target + upperKg).toFixed(3));
+  if (current < minAcceptable) return true;
 
-    if (current > maxAcceptable) return true;
-  }
+  // --- KIỂM TRA GIỚI HẠN TRÊN (Dùng effectiveTolerance) ---
+  const upperKg = (parseFloat(effectiveUpperTolerance.value.toString()) || 0) / 1000;
+  const maxAcceptable = Number((target + upperKg).toFixed(3));
 
-  // Nếu qua hết các bài test thì là hợp lệ
+  if (current > maxAcceptable) return true;
+
   return false;
 });
 
@@ -152,9 +169,6 @@ const setDisconnected = () => {
     emit('connection-status', false); // Báo ra cha là mất kết nối
   }
   isStable.value = false;
-  // Không set lại '0.000' ở đây nữa để giữ nguyên số targetWeight trên màn hình nếu mất kết nối
-  // mixingProcess.value.weight = '0.000'; 
-  // emit('update:weight', '0.000');
 };
 
 const connectToScale = async () => {
@@ -240,39 +254,37 @@ const confirmWeight = () => {
     return;
   }
 
-  // Nếu cân hụt -> Báo lỗi ngay lập tức
-  if (current < target) {
-    toast.add({ severity: 'error', summary: 'Không đạt yêu cầu', detail: `Trọng lượng không được thấp hơn ${target.toFixed(3)} Kg.`, life: 5000 });
+  // --- KIỂM TRA GIỚI HẠN DƯỚI (Dùng effectiveTolerance) ---
+  const lowerKg = (parseFloat(effectiveLowerTolerance.value.toString()) || 0) / 1000;
+  const minAcceptable = Number((target - lowerKg).toFixed(3));
+
+  if (current < minAcceptable) {
+    toast.add({
+      severity: 'error',
+      summary: 'Không đạt yêu cầu',
+      detail: `Trọng lượng không được thấp hơn ${minAcceptable.toFixed(3)} Kg.`,
+      life: 5000
+    });
     return;
   }
 
-  // Nếu có upperTolerance -> Kiểm tra xem có bị vượt mức cho phép không
-  if (props.upperTolerance !== '' && props.upperTolerance !== null && props.upperTolerance !== undefined) {
-    const upperKg = (parseFloat(props.upperTolerance.toString()) || 0) / 1000;
-    const maxAcceptable = Number((target + upperKg).toFixed(3));
+  // --- KIỂM TRA GIỚI HẠN TRÊN (Dùng effectiveTolerance) ---
+  const upperKg = (parseFloat(effectiveUpperTolerance.value.toString()) || 0) / 1000;
+  const maxAcceptable = Number((target + upperKg).toFixed(3));
 
-    if (current > maxAcceptable) {
-      toast.add({ severity: 'error', summary: 'Vượt giới hạn', detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} Kg.`, life: 5000 });
-      return;
-    }
+  if (current > maxAcceptable) {
+    toast.add({
+      severity: 'error',
+      summary: 'Vượt giới hạn',
+      detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} Kg.`,
+      life: 5000
+    });
+    return;
   }
 
-  // Nếu lớn hơn hoặc bằng target (và nằm trong mức dư cho phép nếu có)
   emit('confirm-weight', current.toFixed(3));
   toast.add({ severity: 'success', summary: 'Thành công', detail: 'Trọng lượng đạt yêu cầu', life: 3000 });
 };
-
-watch(
-  () => props.targetWeight,
-  (newTargetWeight) => {
-    if (newTargetWeight !== undefined && newTargetWeight !== null) {
-      const formattedWeight = Number(newTargetWeight).toFixed(3);
-      mixingProcess.value.weight = formattedWeight;
-      emit('update:weight', formattedWeight);
-    }
-  },
-  { immediate: true }
-);
 
 onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {
