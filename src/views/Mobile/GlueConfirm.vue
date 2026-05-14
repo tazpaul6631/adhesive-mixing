@@ -3,7 +3,7 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/mobile"></ion-back-button>
+          <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>Chuyền xác nhận keo & trả keo</ion-title>
       </ion-toolbar>
@@ -71,8 +71,10 @@
             </ion-button>
 
             <ion-button
+              v-if="shouldShowReturnScanButton"
               expand="block"
               class="confirm-button"
+              :disabled="isReturnScanButtonDisabled"
               @click="openScanner('return')"
             >
               <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
@@ -118,7 +120,7 @@
 
           <p class="return-confirm-dialog__message">
             Xác nhận trả về thùng keo
-            <strong>{{ pendingReturnQrText }}</strong>
+            <strong>{{ pendingReturnDisplayText }}</strong>
             ?
           </p>
 
@@ -177,26 +179,63 @@ import {
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics } from '@capacitor/haptics';
+import { findMockGlueInfo, getGlueCompareKey, normalizeGlueQrText } from './glueQr.mock';
+import type { GlueQrInfo } from './glueQr.mock';
 
 type ConfirmScanTarget = 'line' | 'allocated';
 type ScanTarget = ConfirmScanTarget | 'return';
+type ReturnScanButtonDisplayMode = 'disabled' | 'hidden';
+
+const returnScanButtonDisplayMode = 'disabled' as ReturnScanButtonDisplayMode;
 
 const lineQrText = ref('');
 const allocatedQrText = ref('');
+const lineQrRawText = ref('');
+const allocatedQrRawText = ref('');
 const returnQrText = ref('');
 const pendingReturnQrText = ref('');
+
+const lineQrInfo = ref<GlueQrInfo | null>(null);
+const allocatedQrInfo = ref<GlueQrInfo | null>(null);
+const returnQrInfo = ref<GlueQrInfo | null>(null);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
 const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
+const isReturnScanReady = ref(false);
+
+const shouldShowReturnScanButton = computed(() => {
+  if (returnScanButtonDisplayMode === 'hidden') {
+    return isReturnScanReady.value;
+  }
+
+  return true;
+});
+
+const isReturnScanButtonDisabled = computed(() => {
+  return !isReturnScanReady.value;
+});
+
+const pendingReturnDisplayText = computed(() => {
+  return returnQrInfo.value?.glueName || pendingReturnQrText.value;
+});
+
 
 const isFirstTwoQrReady = computed(() => {
-  return !!lineQrText.value && !!allocatedQrText.value;
+  return !!lineQrRawText.value && !!allocatedQrRawText.value;
 });
 
 const isFirstTwoQrMatched = computed(() => {
-  return isFirstTwoQrReady.value && normalizeQrText(lineQrText.value) === normalizeQrText(allocatedQrText.value);
+  if (!isFirstTwoQrReady.value) {
+    return false;
+  }
+
+  if (lineQrInfo.value && allocatedQrInfo.value) {
+    return getGlueCompareKey(lineQrInfo.value) === getGlueCompareKey(allocatedQrInfo.value);
+  }
+
+  return normalizeQrText(lineQrRawText.value) === normalizeQrText(allocatedQrRawText.value);
 });
 
 const isConfirmButtonDisabled = computed(() => {
@@ -230,7 +269,7 @@ const statusIcon = computed(() => {
 });
 
 function normalizeQrText(value: string) {
-  return value.trim();
+  return normalizeGlueQrText(value);
 }
 
 async function triggerMismatchVibrationIfNeeded() {
@@ -247,6 +286,10 @@ async function triggerMismatchVibrationIfNeeded() {
 
 async function openScanner(target: ScanTarget) {
   if ((target === 'line' || target === 'allocated') && isFirstTwoQrMatched.value) {
+    return;
+  }
+
+  if (target === 'return' && isReturnScanButtonDisabled.value) {
     return;
   }
 
@@ -285,12 +328,18 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
     return;
   }
 
+  const mockInfo = findMockGlueInfo(normalizedValue);
+
   if (target === 'line') {
-    lineQrText.value = normalizedValue;
+    lineQrRawText.value = normalizedValue;
+    lineQrText.value = mockInfo?.productionLine || normalizedValue;
+    lineQrInfo.value = mockInfo;
   }
 
   if (target === 'allocated') {
-    allocatedQrText.value = normalizedValue;
+    allocatedQrRawText.value = normalizedValue;
+    allocatedQrText.value = mockInfo?.shape || normalizedValue;
+    allocatedQrInfo.value = mockInfo;
   }
 
   closeCurrentToast();
@@ -304,7 +353,10 @@ function handleReturnScanResult(value: string) {
     return;
   }
 
+  const mockInfo = findMockGlueInfo(normalizedValue);
+
   returnQrText.value = normalizedValue;
+  returnQrInfo.value = mockInfo;
   pendingReturnQrText.value = normalizedValue;
   isReturnConfirmDialogOpen.value = true;
 }
@@ -333,8 +385,10 @@ async function confirmReturnQr() {
   try {
     await submitReturnQrMock(pendingReturnQrText.value);
     isReturnConfirmDialogOpen.value = false;
-    showToast('Xác nhận thành công');
     resetReturnField();
+    resetReturnScanState();
+    resetConfirmFields();
+    showToast('Trả về thành công');
   } catch (error) {
     console.error('Không thể xác nhận trả về thùng keo:', error);
     alert('Không thể xác nhận trả về thùng keo. Vui lòng thử lại!');
@@ -353,24 +407,26 @@ function handleConfirmReturn() {
     return;
   }
 
-  const confirmedReturnValue = allocatedQrText.value;
-
-  if (!confirmedReturnValue) {
-    return;
-  }
-
-  resetConfirmFields();
-  showToast('Trả về thành công');
+  isReturnScanReady.value = true;
 }
 
 function resetConfirmFields() {
   lineQrText.value = '';
   allocatedQrText.value = '';
+  lineQrRawText.value = '';
+  allocatedQrRawText.value = '';
+  lineQrInfo.value = null;
+  allocatedQrInfo.value = null;
 }
 
 function resetReturnField() {
   returnQrText.value = '';
   pendingReturnQrText.value = '';
+  returnQrInfo.value = null;
+}
+
+function resetReturnScanState() {
+  isReturnScanReady.value = false;
 }
 
 function showToast(message: string) {
@@ -485,6 +541,7 @@ function closeCurrentToast() {
     font-size: 18px !important;
   }
 }
+
 
 .confirm-button {
   overflow: hidden;
