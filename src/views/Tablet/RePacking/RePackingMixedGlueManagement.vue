@@ -1,219 +1,107 @@
 <template>
   <ion-page>
-    <ion-header class="header-container ion-no-border">
+    <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
           <ion-button @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>Re-Packing Mixed Glue Management</ion-title>
+        <ion-title>Re-Packing Mixed Glue</ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
-      <div class="main-container max-w-full mx-auto">
+    <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
+      <Toast position="top-right" />
 
+      <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div
-            class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
-            <user-avatar />
+          <div class="flex flex-wrap align-items-center justify-content-between">
+            <!-- <user-avatar /> -->
+            <div class="grid formgrid p-fluid flex">
+              <div class="col-12 sm:col-6 lg:col-4">
+                <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
+                <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
+              </div>
+              <div class="col-12 sm:col-6 lg:col-4">
+                <label class="text-800 font-medium mb-1 block">Keo</label>
+                <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
+              </div>
+              <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
+                <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
+                <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
+              </div>
+            </div>
             <div class="flex gap-2">
-              <Button label="Lưu" icon="pi pi-save" outlined size="large" />
-              <Button label="Xác nhận hoàn thành" icon="pi pi-check-circle" severity="success" size="large" />
+              <Button icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
+              <Button icon="pi pi-check-circle" severity="success" size="large" @click="handleComplete" />
             </div>
           </div>
 
-          <div class="grid formgrid p-fluid">
-            <div class="col-12 sm:col-6 lg:col-4">
-              <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
-              <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-4">
-              <label class="text-800 font-medium mb-1 block">Keo</label>
-              <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-4 sm:mt-2">
-              <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
-              <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
-            </div>
-          </div>
+
         </div>
 
-        <!-- Bảng 1 -->
-        <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
+        <!-- BẢNG 1 -->
+        <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu chiết thung keo trộn
+              <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu chiết thùng keo trộn
             </span>
           </div>
-
-          <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" stripedRows
-              class="modern-table" tableStyle="width: 100%; table-layout: fixed;" :paginator="true" :rows="5"
-              :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px">
-
-              <Column field="xuong" header="Xưởng" style="width: 10%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
-                  <span v-else>{{ data.xuong }}</span>
-                </template>
-              </Column>
-
-              <Column field="donYeuCau" header="Đơn yêu cầu" style="width: 18%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.donYeuCau }}</span>
-                </template>
-              </Column>
-
-              <Column field="hinhThe" header="Hình thể" style="width: 15%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
-                  <span v-else>{{ data.hinhThe }}</span>
-                </template>
-              </Column>
-
-              <Column field="dayChuyen" header="Dây Chuyền" style="width: 15%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="60%" height="1.5rem" class="border-round-md" />
-                  <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm">
-                    {{ data.dayChuyen }}
-                  </span>
-                </template>
-              </Column>
-
-              <Column field="thungChua" header="Thùng chứa" style="width: 20%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1.5rem" />
-                  <div v-else class="flex flex-wrap gap-3">
-                    <div v-for="(option, idx) in data.thungChuaOptions" :key="idx" class="flex align-items-center">
-                      <RadioButton v-model="data.selectedThungChua" :inputId="`thung_${data.id}_${idx}`"
-                        :name="`row_${data.id}`" :value="option" />
-                      <label :for="`thung_${data.id}_${idx}`" class="ml-2 mb-0 text-sm font-medium">
-                        {{ option }}
-                      </label>
-                    </div>
-                  </div>
-                </template>
-              </Column>
-
-              <Column field="nguoiThaoTac" header="Người thao tác" style="width: 18%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
-                  <span v-else>{{ data.nguoiThaoTac }}</span>
-                </template>
-              </Column>
-
-              <Column field="thoiGianHoanThanh" header="Thời gian hoàn thành" style="width: 14%; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="90%" height="1rem" />
-                  <span v-else-if="data.thoiGianHoanThanh" class="text-500">
-                    <i class="pi pi-clock text-xs mr-1"></i>{{ data.thoiGianHoanThanh }}
-                  </span>
-                </template>
-              </Column>
-            </DataTable>
-          </div>
+          <RepackingGlue :is-loading="isLoadingLine" :order-details="orderDetails"
+            @update-bucket="saveDraftToStoreOnly" />
         </div>
 
-        <!-- Bảng 2 -->
+        <!-- BẢNG 2 -->
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
           <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu sử dụng keo không trộn
+              <i class="pi pi-box mr-2"></i>Chi tiết đơn yêu cầu sử dụng keo không trộn
             </span>
           </div>
 
           <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
             <div class="grid formgrid align-items-end">
-
-              <div class="col-12 sm:col-6 lg:col-3 mb-3 lg:mb-0">
-                <label class="text-800 font-medium mb-2 block">Hình Thể</label>
-                <InputText v-model="mixingProcess.xuong" readonly
-                  class="w-full font-bold text-primary border-blue-200" />
+              <div class="col-12 sm:col-6 lg:col-3 lg:mb-0">
+                <label class="text-800 font-medium mb-2 block">Hình thể</label>
+                <InputText v-model="mixingProcess.styleName" readonly class="font-bold text-primary border-blue-200"
+                  style="width: 280px;" fluid />
               </div>
 
-              <div class="col-12 sm:col-6 lg:col-3 mb-3 lg:mb-0">
+              <div class="col-12 sm:col-6 lg:col-3 lg:mb-0">
                 <label class="text-800 font-medium mb-2 block">Keo</label>
-                <InputText v-model="mixingProcess.keo" readonly class="w-full font-bold text-primary border-blue-200" />
+                <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
+                  style="width: 280px;" fluid />
               </div>
 
-              <ElectronicScale @update:weight="handleWeightChange" @connection-status="handleConnectionStatus" />
+              <ElectronicScale :weight-unit="activeComponent?.weightUnit"
+                :target-weight="activeComponent?.requiredWeight ?? 0"
+                :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
+                :upper-tolerance="activeComponent?.upperTolerance ?? ''" @update:weight="handleWeightChange"
+                @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
             </div>
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="componentDetailsFull" lazy :totalRecords="totalComponentRecords" @page="onPageComponent"
-              stripedRows class="modern-table" tableStyle="min-width: 70rem" @row-click="onRowClick" :paginator="true"
-              :rows="5" :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px">
+            <div ref="table2Ref" class="table-wrapper">
+              <NoRePackingGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
+                :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
+                @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent"
+                @chiet-row="handleChietRow" @view-row="handleViewRow" />
+            </div>
 
-              <template #paginatorstart>
-                <div class="flex justify-start">
-                  <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="refreshData" />
-                </div>
-              </template>
+            <!-- MODAL THÊM THÀNH PHẦN -->
+            <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
+              :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
+              @save="handleSaveNewComponent" />
 
-              <Column field="xuong" header="Xưởng" style="width: 50px; text-align: center; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" class="mx-auto" />
-                  <span v-else>{{ data.xuong }}</span>
-                </template>
-              </Column>
-
-              <Column field="hinhThe" header="Hình Thể" style="min-width: 120px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="70%" height="1rem" />
-                  <span v-else>{{ data.hinhThe }}</span>
-                </template>
-              </Column>
-
-              <Column field="keo" header="Keo" class="font-medium" style="min-width: 180px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="80%" height="1rem" />
-                  <span v-else>{{ data.keo }}</span>
-                </template>
-              </Column>
-
-              <Column field="trongLuongThucTe" header="TL thực tế (Kg)" style="min-width: 150px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
-                  <template v-else>
-                    <span v-if="data.trongLuongThucTe" class="text-green-600 font-bold">{{ data.trongLuongThucTe
-                    }}</span>
-                    <span v-else class="text-400 font-italic">Chưa cân</span>
-                  </template>
-                </template>
-              </Column>
-
-              <Column field="nguoiThaoTac" header="Người thao tác" style="min-width: 150px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="60%" height="1rem" />
-                  <span v-else>{{ data.nguoiThaoTac }}</span>
-                </template>
-              </Column>
-
-              <Column field="thoiGianHoanThanh" header="Thời gian hoàn thành" style="min-width: 180px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="90%" height="1rem" />
-                  <span v-else-if="data.thoiGianHoanThanh" class="text-500">
-                    <i class="pi pi-clock text-xs mr-1"></i>{{ data.thoiGianHoanThanh }}
-                  </span>
-                </template>
-              </Column>
-
-              <Column field="chiet" header="Chiết" style="min-width: 150px; height: 60px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingComponent" width="50%" height="1rem" />
-                  <Button :label="data.chiet ? 'Chiết' : 'Chiết'" icon="pi pi-check-square" size="small" severity="info"
-                    outlined @click.stop="handleChiet(data)" />
-                </template>
-              </Column>
-              <template #paginatorend></template>
-            </DataTable>
+            <!-- MODAL CHIẾT KEO -->
+            <ChietKeoDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
+              :order-details="chietOrderDetails" @update-bucket="handleChietUpdateBucket" @confirm="confirmChiet" />
           </div>
         </div>
+
         <div class="h-3rem flex-shrink-0"></div>
       </div>
       <BackToTop slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
@@ -222,177 +110,494 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
-} from '@ionic/vue';
+import { onMounted, ref, nextTick, watch } from 'vue';
+import { useRoute, onBeforeRouteLeave, useRouter } from 'vue-router';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, onIonViewDidEnter, useBackButton, alertController } from '@ionic/vue';
+import { useToast } from 'primevue/usetoast';
+import UI from '@/mixins/present';
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import format from '@/mixins/format';
+
+import { useAuthStore } from '@/store/auth';
+import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
+import workOrder from '@/api/workOrder';
+import materialApi from '@/api/material';
+import mixGlueApi from '@/api/mixGlue';
+
 import BackToTop from '@/components/BackToTop.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import ElectronicScale from '@/components/ElectronicScale.vue';
-import { useRouter } from 'vue-router';
+import AddComponentDialog from '@/views/Tablet/RePacking/components/AddComponentDialog.vue';
+import RepackingGlue from '@/views/Tablet/RePacking/components/RepackingGlue.vue';
+import NoRePackingGlue from '@/views/Tablet/RePacking/components/NoRePackingGlue.vue';
+import ChietKeoDialog from '@/views/Tablet/RePacking/components/ChietKeoDialog.vue';
 
+dayjs.extend(customParseFormat);
+const VI_FORMATS = ["DD/MM/YYYY, HH:mm:ss", "DD/MM/YYYY HH:mm:ss", "DD/MM/YYYY"];
+
+// ============================================================================
+// GLOBAL SETUP & REFS
+// ============================================================================
+const toast = useToast();
+const authStore = useAuthStore();
+const draftStore = useMixGlueDraftStore();
+const route = useRoute();
 const router = useRouter();
 
-// Loading states
+const currentWorkOrderId = ref('');
+const isDirty = ref(false);
+const startDate = ref(''); // Lưu trữ startDate từ API
+const endDate = ref(''); // Lưu trữ endDate từ API
+
+const headerInfo = ref({ orderNo: '', glue: '', totalWeight: '' });
+const orderDetails = ref<any[]>([]);
+const noMixChemicalsFull = ref<any[]>([]);
+const noMixComponents = ref<any[]>([]);
+const selectedItem = ref<any>(null);
+const activeComponent = ref<any>(null);
+const mixingProcess = ref({ component: '', weight: '', styleName: '' });
+
 const isLoadingLine = ref(true);
 const isLoadingComponent = ref(true);
+const hourlyValidity = ref<string>('0');
 
-const totalRecords = 100;
-const totalComponentRecords = 100;
+const contentRef = ref<any>(null);
+const table2Ref = ref<HTMLDivElement | null>(null);
+const showScrollButton = ref(false);
+const productDialog = ref(false);
+const materialsList = ref<any[]>([]);
+const isLoadingMaterials = ref(false);
 
-// Data form Header
-const headerInfo = ref({
-  orderNo: 'C2R26216',
-  glue: 'Keo bôi đế',
-  model: 'C2 R26216',
-  totalWeight: '31.5'
-});
+const chietDialog = ref(false);
+const chietOrderDetails = ref<any[]>([]);
+const currentChietChemical = ref<any>(null);
+const extraChietList = ref<any[]>([]); // Chứa mảng dữ liệu chiết thêm từ Modal
 
-// Data thao tác cân
-const mixingProcess = ref({
-  xuong: '351',
-  keo: 'Keo 7911',
-  weight: '1.501'
-});
+watch(noMixChemicalsFull, () => {
+  if (!isLoadingComponent.value) isDirty.value = true;
+}, { deep: true });
 
-const onRowClick = (event: any) => {
-  if (!isLoadingComponent.value && event.data && event.data.hinhThe && event.data.keo) {
-    mixingProcess.value.xuong = event.data.hinhThe;
-    mixingProcess.value.keo = event.data.keo;
+watch(orderDetails, () => {
+  if (!isLoadingLine.value) isDirty.value = true;
+}, { deep: true });
+
+// ============================================================================
+// FETCH DATA & MAPPING
+// ============================================================================
+const fetchWorkOrderDetail = async (id: string) => {
+  isLoadingLine.value = true;
+  isLoadingComponent.value = true;
+  currentWorkOrderId.value = id;
+
+  try {
+    const existingDraft = draftStore.getDraft(id);
+
+    if (existingDraft && existingDraft.noMixChemicalsFull?.length > 0) {
+      headerInfo.value = existingDraft.headerInfo;
+      noMixChemicalsFull.value = existingDraft.noMixChemicalsFull;
+      extraChietList.value = existingDraft.extraChietList || []; // Khôi phục cả mảng chiết
+
+      selectedItem.value = noMixChemicalsFull.value[0];
+      activeComponent.value = { ...noMixChemicalsFull.value[0] };
+      mixingProcess.value.styleName = noMixChemicalsFull.value[0].styleName || '';
+      mixingProcess.value.component = noMixChemicalsFull.value[0].materialName || '';
+
+      const { data } = await workOrder.getWorkOrder(id, 3);
+      if (data?.success) {
+        const respData = data.data;
+        startDate.value = respData.startDate || new Date().toISOString();
+        endDate.value = respData.endDate || new Date().toISOString();
+        orderDetails.value = existingDraft.orderDetails || respData.orderDetails || [];
+        hourlyValidity.value = respData.hourlyValidity || '0';
+        noMixComponents.value = respData.noMixChemicals || [];
+      }
+
+      toast.add({ severity: 'info', summary: 'Khôi phục', detail: 'Đã tải lại dữ liệu đã lưu', life: 3000 });
+    } else {
+      // (Giữ nguyên logic else ban đầu)
+      const { data } = await workOrder.getWorkOrder(id, 3);
+      if (data?.success) {
+        const respData = data.data;
+        startDate.value = respData.startDate || new Date().toISOString();
+        endDate.value = respData.endDate || new Date().toISOString();
+        hourlyValidity.value = respData.hourlyValidity || '0';
+
+        headerInfo.value = {
+          orderNo: respData.workOrderMasterName || '',
+          glue: respData.chemicalMasterName || '',
+          totalWeight: respData.workOrderWeight?.toString() || ''
+        };
+
+        orderDetails.value = respData.orderDetails || [];
+
+        noMixChemicalsFull.value = (respData.mixChemicals || []).map((item: any) => ({
+          factoryId: item.factoryId,
+          factoryName: item.factoryName,
+          styleName: item.styleName,
+          materialCode: item.materialCode || '0',
+          materialName: item.materialName,
+          weightUnit: item.weightUnit || 'Kg',
+          requiredWeight: item.requiredWeight || '',
+          actualWeight: item.actualWeight || '',
+          lowerTolerance: item.lowerTolerance || '0',
+          upperTolerance: item.upperTolerance || '0',
+          mixingRatio: item.mixingRatio || '100',
+          glueExtra: item.glueExtra || false
+        }));
+
+        noMixComponents.value = respData.noMixChemicals || [];
+
+        if (noMixComponents.value.length > 0) {
+          selectedItem.value = noMixComponents.value[0];
+          activeComponent.value = { ...noMixComponents.value[0] };
+          activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
+          mixingProcess.value.styleName = noMixComponents.value[0].styleName || '';
+          mixingProcess.value.component = noMixComponents.value[0].materialName || '';
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Lỗi khi tải dữ liệu chi tiết:', error);
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể tải dữ liệu đơn hàng', life: 3000 });
+  } finally {
+    isLoadingLine.value = false;
+    isLoadingComponent.value = false;
+    await nextTick();
+    isDirty.value = false;
   }
+};
+
+// ============================================================================
+// PAYLOAD & LƯU HOÀN THÀNH
+// ============================================================================
+const buildPayload = (recordStatus: string) => {
+  const factoryId = authStore.user?.factoryId || '';
+  const employeeId = authStore.user?.employeeId || '';
+
+  // 1. Lấy danh sách requestDetailIds từ mảng orderDetails
+  const requestDetailIds = orderDetails.value
+    .map(item => item.requestDetailId)
+    .filter(Boolean);
+
+  // 2. Map dữ liệu RePackingGlues mặc định từ bảng 1 (orderDetails)
+  const baseRePackingGlues = orderDetails.value.map(item => ({
+    requestDetailId: item.requestDetailId || '',
+    glueId: item.chemicalMasterId || '',
+    bucketId: item.selectedBucketId || '',
+    recordStatus: recordStatus
+  }));
+
+  // 3. Map dữ liệu RePackingGlues được chiết bổ sung qua Modal (nếu có)
+  const chietRePackingGlues = extraChietList.value.map(item => ({
+    requestDetailId: item.requestDetailId,
+    glueId: item.glueId,
+    bucketId: item.bucketId,
+    recordStatus: recordStatus // Cập nhật lại trạng thái theo user submit (0 hoặc 1)
+  }));
+
+  // Gộp cả hai vào rePackingGlues
+  const finalRePackingGlues = [...baseRePackingGlues, ...chietRePackingGlues];
+
+  // 4. Map dữ liệu noRePackingGlues từ bảng 2 (noMixComponents)
+  const finalNoRePackingGlues = noMixComponents.value.map(item => ({
+    materialCode: item.materialCode || '',
+    glueWeight: Number(item.actualWeight) || 0,
+    glueWeightUnit: item.weightUnit || 'Kg',
+    glueExtra: !!item.glueExtra, // Data từ API trả về thường false, Data tạo mới từ modal đang set true
+    recordStatus: recordStatus
+  }));
+
+  return {
+    factoryId: factoryId,
+    workOrderMasterId: currentWorkOrderId.value,
+    startDate: startDate.value,
+    endDate: endDate.value,
+    createrId: employeeId,
+    updaterId: employeeId,
+    requestDetailIds: requestDetailIds,
+    rePackingGlues: finalRePackingGlues,
+    noRePackingGlues: finalNoRePackingGlues
+  };
+};
+
+const handleSaveDraft = async () => {
+  // Bỏ comment nếu muốn bắt lỗi chưa cân
+  // const isIncomplete = noMixChemicalsFull.value.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
+  // if (isIncomplete) return toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng thực hiện cân đầy đủ!', life: 4000 });
+
+  try {
+    draftStore.saveDraft(currentWorkOrderId.value, {
+      headerInfo: headerInfo.value,
+      noMixChemicalsFull: noMixChemicalsFull.value,
+      orderDetails: orderDetails.value
+    });
+
+    const payload = buildPayload("0");
+    console.log("Save Draft Payload:", payload); // Debug
+    // await mixGlueApi.postMixGlueCommand(payload);
+
+    isDirty.value = false;
+    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu bản nháp', life: 3000 });
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể lưu bản nháp', life: 3000 });
+  }
+};
+
+const handleComplete = async () => {
+  const isIncomplete = noMixChemicalsFull.value.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
+  if (isIncomplete) {
+    return toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng thực hiện cân đầy đủ!', life: 4000 });
+  }
+
+  try {
+    const payload = buildPayload("1");
+    console.log("Complete Payload:", payload); // Debug
+    // await mixGlueApi.postMixGlueCommand(payload);
+
+    draftStore.clearDraft(currentWorkOrderId.value);
+    isDirty.value = false;
+    toast.add({ severity: 'success', summary: 'Hoàn thành', detail: 'Đã gửi dữ liệu thành công', life: 3000 });
+    router.push('/list-mix-glue');
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể xác nhận hoàn thành', life: 3000 });
+  }
+};
+
+// ============================================================================
+// CÂN & XỬ LÝ TABLE
+// ============================================================================
+const onRowClick = (event: { data: any }) => {
+  if (isLoadingComponent.value || !event.data?.materialName) return;
+
+  mixingProcess.value.styleName = event.data.styleName || '';
+  mixingProcess.value.component = event.data.materialName || '';
+
+  const rowIndex = noMixComponents.value.findIndex(item => item === event.data);
+  activeComponent.value = { ...event.data };
+
+  if (rowIndex === 0) activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
 };
 
 const handleWeightChange = (newWeight: string) => {
-  console.log("Trọng lượng cân đang là:", newWeight);
-  // Gán vào biến form của bạn ở ngoài này...
-}
+  mixingProcess.value.weight = newWeight;
+};
+
+const handleConfirmWeight = (actualWeight: string) => {
+  if (!activeComponent.value) return;
+
+  const index = noMixComponents.value.findIndex(item => item.materialName === activeComponent.value?.materialName);
+
+  if (index !== -1) {
+    noMixComponents.value[index].actualWeight = actualWeight;
+    noMixComponents.value[index].operator = authStore.user?.employeeName || 'Chưa xác định';
+    noMixComponents.value[index].weighingTime = format.formatDate(new Date().toISOString());
+
+    const baseItem = noMixComponents.value[0];
+    const baseActualWeight = Number(baseItem.actualWeight || '0');
+    const baseMixingRatio = Number(baseItem.mixingRatio || '100');
+
+    if (baseActualWeight > 0) {
+      noMixComponents.value.forEach((item, i) => {
+        if (i !== 0) {
+          const currentRatio = Number(item.mixingRatio || '0');
+          item.requiredWeight = ((currentRatio * baseActualWeight) / baseMixingRatio).toFixed(3);
+        }
+      });
+    }
+
+    activeComponent.value = { ...noMixComponents.value[index] };
+
+    const fullIndex = noMixChemicalsFull.value.findIndex(item => item.materialName === activeComponent.value?.materialName);
+    if (fullIndex !== -1) {
+      noMixChemicalsFull.value[fullIndex].actualWeight = actualWeight;
+      noMixChemicalsFull.value[fullIndex].weighingTime = noMixComponents.value[index].weighingTime;
+    }
+  }
+};
 
 const handleConnectionStatus = (status: boolean) => {
-  if (status) {
-    console.log("Cân đã kết nối!");
-  } else {
-    console.log("Mất kết nối với cân!");
-  }
-}
-
-const goBack = () => router.back();
-
-// BackToTop logic
-const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
-
-const handleScroll = (event: CustomEvent) => {
-  if (event.detail.scrollTop > 100) {
-    showScrollButton.value = true;
-  } else {
-    showScrollButton.value = false;
-  }
+  console.log(status ? "Cân đã kết nối!" : "Mất kết nối với cân!");
 };
 
-const scrollToTop = () => {
-  if (contentRef.value) {
-    contentRef.value.$el.scrollToTop(500);
-  }
-};
-////////////////////////////
+// ============================================================================
+// MODAL & MATERIALS LOGIC
+// ============================================================================
+const handleSaveNewComponent = (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
+  const baseItem = noMixChemicalsFull.value[0];
+  const baseActualWeight = Number(baseItem?.actualWeight || '0');
+  const baseMixingRatio = Number(baseItem?.mixingRatio || '100');
+  const calculatedReqWeight = (parseInt(newComponentData.percentage) * baseActualWeight) / baseMixingRatio;
 
-const generateData = (index: number) => {
-  const isChuyen1 = index % 2 === 0;
-  const numOptions = Math.random() > 0.5 ? 2 : 3;
-  const options = Array.from({ length: numOptions }).map((_, i) => `kg ${i + 1}`);
-  const randomSelected = options[Math.floor(Math.random() * options.length)];
-
-  return {
-    id: index,
-    xuong: `BU${index % 3 + 1}`,
-    donYeuCau: `Chuyền ${isChuyen1 ? '1' : '2'} C2 R26216`,
-    hinhThe: 'C2 R26216',
-    dayChuyen: `Chuyền ${isChuyen1 ? '1' : '2'}`,
-    thungChuaOptions: options,
-    selectedThungChua: randomSelected,
-    nguoiThaoTac: isChuyen1 ? 'R79xxx' : '',
-    thoiGianHoanThanh: isChuyen1 ? '10:15 10/04/2026' : '11:30 10/04/2026'
+  const newComponent = {
+    materialName: newComponentData.name,
+    materialCode: newComponentData.materialCode,
+    weightUnit: newComponentData.weightUnit,
+    requiredWeight: calculatedReqWeight.toFixed(3),
+    actualWeight: '',
+    operator: '',
+    weighingTime: '',
+    lowerTolerance: '0',
+    upperTolerance: '0',
+    mixingRatio: newComponentData.percentage.toString(),
+    glueExtra: true, // Nếu tạo mới sẽ là true
+    factoryName: noMixChemicalsFull.value[0]?.factoryName,
+    styleName: noMixChemicalsFull.value[0]?.styleName,
+    factoryId: authStore.user?.factoryId || ''
   };
+
+  noMixChemicalsFull.value.push(newComponent);
+  noMixComponents.value.push(newComponent);
+
+  toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã thêm thành phần mới', life: 3000 });
 };
 
-const generateComponentData = (index: number) => {
-  const isKeo7911 = index % 2 !== 0;
-  return {
-    id: index,
-    xuong: `BU${index % 3 + 1}`,
-    hinhThe: Math.random().toString(36).substring(2, 7).toUpperCase(),
-    keo: 'Keo ' + Math.random().toFixed(5).substring(2, 7).toUpperCase(),
-    trongLuongThucTe: isKeo7911 ? '1.6' : '',
-    nguoiThaoTac: isKeo7911 ? 'R79xxx' : '',
-    thoiGianHoanThanh: isKeo7911 ? '13:15 16/04/2026' : '',
-    chiet: isKeo7911 ? true : false
-  };
+const handleDeleteComponent = async (rowToDelete: any) => {
+  await UI.Confirm('Xác nhận xóa', `Thành phần: ${rowToDelete.materialName}`, `Bạn có chắc chắn muốn xóa thành phần này?`, () => {
+    noMixChemicalsFull.value = noMixChemicalsFull.value.filter(item => item !== rowToDelete);
+    draftStore.saveDraft(currentWorkOrderId.value, { headerInfo: headerInfo.value, noMixChemicalsFull: noMixChemicalsFull.value, orderDetails: orderDetails.value });
+    toast.add({ severity: 'success', summary: 'Đã xóa', detail: `Xóa thành phần thành công`, life: 3000 });
+  }, undefined, 'custom-error-alert');
 };
 
-// Hàm xử lý khi bấm nút "Chiết"
-const handleChiet = (rowData: any) => {
-  console.log("Thực hiện chiết cho dòng:", rowData);
-  // Thêm logic gọi API hoặc cập nhật dữ liệu của bạn tại đây
-
-  // Ví dụ: Gán thông tin lên phần thao tác cân
-  mixingProcess.value.xuong = rowData.hinhThe;
-  mixingProcess.value.keo = rowData.keo;
+const fetchMaterials = async () => {
+  isLoadingMaterials.value = true;
+  try {
+    const { data } = await materialApi.postMaterial({ factoryId: authStore.user?.factoryId || '' });
+    if (data?.success) {
+      const existingCodes = noMixChemicalsFull.value.map(item => String(item.materialCode));
+      materialsList.value = (data.data || []).filter((item: any) => !existingCodes.includes(String(item.materialCode)));
+    }
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể tải thành phần', life: 3000 });
+  } finally {
+    isLoadingMaterials.value = false;
+  }
 };
 
-// MẢNG DỮ LIỆU GỐC (khởi tạo bằng Skeleton ban đầu)
-const lineDetails = ref<any[]>(Array.from({ length: 5 }).map(() => ({})));
-const componentDetailsFull = ref<any[]>(Array.from({ length: 5 }).map(() => ({})));
-
-// Hàm phân trang (Bảng 1)
-const onPageLine = (event: any) => {
-  isLoadingLine.value = true;
-  lineDetails.value = Array.from({ length: event.rows }).map(() => ({}));
-
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: event.rows }).map((_, i) =>
-      generateData(event.first + i + 1)
-    );
-    isLoadingLine.value = false;
-  }, 1000);
+const saveDraftToStoreOnly = () => {
+  draftStore.saveDraft(currentWorkOrderId.value, {
+    orderDetails: orderDetails.value
+  });
 };
 
-// Hàm phân trang (Bảng 2)
-const onPageComponent = (event: any) => {
-  isLoadingComponent.value = true;
-  componentDetailsFull.value = Array.from({ length: event.rows }).map(() => ({}));
+// ============================================================================
+// XỬ LÝ MODAL CHIẾT KEO
+// ============================================================================
+const handleChietRow = (rowData: any) => {
+  currentChietChemical.value = rowData;
+  chietOrderDetails.value = orderDetails.value.map(item => ({
+    ...item,
+    chemicalId: rowData.materialCode,
+    selectedBucketId: null // Bắt buộc null để modal rỗng hoàn toàn lúc mới vô
+  }));
 
-  setTimeout(() => {
-    componentDetailsFull.value = Array.from({ length: event.rows }).map((_, i) =>
-      generateComponentData(event.first + i + 1)
-    );
-    isLoadingComponent.value = false;
-  }, 1000);
+  chietDialog.value = true;
 };
 
-// Khởi tạo mô phỏng
-onMounted(() => {
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: 5 }).map((_, i) => generateData(i + 1));
-    isLoadingLine.value = false;
-  }, 1500);
+const handleChietUpdateBucket = () => {
+  console.log('Đã cập nhật thùng trong modal chiết', chietOrderDetails.value);
+};
 
-  setTimeout(() => {
-    componentDetailsFull.value = Array.from({ length: 5 }).map((_, i) => generateComponentData(i + 1));
-    isLoadingComponent.value = false;
-  }, 1500);
+const handleViewRow = (rowData: any) => {
+  currentChietChemical.value = rowData;
+
+  // Tìm những record đã lưu tạm trong extraChietList cho materialCode này
+  const savedData = extraChietList.value.filter(item => item.requestDetailId === rowData.materialCode);
+
+  chietOrderDetails.value = orderDetails.value.map(item => {
+    // Mapping thùng đã lưu
+    const match = savedData.find(s => s.glueId === item.chemicalMasterId);
+    return {
+      ...item,
+      chemicalId: rowData.materialCode,
+      selectedBucketId: match ? match.bucketId : null
+    };
+  });
+
+  chietDialog.value = true;
+};
+
+const confirmChiet = () => {
+  // 1. Dọn dẹp data cũ của mã keo này (để lỡ user chỉnh sửa thì ghi đè)
+  extraChietList.value = extraChietList.value.filter(
+    item => item.requestDetailId !== currentChietChemical.value?.materialCode
+  );
+
+  // 2. Add data mới vừa confirm vào mảng
+  chietOrderDetails.value.forEach(item => {
+    if (item.selectedBucketId) { // Chỉ push những field có chọn thùng
+      extraChietList.value.push({
+        requestDetailId: currentChietChemical.value?.materialCode,
+        glueId: item.chemicalMasterId || '',
+        bucketId: item.selectedBucketId
+      });
+    }
+  });
+
+  toast.add({ severity: 'success', summary: 'Đã lưu chiết', detail: 'Thông tin chiết thùng được tạm lưu', life: 3000 });
+  chietDialog.value = false;
+};
+
+// ============================================================================
+// UI, SCROLL & NAVIGATION GUARDS
+// ============================================================================
+const handleScroll = (event: CustomEvent) => showScrollButton.value = event.detail.scrollTop > 100;
+const scrollToTop = () => contentRef.value?.$el?.scrollToTop(500);
+const goBack = () => {
+  // if (isDirty.value) {
+  //   // Lưu lại toàn bộ dữ liệu hiện hành vào store
+  //   draftStore.saveDraft(currentWorkOrderId.value, {
+  //     headerInfo: headerInfo.value,
+  //     noMixChemicalsFull: noMixChemicalsFull.value,
+  //     orderDetails: orderDetails.value,
+  //     extraChietList: extraChietList.value // Lưu thêm mảng phụ này
+  //   });
+
+  //   isDirty.value = false; // Bypass the router guard
+  //   toast.add({ severity: 'success', summary: 'Đã lưu bản nháp', detail: 'Dữ liệu được lưu an toàn trước khi thoát.', life: 2500 });
+  // }
+  router.back();
+};
+
+const alertKhongChoPhepThoat = (): Promise<boolean> => {
+  return new Promise(async (resolve) => {
+    const alert = await alertController.create({
+      header: 'Cảnh báo chưa lưu',
+      message: 'Dữ liệu chưa được lưu. Bạn có chắc chắn muốn thoát? Dữ liệu đang cân sẽ bị mất.',
+      buttons: [
+        { text: 'Ở lại', role: 'cancel', handler: () => resolve(false) },
+        {
+          text: 'Thoát', role: 'confirm', cssClass: 'text-red-500', handler: () => {
+            // Confirm thì xóa trắng draft mặc định
+            draftStore.clearDraft(currentWorkOrderId.value);
+            isDirty.value = false;
+            resolve(true);
+          }
+        }
+      ]
+    });
+    await alert.present();
+  });
+};
+
+useBackButton(10, (processNextHandler) => isDirty.value ? alertKhongChoPhepThoat() : processNextHandler());
+onBeforeRouteLeave(async (to, from) => {
+  if (isDirty.value) {
+    const canLeave = await alertKhongChoPhepThoat();
+    return canLeave;
+  }
+  return true;
 });
 
-// Hàm xử lý nút Refresh ở Bảng 2
-const refreshData = () => {
-  console.log("Đang tải lại dữ liệu bảng 2...");
-  isLoadingComponent.value = true;
-  componentDetailsFull.value = Array.from({ length: 5 }).map(() => ({}));
+onIonViewDidEnter(async () => {
+  await nextTick();
+  table2Ref.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
-  setTimeout(() => {
-    componentDetailsFull.value = Array.from({ length: 5 }).map((_, i) => generateComponentData(i + 1));
-    isLoadingComponent.value = false;
-  }, 1000);
-};
+onMounted(() => {
+  const workOrderMasterId = route.query.workOrderMasterId as string;
+  if (workOrderMasterId) fetchWorkOrderDetail(workOrderMasterId);
+  else { isLoadingLine.value = false; isLoadingComponent.value = false; }
+});
 </script>
-
-<style scoped></style>

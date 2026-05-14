@@ -7,23 +7,23 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>List Mix Glue Management</ion-title>
+        <ion-title>List Re-Packing Mixed Glue</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
       <div class="main-container max-w-full mx-auto">
 
-        <!-- <div class="surface-card p-3 shadow-1 border-round-xl">
+        <div class="surface-card p-3 shadow-1 border-round-xl">
           <div class="flex flex-wrap align-items-center justify-content-between">
             <user-avatar />
           </div>
-        </div> -->
+        </div>
 
         <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-list mr-2"></i>List Mix Glue
+              <i class="pi pi-list mr-2"></i>List Re-Packing Mixed Glue
             </span>
           </div>
 
@@ -161,7 +161,7 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
   if (workOrderMasterId) {
     router.push({
-      path: '/mix-glue-management',
+      path: '/repacking-mixed-glue-management',
       query: { workOrderMasterId: workOrderMasterId }
     });
   } else {
@@ -176,8 +176,8 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
-      mixGlueComplete: false,
-      qipConfirm: false,
+      mixGlueComplete: true,
+      qipConfirm: true,
       page: page,
       pageSize: pageSize
     };

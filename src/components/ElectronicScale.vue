@@ -18,7 +18,7 @@
             'text-red-500': isExceedingLimit,
             'text-primary': !isExceedingLimit
           }" />
-        <span class="p-inputgroup-addon font-bold px-1">Kg</span>
+        <span class="p-inputgroup-addon font-bold px-1">{{ weightUnit }}</span>
 
         <!-- Luôn hiển thị sai số do đã có mặc định 5g -->
         <div class="ml-1 min-w-max border-left-1 border-300 pl-3">
@@ -33,82 +33,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { registerPlugin, WebPlugin, Capacitor } from '@capacitor/core';
-import { useToast } from 'primevue/usetoast';
-
-const toast = useToast();
-
-// --- NHẬN PROPS TỪ CHA ---
-const props = defineProps({
-  targetWeight: {
-    type: [Number, String],
-    default: 0
-  },
-  lowerTolerance: {
-    type: [Number, String],
-    default: ''
-  },
-  upperTolerance: {
-    type: [Number, String],
-    default: ''
-  }
-});
-
-// --- KẾT NỐI VỚI COMPONENT CHA ---
-const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
-
-// --- TÍNH TOÁN SAI SỐ MẶC ĐỊNH LÀ 5g CHO THÀNH PHẦN MỚI ---
-const effectiveLowerTolerance = computed(() => {
-  if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) {
-    return 5;
-  }
-  return props.lowerTolerance;
-});
-
-const effectiveUpperTolerance = computed(() => {
-  if (props.upperTolerance === '' || props.upperTolerance === null || props.upperTolerance === undefined) {
-    return 5;
-  }
-  return props.upperTolerance;
-});
-
-// --- STATE ---
-const mixingProcess = ref({
-  weight: ''
-});
-const isConnected = ref(false);
-const isStable = ref(false);
-
-// Các biến lưu trữ nội bộ cho logic cân
-let dataBuffer = '';
-let dataListener: any = null;
-let watchdog: any = null;
-let autoConnectInterval: any = null;
-
-// ==========================================
-// THÊM WATCH ĐỂ GÁN TRỌNG LƯỢNG YÊU CẦU VÀO INPUT
-// ==========================================
-watch(
-  () => props.targetWeight,
-  (newTargetWeight) => {
-    if (newTargetWeight !== undefined && newTargetWeight !== null) {
-      // Ép kiểu về số và làm tròn 3 chữ số thập phân cho đẹp
-      const formattedWeight = Number(newTargetWeight).toFixed(3);
-      mixingProcess.value.weight = formattedWeight;
-
-      // Emit ngược lại cho cha biết số đã được set mặc định
-      emit('update:weight', formattedWeight);
-    }
-  },
-  { immediate: true } // immediate: true giúp chạy ngay lần đầu tiên component được render
-);
-
-// --- PLUGIN CONFIG ---
-const SerialScale = registerPlugin<any>('SerialScale', {
-  web: () => new SerialScaleWeb(),
-});
+<script lang="ts">
+import { registerPlugin, WebPlugin } from '@capacitor/core';
 
 class SerialScaleWeb extends WebPlugin {
   private port: any = null;
@@ -137,6 +63,91 @@ class SerialScaleWeb extends WebPlugin {
     if (this.port) await this.port.close();
   }
 }
+
+// Đăng ký Plugin ở đây, nó sẽ không bị gọi lại 2 lần nữa
+const SerialScale = registerPlugin<any>('SerialScale', {
+  web: () => new SerialScaleWeb(),
+});
+</script>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { Capacitor } from '@capacitor/core';
+import { useToast } from 'primevue/usetoast';
+
+const toast = useToast();
+
+// --- NHẬN PROPS TỪ CHA ---
+const props = defineProps({
+  targetWeight: {
+    type: [Number, String],
+    default: 0
+  },
+  lowerTolerance: {
+    type: [Number, String],
+    default: ''
+  },
+  upperTolerance: {
+    type: [Number, String],
+    default: ''
+  },
+  weightUnit: {
+    type: [Number, String],
+    default: ''
+  }
+});
+
+// --- KẾT NỐI VỚI COMPONENT CHA ---
+const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
+
+// --- TÍNH TOÁN SAI SỐ MẶC ĐỊNH LÀ 5g CHO THÀNH PHẦN MỚI ---
+const effectiveLowerTolerance = computed(() => {
+  if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) {
+    return 5;
+  }
+  return props.lowerTolerance;
+});
+
+const effectiveUpperTolerance = computed(() => {
+  if (props.upperTolerance === '' || props.upperTolerance === null || props.upperTolerance === undefined) {
+    return 5;
+  }
+  return props.upperTolerance;
+});
+
+const weightUnit = computed(() => {
+  return props.weightUnit;
+});
+
+// --- STATE ---
+const mixingProcess = ref({
+  weight: '0.000'
+});
+const isConnected = ref(false);
+const isStable = ref(false);
+// Các biến lưu trữ nội bộ cho logic cân
+let dataBuffer = '';
+let dataListener: any = null;
+let watchdog: any = null;
+let autoConnectInterval: any = null;
+
+// ==========================================
+// THÊM WATCH ĐỂ GÁN TRỌNG LƯỢNG YÊU CẦU VÀO INPUT
+// ==========================================
+watch(
+  () => props.targetWeight,
+  (newTargetWeight) => {
+    if (newTargetWeight !== undefined && newTargetWeight !== null) {
+      // Ép kiểu về số và làm tròn 3 chữ số thập phân cho đẹp
+      const formattedWeight = Number(newTargetWeight).toFixed(3);
+      mixingProcess.value.weight = formattedWeight;
+
+      // Emit ngược lại cho cha biết số đã được set mặc định
+      emit('update:weight', formattedWeight);
+    }
+  },
+  { immediate: true } // immediate: true giúp chạy ngay lần đầu tiên component được render
+);
 
 const isExceedingLimit = computed(() => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
