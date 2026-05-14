@@ -15,7 +15,8 @@
 
       <div class="flex flex-column gap-2">
         <label for="percentage" class="font-bold text-900">Trọng lượng thực tế</label>
-        <InputNumber id="percentage" v-model="percentage" :invalid="submitted && percentage === null" class="w-full" />
+        <InputNumber id="percentage" v-model="percentage" suffix=" kg" :invalid="submitted && percentage === null"
+          class="w-full" />
         <small v-if="submitted && percentage === null" class="text-red-500">
           Vui lòng nhập số (KG)
         </small>

@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 0px !important;">
         <ion-buttons slot="start">
           <ion-button @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
@@ -17,20 +17,31 @@
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div
-            class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
-            <user-avatar />
+          <div class="flex flex-wrap align-items-center justify-content-between">
+            <!-- <user-avatar /> -->
+            <div v-show="hidenTable1" class="grid formgrid p-fluid flex">
+              <div class="col-12 sm:col-6 lg:col-4">
+                <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
+                <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
+              </div>
+              <div class="col-12 sm:col-6 lg:col-4">
+                <label class="text-800 font-medium mb-1 block">Keo</label>
+                <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
+              </div>
+              <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
+                <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
+                <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
+              </div>
+            </div>
             <div class="flex gap-2">
-              <Button :label="hidenTable1 ? 'Hiện chi tiết dây chuyền' : 'Ẩn chi tiết dây chuyền'"
-                :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
+              <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
                 @click="handleHidenTable1" />
-              <Button label="Lưu" icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
-              <Button label="Xác nhận hoàn thành" icon="pi pi-check-circle" severity="success" size="large"
-                @click="handleComplete" />
+              <Button icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
+              <Button icon="pi pi-check-circle" severity="success" size="large" @click="handleComplete" />
             </div>
           </div>
 
-          <div class="grid formgrid p-fluid">
+          <!-- <div v-show="hidenTable1" class="grid formgrid p-fluid">
             <div class="col-12 sm:col-6 lg:col-4">
               <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
               <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
@@ -43,53 +54,58 @@
               <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
               <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
             </div>
-          </div>
+          </div> -->
         </div>
 
         <!-- BẢNG 1 -->
-        <div v-show="hidenTable1" class="surface-card p-0 shadow-1 mt-4 border-round-xl">
-          <div class="surface-100 p-3 border-round-top-xl">
-            <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>Chi tiết dây chuyền</span>
+        <transition name="slide-fade">
+          <div v-show="hidenTable1" class="surface-card p-0 shadow-1 mt-4 border-round-xl">
+            <div class="surface-100 p-3 border-round-top-xl">
+              <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>Chi tiết dây chuyền</span>
+            </div>
+            <LineDetailsTable :is-loading="isLoadingLine" :line-details="lineDetails" />
           </div>
-          <LineDetailsTable :is-loading="isLoadingLine" :line-details="lineDetails" />
-        </div>
+        </transition>
 
         <!-- BẢNG 2 -->
-        <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
-          <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
-            <span class="font-bold text-700 text-lg">
-              <i class="pi pi-box mr-2"></i>Thành phần trộn keo
-            </span>
-          </div>
+        <transition name="slide-fade">
+          <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
+            <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
+              <span class="font-bold text-700 text-lg">
+                <i class="pi pi-box mr-2"></i>Thành phần trộn keo
+              </span>
+            </div>
 
-          <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
-            <div class="grid formgrid align-items-end">
-              <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
-                <label class="text-800 font-medium mb-2 block">Mã thành phần</label>
-                <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
-                  style="width: 350px;" />
+            <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
+              <div class="grid formgrid align-items-end">
+                <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
+                  <label class="text-800 font-medium mb-2 block">Mã thành phần</label>
+                  <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
+                    style="width: 350px;" />
+                </div>
+
+                <ElectronicScale :weight-unit="activeComponent?.weightUnit"
+                  :target-weight="activeComponent?.requiredWeight ?? 0"
+                  :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
+                  :upper-tolerance="activeComponent?.upperTolerance ?? ''" @update:weight="handleWeightChange"
+                  @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
+              </div>
+            </div>
+
+            <div class="overflow-x-auto border-round-bottom-xl">
+              <div ref="table2Ref" class="table-wrapper">
+                <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
+                  :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
+                  @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent" />
               </div>
 
-              <ElectronicScale :target-weight="activeComponent?.requiredWeight ?? 0"
-                :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
-                :upper-tolerance="activeComponent?.upperTolerance ?? ''" @update:weight="handleWeightChange"
-                @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
+              <!-- MODAL THÊM THÀNH PHẦN -->
+              <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
+                :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
+                @save="handleSaveNewComponent" />
             </div>
           </div>
-
-          <div class="overflow-x-auto border-round-bottom-xl">
-            <div ref="table2Ref" class="table-wrapper">
-              <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
-                :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent" />
-            </div>
-
-            <!-- MODAL THÊM THÀNH PHẦN -->
-            <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
-              :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
-              @save="handleSaveNewComponent" />
-          </div>
-        </div>
+        </transition>
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
@@ -464,6 +480,8 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
     noMixGlue: false,
     factoryId: authStore.user?.factoryId || ''
   });
+
+  toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã thêm thành phần mới', life: 3000 });
 };
 
 const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
@@ -591,4 +609,19 @@ onMounted(() => {
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+/* Hiệu ứng transition cho bảng 1 */
+.slide-fade-enter-active {
+  transition: all 0.4s ease-in-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-15px);
+  opacity: 0;
+}
+</style>

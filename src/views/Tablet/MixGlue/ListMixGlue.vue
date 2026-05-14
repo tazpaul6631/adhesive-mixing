@@ -14,11 +14,11 @@
     <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
       <div class="main-container max-w-full mx-auto">
 
-        <div class="surface-card p-3 shadow-1 border-round-xl">
+        <!-- <div class="surface-card p-3 shadow-1 border-round-xl">
           <div class="flex flex-wrap align-items-center justify-content-between">
             <user-avatar />
           </div>
-        </div>
+        </div> -->
 
         <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">

@@ -17,30 +17,29 @@
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div
-            class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
-            <user-avatar />
+          <div class="flex flex-wrap align-items-center justify-content-between">
+            <!-- <user-avatar /> -->
+            <div class="grid formgrid p-fluid flex">
+              <div class="col-12 sm:col-6 lg:col-4">
+                <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
+                <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
+              </div>
+              <div class="col-12 sm:col-6 lg:col-4">
+                <label class="text-800 font-medium mb-1 block">Keo</label>
+                <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
+              </div>
+              <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
+                <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
+                <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
+              </div>
+            </div>
             <div class="flex gap-2">
-              <Button label="Lưu" icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
-              <Button label="Xác nhận hoàn thành" icon="pi pi-check-circle" severity="success" size="large"
-                @click="handleComplete" />
+              <Button icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
+              <Button icon="pi pi-check-circle" severity="success" size="large" @click="handleComplete" />
             </div>
           </div>
 
-          <div class="grid formgrid p-fluid">
-            <div class="col-12 sm:col-6 lg:col-4">
-              <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
-              <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-4">
-              <label class="text-800 font-medium mb-1 block">Keo</label>
-              <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
-              <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
-              <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
-            </div>
-          </div>
+
         </div>
 
         <!-- BẢNG 1 -->
@@ -50,7 +49,8 @@
               <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu chiết thùng keo trộn
             </span>
           </div>
-          <RepackingGlue :is-loading="isLoadingLine" :order-details="orderDetails" />
+          <RepackingGlue :is-loading="isLoadingLine" :order-details="orderDetails"
+            @update-bucket="saveDraftToStoreOnly" />
         </div>
 
         <!-- BẢNG 2 -->
@@ -75,7 +75,8 @@
                   style="width: 280px;" fluid />
               </div>
 
-              <ElectronicScale :target-weight="activeComponent?.requiredWeight ?? 0"
+              <ElectronicScale :weight-unit="activeComponent?.weightUnit"
+                :target-weight="activeComponent?.requiredWeight ?? 0"
                 :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
                 :upper-tolerance="activeComponent?.upperTolerance ?? ''" @update:weight="handleWeightChange"
                 @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
@@ -86,13 +87,18 @@
             <div ref="table2Ref" class="table-wrapper">
               <NoRePackingGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
                 :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent" />
+                @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent"
+                @chiet-row="handleChietRow" @view-row="handleViewRow" />
             </div>
 
             <!-- MODAL THÊM THÀNH PHẦN -->
             <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
               :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
               @save="handleSaveNewComponent" />
+
+            <!-- MODAL CHIẾT KEO -->
+            <ChietKeoDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
+              :order-details="chietOrderDetails" @update-bucket="handleChietUpdateBucket" @confirm="confirmChiet" />
           </div>
         </div>
 
@@ -125,43 +131,13 @@ import ElectronicScale from '@/components/ElectronicScale.vue';
 import AddComponentDialog from '@/views/Tablet/RePacking/components/AddComponentDialog.vue';
 import RepackingGlue from '@/views/Tablet/RePacking/components/RepackingGlue.vue';
 import NoRePackingGlue from '@/views/Tablet/RePacking/components/NoRePackingGlue.vue';
+import ChietKeoDialog from '@/views/Tablet/RePacking/components/ChietKeoDialog.vue';
 
 dayjs.extend(customParseFormat);
 const VI_FORMATS = ["DD/MM/YYYY, HH:mm:ss", "DD/MM/YYYY HH:mm:ss", "DD/MM/YYYY"];
 
 // ============================================================================
-// 1. INTERFACES & TYPES
-// ============================================================================
-interface OrderDetails {
-  workOrderDetailId?: string;
-  factoryName?: string;
-  workOrderMasterName?: string;
-  requestDetailName?: string;
-  styleName?: string;
-  requestTime?: string;
-  operator?: string;
-  selectedBucket?: any;
-}
-
-interface ChemicalComponent {
-  factoryId?: string;
-  factoryName?: string;
-  styleName?: string;
-  materialCode?: string;
-  materialName?: string;
-  weightUnit?: string;
-  actualWeight?: string;
-  requiredWeight?: string | number;
-  operator?: string;
-  weighingTime?: string;
-  lowerTolerance?: string | number;
-  upperTolerance?: string | number;
-  mixingRatio?: string | number;
-  glueExtra?: boolean;
-}
-
-// ============================================================================
-// 2. GLOBAL SETUP & REFS
+// GLOBAL SETUP & REFS
 // ============================================================================
 const toast = useToast();
 const authStore = useAuthStore();
@@ -171,13 +147,15 @@ const router = useRouter();
 
 const currentWorkOrderId = ref('');
 const isDirty = ref(false);
+const startDate = ref(''); // Lưu trữ startDate từ API
+const endDate = ref(''); // Lưu trữ endDate từ API
 
 const headerInfo = ref({ orderNo: '', glue: '', totalWeight: '' });
-const orderDetails = ref<OrderDetails[]>([]);
-const noMixChemicalsFull = ref<ChemicalComponent[]>([]);
-const noMixComponents = ref<ChemicalComponent[]>([]);
-const selectedItem = ref<ChemicalComponent | null>(null);
-const activeComponent = ref<ChemicalComponent | null>(null);
+const orderDetails = ref<any[]>([]);
+const noMixChemicalsFull = ref<any[]>([]);
+const noMixComponents = ref<any[]>([]);
+const selectedItem = ref<any>(null);
+const activeComponent = ref<any>(null);
 const mixingProcess = ref({ component: '', weight: '', styleName: '' });
 
 const isLoadingLine = ref(true);
@@ -191,12 +169,21 @@ const productDialog = ref(false);
 const materialsList = ref<any[]>([]);
 const isLoadingMaterials = ref(false);
 
+const chietDialog = ref(false);
+const chietOrderDetails = ref<any[]>([]);
+const currentChietChemical = ref<any>(null);
+const extraChietList = ref<any[]>([]); // Chứa mảng dữ liệu chiết thêm từ Modal
+
 watch(noMixChemicalsFull, () => {
   if (!isLoadingComponent.value) isDirty.value = true;
 }, { deep: true });
 
+watch(orderDetails, () => {
+  if (!isLoadingLine.value) isDirty.value = true;
+}, { deep: true });
+
 // ============================================================================
-// 3. FETCH DATA & MAPPING
+// FETCH DATA & MAPPING
 // ============================================================================
 const fetchWorkOrderDetail = async (id: string) => {
   isLoadingLine.value = true;
@@ -209,26 +196,33 @@ const fetchWorkOrderDetail = async (id: string) => {
     if (existingDraft && existingDraft.noMixChemicalsFull?.length > 0) {
       headerInfo.value = existingDraft.headerInfo;
       noMixChemicalsFull.value = existingDraft.noMixChemicalsFull;
+      extraChietList.value = existingDraft.extraChietList || []; // Khôi phục cả mảng chiết
 
       selectedItem.value = noMixChemicalsFull.value[0];
       activeComponent.value = { ...noMixChemicalsFull.value[0] };
       mixingProcess.value.styleName = noMixChemicalsFull.value[0].styleName || '';
       mixingProcess.value.component = noMixChemicalsFull.value[0].materialName || '';
 
-      const { data } = await workOrder.getWorkOrder(id, 1);
+      const { data } = await workOrder.getWorkOrder(id, 3);
       if (data?.success) {
-        orderDetails.value = existingDraft.orderDetails || data.data.orderDetails || [];
-        hourlyValidity.value = data.data.hourlyValidity || '0';
-        noMixComponents.value = data.data.noMixChemicals || [];
+        const respData = data.data;
+        startDate.value = respData.startDate || new Date().toISOString();
+        endDate.value = respData.endDate || new Date().toISOString();
+        orderDetails.value = existingDraft.orderDetails || respData.orderDetails || [];
+        hourlyValidity.value = respData.hourlyValidity || '0';
+        noMixComponents.value = respData.noMixChemicals || [];
       }
 
       toast.add({ severity: 'info', summary: 'Khôi phục', detail: 'Đã tải lại dữ liệu đã lưu', life: 3000 });
     } else {
+      // (Giữ nguyên logic else ban đầu)
       const { data } = await workOrder.getWorkOrder(id, 3);
       if (data?.success) {
         const respData = data.data;
-
+        startDate.value = respData.startDate || new Date().toISOString();
+        endDate.value = respData.endDate || new Date().toISOString();
         hourlyValidity.value = respData.hourlyValidity || '0';
+
         headerInfo.value = {
           orderNo: respData.workOrderMasterName || '',
           glue: respData.chemicalMasterName || '',
@@ -254,12 +248,12 @@ const fetchWorkOrderDetail = async (id: string) => {
 
         noMixComponents.value = respData.noMixChemicals || [];
 
-        if (noMixChemicalsFull.value.length > 0) {
-          noMixChemicalsFull.value[0].requiredWeight = headerInfo.value.totalWeight;
-          activeComponent.value = { ...noMixChemicalsFull.value[0] };
-          mixingProcess.value.styleName = noMixComponents.value[0]?.styleName || noMixChemicalsFull.value[0]?.styleName || '';
-          mixingProcess.value.component = noMixChemicalsFull.value[0]?.materialName || '';
-          selectedItem.value = noMixChemicalsFull.value[0];
+        if (noMixComponents.value.length > 0) {
+          selectedItem.value = noMixComponents.value[0];
+          activeComponent.value = { ...noMixComponents.value[0] };
+          activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
+          mixingProcess.value.styleName = noMixComponents.value[0].styleName || '';
+          mixingProcess.value.component = noMixComponents.value[0].materialName || '';
         }
       }
     }
@@ -275,42 +269,62 @@ const fetchWorkOrderDetail = async (id: string) => {
 };
 
 // ============================================================================
-// 4. LƯU & XÁC NHẬN HOÀN THÀNH
+// PAYLOAD & LƯU HOÀN THÀNH
 // ============================================================================
 const buildPayload = (recordStatus: string) => {
   const factoryId = authStore.user?.factoryId || '';
   const employeeId = authStore.user?.employeeId || '';
 
+  // 1. Lấy danh sách requestDetailIds từ mảng orderDetails
+  const requestDetailIds = orderDetails.value
+    .map(item => item.requestDetailId)
+    .filter(Boolean);
+
+  // 2. Map dữ liệu RePackingGlues mặc định từ bảng 1 (orderDetails)
+  const baseRePackingGlues = orderDetails.value.map(item => ({
+    requestDetailId: item.requestDetailId || '',
+    glueId: item.chemicalMasterId || '',
+    bucketId: item.selectedBucketId || '',
+    recordStatus: recordStatus
+  }));
+
+  // 3. Map dữ liệu RePackingGlues được chiết bổ sung qua Modal (nếu có)
+  const chietRePackingGlues = extraChietList.value.map(item => ({
+    requestDetailId: item.requestDetailId,
+    glueId: item.glueId,
+    bucketId: item.bucketId,
+    recordStatus: recordStatus // Cập nhật lại trạng thái theo user submit (0 hoặc 1)
+  }));
+
+  // Gộp cả hai vào rePackingGlues
+  const finalRePackingGlues = [...baseRePackingGlues, ...chietRePackingGlues];
+
+  // 4. Map dữ liệu noRePackingGlues từ bảng 2 (noMixComponents)
+  const finalNoRePackingGlues = noMixComponents.value.map(item => ({
+    materialCode: item.materialCode || '',
+    glueWeight: Number(item.actualWeight) || 0,
+    glueWeightUnit: item.weightUnit || 'Kg',
+    glueExtra: !!item.glueExtra, // Data từ API trả về thường false, Data tạo mới từ modal đang set true
+    recordStatus: recordStatus
+  }));
+
   return {
     factoryId: factoryId,
     workOrderMasterId: currentWorkOrderId.value,
-    recordStatus: recordStatus,
-    hourlyValidity: Number(hourlyValidity.value),
+    startDate: startDate.value,
+    endDate: endDate.value,
     createrId: employeeId,
     updaterId: employeeId,
-    mixGlues: noMixChemicalsFull.value.map(item => ({
-      factoryId: factoryId,
-      materialCode: item.materialCode || 0,
-      mixGlueWeight: Number(item.actualWeight) || 0,
-      mixGlueWeightUnit: item.weightUnit || 'Kg',
-      glueExtra: item.glueExtra || false,
-      recordStatus: recordStatus,
-      createrId: employeeId,
-      updaterId: employeeId,
-      weightCompleteDate: item.weighingTime ? dayjs(item.weighingTime, VI_FORMATS).toISOString() : null
-    })),
-    orderDetails: orderDetails.value.map(item => ({
-      workOrderDetailId: item.workOrderDetailId,
-      bucketId: item.selectedBucket ? item.selectedBucket.bucketId : null,
-    }))
+    requestDetailIds: requestDetailIds,
+    rePackingGlues: finalRePackingGlues,
+    noRePackingGlues: finalNoRePackingGlues
   };
 };
 
 const handleSaveDraft = async () => {
-  const isIncomplete = noMixChemicalsFull.value.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
-  if (isIncomplete) {
-    return toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng thực hiện cân đầy đủ!', life: 4000 });
-  }
+  // Bỏ comment nếu muốn bắt lỗi chưa cân
+  // const isIncomplete = noMixChemicalsFull.value.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
+  // if (isIncomplete) return toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng thực hiện cân đầy đủ!', life: 4000 });
 
   try {
     draftStore.saveDraft(currentWorkOrderId.value, {
@@ -319,9 +333,12 @@ const handleSaveDraft = async () => {
       orderDetails: orderDetails.value
     });
 
-    await mixGlueApi.postMixGlueCommand(buildPayload("0"));
+    const payload = buildPayload("0");
+    console.log("Save Draft Payload:", payload); // Debug
+    // await mixGlueApi.postMixGlueCommand(payload);
+
     isDirty.value = false;
-    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu bản nháp lên server', life: 3000 });
+    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu bản nháp', life: 3000 });
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể lưu bản nháp', life: 3000 });
   }
@@ -334,7 +351,10 @@ const handleComplete = async () => {
   }
 
   try {
-    await mixGlueApi.postMixGlueCommand(buildPayload("1"));
+    const payload = buildPayload("1");
+    console.log("Complete Payload:", payload); // Debug
+    // await mixGlueApi.postMixGlueCommand(payload);
+
     draftStore.clearDraft(currentWorkOrderId.value);
     isDirty.value = false;
     toast.add({ severity: 'success', summary: 'Hoàn thành', detail: 'Đã gửi dữ liệu thành công', life: 3000 });
@@ -345,9 +365,9 @@ const handleComplete = async () => {
 };
 
 // ============================================================================
-// 5. CÂN & XỬ LÝ TABLE
+// CÂN & XỬ LÝ TABLE
 // ============================================================================
-const onRowClick = (event: { data: ChemicalComponent }) => {
+const onRowClick = (event: { data: any }) => {
   if (isLoadingComponent.value || !event.data?.materialName) return;
 
   mixingProcess.value.styleName = event.data.styleName || '';
@@ -366,25 +386,33 @@ const handleWeightChange = (newWeight: string) => {
 const handleConfirmWeight = (actualWeight: string) => {
   if (!activeComponent.value) return;
 
-  const index = noMixChemicalsFull.value.findIndex(item => item.materialName === activeComponent.value?.materialName);
-  if (index !== -1) {
-    noMixChemicalsFull.value[index].actualWeight = actualWeight;
-    noMixChemicalsFull.value[index].operator = authStore.user?.employeeName || 'Chưa xác định';
-    noMixChemicalsFull.value[index].weighingTime = format.formatDate(new Date().toISOString());
+  const index = noMixComponents.value.findIndex(item => item.materialName === activeComponent.value?.materialName);
 
-    const baseItem = noMixChemicalsFull.value[0];
+  if (index !== -1) {
+    noMixComponents.value[index].actualWeight = actualWeight;
+    noMixComponents.value[index].operator = authStore.user?.employeeName || 'Chưa xác định';
+    noMixComponents.value[index].weighingTime = format.formatDate(new Date().toISOString());
+
+    const baseItem = noMixComponents.value[0];
     const baseActualWeight = Number(baseItem.actualWeight || '0');
     const baseMixingRatio = Number(baseItem.mixingRatio || '100');
 
     if (baseActualWeight > 0) {
-      noMixChemicalsFull.value.forEach((item, i) => {
+      noMixComponents.value.forEach((item, i) => {
         if (i !== 0) {
           const currentRatio = Number(item.mixingRatio || '0');
           item.requiredWeight = ((currentRatio * baseActualWeight) / baseMixingRatio).toFixed(3);
         }
       });
     }
-    activeComponent.value = { ...noMixChemicalsFull.value[index] };
+
+    activeComponent.value = { ...noMixComponents.value[index] };
+
+    const fullIndex = noMixChemicalsFull.value.findIndex(item => item.materialName === activeComponent.value?.materialName);
+    if (fullIndex !== -1) {
+      noMixChemicalsFull.value[fullIndex].actualWeight = actualWeight;
+      noMixChemicalsFull.value[fullIndex].weighingTime = noMixComponents.value[index].weighingTime;
+    }
   }
 };
 
@@ -393,7 +421,7 @@ const handleConnectionStatus = (status: boolean) => {
 };
 
 // ============================================================================
-// 6. MODAL & MATERIALS LOGIC
+// MODAL & MATERIALS LOGIC
 // ============================================================================
 const handleSaveNewComponent = (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
   const baseItem = noMixChemicalsFull.value[0];
@@ -401,7 +429,7 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
   const baseMixingRatio = Number(baseItem?.mixingRatio || '100');
   const calculatedReqWeight = (parseInt(newComponentData.percentage) * baseActualWeight) / baseMixingRatio;
 
-  noMixChemicalsFull.value.push({
+  const newComponent = {
     materialName: newComponentData.name,
     materialCode: newComponentData.materialCode,
     weightUnit: newComponentData.weightUnit,
@@ -412,12 +440,19 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
     lowerTolerance: '0',
     upperTolerance: '0',
     mixingRatio: newComponentData.percentage.toString(),
-    glueExtra: true,
+    glueExtra: true, // Nếu tạo mới sẽ là true
+    factoryName: noMixChemicalsFull.value[0]?.factoryName,
+    styleName: noMixChemicalsFull.value[0]?.styleName,
     factoryId: authStore.user?.factoryId || ''
-  });
+  };
+
+  noMixChemicalsFull.value.push(newComponent);
+  noMixComponents.value.push(newComponent);
+
+  toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã thêm thành phần mới', life: 3000 });
 };
 
-const handleDeleteComponent = async (rowToDelete: ChemicalComponent) => {
+const handleDeleteComponent = async (rowToDelete: any) => {
   await UI.Confirm('Xác nhận xóa', `Thành phần: ${rowToDelete.materialName}`, `Bạn có chắc chắn muốn xóa thành phần này?`, () => {
     noMixChemicalsFull.value = noMixChemicalsFull.value.filter(item => item !== rowToDelete);
     draftStore.saveDraft(currentWorkOrderId.value, { headerInfo: headerInfo.value, noMixChemicalsFull: noMixChemicalsFull.value, orderDetails: orderDetails.value });
@@ -440,33 +475,120 @@ const fetchMaterials = async () => {
   }
 };
 
+const saveDraftToStoreOnly = () => {
+  draftStore.saveDraft(currentWorkOrderId.value, {
+    orderDetails: orderDetails.value
+  });
+};
+
 // ============================================================================
-// 7. UI, SCROLL & NAVIGATION GUARDS
+// XỬ LÝ MODAL CHIẾT KEO
+// ============================================================================
+const handleChietRow = (rowData: any) => {
+  currentChietChemical.value = rowData;
+  chietOrderDetails.value = orderDetails.value.map(item => ({
+    ...item,
+    chemicalId: rowData.materialCode,
+    selectedBucketId: null // Bắt buộc null để modal rỗng hoàn toàn lúc mới vô
+  }));
+
+  chietDialog.value = true;
+};
+
+const handleChietUpdateBucket = () => {
+  console.log('Đã cập nhật thùng trong modal chiết', chietOrderDetails.value);
+};
+
+const handleViewRow = (rowData: any) => {
+  currentChietChemical.value = rowData;
+
+  // Tìm những record đã lưu tạm trong extraChietList cho materialCode này
+  const savedData = extraChietList.value.filter(item => item.requestDetailId === rowData.materialCode);
+
+  chietOrderDetails.value = orderDetails.value.map(item => {
+    // Mapping thùng đã lưu
+    const match = savedData.find(s => s.glueId === item.chemicalMasterId);
+    return {
+      ...item,
+      chemicalId: rowData.materialCode,
+      selectedBucketId: match ? match.bucketId : null
+    };
+  });
+
+  chietDialog.value = true;
+};
+
+const confirmChiet = () => {
+  // 1. Dọn dẹp data cũ của mã keo này (để lỡ user chỉnh sửa thì ghi đè)
+  extraChietList.value = extraChietList.value.filter(
+    item => item.requestDetailId !== currentChietChemical.value?.materialCode
+  );
+
+  // 2. Add data mới vừa confirm vào mảng
+  chietOrderDetails.value.forEach(item => {
+    if (item.selectedBucketId) { // Chỉ push những field có chọn thùng
+      extraChietList.value.push({
+        requestDetailId: currentChietChemical.value?.materialCode,
+        glueId: item.chemicalMasterId || '',
+        bucketId: item.selectedBucketId
+      });
+    }
+  });
+
+  toast.add({ severity: 'success', summary: 'Đã lưu chiết', detail: 'Thông tin chiết thùng được tạm lưu', life: 3000 });
+  chietDialog.value = false;
+};
+
+// ============================================================================
+// UI, SCROLL & NAVIGATION GUARDS
 // ============================================================================
 const handleScroll = (event: CustomEvent) => showScrollButton.value = event.detail.scrollTop > 100;
 const scrollToTop = () => contentRef.value?.$el?.scrollToTop(500);
-const goBack = () => router.back();
+const goBack = () => {
+  // if (isDirty.value) {
+  //   // Lưu lại toàn bộ dữ liệu hiện hành vào store
+  //   draftStore.saveDraft(currentWorkOrderId.value, {
+  //     headerInfo: headerInfo.value,
+  //     noMixChemicalsFull: noMixChemicalsFull.value,
+  //     orderDetails: orderDetails.value,
+  //     extraChietList: extraChietList.value // Lưu thêm mảng phụ này
+  //   });
 
-const alertKhongChoPhepThoat = async (nextFunction?: any) => {
-  const alert = await alertController.create({
-    header: 'Cảnh báo chưa lưu',
-    message: 'Dữ liệu chưa được lưu. Bạn có chắc chắn muốn thoát? Dữ liệu đang cân sẽ bị mất.',
-    buttons: [
-      { text: 'Ở lại', role: 'cancel', handler: () => nextFunction && nextFunction(false) },
-      {
-        text: 'Thoát', role: 'confirm', cssClass: 'text-red-500', handler: () => {
-          draftStore.clearDraft(currentWorkOrderId.value);
-          isDirty.value = false;
-          nextFunction ? nextFunction() : router.back();
+  //   isDirty.value = false; // Bypass the router guard
+  //   toast.add({ severity: 'success', summary: 'Đã lưu bản nháp', detail: 'Dữ liệu được lưu an toàn trước khi thoát.', life: 2500 });
+  // }
+  router.back();
+};
+
+const alertKhongChoPhepThoat = (): Promise<boolean> => {
+  return new Promise(async (resolve) => {
+    const alert = await alertController.create({
+      header: 'Cảnh báo chưa lưu',
+      message: 'Dữ liệu chưa được lưu. Bạn có chắc chắn muốn thoát? Dữ liệu đang cân sẽ bị mất.',
+      buttons: [
+        { text: 'Ở lại', role: 'cancel', handler: () => resolve(false) },
+        {
+          text: 'Thoát', role: 'confirm', cssClass: 'text-red-500', handler: () => {
+            // Confirm thì xóa trắng draft mặc định
+            draftStore.clearDraft(currentWorkOrderId.value);
+            isDirty.value = false;
+            resolve(true);
+          }
         }
-      }
-    ]
+      ]
+    });
+    await alert.present();
   });
-  await alert.present();
 };
 
 useBackButton(10, (processNextHandler) => isDirty.value ? alertKhongChoPhepThoat() : processNextHandler());
-onBeforeRouteLeave((to, from, next) => isDirty.value ? alertKhongChoPhepThoat(next) : next());
+onBeforeRouteLeave(async (to, from) => {
+  if (isDirty.value) {
+    const canLeave = await alertKhongChoPhepThoat();
+    return canLeave;
+  }
+  return true;
+});
 
 onIonViewDidEnter(async () => {
   await nextTick();

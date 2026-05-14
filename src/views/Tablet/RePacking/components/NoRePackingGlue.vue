@@ -78,6 +78,13 @@
             @click.stop="$emit('view-row', data)" />
         </template>
       </Column>
+
+      <Column header="Xóa" :exportable="false" style="width: 8%; height: 60px">
+        <template #body="{ data }">
+          <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
+            @click.stop="$emit('delete-row', data)" />
+        </template>
+      </Column>
     </DataTable>
   </div>
 </template>

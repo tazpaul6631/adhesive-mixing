@@ -18,7 +18,7 @@
             'text-red-500': isExceedingLimit,
             'text-primary': !isExceedingLimit
           }" />
-        <span class="p-inputgroup-addon font-bold px-1">Kg</span>
+        <span class="p-inputgroup-addon font-bold px-1">{{ weightUnit }}</span>
 
         <!-- Luôn hiển thị sai số do đã có mặc định 5g -->
         <div class="ml-1 min-w-max border-left-1 border-300 pl-3">
@@ -90,6 +90,10 @@ const props = defineProps({
   upperTolerance: {
     type: [Number, String],
     default: ''
+  },
+  weightUnit: {
+    type: [Number, String],
+    default: ''
   }
 });
 
@@ -111,13 +115,16 @@ const effectiveUpperTolerance = computed(() => {
   return props.upperTolerance;
 });
 
+const weightUnit = computed(() => {
+  return props.weightUnit;
+});
+
 // --- STATE ---
 const mixingProcess = ref({
-  weight: ''
+  weight: '0.000'
 });
 const isConnected = ref(false);
 const isStable = ref(false);
-
 // Các biến lưu trữ nội bộ cho logic cân
 let dataBuffer = '';
 let dataListener: any = null;

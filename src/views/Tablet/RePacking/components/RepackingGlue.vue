@@ -17,10 +17,10 @@
         </template>
       </Column>
 
-      <Column field="workOrderMasterName" header="Đơn yêu cầu" style="width: 20%; height: 60px">
+      <Column field="requestDetailName" header="Đơn yêu cầu" style="width: 20%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
-          <span v-else>{{ data.workOrderMasterName }}</span>
+          <span v-else>{{ data.requestDetailName }}</span>
         </template>
       </Column>
 
@@ -31,11 +31,11 @@
         </template>
       </Column>
 
-      <Column field="requestDetailName" header="Dây chuyền" style="width: 24%; height: 60px">
+      <Column field="productLineName" header="Dây chuyền" style="width: 24%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
           <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm">
-            {{ data.requestDetailName }}
+            {{ data.productLineName }}
           </span>
         </template>
       </Column>
@@ -43,8 +43,10 @@
       <Column header="Thùng chứa" style="width: 18%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <Select v-else v-model="data.selectedBucket" :options="bucketList" optionLabel="label"
-            placeholder="Chọn thùng" class="w-full" appendTo="body" />
+          <!-- Thay đổi @change ở đây -->
+          <Select v-else v-model="data.selectedBucketId" :options="bucketList" optionLabel="label"
+            optionValue="bucketId" placeholder="Chọn thùng" class="w-full" appendTo="body"
+            @change="handleBucketChange(data)" />
         </template>
       </Column>
 
@@ -78,9 +80,17 @@ defineProps<{
   orderDetails: any[];
 }>();
 
+const emit = defineEmits(['update-bucket']);
+
 const skeletons = ref(new Array(5).fill({}));
 const authStore = useAuthStore();
 const bucketList = ref<any[]>([]);
+
+const handleBucketChange = (rowData: any) => {
+  rowData.operator = authStore.user?.employeeName || 'Chưa xác định';
+
+  emit('update-bucket');
+};
 
 onMounted(async () => {
   try {
