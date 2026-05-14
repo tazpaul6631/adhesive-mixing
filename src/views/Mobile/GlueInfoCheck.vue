@@ -216,14 +216,14 @@ function handleReturnScanResult(value: string) {
     display: block;
     margin-bottom: 4px;
     color: #64748b;
-    font-size: 13px !important;
+    font-size: 14px !important;
     font-weight: 600;
   }
 
   &__value {
     margin: 0;
     color: #081a36;
-    font-size: 14px !important;
+    font-size: 16px !important;
     font-weight: 600;
     line-height: 1.45;
     word-break: break-all;
@@ -275,11 +275,11 @@ function handleReturnScanResult(value: string) {
     padding: 0 2px;
 
     &__label {
-      font-size: 13px !important;
+      font-size: 14px !important;
     }
 
     &__value {
-      font-size: 14px !important;
+      font-size: 16px !important;
     }
   }
 }
