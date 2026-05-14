@@ -3,7 +3,7 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button default-href="/mobile"></ion-back-button>
+          <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>Chuyền xác nhận keo & trả keo</ion-title>
       </ion-toolbar>
@@ -71,8 +71,10 @@
             </ion-button>
 
             <ion-button
+              v-if="shouldShowReturnScanButton"
               expand="block"
               class="confirm-button"
+              :disabled="isReturnScanButtonDisabled"
               @click="openScanner('return')"
             >
               <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
@@ -180,6 +182,9 @@ import { Haptics } from '@capacitor/haptics';
 
 type ConfirmScanTarget = 'line' | 'allocated';
 type ScanTarget = ConfirmScanTarget | 'return';
+type ReturnScanButtonDisplayMode = 'disabled' | 'hidden';
+
+const returnScanButtonDisplayMode = 'disabled' as ReturnScanButtonDisplayMode;
 
 const lineQrText = ref('');
 const allocatedQrText = ref('');
@@ -190,6 +195,19 @@ const showSuccessToast = ref(false);
 const toastMessage = ref('');
 const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
+const isReturnScanReady = ref(false);
+
+const shouldShowReturnScanButton = computed(() => {
+  if (returnScanButtonDisplayMode === 'hidden') {
+    return isReturnScanReady.value;
+  }
+
+  return true;
+});
+
+const isReturnScanButtonDisabled = computed(() => {
+  return !isReturnScanReady.value;
+});
 
 const isFirstTwoQrReady = computed(() => {
   return !!lineQrText.value && !!allocatedQrText.value;
@@ -247,6 +265,10 @@ async function triggerMismatchVibrationIfNeeded() {
 
 async function openScanner(target: ScanTarget) {
   if ((target === 'line' || target === 'allocated') && isFirstTwoQrMatched.value) {
+    return;
+  }
+
+  if (target === 'return' && isReturnScanButtonDisabled.value) {
     return;
   }
 
@@ -333,8 +355,10 @@ async function confirmReturnQr() {
   try {
     await submitReturnQrMock(pendingReturnQrText.value);
     isReturnConfirmDialogOpen.value = false;
-    showToast('Xác nhận thành công');
     resetReturnField();
+    resetReturnScanState();
+    resetConfirmFields();
+    showToast('Trả về thành công');
   } catch (error) {
     console.error('Không thể xác nhận trả về thùng keo:', error);
     alert('Không thể xác nhận trả về thùng keo. Vui lòng thử lại!');
@@ -353,14 +377,7 @@ function handleConfirmReturn() {
     return;
   }
 
-  const confirmedReturnValue = allocatedQrText.value;
-
-  if (!confirmedReturnValue) {
-    return;
-  }
-
-  resetConfirmFields();
-  showToast('Trả về thành công');
+  isReturnScanReady.value = true;
 }
 
 function resetConfirmFields() {
@@ -371,6 +388,10 @@ function resetConfirmFields() {
 function resetReturnField() {
   returnQrText.value = '';
   pendingReturnQrText.value = '';
+}
+
+function resetReturnScanState() {
+  isReturnScanReady.value = false;
 }
 
 function showToast(message: string) {
