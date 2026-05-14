@@ -33,8 +33,26 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <span class="info-content__label">Mã QR</span>
-                  <p class="info-content__value">{{ returnQrText }}</p>
+                  <div class="info-content__row">
+                    <span class="info-content__label">Mã QR</span>
+                    <span class="info-content__value">{{ returnQrText }}</span>
+                  </div>
+
+                  <template v-if="returnInfoFields.length">
+                    <div
+                      v-for="field in returnInfoFields"
+                      :key="field.label"
+                      class="info-content__row"
+                    >
+                      <span class="info-content__label">{{ field.label }}</span>
+                      <span class="info-content__value">{{ field.value }}</span>
+                    </div>
+                  </template>
+
+                  <div v-else class="info-content__row">
+                    <span class="info-content__label">Dữ liệu mock</span>
+                    <span class="info-content__value">Không tìm thấy thông tin mock cho mã QR này</span>
+                  </div>
                 </div>
               </ion-card-content>
             </ion-card>
@@ -46,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   IonBackButton,
   IonButtons,
@@ -63,11 +81,18 @@ import {
 } from '@ionic/vue';
 import { barcodeOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { findMockGlueInfo, getGlueInfoFields, normalizeGlueQrText } from './glueQr.mock';
+import type { GlueQrInfo } from './glueQr.mock';
 
 const returnQrText = ref('');
+const returnQrInfo = ref<GlueQrInfo | null>(null);
+
+const returnInfoFields = computed(() => {
+  return returnQrInfo.value ? getGlueInfoFields(returnQrInfo.value) : [];
+});
 
 function normalizeQrText(value: string) {
-  return value.trim();
+  return normalizeGlueQrText(value);
 }
 
 async function openScanner() {
@@ -103,6 +128,7 @@ function handleReturnScanResult(value: string) {
   }
 
   returnQrText.value = normalizedValue;
+  returnQrInfo.value = findMockGlueInfo(normalizedValue);
 }
 </script>
 
@@ -210,23 +236,31 @@ function handleReturnScanResult(value: string) {
 }
 
 .info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   padding: 0 2px;
 
+  &__row {
+    display: grid;
+    grid-template-columns: minmax(96px, 42%) 1fr;
+    gap: 8px;
+    align-items: start;
+  }
+
   &__label {
-    display: block;
-    margin-bottom: 4px;
     color: #64748b;
     font-size: 14px !important;
     font-weight: 600;
+    line-height: 1.35;
   }
 
   &__value {
-    margin: 0;
     color: #081a36;
     font-size: 16px !important;
     font-weight: 600;
     line-height: 1.45;
-    word-break: break-all;
+    word-break: break-word;
   }
 }
 
@@ -272,7 +306,12 @@ function handleReturnScanResult(value: string) {
   }
 
   .info-content {
+    gap: 12px;
     padding: 0 2px;
+
+    &__row {
+      grid-template-columns: minmax(120px, 38%) 1fr;
+    }
 
     &__label {
       font-size: 14px !important;
