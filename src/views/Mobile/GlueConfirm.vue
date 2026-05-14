@@ -73,7 +73,7 @@
             <ion-button
               v-if="shouldShowReturnScanButton"
               expand="block"
-              class="confirm-button"
+              :class="['confirm-button', { 'confirm-button--disabled': isReturnScanButtonDisabled }]"
               :disabled="isReturnScanButtonDisabled"
               @click="openScanner('return')"
             >
@@ -560,8 +560,14 @@ function closeCurrentToast() {
     border-radius: 16px;
   }
 
-  &[disabled] {
+  &[disabled],
+  &--disabled {
     opacity: 0.48;
+    pointer-events: none;
+  }
+
+  &--disabled::part(native) {
+    cursor: not-allowed;
   }
 }
 

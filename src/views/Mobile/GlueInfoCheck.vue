@@ -33,11 +33,6 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <div class="info-content__row">
-                    <span class="info-content__label">Mã QR</span>
-                    <span class="info-content__value">{{ returnQrText }}</span>
-                  </div>
-
                   <template v-if="returnInfoFields.length">
                     <div
                       v-for="field in returnInfoFields"
