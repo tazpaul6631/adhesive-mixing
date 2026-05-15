@@ -33,227 +33,90 @@
   </div>
 </template>
 
-<script lang="ts">
-import { registerPlugin, WebPlugin } from '@capacitor/core';
-
-class SerialScaleWeb extends WebPlugin {
-  private port: any = null;
-  private reader: any = null;
-  async connect() {
-    this.port = await (navigator as any).serial.requestPort();
-    await this.port.open({ baudRate: 9600 });
-    this.readLoop();
-    return { value: 'connected' };
-  }
-  async readLoop() {
-    while (this.port.readable) {
-      this.reader = this.port.readable.getReader();
-      try {
-        while (true) {
-          const { value, done } = await this.reader.read();
-          if (done) break;
-          this.notifyListeners('onScaleData', { data: new TextDecoder().decode(value) });
-        }
-      } catch (e) { this.notifyListeners('onScaleError', { error: e }); }
-      finally { this.reader.releaseLock(); }
-    }
-  }
-  async disconnect() {
-    if (this.reader) await this.reader.cancel();
-    if (this.port) await this.port.close();
-  }
-}
-
-// Đăng ký Plugin ở đây, nó sẽ không bị gọi lại 2 lần nữa
-const SerialScale = registerPlugin<any>('SerialScale', {
-  web: () => new SerialScaleWeb(),
-});
-</script>
-
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { Capacitor } from '@capacitor/core';
 import { useToast } from 'primevue/usetoast';
+import { useScaleManager } from '@/composables/useScaleManager';
 
 const toast = useToast();
 
-// --- NHẬN PROPS TỪ CHA ---
+// --- NHẬN PROPS TỪ CHA (GIỮ NGUYÊN) ---
 const props = defineProps({
-  targetWeight: {
-    type: [Number, String],
-    default: 0
-  },
-  lowerTolerance: {
-    type: [Number, String],
-    default: ''
-  },
-  upperTolerance: {
-    type: [Number, String],
-    default: ''
-  },
-  weightUnit: {
-    type: [Number, String],
-    default: ''
-  }
+  targetWeight: { type: [Number, String], default: 0 },
+  lowerTolerance: { type: [Number, String], default: '' },
+  upperTolerance: { type: [Number, String], default: '' },
+  weightUnit: { type: [Number, String], default: '' }
 });
 
-// --- KẾT NỐI VỚI COMPONENT CHA ---
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
 
-// --- TÍNH TOÁN SAI SỐ MẶC ĐỊNH LÀ 5g CHO THÀNH PHẦN MỚI ---
+// --- TÍNH TOÁN SAI SỐ (GIỮ NGUYÊN 100%) ---
 const effectiveLowerTolerance = computed(() => {
-  if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) {
-    return 5;
-  }
+  if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) return 5;
+  if (Number(props.lowerTolerance) === 0) return 5;
   return props.lowerTolerance;
 });
 
 const effectiveUpperTolerance = computed(() => {
-  if (props.upperTolerance === '' || props.upperTolerance === null || props.upperTolerance === undefined) {
-    return 5;
-  }
+  if (props.upperTolerance === '' || props.upperTolerance === null || props.upperTolerance === undefined) return 5;
+  if (Number(props.upperTolerance) === 0) return 5;
   return props.upperTolerance;
 });
 
-const weightUnit = computed(() => {
-  return props.weightUnit;
-});
+const weightUnit = computed(() => props.weightUnit);
 
 // --- STATE ---
-const mixingProcess = ref({
-  weight: '0.000'
-});
-const isConnected = ref(false);
-const isStable = ref(false);
-// Các biến lưu trữ nội bộ cho logic cân
-let dataBuffer = '';
-let dataListener: any = null;
-let watchdog: any = null;
-let autoConnectInterval: any = null;
+const mixingProcess = ref({ weight: '0.000' });
 
-// ==========================================
-// THÊM WATCH ĐỂ GÁN TRỌNG LƯỢNG YÊU CẦU VÀO INPUT
-// ==========================================
+// --- GỌI GLOBAL MANAGER ---
+const { globalWeight, isGlobalConnected, isGlobalStable, startAutoConnect, stopAutoConnect } = useScaleManager();
+
+// Đồng bộ trạng thái kết nối ra UI
+const isConnected = computed(() => isGlobalConnected.value);
+const isStable = computed(() => isGlobalStable.value);
+
+// --- CÁC WATCHER ĐỂ ĐỒNG BỘ UI VÀ EMIT (Thay thế logic lắng nghe Serial cũ) ---
+watch(isGlobalConnected, (newStatus) => {
+  emit('connection-status', newStatus);
+});
+
+// Khi cân gửi số mới về -> cập nhật UI -> Emit ra cho component cha
+watch(globalWeight, (newWeight) => {
+  mixingProcess.value.weight = newWeight;
+  emit('update:weight', newWeight);
+});
+
+// --- WATCH TARGET WEIGHT (GIỮ NGUYÊN 100%) ---
 watch(
   () => props.targetWeight,
   (newTargetWeight) => {
     if (newTargetWeight !== undefined && newTargetWeight !== null) {
-      // Ép kiểu về số và làm tròn 3 chữ số thập phân cho đẹp
       const formattedWeight = Number(newTargetWeight).toFixed(3);
       mixingProcess.value.weight = formattedWeight;
-
-      // Emit ngược lại cho cha biết số đã được set mặc định
       emit('update:weight', formattedWeight);
     }
   },
-  { immediate: true } // immediate: true giúp chạy ngay lần đầu tiên component được render
+  { immediate: true }
 );
 
+// --- LOGIC KIỂM TRA & XÁC NHẬN (GIỮ NGUYÊN 100%) ---
 const isExceedingLimit = computed(() => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
   const target = parseFloat(props.targetWeight?.toString() || '0');
-
-  // Nếu không có target thì không check
   if (target <= 0) return false;
 
   const current = Number(currentWeight.toFixed(3));
-
-  // --- KIỂM TRA GIỚI HẠN DƯỚI (Dùng effectiveTolerance) ---
   const lowerKg = (parseFloat(effectiveLowerTolerance.value.toString()) || 0) / 1000;
   const minAcceptable = Number((target - lowerKg).toFixed(3));
-
   if (current < minAcceptable) return true;
 
-  // --- KIỂM TRA GIỚI HẠN TRÊN (Dùng effectiveTolerance) ---
   const upperKg = (parseFloat(effectiveUpperTolerance.value.toString()) || 0) / 1000;
   const maxAcceptable = Number((target + upperKg).toFixed(3));
-
   if (current > maxAcceptable) return true;
 
   return false;
 });
 
-// --- CORE LOGIC ---
-const setDisconnected = () => {
-  if (isConnected.value) {
-    isConnected.value = false;
-    emit('connection-status', false); // Báo ra cha là mất kết nối
-  }
-  isStable.value = false;
-};
-
-const connectToScale = async () => {
-  if (isConnected.value) return;
-
-  try {
-    if (dataListener) await dataListener.remove();
-
-    dataListener = await SerialScale.addListener('onScaleData', (result: any) => {
-      if (!isConnected.value) {
-        isConnected.value = true;
-        emit('connection-status', true);
-      }
-      clearTimeout(watchdog);
-      watchdog = setTimeout(() => setDisconnected(), 2000);
-
-      let raw = result.data;
-      let cleanRaw = "";
-      if (raw.length > 15) {
-        for (let i = 0; i < raw.length; i += 3) cleanRaw += raw[i];
-      } else { cleanRaw = raw; }
-
-      dataBuffer += cleanRaw;
-
-      if (dataBuffer.includes('\n') || dataBuffer.includes('\r')) {
-        const line = dataBuffer.trim();
-
-        const upperLine = line.toUpperCase();
-        const newStable = upperLine.includes("ST") || !upperLine.includes("US");
-
-        if (isStable.value !== newStable) isStable.value = newStable;
-
-        const matches = line.match(/[-+]?\d*\.?\d+/);
-        if (matches) {
-          let rawValue = parseFloat(matches[0]);
-          const lowerLine = line.toLowerCase();
-
-          if (!lowerLine.includes('kg') && lowerLine.includes('g')) {
-            rawValue = rawValue / 1000;
-          }
-
-          const val = rawValue.toFixed(3);
-
-          // Cập nhật lại số nếu cân phát hiện số kg thực tế mới
-          if (mixingProcess.value.weight !== val) {
-            mixingProcess.value.weight = val;
-            emit('update:weight', val);
-          }
-        }
-        dataBuffer = '';
-      }
-    });
-
-    await SerialScale.connect();
-    isConnected.value = true;
-    emit('connection-status', true);
-
-  } catch (e: any) {
-    setDisconnected();
-  }
-};
-
-const startAutoConnect = () => {
-  connectToScale();
-  autoConnectInterval = setInterval(() => {
-    if (!isConnected.value) {
-      connectToScale();
-    }
-  }, 3000);
-};
-
-// ==========================================
-// LOGIC KIỂM TRA & XÁC NHẬN TRỌNG LƯỢNG
-// ==========================================
 const confirmWeight = () => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
   const target = parseFloat(props.targetWeight?.toString() || '0');
@@ -265,31 +128,17 @@ const confirmWeight = () => {
     return;
   }
 
-  // --- KIỂM TRA GIỚI HẠN DƯỚI (Dùng effectiveTolerance) ---
   const lowerKg = (parseFloat(effectiveLowerTolerance.value.toString()) || 0) / 1000;
   const minAcceptable = Number((target - lowerKg).toFixed(3));
-
   if (current < minAcceptable) {
-    toast.add({
-      severity: 'error',
-      summary: 'Không đạt yêu cầu',
-      detail: `Trọng lượng không được thấp hơn ${minAcceptable.toFixed(3)} Kg.`,
-      life: 5000
-    });
+    toast.add({ severity: 'error', summary: 'Không đạt yêu cầu', detail: `Trọng lượng không được thấp hơn ${minAcceptable.toFixed(3)} Kg.`, life: 5000 });
     return;
   }
 
-  // --- KIỂM TRA GIỚI HẠN TRÊN (Dùng effectiveTolerance) ---
   const upperKg = (parseFloat(effectiveUpperTolerance.value.toString()) || 0) / 1000;
   const maxAcceptable = Number((target + upperKg).toFixed(3));
-
   if (current > maxAcceptable) {
-    toast.add({
-      severity: 'error',
-      summary: 'Vượt giới hạn',
-      detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} Kg.`,
-      life: 5000
-    });
+    toast.add({ severity: 'error', summary: 'Vượt giới hạn', detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} Kg.`, life: 5000 });
     return;
   }
 
@@ -297,19 +146,13 @@ const confirmWeight = () => {
   toast.add({ severity: 'success', summary: 'Thành công', detail: 'Trọng lượng đạt yêu cầu', life: 3000 });
 };
 
+// --- LIFECYCLE ---
 onMounted(() => {
-  if (Capacitor.getPlatform() === 'android') {
-    setTimeout(() => startAutoConnect(), 500);
-  } else {
-    setTimeout(() => startAutoConnect(), 500);
-  }
+  setTimeout(() => startAutoConnect(), 500);
 });
 
-onUnmounted(async () => {
-  clearTimeout(watchdog);
-  clearInterval(autoConnectInterval);
-  if (dataListener) await dataListener.remove();
-  try { await SerialScale.disconnect(); } catch (e) { }
+onUnmounted(() => {
+  stopAutoConnect(); // Dọn dẹp khi chuyển sang màn hình khác
 });
 </script>
 

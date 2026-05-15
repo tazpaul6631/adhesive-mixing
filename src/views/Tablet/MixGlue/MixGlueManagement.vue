@@ -59,7 +59,7 @@
 
         <!-- BẢNG 1 -->
         <transition name="slide-fade">
-          <div v-show="hidenTable1" class="surface-card p-0 shadow-1 mt-4 border-round-xl">
+          <div v-show="hidenTable1" class="surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl">
               <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>Chi tiết dây chuyền</span>
             </div>
@@ -69,7 +69,7 @@
 
         <!-- BẢNG 2 -->
         <transition name="slide-fade">
-          <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
+          <div class="surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>Thành phần trộn keo
@@ -115,11 +115,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, nextTick, watch } from 'vue';
+import { ref, nextTick, watch } from 'vue';
 import { useRoute, onBeforeRouteLeave, useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
-  IonTitle, onIonViewDidEnter, useBackButton, alertController
+  IonTitle, onIonViewDidEnter, useBackButton, alertController,
+  onIonViewWillEnter
 } from '@ionic/vue';
 import { useToast } from 'primevue/usetoast';
 import UI from '@/mixins/present';
@@ -222,6 +223,8 @@ watch(componentDetailsFull, () => {
 }, { deep: true });
 
 const fetchWorkOrderDetail = async (id: string) => {
+  resetState();
+
   isLoadingLine.value = true;
   isLoadingComponent.value = true;
   currentWorkOrderId.value = id;
@@ -591,6 +594,17 @@ onBeforeRouteLeave((to, from, next) => {
 // ============================================================================
 // 8. LIFECYCLE HOOKS
 // ============================================================================
+const resetState = () => {
+  headerInfo.value = { orderNo: '', glue: '', totalWeight: '' };
+  lineDetails.value = [];
+  componentDetailsFull.value = [];
+  noMixComponents.value = [];
+  activeComponent.value = null;
+  selectedItem.value = null;
+  mixingProcess.value = { component: '', weight: '' };
+  isDirty.value = false;
+};
+
 onIonViewDidEnter(async () => {
   await nextTick();
   if (table2Ref.value) {
@@ -598,9 +612,10 @@ onIonViewDidEnter(async () => {
   }
 });
 
-onMounted(() => {
+onIonViewWillEnter(() => {
   const workOrderMasterId = route.query.workOrderMasterId as string;
   if (workOrderMasterId) {
+    // Mỗi khi vào màn hình này, nó sẽ lấy ID mới từ route và fetch lại
     fetchWorkOrderDetail(workOrderMasterId);
   } else {
     isLoadingLine.value = false;

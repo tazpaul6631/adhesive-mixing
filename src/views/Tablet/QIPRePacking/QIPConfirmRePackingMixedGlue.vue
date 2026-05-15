@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 0px !important;">
         <ion-buttons slot="start">
           <ion-button @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
@@ -30,6 +30,13 @@
               class="custom-bordered-table" tableStyle="min-width: 70rem" :paginator="true" :rows="5"
               :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px" selectionMode="single"
               v-model:selection="selectedItem" dataKey="id">
+
+              <template #empty>
+                <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+                  <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                  <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+                </div>
+              </template>
 
               <Column field="xuong" header="Xưởng" style="min-width: 100px">
                 <template #body="{ data }">
