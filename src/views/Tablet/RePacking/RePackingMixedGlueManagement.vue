@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 0px !important;">
         <ion-buttons slot="start">
           <ion-button @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
@@ -40,22 +40,20 @@
           </div>
         </div>
 
-        <div class="mt-4">
-          <ion-segment value="table1" mode="ios">
-            <ion-segment-button value="table1" content-id="table1">
+        <div>
+          <ion-segment v-model="selectedTab" mode="ios">
+            <ion-segment-button value="table1">
               <ion-label class="font-bold">KEO TRỘN</ion-label>
             </ion-segment-button>
-            <ion-segment-button value="table2" content-id="table2">
+            <ion-segment-button value="table2">
               <ion-label class="font-bold">KEO KHÔNG TRỘN</ion-label>
             </ion-segment-button>
           </ion-segment>
         </div>
 
-        <!-- NỘI DUNG CỦA CÁC TABS -->
-        <ion-segment-view class="mt-4 block w-full">
+        <div class="block w-full">
 
-          <!-- TAB 1: BẢNG 1 (KEO TRỘN) -->
-          <ion-segment-content id="table1">
+          <div v-show="selectedTab === 'table1'">
             <div class="surface-card p-0 shadow-1 border-round-xl">
               <div class="surface-100 p-3 border-round-top-xl">
                 <span class="font-bold text-700 text-lg">
@@ -65,10 +63,9 @@
               <RepackingGlue :is-loading="isLoadingLine" :order-details="orderDetails"
                 @update-bucket="saveDraftToStoreOnly" />
             </div>
-          </ion-segment-content>
+          </div>
 
-          <!-- TAB 2: BẢNG 2 (KEO KHÔNG TRỘN) -->
-          <ion-segment-content id="table2">
+          <div v-show="selectedTab === 'table2'">
             <div class="surface-card p-0 shadow-1 border-round-xl">
               <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
                 <span class="font-bold text-700 text-lg">
@@ -98,7 +95,6 @@
                 </div>
               </div>
 
-              <!-- Khu vực Table 2 và Modals -->
               <div class="overflow-x-auto border-round-bottom-xl">
                 <div ref="table2Ref" class="table-wrapper">
                   <NoRePackingGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
@@ -107,18 +103,18 @@
                     @chiet-row="handleChietRow" @view-row="handleViewRow" />
                 </div>
 
-                <!-- MODAL THÊM THÀNH PHẦN -->
                 <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
                   :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
                   @save="handleSaveNewComponent" />
 
-                <!-- MODAL CHIẾT KEO -->
                 <ChietKeoDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
-                  :order-details="chietOrderDetails" @update-bucket="handleChietUpdateBucket" @confirm="confirmChiet" />
+                  :order-details="chietOrderDetails" :is-view-mode="isViewMode" @update-bucket="handleChietUpdateBucket"
+                  @confirm="confirmChiet" />
               </div>
             </div>
-          </ion-segment-content>
-        </ion-segment-view>
+          </div>
+
+        </div>
 
         <!-- BẢNG 1 -->
         <!-- <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
@@ -191,7 +187,7 @@ import { useRoute, onBeforeRouteLeave, useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
   IonTitle, onIonViewDidEnter, useBackButton, alertController,
-  IonSegment, IonSegmentButton, IonLabel, IonSegmentView, IonSegmentContent
+  IonSegment, IonSegmentButton, IonLabel, onIonViewWillEnter
 } from '@ionic/vue';
 import { useToast } from 'primevue/usetoast';
 import UI from '@/mixins/present';
@@ -244,12 +240,13 @@ const isLoadingComponent = ref(true);
 const hourlyValidity = ref<string>('0');
 
 const contentRef = ref<any>(null);
-const table2Ref = ref<HTMLDivElement | null>(null);
+// const table2Ref = ref<HTMLDivElement | null>(null);
+const selectedTab = ref('table1');
 const showScrollButton = ref(false);
 const productDialog = ref(false);
 const materialsList = ref<any[]>([]);
 const isLoadingMaterials = ref(false);
-
+const isViewMode = ref(false);
 const chietDialog = ref(false);
 const chietOrderDetails = ref<any[]>([]);
 const currentChietChemical = ref<any>(null);
@@ -263,10 +260,33 @@ watch(orderDetails, () => {
   if (!isLoadingLine.value) isDirty.value = true;
 }, { deep: true });
 
+const resetState = () => {
+  isDirty.value = false;
+  isNavigatingAway.value = false;
+  startDate.value = '';
+  endDate.value = '';
+  headerInfo.value = { orderNo: '', glue: '', totalWeight: '' };
+  orderDetails.value = [];
+  noMixChemicalsFull.value = [];
+  noMixComponents.value = [];
+  selectedItem.value = null;
+  activeComponent.value = null;
+  mixingProcess.value = { component: '', weight: '', styleName: '' };
+  hourlyValidity.value = '0';
+  selectedTab.value = 'table1'; // Tùy chọn: Đưa tab về mặc định
+
+  // Clear data của Modal chiết
+  extraChietList.value = [];
+  chietOrderDetails.value = [];
+  currentChietChemical.value = null;
+};
+
 // ============================================================================
 // FETCH DATA & MAPPING
 // ============================================================================
 const fetchWorkOrderDetail = async (id: string) => {
+  resetState();
+
   isLoadingLine.value = true;
   isLoadingComponent.value = true;
   currentWorkOrderId.value = id;
@@ -359,23 +379,27 @@ const buildPayload = (recordStatus: string) => {
     .map(item => item.requestDetailId)
     .filter(Boolean);
 
+  // Payload Bảng 1
   const baseRePackingGlues = orderDetails.value.map(item => ({
     requestDetailId: item.requestDetailId || '',
     glueId: item.chemicalMasterId || '',
     bucketId: item.selectedBucketId || '',
-    recordStatus: recordStatus
+    recordStatus: recordStatus,
+    confirmDate: item.confirmDate || new Date().toISOString()
   }));
 
+  // Payload Chiết thùng
   const chietRePackingGlues = extraChietList.value.map(item => ({
     requestDetailId: item.requestDetailId,
     glueId: item.glueId,
     bucketId: item.bucketId,
-    recordStatus: recordStatus
+    recordStatus: recordStatus,
+    confirmDate: item.confirmDate || new Date().toISOString()
   }));
 
   const finalRePackingGlues = [...baseRePackingGlues, ...chietRePackingGlues];
 
-  // THÊM BỘ LỌC TẠI ĐÂY: Chỉ lấy những item có actualWeight > 0
+  // Payload Bảng 2
   const finalNoRePackingGlues = noMixComponents.value
     .filter(item => item.actualWeight && Number(item.actualWeight) > 0)
     .map(item => ({
@@ -383,7 +407,8 @@ const buildPayload = (recordStatus: string) => {
       glueWeight: Number(item.actualWeight) || 0,
       glueWeightUnit: item.weightUnit || 'Kg',
       glueExtra: !!item.glueExtra,
-      recordStatus: item.recordStatus ? item.recordStatus : recordStatus
+      recordStatus: item.recordStatus ? item.recordStatus : recordStatus,
+      confirmDate: item.confirmDate || new Date().toISOString()
     }));
 
   return {
@@ -472,9 +497,11 @@ const handleConfirmWeight = (actualWeight: string) => {
   const index = noMixComponents.value.findIndex(item => item.materialName === activeComponent.value?.materialName);
 
   if (index !== -1) {
+    const now = new Date().toISOString();
     noMixComponents.value[index].actualWeight = actualWeight;
     noMixComponents.value[index].operator = authStore.user?.employeeName || 'Chưa xác định';
     noMixComponents.value[index].weighingTime = format.formatDate(new Date().toISOString());
+    noMixComponents.value[index].confirmDate = now;
 
     const baseItem = noMixComponents.value[0];
     const baseActualWeight = Number(baseItem.actualWeight || '0');
@@ -495,6 +522,7 @@ const handleConfirmWeight = (actualWeight: string) => {
     if (fullIndex !== -1) {
       noMixChemicalsFull.value[fullIndex].actualWeight = actualWeight;
       noMixChemicalsFull.value[fullIndex].weighingTime = noMixComponents.value[index].weighingTime;
+      noMixChemicalsFull.value[fullIndex].confirmDate = now;
     }
   }
 };
@@ -611,15 +639,13 @@ const saveDraftToStoreOnly = () => {
 // XỬ LÝ MODAL CHIẾT KEO
 // ============================================================================
 const handleChietRow = (rowData: any) => {
+  isViewMode.value = false; // Mở modal ở chế độ thao tác
   currentChietChemical.value = rowData;
   chietOrderDetails.value = orderDetails.value.map(item => ({
     ...item,
     chemicalId: rowData.materialCode,
-    selectedBucketId: null // Bắt buộc null để modal rỗng hoàn toàn lúc mới vô
+    selectedBucketId: null
   }));
-
-  console.log(chietOrderDetails.value);
-
   chietDialog.value = true;
 };
 
@@ -631,19 +657,17 @@ const handleChietUpdateBucket = () => {
 // XỬ LÝ MODAL CHIẾT KEO
 // ============================================================================
 const handleViewRow = (rowData: any) => {
+  isViewMode.value = true; // Mở modal ở chế độ CHỈ XEM
   currentChietChemical.value = rowData;
 
-  // Lọc các record chiết dựa trên glueId (bằng với materialCode của Keo)
   const savedData = extraChietList.value.filter(item => item.glueId === rowData.materialCode);
 
   chietOrderDetails.value = orderDetails.value.map(item => {
-    // Tìm mapping chính xác dựa trên _sourceLineId
     const match = savedData.find(s => s._sourceLineId === item.requestDetailId);
-
     return {
       ...item,
       chemicalId: rowData.materialCode,
-      selectedBucketId: match ? match.bucketId : null // Gán lại ID thùng cũ nếu đã có
+      selectedBucketId: match ? match.bucketId : null
     };
   });
 
@@ -656,6 +680,8 @@ const confirmChiet = () => {
     item => item.glueId !== currentChietChemical.value?.materialCode
   );
 
+  const now = new Date().toISOString();
+
   // 2. Thêm data mới
   chietOrderDetails.value.forEach(item => {
     if (item.selectedBucketId) {
@@ -663,7 +689,8 @@ const confirmChiet = () => {
         requestDetailId: item.requestDetailId,
         glueId: item.chemicalId || '',
         bucketId: item.selectedBucketId,
-        _sourceLineId: item.requestDetailId
+        _sourceLineId: item.requestDetailId,
+        confirmDate: item.confirmDate || now
       });
     }
   });
@@ -798,12 +825,49 @@ onBeforeRouteLeave(async (to, from) => {
 
 onIonViewDidEnter(async () => {
   await nextTick();
-  table2Ref.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // table2Ref.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-onMounted(() => {
+onIonViewWillEnter(() => {
   const workOrderMasterId = route.query.workOrderMasterId as string;
-  if (workOrderMasterId) fetchWorkOrderDetail(workOrderMasterId);
-  else { isLoadingLine.value = false; isLoadingComponent.value = false; }
+  if (workOrderMasterId) {
+    fetchWorkOrderDetail(workOrderMasterId);
+  } else {
+    isLoadingLine.value = false;
+    isLoadingComponent.value = false;
+  }
 });
 </script>
+
+<style scoped>
+ion-segment-view {
+  height: 150px;
+  width: auto;
+}
+
+ion-segment {
+  height: 50px;
+}
+
+ion-segment-button {
+  width: auto;
+}
+
+ion-segment-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+ion-segment-content:nth-of-type(1) {
+  background: lightpink;
+}
+
+ion-segment-content:nth-of-type(2) {
+  background: lightblue;
+}
+
+ion-segment-content:nth-of-type(3) {
+  background: lightgreen;
+}
+</style>

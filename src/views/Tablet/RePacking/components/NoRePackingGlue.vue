@@ -6,7 +6,7 @@
       @update:selection="$emit('update:selectedItem', $event)">
 
       <template #empty>
-        <div style="text-align: center; padding: 2rem;">
+        <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
         </div>
@@ -65,24 +65,18 @@
         </template>
       </Column>
 
-      <Column header="Chiết" :exportable="false" style="width: 8%; height: 60px">
+      <Column header="Thao tác" :exportable="false" style="width: 15%; height: 60px">
         <template #body="{ data }">
-          <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded aria-label="Add"
-            @click.stop="$emit('chiet-row', data)" />
-        </template>
-      </Column>
+          <div class="flex gap-2">
+            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded aria-label="Add"
+              @click.stop="$emit('chiet-row', data)" />
 
-      <Column header="Xem lại" :exportable="false" style="width: 8%; height: 60px">
-        <template #body="{ data }">
-          <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded aria-label="View"
-            @click.stop="$emit('view-row', data)" />
-        </template>
-      </Column>
+            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded aria-label="View"
+              @click.stop="$emit('view-row', data)" />
 
-      <Column header="Xóa" :exportable="false" style="width: 8%; height: 60px">
-        <template #body="{ data }">
-          <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
-            @click.stop="$emit('delete-row', data)" />
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
+              @click.stop="$emit('delete-row', data)" />
+          </div>
         </template>
       </Column>
     </DataTable>

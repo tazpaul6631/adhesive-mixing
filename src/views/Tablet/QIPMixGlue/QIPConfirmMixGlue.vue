@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 0px !important;">
         <ion-buttons slot="start">
           <ion-button @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
@@ -37,7 +37,7 @@
           </div>
         </div>
 
-        <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
+        <div class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl bg-white border-bottom-1 surface-border">
             <span class="font-bold text-900 text-xl">
               <i class="pi pi-list mr-2 text-primary"></i>Danh sách trộn keo chờ xác nhận
@@ -49,7 +49,7 @@
               tableStyle="width: 100%; table-layout: fixed;" rowGroupMode="rowspan" groupRowsBy="totalMixGlueWeight">
 
               <template #empty>
-                <div style="text-align: center; padding: 3.3rem;">
+                <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
                 </div>
@@ -123,11 +123,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
+  IonTitle, onIonViewWillEnter
 } from '@ionic/vue';
 
 import BackToTop from '@/components/BackToTop.vue';
@@ -173,8 +174,16 @@ const totalMixGlueWeight = ref<any>(null);
 
 const skeletonData = ref(new Array(5).fill({}));
 
+const resetState = () => {
+  selectedItem.value = null;
+  headerInfo.value = { orderNo: '', glue: '', totalWeight: '' };
+  mixGlues.value = [];
+  totalMixGlueWeight.value = null;
+};
+
 // --- METHODS ---
 const fetchWorkOrderDetail = async (id: string) => {
+  resetState();
   isLoadingLine.value = true;
 
   try {
@@ -241,7 +250,7 @@ const scrollToTop = () => {
 };
 
 // --- LIFECYCLE ---
-onMounted(() => {
+onIonViewWillEnter(() => {
   const workOrderMasterId = route.query.workOrderMasterId as string;
   if (workOrderMasterId) {
     fetchWorkOrderDetail(workOrderMasterId);

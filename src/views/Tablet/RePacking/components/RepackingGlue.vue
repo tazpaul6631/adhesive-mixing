@@ -4,7 +4,7 @@
       tableStyle="width: 100%; table-layout: fixed;" stripedRows class="modern-table">
 
       <template #empty>
-        <div style="text-align: center; padding: 2rem;">
+        <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
         </div>
@@ -44,7 +44,7 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <Select v-else v-model="data.selectedBucketId" :options="bucketList" optionLabel="label"
-            optionValue="bucketId" placeholder="Chọn thùng" class="w-full" appendTo="body"
+            optionValue="bucketId" placeholder="Chọn thùng" class="w-full" appendTo="body" :disabled="isViewMode"
             @change="handleBucketChange(data)" />
         </template>
       </Column>
@@ -56,7 +56,7 @@
         </template>
       </Column>
 
-      <Column header="Thời gian lãnh" style="width: 15%; height: 60px">
+      <Column header="Thời gian hoàn thành" style="width: 15%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
@@ -77,6 +77,7 @@ import bucketApi from '@/api/bucket';
 defineProps<{
   isLoading: boolean;
   orderDetails: any[];
+  isViewMode?: boolean;
 }>();
 
 const emit = defineEmits(['update-bucket']);
@@ -87,7 +88,11 @@ const bucketList = ref<any[]>([]);
 
 const handleBucketChange = (rowData: any) => {
   rowData.operator = authStore.user?.employeeName || 'Chưa xác định';
-  rowData.confirmTime = format.formatDate(new Date().toISOString());
+
+  const now = new Date().toISOString();
+  rowData.confirmTime = format.formatDate(now);
+  rowData.confirmDate = now;
+
   emit('update-bucket');
 };
 

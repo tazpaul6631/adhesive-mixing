@@ -18,7 +18,7 @@
     </select>
 
     <!-- Nút In -->
-    <Button :label="isPrinting ? 'Đang in...' : 'In Mã QR'" icon="pi pi-print" outlined size="large"
+    <Button :label="isPrinting ? 'Đang in...' : 'Xác nhận hoàn thành'" icon="pi pi-print" outlined size="large"
       @click="printLabel" />
   </div>
 </template>

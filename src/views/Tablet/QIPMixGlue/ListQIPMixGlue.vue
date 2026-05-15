@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 0px !important;">
         <ion-buttons slot="start">
           <ion-button @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
@@ -20,7 +20,7 @@
           </div>
         </div> -->
 
-        <div class="surface-card p-0 shadow-1 mt-4 border-round-xl">
+        <div class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>List QIP Confirm Mix Glue
@@ -29,12 +29,12 @@
 
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="700px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
+              scrollHeight="500px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
               @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]"
               selectionMode="single" v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
-                <div style="text-align: center; padding: 3.3rem;">
+                <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
                 </div>
@@ -54,7 +54,7 @@
                 </template>
               </Column>
 
-              <Column field="workOrderWeight" header="Tổng trọng lượng (kg)" style="width: 15%; height: 60px">
+              <Column field="workOrderWeight" header="Tổng TL (kg)" style="width: 15%; height: 60px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.workOrderWeight }}</span>
@@ -155,7 +155,7 @@ const isLoadingLine = ref(true);
 const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(10);
+const rowsPerPage = ref(5);
 
 const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
