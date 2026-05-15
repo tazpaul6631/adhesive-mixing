@@ -21,8 +21,6 @@
                 <button
                   type="button"
                   class="qr-scan-field"
-                  :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
-                  :disabled="isFirstTwoQrMatched"
                   @click="openScanner('line')"
                 >
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !lineQrText }]">
@@ -41,8 +39,6 @@
                 <button
                   type="button"
                   class="qr-scan-field"
-                  :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
-                  :disabled="isFirstTwoQrMatched"
                   @click="openScanner('allocated')"
                 >
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !allocatedQrText }]">
@@ -227,6 +223,7 @@ const isFirstTwoQrMatched = computed(() => {
   return normalizeQrText(lineQrRawText.value) === normalizeQrText(allocatedQrRawText.value);
 });
 
+
 const isConfirmButtonDisabled = computed(() => {
   return !isFirstTwoQrMatched.value;
 });
@@ -274,10 +271,6 @@ async function triggerMismatchVibrationIfNeeded() {
 }
 
 async function openScanner(target: ScanTarget) {
-  if ((target === "line" || target === "allocated") && isFirstTwoQrMatched.value) {
-    return;
-  }
-
   if (target === "return" && isReturnScanButtonDisabled.value) {
     return;
   }
