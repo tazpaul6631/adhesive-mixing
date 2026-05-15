@@ -15,7 +15,7 @@
           <div class="qr-panel__body">
             <ion-card class="qr-container">
               <ion-card-header>
-                <ion-card-title>Mã QR thùng keo chuyền</ion-card-title>
+                <ion-card-title>Mã QR thùng keo chuyền qua chuyền lại</ion-card-title>
               </ion-card-header>
               <ion-card-content>
                 <button
@@ -35,7 +35,7 @@
 
             <ion-card class="qr-container">
               <ion-card-header>
-                <ion-card-title>Mã QR thùng keo phát</ion-card-title>
+                <ion-card-title>Mã QR thùng keo phát qua phát lại</ion-card-title>
               </ion-card-header>
               <ion-card-content>
                 <button
