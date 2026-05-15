@@ -70,7 +70,13 @@
               Xác nhận trả về
             </ion-button>
 
-            <ion-button expand="block" class="confirm-button" @click="openScanner('return')">
+            <ion-button
+              v-if="shouldShowReturnScanButton"
+              expand="block"
+              :class="['confirm-button', { 'confirm-button--disabled': isReturnScanButtonDisabled }]"
+              :disabled="isReturnScanButtonDisabled"
+              @click="openScanner('return')"
+            >
               <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
               Quét Mã QR thùng keo trả về
             </ion-button>
@@ -542,8 +548,14 @@ function closeCurrentToast() {
     border-radius: 16px;
   }
 
-  &[disabled] {
+  &[disabled],
+  &--disabled {
     opacity: 0.48;
+    pointer-events: none;
+  }
+
+  &--disabled::part(native) {
+    cursor: not-allowed;
   }
 }
 
