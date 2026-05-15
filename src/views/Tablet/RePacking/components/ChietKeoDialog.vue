@@ -6,13 +6,11 @@
       <span class="font-bold text-blue-600 text-lg">{{ chemical?.materialName }}</span>
     </div>
 
-    <!-- TRUYỀN is-view-mode VÀO ĐÂY -->
     <RepackingGlue :is-loading="false" :order-details="orderDetails" :is-view-mode="isViewMode"
       @update-bucket="$emit('update-bucket')" />
 
     <template #footer>
       <Button label="Đóng" icon="pi pi-times" text @click="$emit('update:visible', false)" />
-      <!-- ẨN NÚT XÁC NHẬN NẾU LÀ VIEW MODE -->
       <Button v-if="!isViewMode" label="Xác nhận" icon="pi pi-check" severity="success" @click="$emit('confirm')" />
     </template>
   </Dialog>
@@ -44,7 +42,7 @@ defineProps<{
   visible: boolean;
   chemical: ChemicalComponent | null;
   orderDetails: OrderDetails[];
-  isViewMode?: boolean; // Prop này đã được khai báo sẵn, tốt lắm!
+  isViewMode?: boolean;
 }>();
 
 defineEmits<{

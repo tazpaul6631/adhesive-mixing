@@ -40,16 +40,14 @@
           </div>
         </div>
 
-        <div>
-          <ion-segment v-model="selectedTab" mode="ios">
-            <ion-segment-button value="table1">
-              <ion-label class="font-bold">KEO TRỘN</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="table2">
-              <ion-label class="font-bold">KEO KHÔNG TRỘN</ion-label>
-            </ion-segment-button>
-          </ion-segment>
-        </div>
+        <ion-segment v-model="selectedTab" mode="ios">
+          <ion-segment-button value="table1">
+            <ion-label class="font-bold">KEO TRỘN</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="table2">
+            <ion-label class="font-bold">KEO KHÔNG TRỘN</ion-label>
+          </ion-segment-button>
+        </ion-segment>
 
         <div class="block w-full">
 
@@ -113,7 +111,6 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- BẢNG 1 -->
@@ -466,7 +463,7 @@ const handleComplete = async () => {
     draftStore.clearDraft(currentWorkOrderId.value);
     isDirty.value = false;
     toast.add({ severity: 'success', summary: 'Hoàn thành', detail: 'Đã gửi dữ liệu thành công', life: 3000 });
-    // router.push('/list-repacking-mixed-glue-management');
+    router.push('/list-repacking-mixed-glue-management');
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể xác nhận hoàn thành', life: 3000 });
   }
@@ -536,24 +533,33 @@ const handleConnectionStatus = (status: boolean) => {
 // ============================================================================
 const handleSaveNewComponent = (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
   const baseItem = noMixChemicalsFull.value[0];
+  if (!baseItem) {
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không tìm thấy hóa chất gốc', life: 3000 });
+    return;
+  }
+
   const baseActualWeight = Number(baseItem?.actualWeight || '0');
   const baseMixingRatio = Number(baseItem?.mixingRatio || '100');
-  const calculatedReqWeight = (parseInt(newComponentData.percentage) * baseActualWeight) / baseMixingRatio;
+  const newPercentage = Number(newComponentData.percentage || '0');
+
+  const calculatedReqWeight = baseMixingRatio > 0
+    ? (newPercentage * baseActualWeight) / baseMixingRatio
+    : 0;
 
   const newComponent = {
     materialName: newComponentData.name,
     materialCode: newComponentData.materialCode,
     weightUnit: newComponentData.weightUnit,
     requiredWeight: calculatedReqWeight.toFixed(3),
-    actualWeight: '2',
+    actualWeight: '',
     operator: '',
     weighingTime: '',
     lowerTolerance: '0',
     upperTolerance: '0',
     mixingRatio: newComponentData.percentage.toString(),
     glueExtra: true,
-    factoryName: noMixChemicalsFull.value[0]?.factoryName,
-    styleName: noMixChemicalsFull.value[0]?.styleName,
+    factoryName: baseItem?.factoryName,
+    styleName: baseItem?.styleName,
     factoryId: authStore.user?.factoryId || ''
   };
 
@@ -853,21 +859,13 @@ ion-segment-button {
   width: auto;
 }
 
+ion-label {
+  line-height: normal !important;
+}
+
 ion-segment-content {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-ion-segment-content:nth-of-type(1) {
-  background: lightpink;
-}
-
-ion-segment-content:nth-of-type(2) {
-  background: lightblue;
-}
-
-ion-segment-content:nth-of-type(3) {
-  background: lightgreen;
 }
 </style>
