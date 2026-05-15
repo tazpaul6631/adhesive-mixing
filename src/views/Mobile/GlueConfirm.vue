@@ -18,10 +18,13 @@
                 <ion-card-title>Mã QR thùng keo chuyền</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
-                  :disabled="isFirstTwoQrMatched" @click="openScanner('line')">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner('line')"
+                >
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !lineQrText }]">
-                    {{ lineQrText || 'Quét mã QR thùng keo chuyền' }}
+                    {{ lineQrText || "Quét mã QR thùng keo chuyền" }}
                   </span>
                   <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
@@ -33,10 +36,13 @@
                 <ion-card-title>Mã QR thùng keo phát</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" :class="{ 'qr-scan-field--disabled': isFirstTwoQrMatched }"
-                  :disabled="isFirstTwoQrMatched" @click="openScanner('allocated')">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner('allocated')"
+                >
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !allocatedQrText }]">
-                    {{ allocatedQrText || 'Quét mã QR thùng keo phát' }}
+                    {{ allocatedQrText || "Quét mã QR thùng keo phát" }}
                   </span>
                   <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
@@ -50,8 +56,12 @@
               </div>
             </div>
 
-            <ion-button expand="block" class="confirm-button" :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn">
+            <ion-button
+              expand="block"
+              class="confirm-button"
+              :disabled="isConfirmButtonDisabled"
+              @click="handleConfirmReturn"
+            >
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               Xác nhận trả về
             </ion-button>
@@ -91,8 +101,12 @@
         </section>
       </div>
 
-      <ion-modal :is-open="isReturnConfirmDialogOpen" class="return-confirm-modal" :backdrop-dismiss="false"
-        @didDismiss="handleReturnDialogDismiss">
+      <ion-modal
+        :is-open="isReturnConfirmDialogOpen"
+        class="return-confirm-modal"
+        :backdrop-dismiss="false"
+        @didDismiss="handleReturnDialogDismiss"
+      >
         <div class="return-confirm-dialog">
           <div class="return-confirm-dialog__icon">
             <ion-icon :icon="alertCircle"></ion-icon>
@@ -117,14 +131,20 @@
         </div>
       </ion-modal>
 
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="top" color="success"
-        @didDismiss="showSuccessToast = false"></ion-toast>
+      <ion-toast
+        :is-open="showSuccessToast"
+        :message="toastMessage"
+        duration="1800"
+        position="top"
+        color="success"
+        @didDismiss="showSuccessToast = false"
+      ></ion-toast>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 import {
   IonBackButton,
   IonButton,
@@ -141,38 +161,38 @@ import {
   IonTitle,
   IonToast,
   IonToolbar,
-} from '@ionic/vue';
-import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from 'ionicons/icons';
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
-import { Haptics } from '@capacitor/haptics';
-import { findMockGlueInfo, getGlueCompareKey, normalizeGlueQrText } from './glueQr.mock';
-import type { GlueQrInfo } from './glueQr.mock';
+} from "@ionic/vue";
+import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
+import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
+import { Haptics } from "@capacitor/haptics";
+import { findMockGlueInfo, getGlueCompareKey, normalizeGlueQrText } from "./glueQr.mock";
+import type { GlueQrInfo } from "./glueQr.mock";
 
-type ConfirmScanTarget = 'line' | 'allocated';
-type ScanTarget = ConfirmScanTarget | 'return';
-type ReturnScanButtonDisplayMode = 'disabled' | 'hidden';
+type ConfirmScanTarget = "line" | "allocated";
+type ScanTarget = ConfirmScanTarget | "return";
+type ReturnScanButtonDisplayMode = "disabled" | "hidden";
 
-const returnScanButtonDisplayMode = 'disabled' as ReturnScanButtonDisplayMode;
+const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
 
-const lineQrText = ref('');
-const allocatedQrText = ref('');
-const lineQrRawText = ref('');
-const allocatedQrRawText = ref('');
-const returnQrText = ref('');
-const pendingReturnQrText = ref('');
+const lineQrText = ref("");
+const allocatedQrText = ref("");
+const lineQrRawText = ref("");
+const allocatedQrRawText = ref("");
+const returnQrText = ref("");
+const pendingReturnQrText = ref("");
 
 const lineQrInfo = ref<GlueQrInfo | null>(null);
 const allocatedQrInfo = ref<GlueQrInfo | null>(null);
 const returnQrInfo = ref<GlueQrInfo | null>(null);
 
 const showSuccessToast = ref(false);
-const toastMessage = ref('');
+const toastMessage = ref("");
 const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const isReturnScanReady = ref(false);
 
 const shouldShowReturnScanButton = computed(() => {
-  if (returnScanButtonDisplayMode === 'hidden') {
+  if (returnScanButtonDisplayMode === "hidden") {
     return isReturnScanReady.value;
   }
 
@@ -186,7 +206,6 @@ const isReturnScanButtonDisabled = computed(() => {
 const pendingReturnDisplayText = computed(() => {
   return returnQrInfo.value?.glueName || pendingReturnQrText.value;
 });
-
 
 const isFirstTwoQrReady = computed(() => {
   return !!lineQrRawText.value && !!allocatedQrRawText.value;
@@ -204,34 +223,35 @@ const isFirstTwoQrMatched = computed(() => {
   return normalizeQrText(lineQrRawText.value) === normalizeQrText(allocatedQrRawText.value);
 });
 
+
 const isConfirmButtonDisabled = computed(() => {
   return !isFirstTwoQrMatched.value;
 });
 
 const statusMessage = computed(() => {
   if (isFirstTwoQrReady.value && !isFirstTwoQrMatched.value) {
-    return 'Mã QR thùng keo trên chuyền không khớp với keo trên thùng keo phát';
+    return "Mã QR thùng keo trên chuyền không khớp với keo trên thùng keo phát";
   }
 
   if (isFirstTwoQrMatched.value) {
-    return 'Mã QR thùng keo trên chuyền khớp với keo trên thùng keo phát';
+    return "Mã QR thùng keo trên chuyền khớp với keo trên thùng keo phát";
   }
 });
 
 const statusClass = computed(() => {
   if (isFirstTwoQrReady.value && !isFirstTwoQrMatched.value) {
-    return 'status-box--danger';
+    return "status-box--danger";
   }
 
   if (isFirstTwoQrMatched.value) {
-    return 'status-box--success';
+    return "status-box--success";
   }
 
-  return 'status-box--default';
+  return "status-box--default";
 });
 
 const statusIcon = computed(() => {
-  return statusClass.value === 'status-box--danger' ? alertCircle : checkmarkCircle;
+  return statusClass.value === "status-box--danger" ? alertCircle : checkmarkCircle;
 });
 
 function normalizeQrText(value: string) {
@@ -246,24 +266,20 @@ async function triggerMismatchVibrationIfNeeded() {
   try {
     await Haptics.vibrate({ duration: 350 });
   } catch (error) {
-    console.error('Không thể kích hoạt rung cảnh báo:', error);
+    console.error("Không thể kích hoạt rung cảnh báo:", error);
   }
 }
 
 async function openScanner(target: ScanTarget) {
-  if ((target === 'line' || target === 'allocated') && isFirstTwoQrMatched.value) {
-    return;
-  }
-
-  if (target === 'return' && isReturnScanButtonDisabled.value) {
+  if (target === "return" && isReturnScanButtonDisabled.value) {
     return;
   }
 
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
-    if (camera !== 'granted' && camera !== 'limited') {
-      alert('Cần cấp quyền camera để quét mã QR!');
+    if (camera !== "granted" && camera !== "limited") {
+      alert("Cần cấp quyền camera để quét mã QR!");
       return;
     }
 
@@ -273,17 +289,17 @@ async function openScanner(target: ScanTarget) {
       const scannedValue = barcodes[0].rawValue;
 
       if (scannedValue) {
-        if (target === 'return') {
+        if (target === "return") {
           handleReturnScanResult(scannedValue);
         } else {
           await handleConfirmScanResult(target, scannedValue);
         }
       } else {
-        alert('Mã QR không hợp lệ hoặc không có dữ liệu!');
+        alert("Mã QR không hợp lệ hoặc không có dữ liệu!");
       }
     }
   } catch (error) {
-    console.error('Lỗi khi quét mã QR:', error);
+    console.error("Lỗi khi quét mã QR:", error);
   }
 }
 
@@ -296,13 +312,13 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
 
   const mockInfo = findMockGlueInfo(normalizedValue);
 
-  if (target === 'line') {
+  if (target === "line") {
     lineQrRawText.value = normalizedValue;
     lineQrText.value = mockInfo?.productionLine || normalizedValue;
     lineQrInfo.value = mockInfo;
   }
 
-  if (target === 'allocated') {
+  if (target === "allocated") {
     allocatedQrRawText.value = normalizedValue;
     allocatedQrText.value = mockInfo?.shape || normalizedValue;
     allocatedQrInfo.value = mockInfo;
@@ -354,17 +370,17 @@ async function confirmReturnQr() {
     resetReturnField();
     resetReturnScanState();
     resetConfirmFields();
-    showToast('Trả về thành công');
+    showToast("Trả về thành công");
   } catch (error) {
-    console.error('Không thể xác nhận trả về thùng keo:', error);
-    alert('Không thể xác nhận trả về thùng keo. Vui lòng thử lại!');
+    console.error("Không thể xác nhận trả về thùng keo:", error);
+    alert("Không thể xác nhận trả về thùng keo. Vui lòng thử lại!");
   } finally {
     isSubmittingReturn.value = false;
   }
 }
 
 async function submitReturnQrMock(qrText: string) {
-  console.info('Mock submit return QR:', qrText);
+  console.info("Mock submit return QR:", qrText);
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
 
@@ -377,17 +393,17 @@ function handleConfirmReturn() {
 }
 
 function resetConfirmFields() {
-  lineQrText.value = '';
-  allocatedQrText.value = '';
-  lineQrRawText.value = '';
-  allocatedQrRawText.value = '';
+  lineQrText.value = "";
+  allocatedQrText.value = "";
+  lineQrRawText.value = "";
+  allocatedQrRawText.value = "";
   lineQrInfo.value = null;
   allocatedQrInfo.value = null;
 }
 
 function resetReturnField() {
-  returnQrText.value = '';
-  pendingReturnQrText.value = '';
+  returnQrText.value = "";
+  pendingReturnQrText.value = "";
   returnQrInfo.value = null;
 }
 
@@ -507,7 +523,6 @@ function closeCurrentToast() {
     font-size: 18px !important;
   }
 }
-
 
 .confirm-button {
   overflow: hidden;
