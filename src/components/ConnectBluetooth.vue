@@ -137,7 +137,7 @@ const printLabel = async () => {
       const response = await mixGlue.postMixGlueConfirm(payload);
 
       if (response.data?.success) {
-        const { styleName, startDate, endDate, domainApi } = response.data.data;
+        const { styleName, startDate, endDate, domainApi, action } = response.data.data;
 
         const formattedStart = format.formatDate(startDate);
         const formattedEnd = format.formatDate(endDate);
@@ -150,7 +150,7 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 10,40,H,4,A,0,"${domainApi}/api/mobile/mixglue/scanqr/${payload.factoryId}/${mixGlueMasterId}/${workOrderMasterId}"
+QRCODE 10,40,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}/${workOrderMasterId}"
 TEXT 200,100,"ARIAL.TTF",0,12,12,"Từ: ${formattedStart}"
 TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
 `;

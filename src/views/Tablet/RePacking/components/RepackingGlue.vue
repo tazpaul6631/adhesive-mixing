@@ -10,12 +10,12 @@
         </div>
       </template>
 
-      <Column field="factoryName" header="Xưởng" style="width: 10%; height: 60px">
+      <!-- <Column field="factoryName" header="Xưởng" style="width: 10%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else>{{ data.factoryName }}</span>
         </template>
-      </Column>
+      </Column> -->
 
       <Column field="requestDetailName" header="Đơn yêu cầu" style="width: 20%; height: 60px">
         <template #body="{ data }">
@@ -34,7 +34,7 @@
       <Column field="productLineName" header="Dây chuyền" style="width: 24%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
-          <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm">
+          <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md">
             {{ data.productLineName }}
           </span>
         </template>
@@ -43,7 +43,6 @@
       <Column header="Thùng chứa" style="width: 18%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <!-- Thay đổi @change ở đây -->
           <Select v-else v-model="data.selectedBucketId" :options="bucketList" optionLabel="label"
             optionValue="bucketId" placeholder="Chọn thùng" class="w-full" appendTo="body"
             @change="handleBucketChange(data)" />
@@ -57,11 +56,11 @@
         </template>
       </Column>
 
-      <Column field="requestTime" header="Thời gian lãnh" style="width: 15%; height: 60px">
+      <Column header="Thời gian lãnh" style="width: 15%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
-            <i class="pi pi-clock text-xs mr-1"></i>{{ format.formatDate(data.requestTime) }}
+            <i v-if="data.confirmTime" class="pi pi-clock text-xs mr-1"></i>{{ data.confirmTime }}
           </span>
         </template>
       </Column>
@@ -88,7 +87,7 @@ const bucketList = ref<any[]>([]);
 
 const handleBucketChange = (rowData: any) => {
   rowData.operator = authStore.user?.employeeName || 'Chưa xác định';
-
+  rowData.confirmTime = format.formatDate(new Date().toISOString());
   emit('update-bucket');
 };
 

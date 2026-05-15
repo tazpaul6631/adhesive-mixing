@@ -18,12 +18,12 @@
         </div>
       </template>
 
-      <Column header="Xưởng" style="width: 10%; height: 60px">
+      <!-- <Column header="Xưởng" style="width: 10%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" class="mx-auto" />
           <span v-else>{{ data.factoryName }}</span>
         </template>
-      </Column>
+      </Column> -->
 
       <Column header="Hình thể" style="width: 13%; height: 60px">
         <template #body="{ data }">
@@ -67,14 +67,14 @@
 
       <Column header="Chiết" :exportable="false" style="width: 8%; height: 60px">
         <template #body="{ data }">
-          <Button icon="pi pi-plus" severity="success" text rounded aria-label="Add"
+          <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded aria-label="Add"
             @click.stop="$emit('chiet-row', data)" />
         </template>
       </Column>
 
       <Column header="Xem lại" :exportable="false" style="width: 8%; height: 60px">
         <template #body="{ data }">
-          <Button icon="pi pi-eye" severity="primary" text rounded aria-label="View"
+          <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded aria-label="View"
             @click.stop="$emit('view-row', data)" />
         </template>
       </Column>
