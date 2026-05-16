@@ -533,11 +533,14 @@ const handleConnectionStatus = (status: boolean) => {
 // ============================================================================
 const handleSaveNewComponent = (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
   const baseItem = noMixChemicalsFull.value[0];
-  if (!baseItem) {
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không tìm thấy hóa chất gốc', life: 3000 });
-    return;
-  }
-
+  // if (!baseItem) {
+  //   toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không tìm thấy hóa chất gốc', life: 3000 });
+  //   return;
+  // }
+  // if (Number(baseItem?.actualWeight || 0) <= 0) {
+  //   toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng cân thành phần gốc trước khi thêm thành phần mới', life: 3000 });
+  //   return;
+  // }
   const baseActualWeight = Number(baseItem?.actualWeight || '0');
   const baseMixingRatio = Number(baseItem?.mixingRatio || '100');
   const newPercentage = Number(newComponentData.percentage || '0');
@@ -551,7 +554,7 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
     materialCode: newComponentData.materialCode,
     weightUnit: newComponentData.weightUnit,
     requiredWeight: calculatedReqWeight.toFixed(3),
-    actualWeight: '',
+    actualWeight: '2',
     operator: '',
     weighingTime: '',
     lowerTolerance: '0',
@@ -645,13 +648,19 @@ const saveDraftToStoreOnly = () => {
 // XỬ LÝ MODAL CHIẾT KEO
 // ============================================================================
 const handleChietRow = (rowData: any) => {
-  isViewMode.value = false; // Mở modal ở chế độ thao tác
+  isViewMode.value = false;
   currentChietChemical.value = rowData;
+
+  // SỬA Ở ĐÂY: Reset toàn bộ các trường liên quan đến thao tác chọn thùng
   chietOrderDetails.value = orderDetails.value.map(item => ({
     ...item,
     chemicalId: rowData.materialCode,
-    selectedBucketId: null
+    selectedBucketId: null, // reset thùng
+    operator: '',           // Xóa người thao tác cũ
+    confirmTime: null,      // Xóa thời gian hiển thị UI
+    confirmDate: null       // Xóa thời gian gửi payload
   }));
+
   chietDialog.value = true;
 };
 

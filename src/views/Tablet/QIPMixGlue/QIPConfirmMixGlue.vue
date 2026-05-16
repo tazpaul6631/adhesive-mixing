@@ -18,7 +18,7 @@
           <div
             class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
             <user-avatar />
-            <ConnectBluetooth templateType="mix_glue" :printData="selectedItem" />
+            <ConnectBluetooth templateType="mix_glue" :printData="selectedItem" @printSuccess="handlePrintSuccess" />
           </div>
 
           <div class="grid formgrid p-fluid">
@@ -179,6 +179,12 @@ const resetState = () => {
   headerInfo.value = { orderNo: '', glue: '', totalWeight: '' };
   mixGlues.value = [];
   totalMixGlueWeight.value = null;
+};
+
+const handlePrintSuccess = () => {
+  // Thực hiện chuyển trang hoặc quay lại tại đây
+  router.back();
+  // HOẶC router.replace('/qip-confirm-repacking-mixed-glue');
 };
 
 // --- METHODS ---

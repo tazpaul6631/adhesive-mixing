@@ -17,7 +17,7 @@
       <div class="main-container max-w-full mx-auto">
         <div class="flex flex-wrap align-items-center justify-content-between surface-border">
           <user-avatar />
-          <ConnectBluetooth templateType="repacking" :printData="selectedItem" />
+          <ConnectBluetooth templateType="repacking" :printData="selectedItem" @printSuccess="handlePrintSuccess" />
         </div>
 
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
@@ -32,9 +32,8 @@
           <div class="overflow-x-auto border-round-bottom-xl" :key="isMixedMode ? 'mixed' : 'nomix'">
 
             <!-- BẢNG DÀNH CHO KEO TRỘN -->
-            <DataTable v-if="isMixedMode" :value="lineDetails" lazy :totalRecords="totalRecords" stripedRows
-              class="custom-bordered-table" tableStyle="min-width: 70rem" scrollable scrollHeight="700px"
-              selectionMode="single" v-model:selection="selectedItem" dataKey="rePackingGlueId">
+            <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table"
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="rePackingGlueId">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -70,9 +69,9 @@
             </DataTable>
 
             <!-- BẢNG DÀNH CHO KEO KHÔNG TRỘN -->
-            <DataTable v-else :value="lineDetails" lazy :totalRecords="totalRecords" stripedRows
-              class="custom-bordered-table" tableStyle="min-width: 70rem" scrollable scrollHeight="700px"
-              selectionMode="single" v-model:selection="selectedItem" dataKey="noRePackingGlueId">
+            <DataTable v-else :value="lineDetails" stripedRows class="custom-bordered-table"
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px"
+              dataKey="noRePackingGlueId">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -131,7 +130,6 @@ const route = useRoute();
 const authStore = useAuthStore();
 
 const isLoadingLine = ref(true);
-const totalRecords = ref(0);
 const selectedItem = ref<any>(null);
 const lineDetails = ref<any[]>([]);
 
@@ -139,11 +137,16 @@ const isMixedMode = computed(() => {
   return route.query.type === 'mixed';
 });
 
+const handlePrintSuccess = () => {
+  // Thực hiện chuyển trang hoặc quay lại tại đây
+  router.back();
+  // HOẶC router.replace('/qip-confirm-repacking-mixed-glue');
+};
+
 // --- FETCH & STATE LOGIC ---
 const resetState = () => {
   lineDetails.value = [];
   selectedItem.value = null;
-  totalRecords.value = 0;
   isLoadingLine.value = true;
 };
 
@@ -154,7 +157,6 @@ const fetchMixedGlueDetail = async (factoryId: string, rpgIdStr: string, rdIdStr
 
     if (data && data.success) {
       lineDetails.value = data.data ? [data.data] : [];
-      totalRecords.value = lineDetails.value.length;
     } else {
       console.error('API Error (Mixed):', data?.message);
     }
@@ -170,7 +172,6 @@ const fetchNoMixGlueDetail = async (factoryId: string, nrpgIdStr: string, womIdS
 
     if (data && data.success) {
       lineDetails.value = data.data ? [data.data] : [];
-      totalRecords.value = lineDetails.value.length;
     } else {
       console.error('API Error (NoMix):', data?.message);
     }

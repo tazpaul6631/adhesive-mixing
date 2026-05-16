@@ -33,7 +33,7 @@ import { Preferences } from '@capacitor/preferences';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import mixGlue from '@/api/mixGlue';
-import router from '@/router';
+import { useRouter } from 'vue-router';
 import rePackingGlue from '@/api/rePackingGlue';
 import { onIonViewWillEnter, onIonViewDidLeave } from '@ionic/vue';
 
@@ -49,6 +49,8 @@ const isPrinting = ref(false);
 const authStore = useAuthStore();
 let connectionTimeout: any = null;
 let autoReconnectInterval: any = null;
+const router = useRouter();
+const emit = defineEmits(['printSuccess']);
 
 // --- 1. Xử lý Bật Bluetooth & Quét thiết bị ---
 const turnOnAndScan = () => {
@@ -398,11 +400,13 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
       isPrinting.value = false;
 
       // --- ĐOẠN RẼ NHÁNH CHUYỂN TRANG CỦA BẠN Ở ĐÂY ---
-      if (props.templateType === 'mix_glue') {
-        router.push('/qip-confirm-mix-glue');
-      } else if (props.templateType === 'repacking') {
-        router.push('/qip-confirm-repacking-mixed-glue');
-      }
+      // if (props.templateType === 'mix_glue') {
+      //   router.replace('/list-qip-confirm-mix-glue');
+      // } else if (props.templateType === 'repacking') {
+      //   router.replace('/list-qip-confirm-repacking-mixed-glue');
+      // }
+
+      emit('printSuccess');
 
     }, (err: any) => {
       console.log("Lỗi in: " + JSON.stringify(err));

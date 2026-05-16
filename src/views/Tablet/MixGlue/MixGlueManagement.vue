@@ -463,15 +463,27 @@ const isLoadingMaterials = ref(false);
 
 const handleSaveNewComponent = (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
   const baseItem = componentDetailsFull.value[0];
+  if (!baseItem) {
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không tìm thấy hóa chất gốc', life: 3000 });
+    return;
+  }
+  if (Number(baseItem?.actualWeight || 0) <= 0) {
+    toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng cân thành phần gốc trước khi thêm thành phần mới', life: 3000 });
+    return;
+  }
   const baseActualWeight = Number(baseItem?.actualWeight || '0');
   const baseMixingRatio = Number(baseItem?.mixingRatio || '100');
-  const calculatedRequiredWeight = (parseInt(newComponentData.percentage) * baseActualWeight) / baseMixingRatio;
+  const newPercentage = Number(newComponentData.percentage || '0');
+
+  const calculatedRequiredWeight = baseMixingRatio > 0
+    ? (newPercentage * baseActualWeight) / baseMixingRatio
+    : 0;
 
   componentDetailsFull.value.push({
     materialName: newComponentData.name,
     materialCode: newComponentData.materialCode,
     weightUnit: newComponentData.weightUnit,
-    requiredWeight: calculatedRequiredWeight.toFixed(3) ? '' : (calculatedRequiredWeight.toFixed(3)),
+    requiredWeight: calculatedRequiredWeight > 0 ? calculatedRequiredWeight.toFixed(3) : '',
     actualWeight: '',
     operator: '',
     weighingTime: '',
