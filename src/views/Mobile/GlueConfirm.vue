@@ -23,8 +23,24 @@
                   class="qr-scan-field"
                   @click="openScanner('line')"
                 >
-                  <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !lineQrText }]">
-                    {{ lineQrText || "Quét mã QR thùng keo chuyền" }}
+                  <span
+                    v-if="!lineQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
+                    Quét mã QR thùng keo chuyền
+                  </span>
+                  <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
+                    <div class="qr-scan-field__info-row">
+                      <span class="qr-scan-field__info-label">Chuyền:</span>
+                      <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
+                    </div>
+                    <div class="qr-scan-field__info-row">
+                      <span class="qr-scan-field__info-label">Keo:</span>
+                      <span class="qr-scan-field__info-value">{{ lineChemicalInfo.glueName }}</span>
+                    </div>
+                  </div>
+                  <span v-else class="qr-scan-field__text">
+                    {{ lineQrText }}
                   </span>
                   <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
@@ -41,8 +57,24 @@
                   class="qr-scan-field"
                   @click="openScanner('allocated')"
                 >
-                  <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !allocatedQrText }]">
-                    {{ allocatedQrText || "Quét mã QR thùng keo phát" }}
+                  <span
+                    v-if="!allocatedQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
+                    Quét mã QR thùng keo phát
+                  </span>
+                  <div v-else-if="allocatedGlueInfo" class="qr-scan-field__info">
+                    <div class="qr-scan-field__info-row">
+                      <span class="qr-scan-field__info-label">Chuyền:</span>
+                      <span class="qr-scan-field__info-value">{{ allocatedGlueInfo.productLineName }}</span>
+                    </div>
+                    <div class="qr-scan-field__info-row">
+                      <span class="qr-scan-field__info-label">Keo:</span>
+                      <span class="qr-scan-field__info-value">{{ allocatedGlueInfo.glueName }}</span>
+                    </div>
+                  </div>
+                  <span v-else class="qr-scan-field__text">
+                    {{ allocatedQrText }}
                   </span>
                   <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
@@ -164,7 +196,6 @@ import {
 } from "@ionic/vue";
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
-import { Haptics } from "@capacitor/haptics";
 import rePackingGlueApi from "@/api/rePackingGlue";
 
 type ConfirmScanTarget = "line" | "allocated";
@@ -175,6 +206,12 @@ type LineQrPayload = {
   factoryId: string;
   lineChemicalId: string;
   productLineId: string;
+};
+
+type AllocatedQrPayload = {
+  factoryId: string;
+  rpgId: string;
+  rdId: string;
 };
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
@@ -188,6 +225,7 @@ const returnQrText = ref("");
 const pendingReturnQrText = ref("");
 
 const lineChemicalInfo = ref<any>(null);
+const allocatedGlueInfo = ref<any>(null);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref("");
@@ -195,6 +233,7 @@ const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const isReturnScanReady = ref(false);
 const isLoadingLineQr = ref(false);
+const isLoadingAllocatedQr = ref(false);
 
 const shouldShowReturnScanButton = computed(() => {
   if (returnScanButtonDisplayMode === "hidden") {
@@ -213,36 +252,24 @@ const pendingReturnDisplayText = computed(() => {
 });
 
 const isFirstTwoQrReady = computed(() => {
-  return !!lineQrRawText.value && !!allocatedQrRawText.value;
+  return !!lineChemicalInfo.value && !!allocatedGlueInfo.value;
 });
 
 const isFirstTwoQrMatched = computed(() => {
-  if (!isFirstTwoQrReady.value) {
-    return false;
-  }
-
-  return normalizeQrText(lineQrRawText.value) === normalizeQrText(allocatedQrRawText.value);
+  // TODO: Chờ Backend/Team xác nhận field so sánh chính thức giữa keo chuyền và keo phát.
+  return false;
 });
 
 const isConfirmButtonDisabled = computed(() => {
-  return !isFirstTwoQrMatched.value || isLoadingLineQr.value;
+  return !isFirstTwoQrMatched.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
 });
 
 const statusMessage = computed(() => {
-  if (isFirstTwoQrReady.value && !isFirstTwoQrMatched.value) {
-    return "Mã QR thùng keo trên chuyền không khớp với keo trên thùng keo phát";
-  }
-
-  if (isFirstTwoQrMatched.value) {
-    return "Mã QR thùng keo trên chuyền khớp với keo trên thùng keo phát";
-  }
+  // TODO: Chờ Backend/Team xác nhận field so sánh chính thức giữa keo chuyền và keo phát.
+  return "";
 });
 
 const statusClass = computed(() => {
-  if (isFirstTwoQrReady.value && !isFirstTwoQrMatched.value) {
-    return "status-box--danger";
-  }
-
   if (isFirstTwoQrMatched.value) {
     return "status-box--success";
   }
@@ -251,7 +278,7 @@ const statusClass = computed(() => {
 });
 
 const statusIcon = computed(() => {
-  return statusClass.value === "status-box--danger" ? alertCircle : checkmarkCircle;
+  return checkmarkCircle;
 });
 
 function normalizeQrText(value: string) {
@@ -259,14 +286,9 @@ function normalizeQrText(value: string) {
 }
 
 async function triggerMismatchVibrationIfNeeded() {
+  // TODO: Kích hoạt lại khi Backend/Team xác nhận field so sánh chính thức.
   if (!isFirstTwoQrReady.value || isFirstTwoQrMatched.value) {
     return;
-  }
-
-  try {
-    await Haptics.vibrate({ duration: 350 });
-  } catch (error) {
-    console.error("Không thể kích hoạt rung cảnh báo:", error);
   }
 }
 
@@ -315,8 +337,7 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
   }
 
   if (target === "allocated") {
-    allocatedQrRawText.value = normalizedValue;
-    allocatedQrText.value = normalizedValue;
+    await handleAllocatedQrScanResult(normalizedValue);
   }
 
   closeCurrentToast();
@@ -358,6 +379,44 @@ async function handleLineQrScanResult(qrText: string) {
     alert("Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!");
   } finally {
     isLoadingLineQr.value = false;
+  }
+}
+
+async function handleAllocatedQrScanResult(qrText: string) {
+  const payload = parseAllocatedQrPayload(qrText);
+
+  if (!payload) {
+    resetAllocatedQrField();
+    alert(invalidQrMessage);
+    return;
+  }
+
+  allocatedQrText.value = "Đang tải thông tin mã QR...";
+  isLoadingAllocatedQr.value = true;
+
+  try {
+    const response = await rePackingGlueApi.getRePackingGlueScanQr(
+      payload.factoryId,
+      payload.rpgId,
+      payload.rdId
+    );
+    const responseData = response.data as any;
+
+    if (!responseData.success || !responseData.data) {
+      resetAllocatedQrField();
+      alert(invalidQrMessage);
+      return;
+    }
+
+    allocatedQrRawText.value = qrText;
+    allocatedGlueInfo.value = responseData.data;
+    allocatedQrText.value = formatGlueDisplay(responseData.data);
+  } catch (error) {
+    console.error("Không thể lấy thông tin QR thùng keo phát:", error);
+    resetAllocatedQrField();
+    alert("Không thể lấy thông tin mã QR thùng keo phát. Vui lòng kiểm tra kết nối API!");
+  } finally {
+    isLoadingAllocatedQr.value = false;
   }
 }
 
@@ -428,10 +487,15 @@ function resetLineQrField() {
   lineChemicalInfo.value = null;
 }
 
-function resetConfirmFields() {
-  resetLineQrField();
+function resetAllocatedQrField() {
   allocatedQrText.value = "";
   allocatedQrRawText.value = "";
+  allocatedGlueInfo.value = null;
+}
+
+function resetConfirmFields() {
+  resetLineQrField();
+  resetAllocatedQrField();
 }
 
 function resetReturnField() {
@@ -453,6 +517,10 @@ function closeCurrentToast() {
 }
 
 function formatLineChemicalDisplay(info: any) {
+  return formatGlueDisplay(info);
+}
+
+function formatGlueDisplay(info: any) {
   return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
 }
 
@@ -463,7 +531,7 @@ function parseLineQrPayload(qrText: string): LineQrPayload | null {
     return null;
   }
 
-  const pathname = getLineQrPathname(normalizedText);
+  const pathname = getQrPathname(normalizedText);
 
   if (!pathname) {
     return null;
@@ -472,7 +540,7 @@ function parseLineQrPayload(qrText: string): LineQrPayload | null {
   return parseLineQrPathPayload(pathname);
 }
 
-function getLineQrPathname(qrText: string) {
+function getQrPathname(qrText: string) {
   try {
     return new URL(qrText).pathname;
   } catch {
@@ -509,6 +577,53 @@ function parseLineQrPathPayload(pathname: string): LineQrPayload | null {
     productLineId: decodeURIComponent(productLineId),
   };
 }
+
+function parseAllocatedQrPayload(qrText: string): AllocatedQrPayload | null {
+  const normalizedText = normalizeQrText(qrText);
+
+  if (!normalizedText) {
+    return null;
+  }
+
+  const pathname = getQrPathname(normalizedText);
+
+  if (!pathname) {
+    return null;
+  }
+
+  return parseAllocatedQrPathPayload(pathname);
+}
+
+function parseAllocatedQrPathPayload(pathname: string): AllocatedQrPayload | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const scanQrIndex = parts.findIndex((part, index) => {
+    return (
+      part.toLowerCase() === "scanrpgqr" &&
+      parts[index - 3]?.toLowerCase() === "api" &&
+      parts[index - 2]?.toLowerCase() === "mobile" &&
+      parts[index - 1]?.toLowerCase() === "repackingglue"
+    );
+  });
+
+  if (scanQrIndex === -1) {
+    return null;
+  }
+
+  const factoryId = parts[scanQrIndex + 1];
+  const rpgId = parts[scanQrIndex + 2];
+  const rdId = parts[scanQrIndex + 3];
+
+  if (!factoryId || !rpgId || !rdId) {
+    return null;
+  }
+
+  return {
+    factoryId: decodeURIComponent(factoryId),
+    rpgId: decodeURIComponent(rpgId),
+    rdId: decodeURIComponent(rdId),
+  };
+}
+
 
 </script>
 
@@ -608,6 +723,36 @@ function parseLineQrPathPayload(pathname: string): LineQrPayload | null {
   &__text--empty {
     color: #8a9099;
     font-size: 14px !important;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__info-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    line-height: 1.35;
+  }
+
+  &__info-label {
+    flex-shrink: 0;
+    color: #64748b;
+    font-size: 16px !important;
+    font-weight: 600;
+  }
+
+  &__info-value {
+    color: #081a36;
+    font-size: 16px !important;
+    font-weight: 700;
+    word-break: break-word;
   }
 
   &__icon {
@@ -778,6 +923,19 @@ function parseLineQrPathPayload(pathname: string): LineQrPayload | null {
     border-radius: 18px;
 
     &__text {
+      font-size: 1.28rem;
+    }
+
+    &__info {
+      gap: 6px;
+    }
+
+    &__info-row {
+      gap: 8px;
+    }
+
+    &__info-label,
+    &__info-value {
       font-size: 1.28rem;
     }
 

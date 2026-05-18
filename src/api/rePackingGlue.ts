@@ -26,5 +26,10 @@ export default {
         return request.get(
             `api/mobile/linechemical/scanqr/${factoryId}/${lineChemicalId}/${productLineId}`
         )
+    },
+    getRePackingGlueScanQr(factoryId: string, rpgId: string, rdId: string) {
+        return request.get(
+            `api/mobile/repackingglue/scanrpgqr/${factoryId}/${rpgId}/${rdId}`
+        )
     }
 };
