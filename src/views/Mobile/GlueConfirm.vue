@@ -63,14 +63,14 @@
                   >
                     Quét mã QR thùng keo phát
                   </span>
-                  <div v-else-if="allocatedGlueInfo" class="qr-scan-field__info">
-                    <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">Chuyền:</span>
-                      <span class="qr-scan-field__info-value">{{ allocatedGlueInfo.productLineName }}</span>
-                    </div>
-                    <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">Keo:</span>
-                      <span class="qr-scan-field__info-value">{{ allocatedGlueInfo.glueName }}</span>
+                  <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
+                    <div
+                      v-for="row in allocatedDisplayRows"
+                      :key="row.label"
+                      class="qr-scan-field__info-row"
+                    >
+                      <span class="qr-scan-field__info-label">{{ row.label }}</span>
+                      <span class="qr-scan-field__info-value">{{ row.value }}</span>
                     </div>
                   </div>
                   <span v-else class="qr-scan-field__text">
@@ -108,28 +108,7 @@
               <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
               Quét Mã QR thùng keo trả về
             </ion-button>
-
-            <!-- <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>Mã QR thùng keo trả về</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner('return')">
-                  <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !returnQrText }]">
-                    {{ returnQrText || 'Quét mã QR thùng keo trả về' }}
-                  </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
-                </button>
-              </ion-card-content>
-            </ion-card> -->
           </div>
-
-          <!-- <div v-if="statusMessage" class="status-box" :class="statusClass">
-            <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
-            <div class="status-box__content">
-              <p><strong>Trạng thái: </strong>{{ statusMessage }}</p>
-            </div>
-          </div> -->
         </section>
       </div>
 
@@ -197,10 +176,12 @@ import {
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import rePackingGlueApi from "@/api/rePackingGlue";
+import mixGlueApi from "@/api/mixGlue";
 
 type ConfirmScanTarget = "line" | "allocated";
 type ScanTarget = ConfirmScanTarget | "return";
 type ReturnScanButtonDisplayMode = "disabled" | "hidden";
+type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
 
 type LineQrPayload = {
   factoryId: string;
@@ -208,11 +189,20 @@ type LineQrPayload = {
   productLineId: string;
 };
 
-type AllocatedQrPayload = {
+type SeparateGlueQrPayload = {
+  type: "separate";
   factoryId: string;
-  rpgId: string;
-  rdId: string;
+  sgId: string;
 };
+
+type MixGlueQrPayload = {
+  type: "mix";
+  factoryId: string;
+  mgmId: string;
+  womId: string;
+};
+
+type AllocatedQrPayload = SeparateGlueQrPayload | MixGlueQrPayload;
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
 const invalidQrMessage = "Mã QR không hợp lệ.";
@@ -226,6 +216,7 @@ const pendingReturnQrText = ref("");
 
 const lineChemicalInfo = ref<any>(null);
 const allocatedGlueInfo = ref<any>(null);
+const allocatedDisplayRows = ref<Array<{ label: string; value: string }>>([]);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref("");
@@ -255,26 +246,24 @@ const isFirstTwoQrReady = computed(() => {
   return !!lineChemicalInfo.value && !!allocatedGlueInfo.value;
 });
 
-const isFirstTwoQrMatched = computed(() => {
-  // TODO: Chờ Backend/Team xác nhận field so sánh chính thức giữa keo chuyền và keo phát.
-  return false;
-});
-
 const isConfirmButtonDisabled = computed(() => {
-  return !isFirstTwoQrMatched.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
+  return !isFirstTwoQrReady.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
 });
 
 const statusMessage = computed(() => {
-  // TODO: Chờ Backend/Team xác nhận field so sánh chính thức giữa keo chuyền và keo phát.
-  return "";
-});
-
-const statusClass = computed(() => {
-  if (isFirstTwoQrMatched.value) {
-    return "status-box--success";
+  if (!isFirstTwoQrReady.value) {
+    return "";
   }
 
-  return "status-box--default";
+  return "Đã quét đủ mã QR thùng keo chuyền và mã QR thùng keo phát.";
+});
+
+const statusClass = computed<StatusBoxClass>(() => {
+  if (!isFirstTwoQrReady.value) {
+    return "status-box--default";
+  }
+
+  return "status-box--success";
 });
 
 const statusIcon = computed(() => {
@@ -285,12 +274,6 @@ function normalizeQrText(value: string) {
   return value.trim();
 }
 
-async function triggerMismatchVibrationIfNeeded() {
-  // TODO: Kích hoạt lại khi Backend/Team xác nhận field so sánh chính thức.
-  if (!isFirstTwoQrReady.value || isFirstTwoQrMatched.value) {
-    return;
-  }
-}
 
 async function openScanner(target: ScanTarget) {
   if (target === "return" && isReturnScanButtonDisabled.value) {
@@ -341,7 +324,6 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
   }
 
   closeCurrentToast();
-  await triggerMismatchVibrationIfNeeded();
 }
 
 async function handleLineQrScanResult(qrText: string) {
@@ -395,11 +377,16 @@ async function handleAllocatedQrScanResult(qrText: string) {
   isLoadingAllocatedQr.value = true;
 
   try {
-    const response = await rePackingGlueApi.getRePackingGlueScanQr(
-      payload.factoryId,
-      payload.rpgId,
-      payload.rdId
-    );
+    const response = payload.type === "mix"
+      ? await mixGlueApi.getMixGlueScanQr(
+          payload.factoryId,
+          payload.mgmId,
+          payload.womId
+        )
+      : await rePackingGlueApi.getSeparateGlueScanQr(
+          payload.factoryId,
+          payload.sgId
+        );
     const responseData = response.data as any;
 
     if (!responseData.success || !responseData.data) {
@@ -410,7 +397,8 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
     allocatedQrRawText.value = qrText;
     allocatedGlueInfo.value = responseData.data;
-    allocatedQrText.value = formatGlueDisplay(responseData.data);
+    allocatedDisplayRows.value = getAllocatedDisplayRows(responseData.data, payload.type);
+    allocatedQrText.value = formatAllocatedGlueDisplay(responseData.data, payload.type);
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo phát:", error);
     resetAllocatedQrField();
@@ -491,6 +479,7 @@ function resetAllocatedQrField() {
   allocatedQrText.value = "";
   allocatedQrRawText.value = "";
   allocatedGlueInfo.value = null;
+  allocatedDisplayRows.value = [];
 }
 
 function resetConfirmFields() {
@@ -522,6 +511,28 @@ function formatLineChemicalDisplay(info: any) {
 
 function formatGlueDisplay(info: any) {
   return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
+}
+
+function formatAllocatedGlueDisplay(info: any, type: AllocatedQrPayload["type"]) {
+  if (type === "mix") {
+    return `Mã pha keo: ${info.mixGlueMasterId}\nĐơn công: ${info.workOrderMasterId}`;
+  }
+
+  return formatGlueDisplay(info);
+}
+
+function getAllocatedDisplayRows(info: any, type: AllocatedQrPayload["type"]) {
+  if (type === "mix") {
+    return [
+      { label: "Mã pha keo:", value: String(info.mixGlueMasterId ?? "") },
+      { label: "Đơn công:", value: String(info.workOrderMasterId ?? "") },
+    ];
+  }
+
+  return [
+    { label: "Chuyền:", value: String(info.productLineName ?? "") },
+    { label: "Keo:", value: String(info.glueName ?? "") },
+  ];
 }
 
 function parseLineQrPayload(qrText: string): LineQrPayload | null {
@@ -595,13 +606,23 @@ function parseAllocatedQrPayload(qrText: string): AllocatedQrPayload | null {
 }
 
 function parseAllocatedQrPathPayload(pathname: string): AllocatedQrPayload | null {
+  const separateGluePayload = parseSeparateGlueQrPathPayload(pathname);
+
+  if (separateGluePayload) {
+    return separateGluePayload;
+  }
+
+  return parseMixGlueQrPathPayload(pathname);
+}
+
+function parseSeparateGlueQrPathPayload(pathname: string): SeparateGlueQrPayload | null {
   const parts = pathname.split("/").filter(Boolean);
   const scanQrIndex = parts.findIndex((part, index) => {
     return (
-      part.toLowerCase() === "scanrpgqr" &&
+      part.toLowerCase() === "scansgqr" &&
       parts[index - 3]?.toLowerCase() === "api" &&
       parts[index - 2]?.toLowerCase() === "mobile" &&
-      parts[index - 1]?.toLowerCase() === "repackingglue"
+      parts[index - 1]?.toLowerCase() === "separateglue"
     );
   });
 
@@ -610,21 +631,49 @@ function parseAllocatedQrPathPayload(pathname: string): AllocatedQrPayload | nul
   }
 
   const factoryId = parts[scanQrIndex + 1];
-  const rpgId = parts[scanQrIndex + 2];
-  const rdId = parts[scanQrIndex + 3];
+  const sgId = parts[scanQrIndex + 2];
 
-  if (!factoryId || !rpgId || !rdId) {
+  if (!factoryId || !sgId) {
     return null;
   }
 
   return {
+    type: "separate",
     factoryId: decodeURIComponent(factoryId),
-    rpgId: decodeURIComponent(rpgId),
-    rdId: decodeURIComponent(rdId),
+    sgId: decodeURIComponent(sgId),
   };
 }
 
+function parseMixGlueQrPathPayload(pathname: string): MixGlueQrPayload | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const scanQrIndex = parts.findIndex((part, index) => {
+    return (
+      part.toLowerCase() === "scanqr" &&
+      parts[index - 3]?.toLowerCase() === "api" &&
+      parts[index - 2]?.toLowerCase() === "mobile" &&
+      parts[index - 1]?.toLowerCase() === "mixglue"
+    );
+  });
 
+  if (scanQrIndex === -1) {
+    return null;
+  }
+
+  const factoryId = parts[scanQrIndex + 1];
+  const mgmId = parts[scanQrIndex + 2];
+  const womId = parts[scanQrIndex + 3];
+
+  if (!factoryId || !mgmId || !womId) {
+    return null;
+  }
+
+  return {
+    type: "mix",
+    factoryId: decodeURIComponent(factoryId),
+    mgmId: decodeURIComponent(mgmId),
+    womId: decodeURIComponent(womId),
+  };
+}
 </script>
 
 <style scoped lang="scss">

@@ -27,9 +27,9 @@ export default {
             `api/mobile/linechemical/scanqr/${factoryId}/${lineChemicalId}/${productLineId}`
         )
     },
-    getRePackingGlueScanQr(factoryId: string, rpgId: string, rdId: string) {
+    getSeparateGlueScanQr(factoryId: string, sgId: string) {
         return request.get(
-            `api/mobile/repackingglue/scanrpgqr/${factoryId}/${rpgId}/${rdId}`
+            `api/mobile/separateglue/scansgqr/${factoryId}/${sgId}`
         )
     }
 };
