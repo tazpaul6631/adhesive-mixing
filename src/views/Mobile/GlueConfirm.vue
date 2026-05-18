@@ -175,7 +175,8 @@ import {
 } from "@ionic/vue";
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
-import rePackingGlueApi from "@/api/rePackingGlue";
+import { Haptics, NotificationType } from '@capacitor/haptics';
+import separateGlueApi from "@/api/separate";
 import mixGlueApi from "@/api/mixGlue";
 
 type ConfirmScanTarget = "line" | "allocated";
@@ -246,8 +247,21 @@ const isFirstTwoQrReady = computed(() => {
   return !!lineChemicalInfo.value && !!allocatedGlueInfo.value;
 });
 
+const isFirstTwoQrMatched = computed(() => {
+  if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
+    return false;
+  }
+
+  const isProductLineMatched = normalizeCompareValue(lineChemicalInfo.value.productLineId) ===
+    normalizeCompareValue(allocatedGlueInfo.value.productLineId);
+  const isGlueMatched = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId) ===
+    normalizeCompareValue(allocatedGlueInfo.value.glueId);
+
+  return isProductLineMatched && isGlueMatched;
+});
+
 const isConfirmButtonDisabled = computed(() => {
-  return !isFirstTwoQrReady.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
+  return !isFirstTwoQrMatched.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
 });
 
 const statusMessage = computed(() => {
@@ -255,7 +269,11 @@ const statusMessage = computed(() => {
     return "";
   }
 
-  return "Đã quét đủ mã QR thùng keo chuyền và mã QR thùng keo phát.";
+  if (!isFirstTwoQrMatched.value) {
+    return "Mã QR thùng keo chuyền không khớp với mã QR thùng keo phát.";
+  }
+
+  return "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát.";
 });
 
 const statusClass = computed<StatusBoxClass>(() => {
@@ -263,17 +281,48 @@ const statusClass = computed<StatusBoxClass>(() => {
     return "status-box--default";
   }
 
+  if (!isFirstTwoQrMatched.value) {
+    return "status-box--danger";
+  }
+
   return "status-box--success";
 });
 
 const statusIcon = computed(() => {
-  return checkmarkCircle;
+  return statusClass.value === "status-box--danger" ? alertCircle : checkmarkCircle;
 });
 
 function normalizeQrText(value: string) {
   return value.trim();
 }
 
+function normalizeCompareValue(value: any) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value).trim();
+}
+
+async function triggerMismatchFeedback() {
+  try {
+    await Haptics.notification({
+      type: NotificationType.Warning,
+    });
+  } catch (error) {
+    console.warn("Haptics is not available:", error);
+  }
+}
+
+function notifyMismatchIfNeeded() {
+  if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
+    return;
+  }
+
+  if (!isFirstTwoQrMatched.value) {
+    void triggerMismatchFeedback();
+  }
+}
 
 async function openScanner(target: ScanTarget) {
   if (target === "return" && isReturnScanButtonDisabled.value) {
@@ -339,7 +388,7 @@ async function handleLineQrScanResult(qrText: string) {
   isLoadingLineQr.value = true;
 
   try {
-    const response = await rePackingGlueApi.getLineChemicalScanQr(
+    const response = await separateGlueApi.getLineChemicalScanQr(
       payload.factoryId,
       payload.lineChemicalId,
       payload.productLineId
@@ -355,6 +404,7 @@ async function handleLineQrScanResult(qrText: string) {
     lineQrRawText.value = qrText;
     lineChemicalInfo.value = responseData.data;
     lineQrText.value = formatLineChemicalDisplay(responseData.data);
+    notifyMismatchIfNeeded();
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
     resetLineQrField();
@@ -383,7 +433,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
           payload.mgmId,
           payload.womId
         )
-      : await rePackingGlueApi.getSeparateGlueScanQr(
+      : await separateGlueApi.getSeparateGlueScanQr(
           payload.factoryId,
           payload.sgId
         );
@@ -397,8 +447,9 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
     allocatedQrRawText.value = qrText;
     allocatedGlueInfo.value = responseData.data;
-    allocatedDisplayRows.value = getAllocatedDisplayRows(responseData.data, payload.type);
-    allocatedQrText.value = formatAllocatedGlueDisplay(responseData.data, payload.type);
+    allocatedDisplayRows.value = getAllocatedDisplayRows(responseData.data);
+    allocatedQrText.value = formatAllocatedGlueDisplay(responseData.data);
+    notifyMismatchIfNeeded();
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo phát:", error);
     resetAllocatedQrField();
@@ -513,22 +564,11 @@ function formatGlueDisplay(info: any) {
   return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
 }
 
-function formatAllocatedGlueDisplay(info: any, type: AllocatedQrPayload["type"]) {
-  if (type === "mix") {
-    return `Mã pha keo: ${info.mixGlueMasterId}\nĐơn công: ${info.workOrderMasterId}`;
-  }
-
+function formatAllocatedGlueDisplay(info: any) {
   return formatGlueDisplay(info);
 }
 
-function getAllocatedDisplayRows(info: any, type: AllocatedQrPayload["type"]) {
-  if (type === "mix") {
-    return [
-      { label: "Mã pha keo:", value: String(info.mixGlueMasterId ?? "") },
-      { label: "Đơn công:", value: String(info.workOrderMasterId ?? "") },
-    ];
-  }
-
+function getAllocatedDisplayRows(info: any) {
   return [
     { label: "Chuyền:", value: String(info.productLineName ?? "") },
     { label: "Keo:", value: String(info.glueName ?? "") },

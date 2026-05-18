@@ -123,7 +123,7 @@ import {
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
-import rePackingGlue from '@/api/rePackingGlue';
+import rePackingGlue from '@/api/separate';
 
 const router = useRouter();
 const route = useRoute();

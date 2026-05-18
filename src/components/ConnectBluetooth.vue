@@ -34,7 +34,7 @@ import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import mixGlue from '@/api/mixGlue';
 import { useRouter } from 'vue-router';
-import rePackingGlue from '@/api/rePackingGlue';
+import rePackingGlue from '@/api/separate';
 import { onIonViewWillEnter, onIonViewDidLeave } from '@ionic/vue';
 
 const props = defineProps<{

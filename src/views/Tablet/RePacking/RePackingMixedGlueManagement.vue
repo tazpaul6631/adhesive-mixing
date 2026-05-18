@@ -204,7 +204,7 @@ import AddComponentDialog from '@/views/Tablet/RePacking/components/AddComponent
 import RepackingGlue from '@/views/Tablet/RePacking/components/RepackingGlue.vue';
 import NoRePackingGlue from '@/views/Tablet/RePacking/components/NoRePackingGlue.vue';
 import ChietKeoDialog from '@/views/Tablet/RePacking/components/ChietKeoDialog.vue';
-import rePackingGlue from '@/api/rePackingGlue';
+import rePackingGlue from '@/api/separate';
 
 dayjs.extend(customParseFormat);
 const VI_FORMATS = ["DD/MM/YYYY, HH:mm:ss", "DD/MM/YYYY HH:mm:ss", "DD/MM/YYYY"];

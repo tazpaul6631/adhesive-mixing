@@ -45,7 +45,7 @@ import {
 import { ref } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
-import rePackingGlue from '@/api/rePackingGlue';
+import rePackingGlue from '@/api/separate';
 import MixedGlueTable from '@/views/Tablet/QIPRePacking/components/MixedGlueTable.vue';
 import NoMixGlueTable from '@/views/Tablet/QIPRePacking/components/NoMixGlueTable.vue';
 
