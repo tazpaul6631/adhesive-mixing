@@ -165,12 +165,17 @@ import {
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics } from "@capacitor/haptics";
-import { findMockGlueInfo, getGlueCompareKey, normalizeGlueQrText } from "./glueQr.mock";
-import type { GlueQrInfo } from "./glueQr.mock";
+import rePackingGlueApi from "@/api/rePackingGlue";
 
 type ConfirmScanTarget = "line" | "allocated";
 type ScanTarget = ConfirmScanTarget | "return";
 type ReturnScanButtonDisplayMode = "disabled" | "hidden";
+
+type LineQrPayload = {
+  factoryId: string;
+  lineChemicalId: string;
+  productLineId: string;
+};
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
 
@@ -181,15 +186,14 @@ const allocatedQrRawText = ref("");
 const returnQrText = ref("");
 const pendingReturnQrText = ref("");
 
-const lineQrInfo = ref<GlueQrInfo | null>(null);
-const allocatedQrInfo = ref<GlueQrInfo | null>(null);
-const returnQrInfo = ref<GlueQrInfo | null>(null);
+const lineChemicalInfo = ref<any>(null);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref("");
 const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const isReturnScanReady = ref(false);
+const isLoadingLineQr = ref(false);
 
 const shouldShowReturnScanButton = computed(() => {
   if (returnScanButtonDisplayMode === "hidden") {
@@ -204,7 +208,7 @@ const isReturnScanButtonDisabled = computed(() => {
 });
 
 const pendingReturnDisplayText = computed(() => {
-  return returnQrInfo.value?.glueName || pendingReturnQrText.value;
+  return pendingReturnQrText.value;
 });
 
 const isFirstTwoQrReady = computed(() => {
@@ -216,16 +220,11 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-  if (lineQrInfo.value && allocatedQrInfo.value) {
-    return getGlueCompareKey(lineQrInfo.value) === getGlueCompareKey(allocatedQrInfo.value);
-  }
-
   return normalizeQrText(lineQrRawText.value) === normalizeQrText(allocatedQrRawText.value);
 });
 
-
 const isConfirmButtonDisabled = computed(() => {
-  return !isFirstTwoQrMatched.value;
+  return !isFirstTwoQrMatched.value || isLoadingLineQr.value;
 });
 
 const statusMessage = computed(() => {
@@ -255,7 +254,7 @@ const statusIcon = computed(() => {
 });
 
 function normalizeQrText(value: string) {
-  return normalizeGlueQrText(value);
+  return value.trim();
 }
 
 async function triggerMismatchVibrationIfNeeded() {
@@ -310,22 +309,52 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
     return;
   }
 
-  const mockInfo = findMockGlueInfo(normalizedValue);
-
   if (target === "line") {
-    lineQrRawText.value = normalizedValue;
-    lineQrText.value = mockInfo?.productionLine || normalizedValue;
-    lineQrInfo.value = mockInfo;
+    await handleLineQrScanResult(normalizedValue);
   }
 
   if (target === "allocated") {
     allocatedQrRawText.value = normalizedValue;
-    allocatedQrText.value = mockInfo?.shape || normalizedValue;
-    allocatedQrInfo.value = mockInfo;
+    allocatedQrText.value = normalizedValue;
   }
 
   closeCurrentToast();
   await triggerMismatchVibrationIfNeeded();
+}
+
+async function handleLineQrScanResult(qrText: string) {
+  lineQrRawText.value = qrText;
+  lineQrText.value = "Đang tải thông tin mã QR...";
+  lineChemicalInfo.value = null;
+  isLoadingLineQr.value = true;
+
+  try {
+    const payload = parseLineQrPayload(qrText);
+
+    if (!payload) {
+      throw new Error("Mã QR thùng keo chuyền không đúng định dạng.");
+    }
+
+    const response = await rePackingGlueApi.getLineChemicalScanQr(
+      payload.factoryId,
+      payload.lineChemicalId,
+      payload.productLineId
+    );
+    const responseData = response.data as any;
+
+    if (!responseData.success || !responseData.data) {
+      throw new Error(responseData.message || "Không thể lấy thông tin mã QR thùng keo chuyền.");
+    }
+
+    lineChemicalInfo.value = responseData.data;
+    lineQrText.value = formatLineChemicalDisplay(responseData.data);
+  } catch (error) {
+    console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
+    lineQrText.value = qrText;
+    alert("Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra lại mã QR hoặc kết nối API!");
+  } finally {
+    isLoadingLineQr.value = false;
+  }
 }
 
 function handleReturnScanResult(value: string) {
@@ -335,10 +364,7 @@ function handleReturnScanResult(value: string) {
     return;
   }
 
-  const mockInfo = findMockGlueInfo(normalizedValue);
-
   returnQrText.value = normalizedValue;
-  returnQrInfo.value = mockInfo;
   pendingReturnQrText.value = normalizedValue;
   isReturnConfirmDialogOpen.value = true;
 }
@@ -365,7 +391,7 @@ async function confirmReturnQr() {
   isSubmittingReturn.value = true;
 
   try {
-    await submitReturnQrMock(pendingReturnQrText.value);
+    await submitReturnQr(pendingReturnQrText.value);
     isReturnConfirmDialogOpen.value = false;
     resetReturnField();
     resetReturnScanState();
@@ -379,8 +405,8 @@ async function confirmReturnQr() {
   }
 }
 
-async function submitReturnQrMock(qrText: string) {
-  console.info("Mock submit return QR:", qrText);
+async function submitReturnQr(qrText: string) {
+  console.info("Submit return QR:", qrText);
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
 
@@ -397,14 +423,12 @@ function resetConfirmFields() {
   allocatedQrText.value = "";
   lineQrRawText.value = "";
   allocatedQrRawText.value = "";
-  lineQrInfo.value = null;
-  allocatedQrInfo.value = null;
+  lineChemicalInfo.value = null;
 }
 
 function resetReturnField() {
   returnQrText.value = "";
   pendingReturnQrText.value = "";
-  returnQrInfo.value = null;
 }
 
 function resetReturnScanState() {
@@ -418,6 +442,97 @@ function showToast(message: string) {
 
 function closeCurrentToast() {
   showSuccessToast.value = false;
+}
+
+function formatLineChemicalDisplay(info: any) {
+  return `Product Line: ${info.productLineName}\nGlue: ${info.glueName}`;
+}
+
+function parseLineQrPayload(qrText: string): LineQrPayload | null {
+  const normalizedText = normalizeQrText(qrText);
+
+  if (!normalizedText) {
+    return null;
+  }
+
+  const jsonPayload = parseLineQrJsonPayload(normalizedText);
+
+  if (jsonPayload) {
+    return jsonPayload;
+  }
+
+  const pathPayload = parseLineQrPathPayload(normalizedText);
+
+  if (pathPayload) {
+    return pathPayload;
+  }
+
+  return parseLineQrPlainPayload(normalizedText);
+}
+
+function parseLineQrJsonPayload(qrText: string): LineQrPayload | null {
+  try {
+    const payload = JSON.parse(qrText) as Partial<Record<keyof LineQrPayload, unknown>>;
+    const factoryId = readTextValue(payload.factoryId);
+    const lineChemicalId = readTextValue(payload.lineChemicalId);
+    const productLineId = readTextValue(payload.productLineId);
+
+    if (!factoryId || !lineChemicalId || !productLineId) {
+      return null;
+    }
+
+    return {
+      factoryId,
+      lineChemicalId,
+      productLineId,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseLineQrPathPayload(qrText: string): LineQrPayload | null {
+  const match = qrText.match(/(?:^|\/)scanqr\/([^/?#]+)\/([^/?#]+)\/([^/?#]+)/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    factoryId: decodeURIComponent(match[1]),
+    lineChemicalId: decodeURIComponent(match[2]),
+    productLineId: decodeURIComponent(match[3]),
+  };
+}
+
+function parseLineQrPlainPayload(qrText: string): LineQrPayload | null {
+  const separators = ["|", ",", ";"];
+
+  for (const separator of separators) {
+    const parts = qrText.split(separator).map((item) => item.trim()).filter(Boolean);
+
+    if (parts.length === 3) {
+      return {
+        factoryId: parts[0],
+        lineChemicalId: parts[1],
+        productLineId: parts[2],
+      };
+    }
+  }
+
+  return null;
+}
+
+function readTextValue(value: unknown) {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  return "";
 }
 </script>
 
@@ -511,6 +626,7 @@ function closeCurrentToast() {
     line-height: 1.35;
     font-size: 16px !important;
     word-break: break-all;
+    white-space: pre-line;
   }
 
   &__text--empty {

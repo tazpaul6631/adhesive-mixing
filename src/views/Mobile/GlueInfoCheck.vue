@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary">
@@ -317,4 +317,4 @@ function handleReturnScanResult(value: string) {
     }
   }
 }
-</style>
+</style> -->
