@@ -9,5 +9,23 @@ export default {
         return request.get(
             `api/mobile/linechemical/scanqr/${factoryId}/${lineChemicalId}/${productLineId}`
         )
+    },
+    postRPGQueryResult(data: any) {
+        return request.post(`api/mobile/repackingglue/rpgqueryresult`, data)
+    },
+    postNRPGQueryResult(data: any) {
+        return request.post(`api/mobile/repackingglue/nrpgqueryresult`, data)
+    },
+    postConfirmRPG(data: any) {
+        return request.post(`api/mobile/repackingglue/confirmrpg`, data)
+    },
+    postConfirmNRPG(data: any) {
+        return request.post(`api/mobile/repackingglue/confirmnrpg`, data)
+    },
+    getRPGQueryResult(factoryId: any, rpgIdStr: any, rdIdStr: any) {
+        return request.get(`api/mobile/repackingglue/getonerpg/${factoryId}/${rpgIdStr}/${rdIdStr}`)
+    },
+    getNRPGQueryResult(factoryId: any, nrpgIdStr: any, womIdStr: any,) {
+        return request.get(`api/mobile/repackingglue/getonenrpg/${factoryId}/${nrpgIdStr}/${womIdStr}`)
     }
 };

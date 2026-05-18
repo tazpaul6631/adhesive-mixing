@@ -65,6 +65,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/list-qip-confirm-repacking-mixed-glue',
+    component: () => import('@/views/Tablet/QIPRePacking/ListQIPConfirmRePackingMixedGlue.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/qip-confirm-repacking-mixed-glue',
     component: () => import('@/views/Tablet/QIPRePacking/QIPConfirmRePackingMixedGlue.vue'),
     meta: { requiresAuth: true }

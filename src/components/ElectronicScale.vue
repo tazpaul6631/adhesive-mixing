@@ -40,7 +40,7 @@ import { useScaleManager } from '@/composables/useScaleManager';
 
 const toast = useToast();
 
-// --- NHẬN PROPS TỪ CHA (GIỮ NGUYÊN) ---
+// --- NHẬN PROPS TỪ CHA ---
 const props = defineProps({
   targetWeight: { type: [Number, String], default: 0 },
   lowerTolerance: { type: [Number, String], default: '' },
@@ -50,7 +50,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
 
-// --- TÍNH TOÁN SAI SỐ (GIỮ NGUYÊN 100%) ---
+// --- TÍNH TOÁN SAI SỐ ---
 const effectiveLowerTolerance = computed(() => {
   if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) return 5;
   if (Number(props.lowerTolerance) === 0) return 5;
@@ -99,28 +99,37 @@ watch(
   { immediate: true }
 );
 
-// --- LOGIC KIỂM TRA & XÁC NHẬN (GIỮ NGUYÊN 100%) ---
+// --- LOGIC KIỂM TRA & XÁC NHẬN ---
+const isKgUnit = computed(() => {
+  return props.weightUnit?.toString().toLowerCase() === 'kg';
+});
+
 const isExceedingLimit = computed(() => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
   const target = parseFloat(props.targetWeight?.toString() || '0');
   if (target <= 0) return false;
 
   const current = Number(currentWeight.toFixed(3));
-  const lowerKg = (parseFloat(effectiveLowerTolerance.value.toString()) || 0) / 1000;
-  const minAcceptable = Number((target - lowerKg).toFixed(3));
-  if (current < minAcceptable) return true;
 
-  const upperKg = (parseFloat(effectiveUpperTolerance.value.toString()) || 0) / 1000;
-  const maxAcceptable = Number((target + upperKg).toFixed(3));
-  if (current > maxAcceptable) return true;
+  // Sai số mặc định là Gram
+  const lowerTolGram = parseFloat(effectiveLowerTolerance.value.toString()) || 0;
+  const upperTolGram = parseFloat(effectiveUpperTolerance.value.toString()) || 0;
 
-  return false;
+  // Quy đổi sai số về cùng đơn vị với targetWeight
+  const lowerDiff = isKgUnit.value ? lowerTolGram / 1000 : lowerTolGram;
+  const upperDiff = isKgUnit.value ? upperTolGram / 1000 : upperTolGram;
+
+  const minAcceptable = Number((target - lowerDiff).toFixed(3));
+  const maxAcceptable = Number((target + upperDiff).toFixed(3));
+
+  return current < minAcceptable || current > maxAcceptable;
 });
 
 const confirmWeight = () => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');
   const target = parseFloat(props.targetWeight?.toString() || '0');
   const current = Number(currentWeight.toFixed(3));
+  const unit = props.weightUnit || 'Kg';
 
   if (target <= 0) {
     emit('confirm-weight', current.toFixed(3));
@@ -128,17 +137,24 @@ const confirmWeight = () => {
     return;
   }
 
-  const lowerKg = (parseFloat(effectiveLowerTolerance.value.toString()) || 0) / 1000;
-  const minAcceptable = Number((target - lowerKg).toFixed(3));
+  // Sai số mặc định là Gram
+  const lowerTolGram = parseFloat(effectiveLowerTolerance.value.toString()) || 0;
+  const upperTolGram = parseFloat(effectiveUpperTolerance.value.toString()) || 0;
+
+  // Quy đổi sai số về cùng đơn vị với targetWeight
+  const lowerDiff = isKgUnit.value ? lowerTolGram / 1000 : lowerTolGram;
+  const upperDiff = isKgUnit.value ? upperTolGram / 1000 : upperTolGram;
+
+  const minAcceptable = Number((target - lowerDiff).toFixed(3));
+  const maxAcceptable = Number((target + upperDiff).toFixed(3));
+
   if (current < minAcceptable) {
-    toast.add({ severity: 'error', summary: 'Không đạt yêu cầu', detail: `Trọng lượng không được thấp hơn ${minAcceptable.toFixed(3)} Kg.`, life: 5000 });
+    toast.add({ severity: 'error', summary: 'Không đạt yêu cầu', detail: `Trọng lượng không được thấp hơn ${minAcceptable.toFixed(3)} ${unit}.`, life: 5000 });
     return;
   }
 
-  const upperKg = (parseFloat(effectiveUpperTolerance.value.toString()) || 0) / 1000;
-  const maxAcceptable = Number((target + upperKg).toFixed(3));
   if (current > maxAcceptable) {
-    toast.add({ severity: 'error', summary: 'Vượt giới hạn', detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} Kg.`, life: 5000 });
+    toast.add({ severity: 'error', summary: 'Vượt giới hạn', detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} ${unit}.`, life: 5000 });
     return;
   }
 

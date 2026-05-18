@@ -1,5 +1,4 @@
 <template>
-  <!-- Sử dụng v-show hoặc v-if để ẩn hiện toàn bộ khối này dựa vào prop disable -->
   <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
     <DataTable :value="isLoading ? skeletons : lineDetails" scrollable scrollHeight="700px"
       tableStyle="width: 100%; table-layout: fixed;" stripedRows class="modern-table">

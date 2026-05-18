@@ -87,11 +87,18 @@ const authStore = useAuthStore();
 const bucketList = ref<any[]>([]);
 
 const handleBucketChange = (rowData: any) => {
-  rowData.operator = authStore.user?.employeeName || 'Chưa xác định';
-
-  const now = new Date().toISOString();
-  rowData.confirmTime = format.formatDate(now);
-  rowData.confirmDate = now;
+  if (rowData.selectedBucketId) {
+    // Nếu có chọn thùng thì gán thông tin
+    rowData.operator = authStore.user?.employeeName || 'Chưa xác định';
+    const now = new Date().toISOString();
+    rowData.confirmTime = format.formatDate(now);
+    rowData.confirmDate = now;
+  } else {
+    // Nếu clear thùng (chọn lại placeholder) thì xóa thông tin
+    rowData.operator = '';
+    rowData.confirmTime = null;
+    rowData.confirmDate = null;
+  }
 
   emit('update-bucket');
 };

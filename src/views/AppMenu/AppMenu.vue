@@ -115,9 +115,9 @@ const tabletFeatures = ref([
     bgLight: '#d1fae5'
   },
   {
-    path: '/qip-confirm-repacking-mixed-glue',
+    path: '/list-qip-confirm-repacking-mixed-glue',
     title: 'QIP Confirm Repacking',
-    description: 'Xác nhận chất lượng keo đóng gói lại.',
+    description: 'Xác nhận chất lượng keo đóng gói lại (QIP).',
     icon: documentTextOutline,
     color: '#8b5cf6',
     bgLight: '#ede9fe'

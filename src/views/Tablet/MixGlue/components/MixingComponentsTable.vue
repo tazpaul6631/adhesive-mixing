@@ -32,7 +32,7 @@
         </template>
       </Column>
 
-      <Column header="TL yêu cầu (Kg)" style="width: 13%; height: 60px">
+      <Column header="TL yêu cầu" style="width: 13%; height: 60px">
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <span v-else>{{ index === 0 ? headerTotalWeight : data.requiredWeight }}</span>

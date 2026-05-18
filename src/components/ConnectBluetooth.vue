@@ -3,12 +3,15 @@
     <!-- Khu vực nút Kết nối -->
     <Button v-if="status === 'disconnected'" label="Bật & Kết nối B300" icon="pi pi-bluetooth" severity="primary"
       @click="turnOnAndScan" />
-    <Button v-else-if="status === 'connecting'" label="Đang kết nối..." icon="pi pi-spin pi-spinner" severity="warning"
-      disabled />
+
+    <!-- SỬA Ở ĐÂY: Bỏ thuộc tính disabled, đổi thành nút Hủy -->
+    <Button v-else-if="status === 'connecting'" label="Đang kết nối... (Bấm để Hủy)" icon="pi pi-spin pi-spinner"
+      severity="warning" @click="cancelConnection" />
+
     <Button v-else-if="status === 'connected'" :label="'Đã kết nối máy in'" icon="pi pi-check-circle" severity="success"
       @click="disconnect" />
 
-    <!-- Select chọn máy in (Chỉ hiện khi chưa kết nối và đã quét thấy thiết bị) -->
+    <!-- Select chọn máy in -->
     <select v-if="status === 'disconnected' && pairedDevices.length > 0" v-model="selectedMac" @change="saveAndConnect"
       class="p-dropdown p-component p-inputtext ml-2" style="max-width: 150px;">
       <option value="" disabled>Chọn máy in</option>
@@ -24,13 +27,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import { Button } from 'primevue';
 import { Preferences } from '@capacitor/preferences';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import mixGlue from '@/api/mixGlue';
-import router from '@/router';
+import { useRouter } from 'vue-router';
+import rePackingGlue from '@/api/rePackingGlue';
+import { onIonViewWillEnter, onIonViewDidLeave } from '@ionic/vue';
 
 const props = defineProps<{
   templateType?: string;
@@ -42,6 +47,10 @@ const pairedDevices = ref<any[]>([]);
 const selectedMac = ref<string>('');
 const isPrinting = ref(false);
 const authStore = useAuthStore();
+let connectionTimeout: any = null;
+let autoReconnectInterval: any = null;
+const router = useRouter();
+const emit = defineEmits(['printSuccess']);
 
 // --- 1. Xử lý Bật Bluetooth & Quét thiết bị ---
 const turnOnAndScan = () => {
@@ -64,23 +73,87 @@ const turnOnAndScan = () => {
   );
 };
 
-// --- 2. Kết nối tới MAC đã chọn ---
+// --- 2. Kết nối tới MAC đã chọn CÓ TIMEOUT ---
 const connectToDevice = () => {
   const bt = (window as any).bluetoothSerial;
   if (!bt || !selectedMac.value) return;
 
   status.value = 'connecting';
+
+  // Đặt Timeout 10 giây. Nếu 10 giây không kết nối được thì tự động ngắt
+  clearTimeout(connectionTimeout);
+  connectionTimeout = setTimeout(() => {
+    if (status.value === 'connecting') {
+      status.value = 'disconnected';
+      alert("Kết nối quá thời gian. Máy in có thể đang tắt hoặc ở xa.");
+    }
+  }, 10000); // 10000ms = 10 giây
+
   bt.connect(selectedMac.value,
     () => {
+      clearTimeout(connectionTimeout); // Hủy timeout nếu thành công
       status.value = 'connected';
       console.log("MÁY IN ĐÃ SẴN SÀNG.");
     },
     (err: any) => {
+      clearTimeout(connectionTimeout); // Hủy timeout nếu thất bại
       status.value = 'disconnected';
       console.error("Kết nối thất bại:", err);
-      alert("Kết nối máy in thất bại. Vui lòng thử lại!");
     }
   );
+};
+
+const cancelConnection = () => {
+  status.value = 'disconnected';
+  clearTimeout(connectionTimeout);
+
+  const bt = (window as any).bluetoothSerial;
+  if (bt) {
+    // Bắn lệnh disconnect để giải phóng cổng bluetooth đang bị kẹt
+    bt.disconnect(() => console.log("Đã hủy kết nối ngang."));
+  }
+};
+
+// --- Cơ chế theo dõi và tự động kết nối lại ---
+const startAutoReconnectWatchdog = () => {
+  // Tránh việc tạo nhiều interval trùng lặp
+  clearInterval(autoReconnectInterval);
+
+  autoReconnectInterval = setInterval(() => {
+    const bt = (window as any).bluetoothSerial;
+    if (!bt) return;
+
+    // Kiểm tra xem máy in thực tế còn kết nối không
+    bt.isConnected(
+      () => {
+        // Vẫn đang kết nối ổn định -> Cập nhật UI cho chắc chắn
+        if (status.value !== 'connected') status.value = 'connected';
+      },
+      () => {
+        // Phát hiện rớt kết nối
+        if (status.value === 'connected') {
+          console.log("Phát hiện rớt kết nối Bluetooth!");
+          status.value = 'disconnected';
+        }
+
+        // Tự động thử kết nối lại nếu:
+        // 1. Trạng thái đang ngắt kết nối
+        // 2. Đã có địa chỉ MAC lưu trước đó
+        // 3. Bluetooth của điện thoại đang bật
+        if (status.value === 'disconnected' && selectedMac.value) {
+          bt.isEnabled(
+            () => {
+              console.log("Đang tự động thử kết nối lại...");
+              connectToDevice();
+            },
+            () => {
+              // Bluetooth điện thoại bị tắt, không làm gì cả
+            }
+          );
+        }
+      }
+    );
+  }, 5000); // Kiểm tra mỗi 5 giây (bạn có thể điều chỉnh 3000ms hoặc 5000ms)
 };
 
 // --- 3. Lưu MAC và kết nối (Dùng khi user chọn từ Dropdown) ---
@@ -102,17 +175,38 @@ const disconnect = () => {
 };
 
 // --- 5. Tự động kết nối khi mở App ---
-onMounted(async () => {
+onIonViewWillEnter(async () => {
   const { value } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
   if (value) {
     selectedMac.value = value;
-    // Đợi plugin cordova sẵn sàng rồi mới gọi connect
-    setTimeout(connectToDevice, 1000);
+
+    // Đợi plugin sẵn sàng
+    setTimeout(() => {
+      const bt = (window as any).bluetoothSerial;
+      if (bt) {
+        bt.isEnabled(
+          () => {
+            connectToDevice();
+            // BẬT CHẾ ĐỘ TỰ ĐỘNG THEO DÕI SAU KHI THỬ KẾT NỐI
+            startAutoReconnectWatchdog();
+          },
+          () => {
+            console.log("Bluetooth đang tắt, bỏ qua tự động kết nối.");
+          }
+        );
+      }
+    }, 1000);
   }
 });
 
-onUnmounted(() => {
-  disconnect();
+onIonViewDidLeave(() => {
+  // Dọn dẹp các timeout và interval để tránh rò rỉ bộ nhớ khi rời trang
+  clearTimeout(connectionTimeout);
+  clearInterval(autoReconnectInterval);
+
+  // LƯU Ý: Nếu bạn muốn máy in VẪN GIỮ KẾT NỐI khi người dùng chuyển qua lại 
+  // giữa các tab/trang, hãy COMMENT lại dòng disconnect() này.
+  // disconnect(); 
 });
 
 // --- 6. Logic In TSPL ---
@@ -199,25 +293,99 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
         return;
       }
     }
-    //     else if (props.templateType === 'repacking') {
-    //       const { xuong, donDieuCong, dayChuyen } = props.printData;
-    //       const qrData = `${xuong}|${donDieuCong}|${dayChuyen}`;
+    else if (props.templateType === 'repacking') {
+      const printData = props.printData;
+      let response;
+      let qrCodeParams = '';
 
-    //       tspl = `
-    // SIZE 75 mm, 50 mm
-    // GAP 2 mm, 0 mm
-    // REFERENCE 0,0
-    // DIRECTION 1
-    // CODEPAGE UTF-8
-    // CLS
-    // BOX 16,16,584,384,4
-    // TEXT 40,40,"ARIAL.TTF",0,14,14,"Xưởng: ${xuong || ''}"
-    // TEXT 40,100,"ARIAL.TTF",0,14,14,"Đơn: ${donDieuCong || ''}"
-    // TEXT 40,160,"ARIAL.TTF",0,14,14,"Chuyền: ${dayChuyen || ''}"
-    // QRCODE 430,40,H,6,A,0,"${qrData}"
-    // PRINT 1,1
-    // `;
-    //     }
+      // 1. Phân loại Keo Trộn (Mixed) hay Keo Không Trộn (No Mix) dựa vào key của printData
+      if (printData.rePackingGlueId) {
+        // --- LOGIC CHO KEO TRỘN ---
+        const payloadMix = {
+          factoryId: authStore.user?.factoryId,
+          rePackingGlueId: printData.rePackingGlueId,
+          requestDetailId: printData.requestDetailId
+        };
+
+        response = await rePackingGlue.postConfirmRPG(payloadMix);
+        qrCodeParams = `${payloadMix.factoryId}/${payloadMix.rePackingGlueId}/${payloadMix.requestDetailId}`;
+
+      } else if (printData.noRePackingGlueId) {
+        // --- LOGIC CHO KEO KHÔNG TRỘN ---
+        const payloadNoMix = {
+          factoryId: authStore.user?.factoryId,
+          noRePackingGlueId: printData.noRePackingGlueId,
+          workOrderMasterId: printData.workOrderMasterId
+        };
+
+        response = await rePackingGlue.postConfirmNRPG(payloadNoMix);
+        qrCodeParams = `${payloadNoMix.factoryId}/${payloadNoMix.noRePackingGlueId}/${payloadNoMix.workOrderMasterId}`;
+      } else {
+        alert("Dữ liệu in không hợp lệ!");
+        isPrinting.value = false;
+        return;
+      }
+
+      // 2. Xử lý kết quả trả về từ API (Chung cho cả 2 loại)
+      if (response && response.data?.success) {
+        const { styleName, startDate, endDate, domainApi, action } = response.data.data;
+
+        const formattedStart = format.formatDate(startDate);
+        const formattedEnd = format.formatDate(endDate);
+
+        // Khởi tạo TSPL với tọa độ chuẩn
+        tspl = `
+SIZE 75 mm, 50 mm
+GAP 0 mm, 0 mm
+REFERENCE 0,0
+DIRECTION 1
+CODEPAGE UTF-8
+CLS
+QRCODE 10,40,H,3,A,0,"${domainApi}${action}/${qrCodeParams}"
+TEXT 200,100,"ARIAL.TTF",0,12,12,"Từ: ${formattedStart}"
+TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
+`;
+
+        // Thuật toán gom dòng cho Hình thể
+        const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
+        const MAX_CHARS_PER_LINE = 30;
+        const MAX_LINES = 3;
+
+        let lines: string[] = [];
+        let currentLine = "";
+
+        styles.forEach((style: string) => {
+          let testLine = currentLine.length === 0 ? style : `${currentLine}, ${style}`;
+          if (testLine.length > MAX_CHARS_PER_LINE) {
+            lines.push(currentLine);
+            currentLine = style;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        if (lines.length > MAX_LINES) {
+          lines = lines.slice(0, MAX_LINES);
+          lines[MAX_LINES - 1] = lines[MAX_LINES - 1] + " ...";
+        }
+
+        let currentY = 230;
+        lines.forEach((lineText: string, index: number) => {
+          const prefix = index === 0 ? "Hình thể: " : "          ";
+          tspl += `TEXT 10,${currentY},"ARIAL.TTF",0,12,12,"${prefix}${lineText}"\n`;
+          currentY += 40;
+        });
+
+        // Kết thúc lệnh in
+        tspl += `PRINT 1,1\n`;
+
+      } else {
+        alert(`Lỗi API: ${response?.data?.message || 'Không thể xác nhận'}`);
+        isPrinting.value = false;
+        return;
+      }
+    }
 
     if (!tspl) {
       alert("Lỗi mẫu tem hoặc không có dữ liệu!");
@@ -230,7 +398,16 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
     bt.write(dataArray.buffer, () => {
       console.log(`Đã in thành công mẫu: ${props.templateType}`);
       isPrinting.value = false;
-      router.push('/list-qip-confirm-mix-glue');
+
+      // --- ĐOẠN RẼ NHÁNH CHUYỂN TRANG CỦA BẠN Ở ĐÂY ---
+      // if (props.templateType === 'mix_glue') {
+      //   router.replace('/list-qip-confirm-mix-glue');
+      // } else if (props.templateType === 'repacking') {
+      //   router.replace('/list-qip-confirm-repacking-mixed-glue');
+      // }
+
+      emit('printSuccess');
+
     }, (err: any) => {
       console.log("Lỗi in: " + JSON.stringify(err));
       status.value = 'disconnected';

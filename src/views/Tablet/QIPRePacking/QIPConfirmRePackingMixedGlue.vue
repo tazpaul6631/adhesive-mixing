@@ -7,30 +7,33 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>QIP Confirm Re-Packing Mixed Glue</ion-title>
+        <ion-title>
+          {{ isMixedMode ? 'QIP Confirm Re-Packing Mixed Glue' : 'QIP Confirm Re-Packing No Mix Glue' }}
+        </ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content class="ion-padding bg-gray-50">
       <div class="main-container max-w-full mx-auto">
         <div class="flex flex-wrap align-items-center justify-content-between surface-border">
           <user-avatar />
-          <ConnectBluetooth templateType="repacking" :printData="selectedItem" />
+          <ConnectBluetooth templateType="repacking" :printData="selectedItem" @printSuccess="handlePrintSuccess" />
         </div>
 
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
           <div class="surface-100 p-3 border-round-top-xl bg-white">
             <span class="font-bold text-900 text-xl">
-              <i class="pi pi-list mr-2"></i>Danh sách chờ xác nhận việc chiết thùng
+              <i class="pi pi-list mr-2"></i>
+              Danh sách chờ xác nhận việc chiết thùng
+              <span class="text-primary">({{ isMixedMode ? 'KEO CHIẾT' : 'KEO KHÔNG CHIẾT' }})</span>
             </span>
           </div>
 
-          <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" stripedRows
-              class="custom-bordered-table" tableStyle="min-width: 70rem" :paginator="true" :rows="5"
-              :rowsPerPageOptions="[5, 10, 25, 50]" scrollable scrollHeight="700px" selectionMode="single"
-              v-model:selection="selectedItem" dataKey="id">
+          <div class="overflow-x-auto border-round-bottom-xl" :key="isMixedMode ? 'mixed' : 'nomix'">
 
+            <!-- BẢNG DÀNH CHO KEO TRỘN -->
+            <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table"
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="rePackingGlueId">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -38,74 +41,75 @@
                 </div>
               </template>
 
-              <Column field="xuong" header="Xưởng" style="min-width: 100px">
+              <!-- Các cột thực tế cho Keo Trộn -->
+              <Column field="workOrderMasterName" header="Đơn điều công" style="min-width: 200px">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
+                  <span v-else class="font-bold">{{ data.workOrderMasterName }}</span>
+                </template>
+              </Column>
+              <Column field="productLineName" header="Chuyền" style="min-width: 150px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
-                  <span v-else>{{ data.xuong }}</span>
+                  <span v-else>{{ data.productLineName }}</span>
                 </template>
               </Column>
-
-              <Column field="donDieuCong" header="Đơn điều công" style="min-width: 200px">
+              <Column field="bucketName" header="Bình chứa" style="min-width: 150px">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.donDieuCong }}</span>
+                  <span v-else>{{ data.bucketName }}</span>
                 </template>
               </Column>
-
-              <Column field="donYeuCau" header="Đơn yêu cầu" style="min-width: 200px">
+              <Column header="Dung lượng" style="min-width: 150px">
                 <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.donYeuCau }}</span>
-                </template>
-              </Column>
-
-              <Column field="hinhThe" header="Hình thể" style="min-width: 150px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.hinhThe }}</span>
-                </template>
-              </Column>
-
-              <Column field="dayChuyen" header="Dây chuyền" style="min-width: 150px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.dayChuyen }}</span>
-                </template>
-              </Column>
-
-              <Column field="trongLuongYeuCau" header="Trọng lượng yêu cầu" style="min-width: 150px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.trongLuongYeuCau.join(' / ') }}</span>
-                </template>
-              </Column>
-
-              <Column field="trongLuongThucTe" header="Trọng lượng thực tế" style="min-width: 150px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.trongLuongThucTe }}</span>
-                </template>
-              </Column>
-
-              <Column field="nguoiThaoTac" header="Người thao tác" style="min-width: 150px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.nguoiThaoTac }}</span>
-                </template>
-              </Column>
-
-              <Column field="thoiGianHoanThanh" header="Thời gian hoàn thành" style="min-width: 200px">
-                <template #body="{ data }">
-                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else>{{ data.thoiGianHoanThanh }}</span>
+                  <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
+                  <span v-else>{{ data.capacity }} {{ data.capacityUnit }}</span>
                 </template>
               </Column>
             </DataTable>
+
+            <!-- BẢNG DÀNH CHO KEO KHÔNG TRỘN -->
+            <DataTable v-else :value="lineDetails" stripedRows class="custom-bordered-table"
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px"
+              dataKey="noRePackingGlueId">
+              <template #empty>
+                <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+                  <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                  <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+                </div>
+              </template>
+
+              <!-- Các cột thực tế cho Keo Không Trộn -->
+              <Column field="workOrderMasterName" header="Đơn điều công" style="min-width: 200px">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
+                  <span v-else class="font-bold">{{ data.workOrderMasterName }}</span>
+                </template>
+              </Column>
+              <Column field="productLineName" header="Chuyền" style="min-width: 150px">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
+                  <span v-else>{{ data.productLineName }}</span>
+                </template>
+              </Column>
+              <Column field="glueName" header="Tên Keo" style="min-width: 150px">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
+                  <span v-else>{{ data.glueName }}</span>
+                </template>
+              </Column>
+              <Column header="Trọng lượng" style="min-width: 150px">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
+                  <span v-else>{{ data.glueWeight }} {{ data.glueWeightUnit }}</span>
+                </template>
+              </Column>
+            </DataTable>
+
           </div>
         </div>
         <div class="h-3rem flex-shrink-0"></div>
       </div>
-      <back-to-top slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
@@ -114,73 +118,93 @@
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, onIonViewWillEnter
 } from '@ionic/vue';
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/store/auth';
+import rePackingGlue from '@/api/rePackingGlue';
+
 const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
+
 const isLoadingLine = ref(true);
-const totalRecords = 100;
 const selectedItem = ref<any>(null);
 const lineDetails = ref<any[]>([]);
 
-const generateData = (index: number) => {
-  const isChuyen1 = index % 2 === 0;
-  return {
-    id: index,
-    xuong: `BU${index % 3 + 1}`,
-    donDieuCong: 'C2R26216 Keo bồi đế',
-    donYeuCau: `Chuyền ${isChuyen1 ? '1' : '2'} C2 R26216`,
-    hinhThe: 'C2 R26216',
-    dayChuyen: `Chuyền ${isChuyen1 ? '1' : '2'}`,
-    trongLuongYeuCau: ['30.1 Kg', '1.5 Kg'],
-    trongLuongThucTe: '32.5 Kg',
-    nguoiThaoTac: isChuyen1 ? 'R79xxx' : '',
-    thoiGianHoanThanh: isChuyen1 ? '10:15 10/04/2026' : '11:30 10/04/2026'
-  };
-};
-
-const onPageLine = (event: any) => {
-  isLoadingLine.value = true;
-  lineDetails.value = Array.from({ length: event.rows }).map(() => ({}));
-
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: event.rows }).map((_, i) =>
-      generateData(event.first + i + 1)
-    );
-    isLoadingLine.value = false;
-  }, 1000);
-};
-
-onMounted(() => {
-  lineDetails.value = Array.from({ length: 5 }).map(() => ({}));
-
-  setTimeout(() => {
-    lineDetails.value = Array.from({ length: 5 }).map((_, i) => generateData(i + 1));
-    isLoadingLine.value = false;
-  }, 1000);
+const isMixedMode = computed(() => {
+  return route.query.type === 'mixed';
 });
 
-// BackToTop logic
-const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
+const handlePrintSuccess = () => {
+  // Thực hiện chuyển trang hoặc quay lại tại đây
+  router.back();
+  // HOẶC router.replace('/qip-confirm-repacking-mixed-glue');
+};
 
-const handleScroll = (event: CustomEvent) => {
-  if (event.detail.scrollTop > 100) {
-    showScrollButton.value = true;
-  } else {
-    showScrollButton.value = false;
+// --- FETCH & STATE LOGIC ---
+const resetState = () => {
+  lineDetails.value = [];
+  selectedItem.value = null;
+  isLoadingLine.value = true;
+};
+
+// --- GỌI API KEO TRỘN ---
+const fetchMixedGlueDetail = async (factoryId: string, rpgIdStr: string, rdIdStr: string) => {
+  try {
+    const { data } = await rePackingGlue.getRPGQueryResult(factoryId, rpgIdStr, rdIdStr);
+
+    if (data && data.success) {
+      lineDetails.value = data.data ? [data.data] : [];
+    } else {
+      console.error('API Error (Mixed):', data?.message);
+    }
+  } catch (error) {
+    console.error('Fetch Mixed Glue Detail Error:', error);
   }
 };
 
-const scrollToTop = () => {
-  if (contentRef.value) {
-    contentRef.value.$el.scrollToTop(500);
+// --- GỌI API KEO KHÔNG TRỘN ---
+const fetchNoMixGlueDetail = async (factoryId: string, nrpgIdStr: string, womIdStr: string) => {
+  try {
+    const { data } = await rePackingGlue.getNRPGQueryResult(factoryId, nrpgIdStr, womIdStr);
+
+    if (data && data.success) {
+      lineDetails.value = data.data ? [data.data] : [];
+    } else {
+      console.error('API Error (NoMix):', data?.message);
+    }
+  } catch (error) {
+    console.error('Fetch NoMix Glue Detail Error:', error);
   }
 };
-///////////////////////
+
+// --- LIFECYCLE ---
+onIonViewWillEnter(async () => {
+  resetState();
+
+  const factoryId = authStore.user?.factoryId || "01";
+  const type = route.query.type as string;
+
+  if (type === 'mixed') {
+    const rePackingGlueId = route.query.rePackingGlueId as string;
+    const requestDetailId = route.query.requestDetailId as string;
+
+    if (rePackingGlueId && requestDetailId) {
+      await fetchMixedGlueDetail(factoryId, rePackingGlueId, requestDetailId);
+    }
+  } else if (type === 'nomix') {
+    const noRePackingGlueId = route.query.noRePackingGlueId as string;
+    const workOrderMasterId = route.query.workOrderMasterId as string;
+
+    if (noRePackingGlueId && workOrderMasterId) {
+      await fetchNoMixGlueDetail(factoryId, noRePackingGlueId, workOrderMasterId);
+    }
+  }
+
+  isLoadingLine.value = false;
+});
 
 const goBack = () => router.back(); 
 </script>
-
-<style scoped></style>

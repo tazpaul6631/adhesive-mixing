@@ -113,3 +113,7 @@ ion-list {
     max-width: 1400px;
     margin: 0 auto;
 }
+
+.main-container * {
+    font-size: 18px !important;
+}
