@@ -4,12 +4,6 @@ export default {
     postRePackingGlueCommand(data: any) {
         return request.post(`api/mobile/repackingglue/command`, data)
     },
-
-    getLineChemicalScanQr(factoryId: string, lineChemicalId: string, productLineId: string) {
-        return request.get(
-            `api/mobile/linechemical/scanqr/${factoryId}/${lineChemicalId}/${productLineId}`
-        )
-    },
     postRPGQueryResult(data: any) {
         return request.post(`api/mobile/repackingglue/rpgqueryresult`, data)
     },
@@ -27,5 +21,10 @@ export default {
     },
     getNRPGQueryResult(factoryId: any, nrpgIdStr: any, womIdStr: any,) {
         return request.get(`api/mobile/repackingglue/getonenrpg/${factoryId}/${nrpgIdStr}/${womIdStr}`)
+    },
+    getLineChemicalScanQr(factoryId: string, lineChemicalId: string, productLineId: string) {
+        return request.get(
+            `api/mobile/linechemical/scanqr/${factoryId}/${lineChemicalId}/${productLineId}`
+        )
     }
 };

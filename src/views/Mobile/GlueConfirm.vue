@@ -453,7 +453,7 @@ function closeCurrentToast() {
 }
 
 function formatLineChemicalDisplay(info: any) {
-  return `Product Line: ${info.productLineName}\nGlue: ${info.glueName}`;
+  return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
 }
 
 function parseLineQrPayload(qrText: string): LineQrPayload | null {
