@@ -178,6 +178,7 @@ type LineQrPayload = {
 };
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
+const invalidQrMessage = "Mã QR không hợp lệ.";
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -323,18 +324,18 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
 }
 
 async function handleLineQrScanResult(qrText: string) {
-  lineQrRawText.value = qrText;
+  const payload = parseLineQrPayload(qrText);
+
+  if (!payload) {
+    resetLineQrField();
+    alert(invalidQrMessage);
+    return;
+  }
+
   lineQrText.value = "Đang tải thông tin mã QR...";
-  lineChemicalInfo.value = null;
   isLoadingLineQr.value = true;
 
   try {
-    const payload = parseLineQrPayload(qrText);
-
-    if (!payload) {
-      throw new Error("Mã QR thùng keo chuyền không đúng định dạng.");
-    }
-
     const response = await rePackingGlueApi.getLineChemicalScanQr(
       payload.factoryId,
       payload.lineChemicalId,
@@ -343,15 +344,18 @@ async function handleLineQrScanResult(qrText: string) {
     const responseData = response.data as any;
 
     if (!responseData.success || !responseData.data) {
-      throw new Error(responseData.message || "Không thể lấy thông tin mã QR thùng keo chuyền.");
+      resetLineQrField();
+      alert(invalidQrMessage);
+      return;
     }
 
+    lineQrRawText.value = qrText;
     lineChemicalInfo.value = responseData.data;
     lineQrText.value = formatLineChemicalDisplay(responseData.data);
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
-    lineQrText.value = qrText;
-    alert("Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra lại mã QR hoặc kết nối API!");
+    resetLineQrField();
+    alert("Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!");
   } finally {
     isLoadingLineQr.value = false;
   }
@@ -418,12 +422,16 @@ function handleConfirmReturn() {
   isReturnScanReady.value = true;
 }
 
-function resetConfirmFields() {
+function resetLineQrField() {
   lineQrText.value = "";
-  allocatedQrText.value = "";
   lineQrRawText.value = "";
-  allocatedQrRawText.value = "";
   lineChemicalInfo.value = null;
+}
+
+function resetConfirmFields() {
+  resetLineQrField();
+  allocatedQrText.value = "";
+  allocatedQrRawText.value = "";
 }
 
 function resetReturnField() {
@@ -455,85 +463,53 @@ function parseLineQrPayload(qrText: string): LineQrPayload | null {
     return null;
   }
 
-  const jsonPayload = parseLineQrJsonPayload(normalizedText);
+  const pathname = getLineQrPathname(normalizedText);
 
-  if (jsonPayload) {
-    return jsonPayload;
-  }
-
-  const pathPayload = parseLineQrPathPayload(normalizedText);
-
-  if (pathPayload) {
-    return pathPayload;
-  }
-
-  return parseLineQrPlainPayload(normalizedText);
-}
-
-function parseLineQrJsonPayload(qrText: string): LineQrPayload | null {
-  try {
-    const payload = JSON.parse(qrText) as Partial<Record<keyof LineQrPayload, unknown>>;
-    const factoryId = readTextValue(payload.factoryId);
-    const lineChemicalId = readTextValue(payload.lineChemicalId);
-    const productLineId = readTextValue(payload.productLineId);
-
-    if (!factoryId || !lineChemicalId || !productLineId) {
-      return null;
-    }
-
-    return {
-      factoryId,
-      lineChemicalId,
-      productLineId,
-    };
-  } catch {
+  if (!pathname) {
     return null;
   }
+
+  return parseLineQrPathPayload(pathname);
 }
 
-function parseLineQrPathPayload(qrText: string): LineQrPayload | null {
-  const match = qrText.match(/(?:^|\/)scanqr\/([^/?#]+)\/([^/?#]+)\/([^/?#]+)/i);
+function getLineQrPathname(qrText: string) {
+  try {
+    return new URL(qrText).pathname;
+  } catch {
+    return qrText.startsWith("/") ? qrText : "";
+  }
+}
 
-  if (!match) {
+function parseLineQrPathPayload(pathname: string): LineQrPayload | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const scanQrIndex = parts.findIndex((part, index) => {
+    return (
+      part.toLowerCase() === "scanqr" &&
+      parts[index - 3]?.toLowerCase() === "api" &&
+      parts[index - 2]?.toLowerCase() === "mobile" &&
+      parts[index - 1]?.toLowerCase() === "linechemical"
+    );
+  });
+
+  if (scanQrIndex === -1) {
+    return null;
+  }
+
+  const factoryId = parts[scanQrIndex + 1];
+  const lineChemicalId = parts[scanQrIndex + 2];
+  const productLineId = parts[scanQrIndex + 3];
+
+  if (!factoryId || !lineChemicalId || !productLineId) {
     return null;
   }
 
   return {
-    factoryId: decodeURIComponent(match[1]),
-    lineChemicalId: decodeURIComponent(match[2]),
-    productLineId: decodeURIComponent(match[3]),
+    factoryId: decodeURIComponent(factoryId),
+    lineChemicalId: decodeURIComponent(lineChemicalId),
+    productLineId: decodeURIComponent(productLineId),
   };
 }
 
-function parseLineQrPlainPayload(qrText: string): LineQrPayload | null {
-  const separators = ["|", ",", ";"];
-
-  for (const separator of separators) {
-    const parts = qrText.split(separator).map((item) => item.trim()).filter(Boolean);
-
-    if (parts.length === 3) {
-      return {
-        factoryId: parts[0],
-        lineChemicalId: parts[1],
-        productLineId: parts[2],
-      };
-    }
-  }
-
-  return null;
-}
-
-function readTextValue(value: unknown) {
-  if (typeof value === "string") {
-    return value.trim();
-  }
-
-  if (typeof value === "number") {
-    return String(value);
-  }
-
-  return "";
-}
 </script>
 
 <style scoped lang="scss">
