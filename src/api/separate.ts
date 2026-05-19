@@ -21,5 +21,15 @@ export default {
     },
     getNSGQueryResult(factoryId: any, nsgId: any) {
         return request.get(`api/mobile/separateglue/getonensg/${factoryId}/${nsgId}`)
+    },
+    getLineChemicalScanQr(factoryId: string, lineChemicalId: string, productLineId: string) {
+        return request.get(
+            `api/mobile/linechemical/scanqr/${factoryId}/${lineChemicalId}/${productLineId}`
+        )
+    },
+    getSeparateGlueScanQr(factoryId: string, sgId: string) {
+        return request.get(
+            `api/mobile/separateglue/scansgqr/${factoryId}/${sgId}`
+        )
     }
 };
