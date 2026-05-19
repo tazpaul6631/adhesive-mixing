@@ -233,10 +233,10 @@ defineExpose({
 });
 
 // --- TSPL chữ đậm: TSC không có "font-weight"; dùng font đậm trong máy hoặc in 2 lớp lệch dot ---
-const TSPL_FONT_REGULAR = 'ARIAL.TTF';
-/** Đặt true nếu đã nạp font đậm (vd. ARIALBD.TTF) bằng TSC utilities — chỉ 1 lệnh TEXT. */
+const TSPL_FONT_REGULAR = 'TIMESNEWROMAN.TTF';
+// Đặt true nếu đã nạp font đậm (TIMESNEWROMANBD.TTF) vào máy. Tên file .TTF phải khớp đúng máy in.
 const USE_TSPL_BOLD_FONT_FILE = false;
-const TSPL_FONT_BOLD = 'ARIALBD.TTF';
+const TSPL_FONT_BOLD = 'TIMESNEWROMANBD.TTF';
 const TSPL_TEXT_XMUL = 13;
 const TSPL_TEXT_YMUL = 13;
 /** Khi không dùng font đậm: in lệnh TEXT lần 2 lệch N dot theo trục X để nét dày hơn. */
@@ -296,10 +296,10 @@ CODEPAGE UTF-8
 CLS
 QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}/${workOrderMasterId}"
 `;
-        tspl += tsplBoldText(200, 80, 'Từ ngày:');
-        tspl += tsplBoldText(200, 120, formattedStart);
-        tspl += tsplBoldText(200, 160, 'Đến ngày:');
-        tspl += tsplBoldText(200, 200, formattedEnd);
+        tspl += tsplBoldText(180, 40, 'Từ ngày:');
+        tspl += tsplBoldText(180, 80, formattedStart);
+        tspl += tsplBoldText(180, 120, 'Đến ngày:');
+        tspl += tsplBoldText(180, 160, formattedEnd);
 
         // 2. Thuật toán gom dòng cho Hình thể
         const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
@@ -329,7 +329,7 @@ QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMaster
         }
 
         // 4. In các dòng hình thể ra (Bắt đầu từ Y = 230, X = 10 y như bản test)
-        let currentY = 240;
+        let currentY = 210;
         lines.forEach((lineText: string, index: number) => {
           const prefix = index === 0 ? "Hình thể: " : "          "; // Thụt lề 10 khoảng trắng cho dòng dưới
           tspl += tsplBoldText(15, currentY, `${prefix}${lineText}`);
@@ -393,10 +393,10 @@ CODEPAGE UTF-8
 CLS
 QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${qrCodeParams}"
 `;
-        tspl += tsplBoldText(200, 80, 'Từ:');
-        tspl += tsplBoldText(200, 120, formattedStart);
-        tspl += tsplBoldText(200, 160, 'Đến:');
-        tspl += tsplBoldText(200, 200, formattedEnd);
+        tspl += tsplBoldText(180, 40, 'Từ ngày:');
+        tspl += tsplBoldText(180, 80, formattedStart);
+        tspl += tsplBoldText(180, 120, 'Đến ngày:');
+        tspl += tsplBoldText(180, 160, formattedEnd);
 
         // Thuật toán gom dòng cho Hình thể
         const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
@@ -422,7 +422,7 @@ QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${qrCodeParams}"
           lines[MAX_LINES - 1] = lines[MAX_LINES - 1] + " ...";
         }
 
-        let currentY = 240;
+        let currentY = 210;
         lines.forEach((lineText: string, index: number) => {
           const prefix = index === 0 ? "Hình thể: " : "          ";
           tspl += tsplBoldText(15, currentY, `${prefix}${lineText}`);

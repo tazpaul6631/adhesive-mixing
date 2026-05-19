@@ -75,11 +75,6 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/glue-form-production',
-    component: () => import('@/views/Tablet/GlueProduct/GlueFromProduct.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/mobile',
     component: () => import('@/views/Mobile/GlueConfirm.vue'),
     meta: { requiresAuth: true }

@@ -6,12 +6,12 @@
       </span>
     </div>
     <div class="overflow-x-auto border-round-bottom-xl">
-      <DataTable :value="items" lazy :totalRecords="totalRecords" @page="onPage" scrollable scrollHeight="420px"
+      <DataTable :value="items" lazy :totalRecords="totalRecords" @page="onPage" scrollable scrollHeight="460px"
         stripedRows class="modern-table" tableStyle="width: 100%; min-width: 800px;" @row-click="onRowClick"
         :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]" selectionMode="single"
         v-model:selection="localSelected" dataKey="separateGlueId">
         <template #empty>
-          <div style="text-align: center; padding: 3.3rem; height: 330px; align-content: center;">
+          <div style="text-align: center; height: 380px; align-content: center;">
             <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
             <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
           </div>

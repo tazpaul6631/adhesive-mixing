@@ -22,12 +22,12 @@
 
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="500px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
+              scrollHeight="550px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
               @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]"
               selectionMode="single" v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
-                <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+                <div style="text-align: center; height: 440px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
                 </div>
@@ -71,8 +71,6 @@
             </DataTable>
           </div>
         </div>
-
-        <div class="h-3rem flex-shrink-0"></div>
       </div>
     </ion-content>
   </ion-page>

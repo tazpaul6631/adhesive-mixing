@@ -2,28 +2,94 @@ import { defineStore } from 'pinia';
 
 import storageService from '@/services/storage.service';
 
+const STORAGE_KEY = 'mix_glue_drafts_storage';
+
+export type MixGlueDraftPayload = Record<string, unknown>;
+
+/** Draft còn tiến độ chưa gửi chính thức (Mix Glue). */
+export const isMixGlueDraftRestorable = (draft: MixGlueDraftPayload | undefined | null): boolean => {
+  if (!draft) return false;
+  const components = draft.componentDetailsFull;
+  if (!Array.isArray(components) || components.length === 0) return false;
+  return components.some(
+    (item: any) =>
+      item.weighingTime ||
+      (item.actualWeight && Number(item.actualWeight) > 0) ||
+      item.glueExtra
+  );
+};
+
+/** Draft còn tiến độ chưa gửi chính thức (Separate). */
+export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined | null): boolean => {
+  if (!draft) return false;
+
+  if (Array.isArray(draft.orderDetails) && draft.orderDetails.some((o: any) => !!o.selectedBucketId)) {
+    return true;
+  }
+  if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
+    return true;
+  }
+  const weighed = (items: any[]) =>
+    Array.isArray(items) &&
+    items.some(
+      (item: any) =>
+        item.weighingTime ||
+        (item.actualWeight && Number(item.actualWeight) > 0) ||
+        item.isChietCompleted
+    );
+
+  return weighed(draft.noMixComponents as any[]) || weighed(draft.noMixChemicalsFull as any[]);
+};
+
 export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
   state: () => ({
-    // Lưu draft theo workOrderMasterId làm key để có thể lưu nhiều đơn đang dở dang
-    drafts: {} as Record<string, any>
+    drafts: {} as Record<string, MixGlueDraftPayload>,
+    hydrated: false,
   }),
   actions: {
-    saveDraft(workOrderMasterId: string, data: any) {
+    /** Đọc draft từ Capacitor Preferences (chống race khi mở app cold start). */
+    async ensureHydrated() {
+      if (this.hydrated) return;
+
+      try {
+        const raw = await storageService.get(STORAGE_KEY, false, true);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const drafts = parsed?.drafts ?? parsed;
+          if (drafts && typeof drafts === 'object' && !Array.isArray(drafts)) {
+            this.drafts = drafts;
+          }
+        }
+      } catch (error) {
+        console.error('[mixGlueDraft] ensureHydrated failed:', error);
+      }
+
+      this.hydrated = true;
+    },
+
+    async persistToDisk() {
+      await storageService.set(STORAGE_KEY, JSON.stringify({ drafts: this.drafts }), true);
+    },
+
+    async saveDraft(workOrderMasterId: string, data: MixGlueDraftPayload) {
+      await this.ensureHydrated();
       this.drafts[workOrderMasterId] = data;
+      await this.persistToDisk();
     },
-    clearDraft(workOrderMasterId: string) {
+
+    async clearDraft(workOrderMasterId: string) {
+      await this.ensureHydrated();
       delete this.drafts[workOrderMasterId];
+      await this.persistToDisk();
     },
+
     getDraft(workOrderMasterId: string) {
       return this.drafts[workOrderMasterId];
-    }
-  },
-  // Kích hoạt plugin persistedstate để dữ liệu không mất khi kill app
-  persist: {
-    key: 'mix_glue_drafts_storage',
-    storage: {
-      getItem: async (key: string) => await storageService.get(key, false, true),
-      setItem: async (key: string, value: string) => await storageService.set(key, value, true),
-    } as any,
+    },
+
+    async getDraftAsync(workOrderMasterId: string) {
+      await this.ensureHydrated();
+      return this.drafts[workOrderMasterId];
+    },
   },
 });

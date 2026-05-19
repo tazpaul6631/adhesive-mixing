@@ -29,12 +29,12 @@
 
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="500px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
+              scrollHeight="550px" stripedRows class="modern-table" tableStyle="width: 100%; table-layout: fixed;"
               @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]"
               selectionMode="single" v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
-                <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+                <div style="text-align: center; height: 440px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
                 </div>
@@ -86,8 +86,6 @@
             </DataTable>
           </div>
         </div>
-
-        <div class="h-3rem flex-shrink-0"></div>
       </div>
     </ion-content>
   </ion-page>
@@ -172,8 +170,13 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
 
 // Hàm xử lý gửi API khi bấm nút
 const handleConfirm = async (workOrderMasterId: string) => {
+  await draftStore.ensureHydrated();
   const draftData = draftStore.getDraft(workOrderMasterId);
-  console.log(draftData);
+
+  if (!draftData) {
+    toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Không tìm thấy bản nháp đơn hàng.', life: 3000 });
+    return;
+  }
 
   try {
     const payload = {
@@ -184,7 +187,7 @@ const handleConfirm = async (workOrderMasterId: string) => {
     await mixGlueApi.postMGMConfirmComplete(payload);
 
     toast.add({ severity: 'success', summary: 'Hoàn thành', detail: 'Đã xác nhận đơn hàng!', life: 3000 });
-    draftStore.clearDraft(workOrderMasterId);
+    await draftStore.clearDraft(workOrderMasterId);
     fetchWorkOrders(currentPage.value, rowsPerPage.value);
   } catch (error) {
     console.error(error);

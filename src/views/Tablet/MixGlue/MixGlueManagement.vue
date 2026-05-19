@@ -72,6 +72,7 @@
                   :target-weight="activeComponent?.requiredWeight ?? 0"
                   :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
                   :upper-tolerance="activeComponent?.upperTolerance ?? ''"
+                  :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
                   :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
               </div>
@@ -110,7 +111,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 import { useAuthStore } from '@/store/auth';
-import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
+import { useMixGlueDraftStore, isMixGlueDraftRestorable } from '@/store/mixGlueDraft';
 import workOrder from '@/api/workOrder';
 import materialApi from '@/api/material';
 import mixGlueApi from '@/api/mixGlue';
@@ -203,12 +204,12 @@ const fetchWorkOrderDetail = async (id: string) => {
   currentWorkOrderId.value = id;
 
   try {
-    // 1. Kiểm tra xem có bản nháp trong Pinia store không
+    await draftStore.ensureHydrated();
     const existingDraft = draftStore.getDraft(id);
 
-    if (existingDraft && existingDraft.componentDetailsFull?.length > 0) {
-      headerInfo.value = existingDraft.headerInfo;
-      componentDetailsFull.value = existingDraft.componentDetailsFull;
+    if (isMixGlueDraftRestorable(existingDraft)) {
+      headerInfo.value = existingDraft!.headerInfo as typeof headerInfo.value;
+      componentDetailsFull.value = existingDraft!.componentDetailsFull as ComponentDetail[];
 
       const firstUnconfirmed = componentDetailsFull.value.find(item => !item.weighingTime) || componentDetailsFull.value[0];
       selectedItem.value = firstUnconfirmed;
@@ -336,7 +337,7 @@ const handleComplete = async () => {
 
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
 
-    draftStore.saveDraft(currentWorkOrderId.value, {
+    await draftStore.saveDraft(currentWorkOrderId.value, {
       headerInfo: headerInfo.value,
       componentDetailsFull: componentDetailsFull.value,
       hourlyValidity: hourlyValidity.value
@@ -366,16 +367,10 @@ const activeComponent = ref<ComponentDetail | null>(null);
 const onRowClick = (event: { data: ComponentDetail }) => {
   if (isLoadingComponent.value || !event.data?.materialName) return;
 
-  // Chặn không cho chọn lại dòng đã có thông tin thời gian cân (đã xác nhận)
-  if (event.data.weighingTime) {
-    // toast.add({ severity: 'info', summary: 'Thông báo', detail: 'Thành phần này đã được cân và xác nhận.', life: 3000 });
-    return;
-  }
-
   mixingProcess.value.component = event.data.materialName;
   const rowIndex = componentDetailsFull.value.findIndex(item => item === event.data);
   activeComponent.value = { ...event.data };
-  selectedItem.value = event.data; // Lưu ý: Cần gán selectedItem để bảng Highlight đúng dòng
+  selectedItem.value = event.data;
 
   if (rowIndex === 0) {
     activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
@@ -475,7 +470,7 @@ const handleConfirmWeight = async (actualWeight: string) => { // Thêm async ở
       toast.add({ severity: 'success', summary: 'Hoàn tất', detail: 'Đã cân xong tất cả các thành phần.', life: 4000 });
     }
 
-    draftStore.saveDraft(currentWorkOrderId.value, {
+    await draftStore.saveDraft(currentWorkOrderId.value, {
       headerInfo: headerInfo.value,
       componentDetailsFull: componentDetailsFull.value
     });
@@ -493,7 +488,7 @@ const productDialog = ref(false);
 const materialsList = ref<any[]>([]);
 const isLoadingMaterials = ref(false);
 
-const handleSaveNewComponent = (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
+const handleSaveNewComponent = async (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
   const baseItem = componentDetailsFull.value[0];
   if (!baseItem) {
     toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không tìm thấy hóa chất gốc', life: 3000 });
@@ -539,7 +534,7 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
     factoryId: authStore.user?.factoryId || ''
   });
 
-  draftStore.saveDraft(currentWorkOrderId.value, {
+  await draftStore.saveDraft(currentWorkOrderId.value, {
     headerInfo: headerInfo.value,
     componentDetailsFull: componentDetailsFull.value
   });
@@ -559,7 +554,7 @@ const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
       );
 
       // 2. Cập nhật lại bản nháp trong Store ngay lập tức
-      draftStore.saveDraft(currentWorkOrderId.value, {
+      void draftStore.saveDraft(currentWorkOrderId.value, {
         headerInfo: headerInfo.value,
         componentDetailsFull: componentDetailsFull.value
       });
@@ -631,7 +626,7 @@ const alertExitPage = (): Promise<boolean> =>
                 try {
                   const payload = buildPayload('C', { onlyProgressLines: true });
                   await mixGlueApi.postMixGlueCommand(payload);
-                  draftStore.saveDraft(currentWorkOrderId.value, {
+                  await draftStore.saveDraft(currentWorkOrderId.value, {
                     headerInfo: headerInfo.value,
                     componentDetailsFull: componentDetailsFull.value,
                     hourlyValidity: hourlyValidity.value

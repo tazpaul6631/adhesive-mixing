@@ -1,8 +1,9 @@
 <template>
-  <div class="mobile-login-wrapper animate__animated animate__fadeIn">
-    <div class="top-background"></div>
+  <div class="mobile-login-wrapper animate__animated animate__fadeIn"
+    :class="{ 'mobile-login-wrapper--scanning': isScanning }">
+    <div class="top-background login-layer" :class="{ 'login-layer--hidden': isScanning }"></div>
 
-    <div class="content-wrapper">
+    <div class="content-wrapper login-layer" :class="{ 'login-layer--hidden': isScanning }">
       <div class="form-container shadow-lg">
         <div class="form-inner">
           <div class="side-info">
@@ -20,7 +21,8 @@
                   <i class="pi pi-qrcode scan-icon pulse-animation"></i>
                 </div>
                 <h4>Đăng nhập bằng thẻ</h4>
-                <p v-if="!errorLogin">Vui lòng quét mã QR hoặc Mã vạch/Barcode trên thẻ nhân viên của bạn để vào hệ
+                <p v-if="!errorLogin">Vui lòng quét mã <strong>QR hoặc Mã vạch/Barcode</strong> trên thẻ nhân viên của
+                  bạn để vào hệ
                   thống.</p>
                 <p v-else class="text-danger">{{ errorMessage }}</p>
 
@@ -31,22 +33,27 @@
                 </div>
               </div>
 
-              <Button class="login-btn scan-btn w-full" :label="isLoading ? 'ĐANG XỬ LÝ...' : 'QUÉT MÃ'"
-                :icon="isLoading ? undefined : 'pi pi-camera'" :loading="isLoading" @click="startScan" />
+              <Button class="login-btn scan-btn w-full"
+                :label="isLoggingIn ? 'ĐANG ĐĂNG NHẬP...' : (isLoading ? 'ĐANG XỬ LÝ...' : 'QUÉT MÃ')"
+                :icon="isLoading || isLoggingIn ? undefined : 'pi pi-camera'" :loading="isLoading || isLoggingIn"
+                :disabled="isLoggingIn" @click="startScan" />
             </template>
 
             <template v-else>
               <div class="tablet-login-form shadow-sm">
                 <div class="field-group">
-                  <label for="factory" class="field-label">Công ty</label>
-                  <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
-                    optionValue="value" placeholder="Chọn công ty" class="w-full" :disabled="isLoading" />
+                  <label for="company" class="field-label">Công ty</label>
+                  <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
+                    optionValue="value" placeholder="Chọn công ty" class="w-full"
+                    :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies" />
                 </div>
 
                 <div class="field-group">
                   <label for="factory" class="field-label">Nhà máy</label>
                   <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
-                    optionValue="value" placeholder="Chọn nhà máy" class="w-full" :disabled="isLoading" />
+                    optionValue="value" placeholder="Chọn nhà máy" class="w-full"
+                    :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
+                    :loading="isLoadingFactories" />
                 </div>
 
                 <div class="field-group">
@@ -54,7 +61,7 @@
                   <IconField>
                     <InputIcon class="pi pi-user" />
                     <InputText id="username" v-model="username" placeholder="Mã số nhân viên" class="w-full"
-                      :disabled="isLoading" />
+                      :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
                   </IconField>
                 </div>
 
@@ -63,17 +70,21 @@
                   <IconField>
                     <InputIcon class="pi pi-lock" />
                     <InputText id="password" v-model="password" type="password" placeholder="********" class="w-full"
-                      :disabled="isLoading" @keyup.enter="handleTabletLogin" />
+                      :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn"
+                      @keyup.enter="handleTabletLogin" />
                   </IconField>
                 </div>
 
                 <p v-if="errorLogin" class="text-danger">{{ errorMessage }}</p>
 
                 <div class="tablet-login-actions">
-                  <Button class="tablet-login-btn flex-1" :label="isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP'"
-                    :loading="isLoading" @click="handleTabletLogin" />
+                  <Button class="tablet-login-btn flex-1"
+                    :label="isLoggingIn ? 'ĐANG ĐĂNG NHẬP...' : (isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP')"
+                    :loading="isLoading || isLoggingIn" :disabled="!isLoginButtonEnabled || isLoggingIn"
+                    @click="handleTabletLogin" />
                   <Button class="tablet-scan-btn" icon="pi pi-qrcode" severity="secondary" outlined
-                    :disabled="isLoading" @click="startScan" />
+                    :disabled="isLoading || isScanning || isLoggingIn" :loading="isScanning || isLoggingIn"
+                    @click="startScan" />
                 </div>
               </div>
             </template>
@@ -85,109 +96,338 @@
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div v-if="isLoggingIn && isLoginRoute" class="login-loading-overlay">
+        <div class="login-loading-panel">
+          <i class="pi pi-spinner login-loading-spinner"></i>
+          <p class="login-loading-title">Đang đăng nhập...</p>
+          <p class="login-loading-note">Vui lòng đợi trong giây lát</p>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="isScanning" class="scan-camera-overlay">
+        <div class="scan-camera-content">
+          <p class="scan-camera-title">Quét thẻ nhân viên</p>
+          <p class="scan-camera-note">Đưa mã <strong>QR hoặc Barcode</strong> trên thẻ vào khung bên dưới</p>
+
+          <div class="scan-camera-frame">
+            <span class="scan-corner scan-corner--tl"></span>
+            <span class="scan-corner scan-corner--tr"></span>
+            <span class="scan-corner scan-corner--bl"></span>
+            <span class="scan-corner scan-corner--br"></span>
+            <span class="scan-frame-line"></span>
+          </div>
+
+          <p class="scan-camera-hint">
+            <i class="pi pi-camera"></i>
+            Camera trước đang bật
+          </p>
+
+          <Button class="scan-cancel-btn" label="Hủy quét" icon="pi pi-times" severity="secondary"
+            @click="cancelScan" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { BarcodeScanner, LensFacing } from '@capacitor-mlkit/barcode-scanning';
+import type { PluginListenerHandle } from '@capacitor/core';
 import employee from '@/api/employee';
+import companyApi from '@/api/company';
+import factoryApi from '@/api/factory';
 import { useAuthStore } from '@/store/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
+
+type SelectOption = { label: string; value: string };
 
 const code = ref('');
 const username = ref('');
 const password = ref('');
-const selectedFactory = ref('01');
-const factoryOptions = [
-  { label: 'BU1', value: '01' }
-];
+const selectedCompany = ref('');
+const selectedFactory = ref('');
+const companyOptions = ref<SelectOption[]>([]);
+const factoryOptions = ref<SelectOption[]>([]);
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const isNative = Capacitor.isNativePlatform();
 const isTablet = ref(window.innerWidth >= 768);
 const errorLogin = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
+const isLoggingIn = ref(false);
+const isScanning = ref(false);
+const isLoadingCompanies = ref(false);
+const isLoadingFactories = ref(false);
+
+let scanListener: PluginListenerHandle | null = null;
+
+const isFactoryFieldEnabled = computed(() => !!selectedCompany.value && !isLoadingCompanies.value);
+const isCredentialFieldsEnabled = computed(() => !!selectedFactory.value && !isLoadingFactories.value);
+const isLoginButtonEnabled = computed(() => {
+  return !!selectedCompany.value
+    && !!selectedFactory.value
+    && !!username.value.trim()
+    && !!password.value
+    && !isLoading.value
+    && !isLoggingIn.value
+    && !isScanning.value;
+});
+
+const isLoginRoute = computed(() => route.path === '/login');
+
+const resetLoginLoading = () => {
+  isLoggingIn.value = false;
+  isLoading.value = false;
+};
+
+const toSelectOptions = (
+  items: unknown[],
+  idKeys: string[],
+  labelKeys: string[]
+): SelectOption[] => {
+  return items
+    .map((raw) => {
+      const item = raw as Record<string, unknown>;
+      const id = idKeys.map((key) => item[key]).find((value) => value !== undefined && value !== null && value !== '');
+      const label = labelKeys.map((key) => item[key]).find((value) => value !== undefined && value !== null && value !== '');
+      if (id === undefined || id === null || id === '') return null;
+      return {
+        value: String(id),
+        label: String(label ?? id)
+      };
+    })
+    .filter((item): item is SelectOption => item !== null);
+};
+
+const extractListItems = (responseData: any) => {
+  const payload = responseData?.data ?? responseData ?? {};
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.items)) return payload.items;
+  return [];
+};
+
+const fetchCompanies = async () => {
+  isLoadingCompanies.value = true;
+  try {
+    const { data } = await companyApi.postCompanyList();
+    if (data?.success) {
+      companyOptions.value = toSelectOptions(
+        extractListItems(data),
+        ['companyId', 'id', 'value'],
+        ['companyName', 'name', 'label']
+      );
+    } else {
+      companyOptions.value = [];
+    }
+  } catch (error) {
+    console.error('Lỗi tải danh sách công ty:', error);
+    companyOptions.value = [];
+  } finally {
+    isLoadingCompanies.value = false;
+  }
+};
+
+const fetchFactories = async (companyId: string) => {
+  isLoadingFactories.value = true;
+  factoryOptions.value = [];
+  selectedFactory.value = '';
+
+  try {
+    const { data } = await factoryApi.postFactoryList(companyId);
+    if (data?.success) {
+      factoryOptions.value = toSelectOptions(
+        extractListItems(data),
+        ['factoryId', 'id', 'value'],
+        ['factoryName', 'name', 'label']
+      );
+    } else {
+      factoryOptions.value = [];
+    }
+  } catch (error) {
+    console.error('Lỗi tải danh sách nhà máy:', error);
+    factoryOptions.value = [];
+  } finally {
+    isLoadingFactories.value = false;
+  }
+};
+
+watch(selectedCompany, async (companyId) => {
+  selectedFactory.value = '';
+  factoryOptions.value = [];
+  username.value = '';
+  password.value = '';
+  errorLogin.value = false;
+  errorMessage.value = '';
+
+  if (!companyId) return;
+  await fetchFactories(String(companyId));
+});
+
+watch(selectedFactory, () => {
+  username.value = '';
+  password.value = '';
+  errorLogin.value = false;
+  errorMessage.value = '';
+});
+
+watch(() => route.path, (path) => {
+  if (path !== '/login') {
+    resetLoginLoading();
+  }
+});
 
 const updateDeviceType = () => {
   isTablet.value = window.innerWidth >= 768;
 };
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
+  if (isTablet.value) {
+    await fetchCompanies();
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateDeviceType);
+  resetLoginLoading();
+  void stopScanner();
 });
 
-const navigateAfterLogin = () => {
-  if (isNative) {
-    router.push('/app-menu');
-  } else {
-    router.push('/dashboard');
+const setScannerUiActive = (active: boolean) => {
+  document.body.classList.toggle('barcode-scanner-active', active);
+  document.documentElement.classList.toggle('barcode-scanner-active', active);
+  document.querySelector('ion-app')?.classList.toggle('barcode-scanner-active', active);
+};
+
+const cleanupScanner = async () => {
+  if (scanListener) {
+    await scanListener.remove();
+    scanListener = null;
+  }
+  await BarcodeScanner.removeAllListeners().catch(() => undefined);
+  await BarcodeScanner.stopScan().catch(() => undefined);
+};
+
+const stopScanner = async () => {
+  isScanning.value = false;
+  setScannerUiActive(false);
+  await cleanupScanner();
+};
+
+const cancelScan = async () => {
+  await stopScanner();
+  if (!isLoggingIn.value) {
+    isLoading.value = false;
   }
 };
 
-const handleLoginResponse = (response: any, loginCode: string) => {
+const getBarcodeValue = (barcode: { rawValue?: string; displayValue?: string }) => {
+  return barcode.rawValue || barcode.displayValue || '';
+};
+
+const beginFrontCameraScan = async () => {
+  isScanning.value = true;
+  setScannerUiActive(true);
+  await nextTick();
+
+  scanListener = await BarcodeScanner.addListener('barcodesScanned', async (event) => {
+    const scannedValue = event.barcodes?.[0] ? getBarcodeValue(event.barcodes[0]) : '';
+    if (!scannedValue) return;
+
+    isLoggingIn.value = true;
+    isLoading.value = true;
+    await stopScanner();
+
+    try {
+      await processScannedData(scannedValue);
+    } catch (error) {
+      console.error('Lỗi khi xử lý mã quét:', error);
+      handleLoginError(scannedValue);
+    }
+  });
+
+  await BarcodeScanner.startScan({
+    lensFacing: LensFacing.Front
+  });
+};
+
+const buildTabletLoginPayload = () => ({
+  companyId: String(selectedCompany.value ?? ''),
+  factoryId: String(selectedFactory.value ?? ''),
+  username: String(username.value.trim()),
+  password: String(password.value)
+});
+
+const navigateAfterLogin = async () => {
+  if (isNative) {
+    await router.push('/app-menu');
+  } else {
+    await router.push('/dashboard');
+  }
+};
+
+const handleLoginResponse = async (response: any, loginCode: string): Promise<boolean> => {
   if (response.data?.success) {
     authStore.setAuthData(response.data.data);
-    navigateAfterLogin();
-    return;
+    isLoggingIn.value = true;
+    isLoading.value = true;
+
+    try {
+      await navigateAfterLogin();
+    } finally {
+      resetLoginLoading();
+    }
+
+    return true;
   }
 
   code.value = loginCode;
   errorLogin.value = true;
   errorMessage.value = response.data?.message || 'Đăng nhập thất bại.';
+  resetLoginLoading();
+  return false;
 };
 
 const handleLoginError = (loginCode: string) => {
   code.value = loginCode;
   errorLogin.value = true;
   errorMessage.value = 'Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)';
+  resetLoginLoading();
 };
 
 const handleTabletLogin = async () => {
-  const employeeId = username.value.trim();
-  const employeePassword = password.value;
-
-  if (!employeeId) {
-    alert('Vui lòng nhập tài khoản!');
-    return;
-  }
-
-  if (!employeePassword) {
-    alert('Vui lòng nhập mật khẩu!');
-    return;
-  }
-
-  if (!selectedFactory.value) {
-    alert('Vui lòng chọn nhà máy!');
-    return;
-  }
+  if (!isLoginButtonEnabled.value) return;
 
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
 
+  const payload = buildTabletLoginPayload();
+
+  isLoggingIn.value = true;
   isLoading.value = true;
   errorLogin.value = false;
   errorMessage.value = '';
 
   try {
     const response = await employee.employeeLogin({
-      employeeId,
-      password: employeePassword,
-      factoryId: selectedFactory.value
+      employeeId: payload.username,
+      companyId: payload.companyId,
+      factoryId: payload.factoryId,
+      password: payload.password
     });
-    handleLoginResponse(response, employeeId);
+    await handleLoginResponse(response, payload.username);
   } catch (error: any) {
-    console.error('Lỗi gọi API đăng nhập:', error);
-    handleLoginError(employeeId);
-  } finally {
-    isLoading.value = false;
+    console.error('Lỗi đăng nhập tablet:', error);
+    handleLoginError(payload.username);
   }
 };
 
@@ -205,10 +445,15 @@ const startScan = async () => {
       return;
     }
 
+    if (isTablet.value && isNative) {
+      await beginFrontCameraScan();
+      return;
+    }
+
     const { barcodes } = await BarcodeScanner.scan();
 
-    if (barcodes && barcodes.length > 0) {
-      const scannedValue = barcodes[0].rawValue;
+    if (barcodes?.length) {
+      const scannedValue = getBarcodeValue(barcodes[0]);
       if (scannedValue) {
         await processScannedData(scannedValue);
       } else {
@@ -217,22 +462,31 @@ const startScan = async () => {
     }
   } catch (error) {
     console.error('Lỗi khi quét:', error);
+    await stopScanner();
   } finally {
-    isLoading.value = false;
+    if (!isScanning.value && !isLoggingIn.value) {
+      isLoading.value = false;
+    }
   }
 };
 
 const processScannedData = async (scannedCode: string) => {
+  isLoggingIn.value = true;
+  isLoading.value = true;
   code.value = scannedCode;
 
   if (!scannedCode) {
     alert('Vui lòng nhập mã nhân viên!');
+    isLoggingIn.value = false;
+    isLoading.value = false;
     return;
   }
 
   try {
-    const response = await employee.employeeLogin({ employeeId: scannedCode });
-    handleLoginResponse(response, scannedCode);
+    const response = await employee.employeeLogin({
+      employeeId: String(scannedCode)
+    });
+    await handleLoginResponse(response, scannedCode);
   } catch (error: any) {
     console.error('Lỗi gọi API đăng nhập:', error);
     handleLoginError(scannedCode);
@@ -248,6 +502,21 @@ const processScannedData = async (scannedCode: string) => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.2s ease;
+}
+
+.mobile-login-wrapper--scanning {
+  background: transparent;
+}
+
+.login-layer {
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.login-layer--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .top-background {
@@ -297,12 +566,10 @@ const processScannedData = async (scannedCode: string) => {
 }
 
 .form-logo {
-  width: 90px;
-  height: 90px;
-  border-radius: 25px;
+  display: block;
+  width: 100%;
+  height: 170px;
   object-fit: cover;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  margin-bottom: 15px;
 }
 
 .login-header {
@@ -313,7 +580,7 @@ const processScannedData = async (scannedCode: string) => {
   font-size: 2rem;
   font-weight: 800;
   margin: 0 0 5px 0;
-  color: #1e293b;
+  color: #317af0;
 }
 
 .login-header p {
@@ -338,7 +605,7 @@ const processScannedData = async (scannedCode: string) => {
 }
 
 .scan-icon-wrapper {
-  background: #e0f2fe;
+  background: #c3f0dc73;
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -350,7 +617,7 @@ const processScannedData = async (scannedCode: string) => {
 
 .scan-icon {
   font-size: 2.5rem;
-  color: var(--p-primary-color, #3880ff);
+  color: #6ed3b3;
 }
 
 .pulse-animation {
@@ -375,7 +642,7 @@ const processScannedData = async (scannedCode: string) => {
 }
 
 .scan-instruction h4 {
-  color: #1e293b;
+  color: #317af0;
   font-weight: 700;
   margin: 0 0 8px 0;
   font-size: 1.2rem;
@@ -423,10 +690,16 @@ const processScannedData = async (scannedCode: string) => {
 .login-btn.scan-btn {
   margin-top: 20px;
   height: 3.75rem;
-  font-weight: 700;
   letter-spacing: 1px;
-  font-size: 1.1rem;
+  font-size: 1.5rem !important;
   border-radius: 16px;
+  background-color: #6ed3b3;
+  color: #fff;
+
+  &:deep(.pi) {
+    font-size: 1.5rem !important;
+    color: #fff;
+  }
 }
 
 .tablet-login-form {
@@ -445,7 +718,7 @@ const processScannedData = async (scannedCode: string) => {
 
 .field-label {
   font-weight: 700;
-  color: #1e293b;
+  color: #317af0;
   font-size: 0.95rem;
 }
 
@@ -457,21 +730,206 @@ const processScannedData = async (scannedCode: string) => {
 }
 
 .tablet-login-btn {
-  height: 3.5rem;
+  height: 3.8rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   border-radius: 14px;
 }
 
 .tablet-scan-btn {
-  width: 3.5rem;
+  width: 3.8rem;
   min-width: 3.5rem;
-  height: 3.5rem;
+  height: 3.8rem;
   border-radius: 14px;
+  border: 5px solid #6ed3b3 !important;
 }
 
 .tablet-scan-btn :deep(.pi) {
+  font-size: 2rem;
+  color: #6ed3b3;
+}
+
+:global(.login-loading-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.72);
+  pointer-events: auto;
+}
+
+:global(.login-loading-panel) {
+  width: min(100%, 360px);
+  padding: 28px 24px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+}
+
+:global(.login-loading-spinner) {
+  font-size: 2.4rem;
+  color: #2563eb;
+  animation: login-spinner-rotate 0.9s linear infinite;
+}
+
+:global(.login-loading-title) {
+  margin: 18px 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+:global(.login-loading-note) {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+@keyframes login-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:global(.scan-camera-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  visibility: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.1);
+  pointer-events: auto;
+}
+
+:global(.scan-camera-content) {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+:global(.scan-camera-title) {
+  margin: 0 0 8px;
   font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+:global(.scan-camera-note) {
+  margin: 0 0 24px;
+  max-width: 360px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+:global(.scan-camera-frame) {
+  position: relative;
+  width: min(78vw, 550px);
+  height: min(52vw, 280px);
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 20px;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+  overflow: hidden;
+}
+
+:global(.scan-corner) {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 4px solid #38bdf8;
+  z-index: 2;
+}
+
+:global(.scan-corner--tl) {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 18px;
+}
+
+:global(.scan-corner--tr) {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 18px;
+}
+
+:global(.scan-corner--bl) {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 18px;
+}
+
+:global(.scan-corner--br) {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 18px;
+}
+
+:global(.scan-frame-line) {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 18%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.85);
+  animation: scan-line-move 2.2s ease-in-out infinite;
+}
+
+:global(.scan-camera-hint) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 20px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  font-size: 0.9rem;
+  backdrop-filter: blur(4px);
+}
+
+:global(.scan-cancel-btn) {
+  min-width: 160px;
+}
+
+@keyframes scan-line-move {
+  0% {
+    top: 18%;
+    opacity: 0.35;
+  }
+
+  50% {
+    top: 78%;
+    opacity: 1;
+  }
+
+  100% {
+    top: 18%;
+    opacity: 0.35;
+  }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
@@ -491,8 +949,7 @@ const processScannedData = async (scannedCode: string) => {
   }
 
   .form-logo {
-    width: 60px;
-    height: 60px;
+    object-fit: cover;
   }
 }
 
@@ -542,8 +999,38 @@ const processScannedData = async (scannedCode: string) => {
   }
 
   .form-logo {
-    width: auto;
-    height: 130px;
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
   }
+}
+</style>
+
+<style>
+body.barcode-scanner-active,
+html.barcode-scanner-active,
+ion-app.barcode-scanner-active {
+  visibility: hidden;
+  background: transparent !important;
+  --background: transparent;
+  --ion-background-color: transparent;
+}
+
+body.barcode-scanner-active .scan-camera-overlay,
+html.barcode-scanner-active .scan-camera-overlay,
+ion-app.barcode-scanner-active .scan-camera-overlay,
+body.barcode-scanner-active .login-loading-overlay,
+html.barcode-scanner-active .login-loading-overlay,
+ion-app.barcode-scanner-active .login-loading-overlay {
+  visibility: visible;
+}
+
+body.barcode-scanner-active ion-content,
+body.barcode-scanner-active .ion-page,
+body.barcode-scanner-active .mobile-login-wrapper,
+body.barcode-scanner-active .form-container,
+body.barcode-scanner-active .tablet-login-form {
+  --background: transparent;
+  background: transparent !important;
 }
 </style>
