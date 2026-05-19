@@ -11,14 +11,15 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin Header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
           <div
             class="flex flex-wrap align-items-center justify-content-between border-bottom-1 surface-border pb-3 mb-3">
             <user-avatar />
-            <ConnectBluetooth templateType="mix_glue" :printData="selectedItem" @printSuccess="handlePrintSuccess" />
+            <ConnectBluetooth ref="bluetoothRef" templateType="mix_glue" :printData="selectedItem"
+              @printSuccess="handlePrintSuccess" />
           </div>
 
           <div class="grid formgrid p-fluid">
@@ -116,22 +117,19 @@
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
-
-      <back-to-top slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
-  IonTitle, onIonViewWillEnter
+  IonTitle, onIonViewWillEnter, onIonViewDidLeave
 } from '@ionic/vue';
 
-import BackToTop from '@/components/BackToTop.vue';
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 
@@ -164,13 +162,13 @@ const route = useRoute();
 const toast = useToast();
 
 const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
 const isLoadingLine = ref(true);
 
 const selectedItem = ref<any>(null);
 const headerInfo = ref<HeaderInfo>({ orderNo: '', glue: '', totalWeight: '' });
 const mixGlues = ref<MixGlueItem[]>([]);
 const totalMixGlueWeight = ref<any>(null);
+const bluetoothRef = ref<any>(null);
 
 const skeletonData = ref(new Array(5).fill({}));
 
@@ -182,9 +180,7 @@ const resetState = () => {
 };
 
 const handlePrintSuccess = () => {
-  // Thực hiện chuyển trang hoặc quay lại tại đây
   router.back();
-  // HOẶC router.replace('/qip-confirm-repacking-mixed-glue');
 };
 
 // --- METHODS ---
@@ -245,24 +241,21 @@ const getSeverity = (isExtra: boolean) => {
 // --- NAVIGATION & SCROLL ---
 const goBack = () => router.back();
 
-const handleScroll = (event: CustomEvent) => {
-  showScrollButton.value = event.detail.scrollTop > 100;
-};
-
-const scrollToTop = () => {
-  if (contentRef.value) {
-    contentRef.value.$el.scrollToTop(500);
-  }
-};
-
 // --- LIFECYCLE ---
-onIonViewWillEnter(() => {
+onIonViewWillEnter(async () => {
+  await nextTick();
+  bluetoothRef.value?.initBluetooth?.();
+
   const workOrderMasterId = route.query.workOrderMasterId as string;
   if (workOrderMasterId) {
     fetchWorkOrderDetail(workOrderMasterId);
   } else {
     isLoadingLine.value = false;
   }
+});
+
+onIonViewDidLeave(() => {
+  bluetoothRef.value?.cleanupBluetooth?.();
 });
 </script>
 

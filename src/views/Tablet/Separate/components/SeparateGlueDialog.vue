@@ -6,7 +6,7 @@
       <span class="font-bold text-blue-600 text-lg">{{ chemical?.materialName }}</span>
     </div>
 
-    <RepackingGlue :is-loading="false" :order-details="orderDetails" :is-view-mode="isViewMode"
+    <SeparateGlue :is-loading="false" :order-details="orderDetails" :is-view-mode="isViewMode"
       @update-bucket="$emit('update-bucket')" />
 
     <template #footer>
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
-import RepackingGlue from '@/views/Tablet/RePacking/components/RepackingGlue.vue';
+import SeparateGlue from '@/views/Tablet/Separate/components/SeparateGlue.vue';
 
 interface OrderDetails {
   workOrderDetailId?: string;

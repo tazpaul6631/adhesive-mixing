@@ -99,8 +99,8 @@ const tabletFeatures = ref([
     bgLight: '#e0f2fe'
   },
   {
-    path: '/list-repacking-mixed-glue-management',
-    title: 'Repacking Mixed Glue Management',
+    path: '/list-separate-mixed-glue-management',
+    title: 'Separate Mixed Glue Management',
     description: 'Quản lý việc đóng gói lại keo đã trộn.',
     icon: cubeOutline,
     color: '#f59e0b',
@@ -115,8 +115,8 @@ const tabletFeatures = ref([
     bgLight: '#d1fae5'
   },
   {
-    path: '/list-qip-confirm-repacking-mixed-glue',
-    title: 'QIP Confirm Repacking',
+    path: '/list-qip-confirm-separate-mixed-glue',
+    title: 'QIP Confirm Separate Mixed Glue',
     description: 'Xác nhận chất lượng keo đóng gói lại (QIP).',
     icon: documentTextOutline,
     color: '#8b5cf6',

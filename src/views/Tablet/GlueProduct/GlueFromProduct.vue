@@ -11,7 +11,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding bg-gray-50" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content class="ion-padding bg-gray-50" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
         <div class="surface-card p-3 shadow-1 border-round-xl">
           <div
@@ -72,7 +72,6 @@
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
-      <back-to-top slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
@@ -83,7 +82,6 @@ import {
   IonTitle
 } from '@ionic/vue';
 import { ref } from 'vue';
-import BackToTop from '@/components/BackToTop.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import { useRouter } from 'vue-router';
 
@@ -113,25 +111,6 @@ const orderOptions = ref([
 ]);
 
 const goBack = () => router.back();
-
-// BackToTop logic
-const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
-
-const handleScroll = (event: CustomEvent) => {
-  if (event.detail.scrollTop > 100) {
-    showScrollButton.value = true;
-  } else {
-    showScrollButton.value = false;
-  }
-};
-
-const scrollToTop = () => {
-  if (contentRef.value) {
-    contentRef.value.$el.scrollToTop(500);
-  }
-};
-///////////////////////
 </script>
 
 <style scoped></style>

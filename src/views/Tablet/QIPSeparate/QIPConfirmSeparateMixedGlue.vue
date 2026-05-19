@@ -8,7 +8,7 @@
           </ion-button>
         </ion-buttons>
         <ion-title>
-          {{ isMixedMode ? 'QIP Confirm Re-Packing Mixed Glue' : 'QIP Confirm Re-Packing No Mix Glue' }}
+          {{ isMixedMode ? 'QIP Confirm Separate Mixed Glue' : 'QIP Confirm Separate No Mix Glue' }}
         </ion-title>
       </ion-toolbar>
     </ion-header>
@@ -17,7 +17,8 @@
       <div class="main-container max-w-full mx-auto">
         <div class="flex flex-wrap align-items-center justify-content-between surface-border">
           <user-avatar />
-          <ConnectBluetooth templateType="repacking" :printData="selectedItem" @printSuccess="handlePrintSuccess" />
+          <ConnectBluetooth ref="bluetoothRef" templateType="separate" :printData="selectedItem"
+            @printSuccess="handlePrintSuccess" />
         </div>
 
         <div class="surface-card p-0 shadow-1 border-round-xl mt-4">
@@ -33,7 +34,7 @@
 
             <!-- BẢNG DÀNH CHO KEO TRỘN -->
             <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="rePackingGlueId">
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="separateGlueId">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -70,8 +71,7 @@
 
             <!-- BẢNG DÀNH CHO KEO KHÔNG TRỘN -->
             <DataTable v-else :value="lineDetails" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px"
-              dataKey="noRePackingGlueId">
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px" dataKey="noSeparateGlueId">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -118,12 +118,12 @@
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, onIonViewWillEnter
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, onIonViewWillEnter, onIonViewDidLeave
 } from '@ionic/vue';
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
-import rePackingGlue from '@/api/rePackingGlue';
+import separateGlue from '@/api/separate';
 
 const router = useRouter();
 const route = useRoute();
@@ -132,15 +132,14 @@ const authStore = useAuthStore();
 const isLoadingLine = ref(true);
 const selectedItem = ref<any>(null);
 const lineDetails = ref<any[]>([]);
+const bluetoothRef = ref<any>(null);
 
 const isMixedMode = computed(() => {
   return route.query.type === 'mixed';
 });
 
 const handlePrintSuccess = () => {
-  // Thực hiện chuyển trang hoặc quay lại tại đây
   router.back();
-  // HOẶC router.replace('/qip-confirm-repacking-mixed-glue');
 };
 
 // --- FETCH & STATE LOGIC ---
@@ -151,12 +150,17 @@ const resetState = () => {
 };
 
 // --- GỌI API KEO TRỘN ---
-const fetchMixedGlueDetail = async (factoryId: string, rpgIdStr: string, rdIdStr: string) => {
+const fetchMixedGlueDetail = async (factoryId: string, sgId: string) => {
+
   try {
-    const { data } = await rePackingGlue.getRPGQueryResult(factoryId, rpgIdStr, rdIdStr);
+    const { data } = await separateGlue.getSGQueryResult(factoryId, sgId);
 
     if (data && data.success) {
       lineDetails.value = data.data ? [data.data] : [];
+      selectedItem.value = {
+        factoryId: factoryId,
+        separateGlueId: sgId
+      };
     } else {
       console.error('API Error (Mixed):', data?.message);
     }
@@ -166,12 +170,16 @@ const fetchMixedGlueDetail = async (factoryId: string, rpgIdStr: string, rdIdStr
 };
 
 // --- GỌI API KEO KHÔNG TRỘN ---
-const fetchNoMixGlueDetail = async (factoryId: string, nrpgIdStr: string, womIdStr: string) => {
+const fetchNoMixGlueDetail = async (factoryId: string, nsgId: string) => {
   try {
-    const { data } = await rePackingGlue.getNRPGQueryResult(factoryId, nrpgIdStr, womIdStr);
+    const { data } = await separateGlue.getNSGQueryResult(factoryId, nsgId);
 
     if (data && data.success) {
       lineDetails.value = data.data ? [data.data] : [];
+      selectedItem.value = {
+        factoryId: factoryId,
+        noSeparateGlueId: nsgId
+      };
     } else {
       console.error('API Error (NoMix):', data?.message);
     }
@@ -182,28 +190,33 @@ const fetchNoMixGlueDetail = async (factoryId: string, nrpgIdStr: string, womIdS
 
 // --- LIFECYCLE ---
 onIonViewWillEnter(async () => {
+  await nextTick();
+  bluetoothRef.value?.initBluetooth?.();
+
   resetState();
 
   const factoryId = authStore.user?.factoryId || "01";
   const type = route.query.type as string;
 
   if (type === 'mixed') {
-    const rePackingGlueId = route.query.rePackingGlueId as string;
-    const requestDetailId = route.query.requestDetailId as string;
+    const separateGlueId = route.query.separateGlueId as string;
 
-    if (rePackingGlueId && requestDetailId) {
-      await fetchMixedGlueDetail(factoryId, rePackingGlueId, requestDetailId);
+    if (separateGlueId) {
+      await fetchMixedGlueDetail(factoryId, separateGlueId);
     }
   } else if (type === 'nomix') {
-    const noRePackingGlueId = route.query.noRePackingGlueId as string;
-    const workOrderMasterId = route.query.workOrderMasterId as string;
+    const noSeparateGlueId = route.query.noSeparateGlueId as string;
 
-    if (noRePackingGlueId && workOrderMasterId) {
-      await fetchNoMixGlueDetail(factoryId, noRePackingGlueId, workOrderMasterId);
+    if (noSeparateGlueId) {
+      await fetchNoMixGlueDetail(factoryId, noSeparateGlueId);
     }
   }
 
   isLoadingLine.value = false;
+});
+
+onIonViewDidLeave(() => {
+  bluetoothRef.value?.cleanupBluetooth?.();
 });
 
 const goBack = () => router.back(); 

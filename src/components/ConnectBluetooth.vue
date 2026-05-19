@@ -27,15 +27,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { Button } from 'primevue';
 import { Preferences } from '@capacitor/preferences';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import mixGlue from '@/api/mixGlue';
-import { useRouter } from 'vue-router';
-import rePackingGlue from '@/api/rePackingGlue';
-import { onIonViewWillEnter, onIonViewDidLeave } from '@ionic/vue';
+import separateGlue from '@/api/separate';
 
 const props = defineProps<{
   templateType?: string;
@@ -49,7 +47,7 @@ const isPrinting = ref(false);
 const authStore = useAuthStore();
 let connectionTimeout: any = null;
 let autoReconnectInterval: any = null;
-const router = useRouter();
+let pendingInitTimer: ReturnType<typeof setTimeout> | null = null;
 const emit = defineEmits(['printSuccess']);
 
 // --- 1. Xử lý Bật Bluetooth & Quét thiết bị ---
@@ -174,40 +172,92 @@ const disconnect = () => {
   }
 };
 
-// --- 5. Tự động kết nối khi mở App ---
-onIonViewWillEnter(async () => {
-  const { value } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
-  if (value) {
-    selectedMac.value = value;
-
-    // Đợi plugin sẵn sàng
-    setTimeout(() => {
-      const bt = (window as any).bluetoothSerial;
-      if (bt) {
-        bt.isEnabled(
-          () => {
-            connectToDevice();
-            // BẬT CHẾ ĐỘ TỰ ĐỘNG THEO DÕI SAU KHI THỬ KẾT NỐI
-            startAutoReconnectWatchdog();
-          },
-          () => {
-            console.log("Bluetooth đang tắt, bỏ qua tự động kết nối.");
-          }
-        );
-      }
-    }, 1000);
+// --- 5. Chỉ chạy khi parent gọi initBluetooth() (vd. onIonViewWillEnter). Không tự onMounted — tránh quét/kết nối khi không ở màn có máy in.
+const initBluetooth = async () => {
+  if (pendingInitTimer) {
+    clearTimeout(pendingInitTimer);
+    pendingInitTimer = null;
   }
-});
 
-onIonViewDidLeave(() => {
-  // Dọn dẹp các timeout và interval để tránh rò rỉ bộ nhớ khi rời trang
+  const { value } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
+  if (!value) return;
+
+  selectedMac.value = value;
+
+  pendingInitTimer = setTimeout(() => {
+    pendingInitTimer = null;
+    const bt = (window as any).bluetoothSerial;
+    if (bt) {
+      bt.isEnabled(
+        () => {
+          if (status.value !== 'connected') {
+            connectToDevice();
+          }
+          startAutoReconnectWatchdog();
+        },
+        () => {
+          console.log("Bluetooth đang tắt, tự động yêu cầu bật...");
+          bt.enable(
+            () => {
+              console.log("Bluetooth đã được bật tự động.");
+              connectToDevice();
+              startAutoReconnectWatchdog();
+            },
+            (err: any) => {
+              console.log("Người dùng từ chối bật Bluetooth hoặc có lỗi:", err);
+            }
+          );
+        }
+      );
+    }
+  }, 500);
+};
+
+const cleanupBluetooth = () => {
   clearTimeout(connectionTimeout);
+  if (pendingInitTimer) {
+    clearTimeout(pendingInitTimer);
+    pendingInitTimer = null;
+  }
   clearInterval(autoReconnectInterval);
+  // disconnect(); // Tùy chọn: comment lại nếu muốn giữ kết nối khi đổi tab
+};
 
-  // LƯU Ý: Nếu bạn muốn máy in VẪN GIỮ KẾT NỐI khi người dùng chuyển qua lại 
-  // giữa các tab/trang, hãy COMMENT lại dòng disconnect() này.
-  // disconnect(); 
+onUnmounted(() => {
+  cleanupBluetooth();
 });
+
+defineExpose({
+  initBluetooth,
+  cleanupBluetooth
+});
+
+// --- TSPL chữ đậm: TSC không có "font-weight"; dùng font đậm trong máy hoặc in 2 lớp lệch dot ---
+const TSPL_FONT_REGULAR = 'ARIAL.TTF';
+/** Đặt true nếu đã nạp font đậm (vd. ARIALBD.TTF) bằng TSC utilities — chỉ 1 lệnh TEXT. */
+const USE_TSPL_BOLD_FONT_FILE = false;
+const TSPL_FONT_BOLD = 'ARIALBD.TTF';
+const TSPL_TEXT_XMUL = 13;
+const TSPL_TEXT_YMUL = 13;
+/** Khi không dùng font đậm: in lệnh TEXT lần 2 lệch N dot theo trục X để nét dày hơn. */
+const TSPL_BOLD_SIM_OFFSET_DOTS = 2;
+
+const tsplEscapeForQuote = (s: string) => String(s).replace(/"/g, "'");
+
+/**
+ * Trả về 1–2 dòng lệnh TEXT (đậm). Không áp dụng cho QRCODE.
+ */
+const tsplBoldText = (x: number, y: number, text: string, xMul = TSPL_TEXT_XMUL, yMul = TSPL_TEXT_YMUL) => {
+  const inner = tsplEscapeForQuote(text);
+  const font = USE_TSPL_BOLD_FONT_FILE ? TSPL_FONT_BOLD : TSPL_FONT_REGULAR;
+  if (USE_TSPL_BOLD_FONT_FILE) {
+    return `TEXT ${x},${y},"${font}",0,${xMul},${yMul},"${inner}"\n`;
+  }
+  return (
+    `TEXT ${x},${y},"${font}",0,${xMul},${yMul},"${inner}"\n` +
+    `TEXT ${x + TSPL_BOLD_SIM_OFFSET_DOTS},${y},"${font}",0,${xMul},${yMul},"${inner}"\n`
+  );
+};
 
 // --- 6. Logic In TSPL ---
 const printLabel = async () => {
@@ -236,18 +286,20 @@ const printLabel = async () => {
         const formattedStart = format.formatDate(startDate);
         const formattedEnd = format.formatDate(endDate);
 
-        // 1. Khởi tạo TSPL với tọa độ chuẩn y như bản in Test của bạn
+        // 1. Khởi tạo TSPL: phần cố định + mã QR; chữ dùng tsplBoldText
         tspl = `
-SIZE 75 mm, 50 mm
-GAP 0 mm, 0 mm
+SIZE 69 mm, 49 mm
+GAP 3 mm, 0 mm
 REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 10,40,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}/${workOrderMasterId}"
-TEXT 200,100,"ARIAL.TTF",0,12,12,"Từ: ${formattedStart}"
-TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
+QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}/${workOrderMasterId}"
 `;
+        tspl += tsplBoldText(200, 80, 'Từ ngày:');
+        tspl += tsplBoldText(200, 120, formattedStart);
+        tspl += tsplBoldText(200, 160, 'Đến ngày:');
+        tspl += tsplBoldText(200, 200, formattedEnd);
 
         // 2. Thuật toán gom dòng cho Hình thể
         const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
@@ -277,11 +329,11 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
         }
 
         // 4. In các dòng hình thể ra (Bắt đầu từ Y = 230, X = 10 y như bản test)
-        let currentY = 230;
+        let currentY = 240;
         lines.forEach((lineText: string, index: number) => {
           const prefix = index === 0 ? "Hình thể: " : "          "; // Thụt lề 10 khoảng trắng cho dòng dưới
-          tspl += `TEXT 10,${currentY},"ARIAL.TTF",0,12,12,"${prefix}${lineText}"\n`;
-          currentY += 40; // Khoảng cách giữa các dòng là 40 (230 -> 270 -> 310)
+          tspl += tsplBoldText(15, currentY, `${prefix}${lineText}`);
+          currentY += 40; // Khoảng cách giữa các dòng là 50 (250 -> 300 -> 350)
         });
 
         // 5. Kết thúc lệnh in
@@ -293,33 +345,31 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
         return;
       }
     }
-    else if (props.templateType === 'repacking') {
+    else if (props.templateType === 'separate') {
       const printData = props.printData;
       let response;
       let qrCodeParams = '';
 
       // 1. Phân loại Keo Trộn (Mixed) hay Keo Không Trộn (No Mix) dựa vào key của printData
-      if (printData.rePackingGlueId) {
-        // --- LOGIC CHO KEO TRỘN ---
+      if (printData.separateGlueId) {
+        // --- LOGIC CHO KEO CHIẾT ---
         const payloadMix = {
           factoryId: authStore.user?.factoryId,
-          rePackingGlueId: printData.rePackingGlueId,
-          requestDetailId: printData.requestDetailId
+          separateGlueId: printData.separateGlueId
         };
 
-        response = await rePackingGlue.postConfirmRPG(payloadMix);
-        qrCodeParams = `${payloadMix.factoryId}/${payloadMix.rePackingGlueId}/${payloadMix.requestDetailId}`;
+        response = await separateGlue.postConfirmSG(payloadMix);
+        qrCodeParams = `${payloadMix.factoryId}/${payloadMix.separateGlueId}`;
 
-      } else if (printData.noRePackingGlueId) {
-        // --- LOGIC CHO KEO KHÔNG TRỘN ---
+      } else if (printData.noSeparateGlueId) {
+        // --- LOGIC CHO KEO KHÔNG CHIẾT ---
         const payloadNoMix = {
           factoryId: authStore.user?.factoryId,
-          noRePackingGlueId: printData.noRePackingGlueId,
-          workOrderMasterId: printData.workOrderMasterId
+          noSeparateGlueId: printData.noSeparateGlueId
         };
 
-        response = await rePackingGlue.postConfirmNRPG(payloadNoMix);
-        qrCodeParams = `${payloadNoMix.factoryId}/${payloadNoMix.noRePackingGlueId}/${payloadNoMix.workOrderMasterId}`;
+        response = await separateGlue.postConfirmNSG(payloadNoMix);
+        qrCodeParams = `${payloadNoMix.factoryId}/${payloadNoMix.noSeparateGlueId}`;
       } else {
         alert("Dữ liệu in không hợp lệ!");
         isPrinting.value = false;
@@ -335,16 +385,18 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
 
         // Khởi tạo TSPL với tọa độ chuẩn
         tspl = `
-SIZE 75 mm, 50 mm
-GAP 0 mm, 0 mm
+SIZE 69 mm, 49 mm
+GAP 3 mm, 0 mm
 REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 10,40,H,3,A,0,"${domainApi}${action}/${qrCodeParams}"
-TEXT 200,100,"ARIAL.TTF",0,12,12,"Từ: ${formattedStart}"
-TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
+QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${qrCodeParams}"
 `;
+        tspl += tsplBoldText(200, 80, 'Từ:');
+        tspl += tsplBoldText(200, 120, formattedStart);
+        tspl += tsplBoldText(200, 160, 'Đến:');
+        tspl += tsplBoldText(200, 200, formattedEnd);
 
         // Thuật toán gom dòng cho Hình thể
         const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
@@ -370,10 +422,10 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
           lines[MAX_LINES - 1] = lines[MAX_LINES - 1] + " ...";
         }
 
-        let currentY = 230;
+        let currentY = 240;
         lines.forEach((lineText: string, index: number) => {
           const prefix = index === 0 ? "Hình thể: " : "          ";
-          tspl += `TEXT 10,${currentY},"ARIAL.TTF",0,12,12,"${prefix}${lineText}"\n`;
+          tspl += tsplBoldText(15, currentY, `${prefix}${lineText}`);
           currentY += 40;
         });
 
@@ -398,16 +450,7 @@ TEXT 200,150,"ARIAL.TTF",0,12,12,"Đến: ${formattedEnd}"
     bt.write(dataArray.buffer, () => {
       console.log(`Đã in thành công mẫu: ${props.templateType}`);
       isPrinting.value = false;
-
-      // --- ĐOẠN RẼ NHÁNH CHUYỂN TRANG CỦA BẠN Ở ĐÂY ---
-      // if (props.templateType === 'mix_glue') {
-      //   router.replace('/list-qip-confirm-mix-glue');
-      // } else if (props.templateType === 'repacking') {
-      //   router.replace('/list-qip-confirm-repacking-mixed-glue');
-      // }
-
       emit('printSuccess');
-
     }, (err: any) => {
       console.log("Lỗi in: " + JSON.stringify(err));
       status.value = 'disconnected';

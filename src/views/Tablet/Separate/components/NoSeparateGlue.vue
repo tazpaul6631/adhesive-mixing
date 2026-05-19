@@ -1,12 +1,12 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="700px" stripedRows
-      class="modern-table" tableStyle="width: 100%; table-layout: fixed;" @row-click="(e) => $emit('row-click', e)"
-      selectionMode="single" dataKey="materialCode" :selection="selectedItem"
+    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="190px" stripedRows
+      class="modern-table" tableStyle="min-width: 800px; width: 100%; table-layout: fixed;"
+      @row-click="(e) => $emit('row-click', e)" selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
 
       <template #empty>
-        <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+        <div style="text-align: center; padding: 1rem; height: 100%; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
         </div>
@@ -39,7 +39,7 @@
         </template>
       </Column>
 
-      <Column header="TL thực tế (Kg)" style="width: 13%; height: 60px">
+      <Column header="TL thực tế" style="width: 13%; height: 60px">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else
@@ -60,7 +60,8 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
-            <i v-if="data.weighingTime" class="pi pi-clock text-xs mr-1"></i>{{ data.weighingTime }}
+            <i v-if="data.weighingTime" class="pi pi-clock text-xs mr-1"></i>
+            {{ data.weighingTime ? format.formatDate(data.weighingTime) : '' }}
           </span>
         </template>
       </Column>
@@ -85,6 +86,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import format from '@/mixins/format';
 
 defineProps<{
   isLoading: boolean;

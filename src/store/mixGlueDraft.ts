@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 
+import storageService from '@/services/storage.service';
+
 export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
   state: () => ({
     // Lưu draft theo workOrderMasterId làm key để có thể lưu nhiều đơn đang dở dang
@@ -17,5 +19,11 @@ export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
     }
   },
   // Kích hoạt plugin persistedstate để dữ liệu không mất khi kill app
-  persist: true,
+  persist: {
+    key: 'mix_glue_drafts_storage',
+    storage: {
+      getItem: async (key: string) => await storageService.get(key, false, true),
+      setItem: async (key: string, value: string) => await storageService.set(key, value, true),
+    } as any,
+  },
 });
