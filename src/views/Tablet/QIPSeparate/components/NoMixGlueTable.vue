@@ -6,12 +6,12 @@
       </span>
     </div>
     <div class="overflow-x-auto border-round-bottom-xl">
-      <DataTable :value="items" lazy :totalRecords="totalRecords" @page="onPage" scrollable scrollHeight="500px"
+      <DataTable :value="items" lazy :totalRecords="totalRecords" @page="onPage" scrollable scrollHeight="420px"
         stripedRows class="modern-table" tableStyle="width: 100%; min-width: 800px;" @row-click="onRowClick"
         :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]" selectionMode="single"
-        v-model:selection="localSelected" dataKey="noRePackingGlueId">
+        v-model:selection="localSelected" dataKey="noSeparateGlueId">
         <template #empty>
-          <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+          <div style="text-align: center; padding: 3.3rem; height: 330px; align-content: center;">
             <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
             <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
           </div>
@@ -62,7 +62,8 @@ import { ref, watch } from 'vue';
 import format from '@/mixins/format';
 
 const props = defineProps({
-  items: { type: Array, required: true },
+  // Sửa dòng này: Thêm default: () => [] để dù cha có truyền nhầm null thì con vẫn tự bọc lại thành mảng
+  items: { type: Array, required: true, default: () => [] },
   totalRecords: { type: Number, default: 0 },
   isLoading: { type: Boolean, default: false },
   rowsPerPage: { type: Number, default: 20 },

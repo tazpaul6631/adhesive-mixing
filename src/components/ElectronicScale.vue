@@ -27,8 +27,8 @@
         </div>
       </div>
 
-      <Button :disabled="!isConnected || !isStable || isExceedingLimit" label="Xác nhận" icon="pi pi-check" size="large"
-        severity="success" @click="confirmWeight" />
+      <Button :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm" label="Xác nhận"
+        icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
     </div>
   </div>
 </template>
@@ -45,7 +45,8 @@ const props = defineProps({
   targetWeight: { type: [Number, String], default: 0 },
   lowerTolerance: { type: [Number, String], default: '' },
   upperTolerance: { type: [Number, String], default: '' },
-  weightUnit: { type: [Number, String], default: '' }
+  weightUnit: { type: [Number, String], default: '' },
+  disableConfirm: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
@@ -75,34 +76,29 @@ const { globalWeight, isGlobalConnected, isGlobalStable, startAutoConnect, stopA
 const isConnected = computed(() => isGlobalConnected.value);
 const isStable = computed(() => isGlobalStable.value);
 
-// --- CÁC WATCHER ĐỂ ĐỒNG BỘ UI VÀ EMIT (Thay thế logic lắng nghe Serial cũ) ---
-watch(isGlobalConnected, (newStatus) => {
-  emit('connection-status', newStatus);
-});
-
-// Khi cân gửi số mới về -> cập nhật UI -> Emit ra cho component cha
-watch(globalWeight, (newWeight) => {
-  mixingProcess.value.weight = newWeight;
-  emit('update:weight', newWeight);
-});
-
-// --- WATCH TARGET WEIGHT (GIỮ NGUYÊN 100%) ---
-watch(
-  () => props.targetWeight,
-  (newTargetWeight) => {
-    if (newTargetWeight !== undefined && newTargetWeight !== null) {
-      const formattedWeight = Number(newTargetWeight).toFixed(3);
-      mixingProcess.value.weight = formattedWeight;
-      emit('update:weight', formattedWeight);
-    }
-  },
-  { immediate: true }
-);
-
 // --- LOGIC KIỂM TRA & XÁC NHẬN ---
 const isKgUnit = computed(() => {
   return props.weightUnit?.toString().toLowerCase() === 'kg';
 });
+
+// --- CÁC WATCHER ĐỂ ĐỒNG BỘ UI VÀ EMIT ---
+watch(isGlobalConnected, (newStatus) => {
+  emit('connection-status', newStatus);
+});
+
+// Khi cân gửi số mới về hoặc đơn vị cân thay đổi -> cập nhật UI -> Emit ra cho component cha
+watch([globalWeight, isKgUnit], ([newWeight, isKg]) => {
+  if (isKg) {
+    mixingProcess.value.weight = newWeight as string;
+    emit('update:weight', newWeight);
+  } else {
+    // globalWeight từ useScaleManager luôn ở dạng Kg
+    // Nếu đơn vị là 'g' (gram) thì cần nhân 1000
+    const weightInGrams = (parseFloat((newWeight as string) || "0") * 1000).toFixed(3);
+    mixingProcess.value.weight = weightInGrams;
+    emit('update:weight', weightInGrams);
+  }
+}, { immediate: true });
 
 const isExceedingLimit = computed(() => {
   const currentWeight = parseFloat(mixingProcess.value.weight || '0');

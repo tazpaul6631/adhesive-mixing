@@ -7,23 +7,16 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>List Re-Packing Mixed Glue</ion-title>
+        <ion-title>List Separate Mixed Glue</ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content class="ion-padding" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
-
-        <!-- <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div class="flex flex-wrap align-items-center justify-content-between">
-            <user-avatar />
-          </div>
-        </div> -->
-
         <div class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-list mr-2"></i>List Re-Packing Mixed Glue
+              <i class="pi pi-list mr-2"></i>List Separate Mixed Glue
             </span>
           </div>
 
@@ -81,7 +74,6 @@
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
-      <BackToTop slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
@@ -92,8 +84,6 @@ import {
   onIonViewWillEnter
 } from '@ionic/vue';
 import { ref } from 'vue';
-import UserAvatar from '@/components/UserAvatar.vue';
-import BackToTop from '@/components/BackToTop.vue';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
@@ -102,17 +92,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const authStore = useAuthStore();
 
-const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
 const selectedItem = ref<any>(null);
-
-const handleScroll = (event: CustomEvent) => {
-  showScrollButton.value = event.detail.scrollTop > 100;
-};
-
-const scrollToTop = () => {
-  contentRef.value?.$el?.scrollToTop(500);
-};
 
 export interface WorkOrderMaster {
   orderDetails: any[];
@@ -161,7 +141,7 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
   if (workOrderMasterId) {
     router.push({
-      path: '/repacking-mixed-glue-management',
+      path: '/separate-mixed-glue-management',
       query: { workOrderMasterId: workOrderMasterId }
     });
   } else {
@@ -178,7 +158,7 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
       factoryId: authStore.user?.factoryId,
       mixGlueComplete: true,
       qipConfirm: true,
-      rePackingGlueComplete: false,
+      separateGlueComplete: false,
       page: page,
       pageSize: pageSize
     };

@@ -73,6 +73,7 @@ import { ref, onMounted } from 'vue';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
+import dayjs from "dayjs";
 
 defineProps<{
   isLoading: boolean;
@@ -89,13 +90,15 @@ const bucketList = ref<any[]>([]);
 const handleBucketChange = (rowData: any) => {
   if (rowData.selectedBucketId) {
     // Nếu có chọn thùng thì gán thông tin
-    rowData.operator = authStore.user?.employeeName || 'Chưa xác định';
-    const now = new Date().toISOString();
+    rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
+    rowData.operatorId = authStore.user?.employeeId || '';
+    const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
     rowData.confirmTime = format.formatDate(now);
     rowData.confirmDate = now;
   } else {
     // Nếu clear thùng (chọn lại placeholder) thì xóa thông tin
     rowData.operator = '';
+    rowData.operatorId = '';
     rowData.confirmTime = null;
     rowData.confirmDate = null;
   }

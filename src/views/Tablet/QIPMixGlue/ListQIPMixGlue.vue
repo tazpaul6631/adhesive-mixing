@@ -11,7 +11,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content class="ion-padding" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
 
         <!-- <div class="surface-card p-3 shadow-1 border-round-xl">
@@ -81,7 +81,6 @@
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
-      <BackToTop slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
@@ -93,7 +92,6 @@ import {
 } from '@ionic/vue';
 import { ref } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
-import BackToTop from '@/components/BackToTop.vue';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
@@ -102,17 +100,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const authStore = useAuthStore();
 
-const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
 const selectedItem = ref<any>(null);
-
-const handleScroll = (event: CustomEvent) => {
-  showScrollButton.value = event.detail.scrollTop > 100;
-};
-
-const scrollToTop = () => {
-  contentRef.value?.$el?.scrollToTop(500);
-};
 
 export interface WorkOrderMaster {
   orderDetails: any[];

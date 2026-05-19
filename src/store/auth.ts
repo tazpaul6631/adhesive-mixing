@@ -40,7 +40,9 @@ export const useAuthStore = defineStore('auth', {
 
       localStorage.removeItem('web_token_backup');
 
-      await storageService.clear();
+      // Tạm thời comment await storageService.clear() nếu không muốn mất dữ liệu drafts của user hiện tại
+      // Hoặc chỉ gọi localStorage.clear(), sessionStorage.clear() 
+      // await storageService.clear();
 
       router.push('/login');
     }

@@ -11,7 +11,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content class="ion-padding" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
 
         <!-- <div class="surface-card p-3 shadow-1 border-round-xl">
@@ -75,13 +75,20 @@
                     format.formatDate(data.createDate) : '' }}</span>
                 </template>
               </Column>
+
+              <Column header="Xác nhận" :exportable="false" bodyStyle="text-align: center"
+                style="width: 15%; height: 60px;">
+                <template #body="{ data }">
+                  <Button v-if="data.mixGlueConfirm" icon="pi pi-check-circle" severity="success" size="large"
+                    @click.stop="handleConfirm(data.workOrderMasterId)" />
+                </template>
+              </Column>
             </DataTable>
           </div>
         </div>
 
         <div class="h-3rem flex-shrink-0"></div>
       </div>
-      <BackToTop slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
@@ -92,27 +99,20 @@ import {
   onIonViewWillEnter
 } from '@ionic/vue';
 import { ref } from 'vue';
-import UserAvatar from '@/components/UserAvatar.vue';
-import BackToTop from '@/components/BackToTop.vue';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
 import { useRouter } from 'vue-router';
+import { useToast } from 'primevue/usetoast';
+import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
+import mixGlueApi from '@/api/mixGlue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-const contentRef = ref<any>(null);
-const showScrollButton = ref(false);
 const selectedItem = ref<any>(null);
-
-const handleScroll = (event: CustomEvent) => {
-  showScrollButton.value = event.detail.scrollTop > 100;
-};
-
-const scrollToTop = () => {
-  contentRef.value?.$el?.scrollToTop(500);
-};
+const toast = useToast();
+const draftStore = useMixGlueDraftStore();
 
 export interface WorkOrderMaster {
   orderDetails: any[];
@@ -133,6 +133,7 @@ export interface WorkOrderMaster {
   isNoMixGlue: boolean;
   mixGlueComplete: boolean;
   qipConfirm: boolean;
+  mixGlueConfirm: boolean;
 }
 
 export interface PagedResult<T> {
@@ -166,6 +167,28 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
     });
   } else {
     console.warn('workOrderMasterId is missing in the clicked row data');
+  }
+};
+
+// Hàm xử lý gửi API khi bấm nút
+const handleConfirm = async (workOrderMasterId: string) => {
+  const draftData = draftStore.getDraft(workOrderMasterId);
+  console.log(draftData);
+
+  try {
+    const payload = {
+      factoryId: authStore.user?.factoryId,
+      workOrderMasterId: workOrderMasterId,
+      hourlyValidity: draftData.hourlyValidity
+    }
+    await mixGlueApi.postMGMConfirmComplete(payload);
+
+    toast.add({ severity: 'success', summary: 'Hoàn thành', detail: 'Đã xác nhận đơn hàng!', life: 3000 });
+    draftStore.clearDraft(workOrderMasterId);
+    fetchWorkOrders(currentPage.value, rowsPerPage.value);
+  } catch (error) {
+    console.error(error);
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Xác nhận thất bại!', life: 3000 });
   }
 };
 

@@ -45,13 +45,13 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/list-repacking-mixed-glue-management',
-    component: () => import('@/views/Tablet/RePacking/ListRepackingMixedglue.vue'),
+    path: '/list-separate-mixed-glue-management',
+    component: () => import('@/views/Tablet/Separate/ListSeparateMixedglue.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/repacking-mixed-glue-management',
-    component: () => import('@/views/Tablet/RePacking/RePackingMixedGlueManagement.vue'),
+    path: '/separate-mixed-glue-management',
+    component: () => import('@/views/Tablet/Separate/SeparateMixedGlueManagement.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -65,13 +65,13 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/list-qip-confirm-repacking-mixed-glue',
-    component: () => import('@/views/Tablet/QIPRePacking/ListQIPConfirmRePackingMixedGlue.vue'),
+    path: '/list-qip-confirm-separate-mixed-glue',
+    component: () => import('@/views/Tablet/QIPSeparate/ListQIPConfirmSeparateMixedGlue.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/qip-confirm-repacking-mixed-glue',
-    component: () => import('@/views/Tablet/QIPRePacking/QIPConfirmRePackingMixedGlue.vue'),
+    path: '/qip-confirm-separate-mixed-glue',
+    component: () => import('@/views/Tablet/QIPSeparate/QIPConfirmSeparateMixedGlue.vue'),
     meta: { requiresAuth: true }
   },
   {

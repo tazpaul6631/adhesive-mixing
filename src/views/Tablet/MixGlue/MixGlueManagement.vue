@@ -11,14 +11,13 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content class="ion-padding" :scroll-events="true">
       <Toast position="top-right" />
 
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
           <div class="flex flex-wrap align-items-center justify-content-between">
-            <!-- <user-avatar /> -->
             <div v-show="hidenTable1" class="grid formgrid p-fluid flex">
               <div class="col-12 sm:col-6 lg:col-4">
                 <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
@@ -36,25 +35,10 @@
             <div class="flex gap-2">
               <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
                 @click="handleHidenTable1" />
-              <Button icon="pi pi-save" outlined size="large" @click="handleSaveDraft" />
-              <Button icon="pi pi-check-circle" severity="success" size="large" @click="handleComplete" />
+              <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" size="large"
+                @click="handleComplete" />
             </div>
           </div>
-
-          <!-- <div v-show="hidenTable1" class="grid formgrid p-fluid">
-            <div class="col-12 sm:col-6 lg:col-4">
-              <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
-              <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-4">
-              <label class="text-800 font-medium mb-1 block">Keo</label>
-              <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
-            </div>
-            <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
-              <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
-              <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
-            </div>
-          </div> -->
         </div>
 
         <!-- BẢNG 1 -->
@@ -76,7 +60,7 @@
               </span>
             </div>
 
-            <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
+            <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">Mã thành phần</label>
@@ -87,12 +71,13 @@
                 <ElectronicScale :weight-unit="activeComponent?.weightUnit"
                   :target-weight="activeComponent?.requiredWeight ?? 0"
                   :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
-                  :upper-tolerance="activeComponent?.upperTolerance ?? ''" @update:weight="handleWeightChange"
+                  :upper-tolerance="activeComponent?.upperTolerance ?? ''"
+                  :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
               </div>
             </div>
 
-            <div class="overflow-x-auto border-round-bottom-xl">
+            <div class="border-round-bottom-xl">
               <div ref="table2Ref" class="table-wrapper">
                 <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
                   :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
@@ -106,10 +91,7 @@
             </div>
           </div>
         </transition>
-
-        <div class="h-3rem flex-shrink-0"></div>
       </div>
-      <BackToTop slot="fixed" :showScrollButton="showScrollButton" @scrollToTop="scrollToTop" />
     </ion-content>
   </ion-page>
 </template>
@@ -127,28 +109,18 @@ import UI from '@/mixins/present';
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
-dayjs.extend(customParseFormat);
-
-const VI_FORMATS = [
-  "DD/MM/YYYY, HH:mm:ss",
-  "DD/MM/YYYY HH:mm:ss",
-  "DD/MM/YYYY"
-];
-
 import { useAuthStore } from '@/store/auth';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import workOrder from '@/api/workOrder';
 import materialApi from '@/api/material';
 import mixGlueApi from '@/api/mixGlue';
 
-import BackToTop from '@/components/BackToTop.vue';
-import UserAvatar from '@/components/UserAvatar.vue';
 import ElectronicScale from '@/components/ElectronicScale.vue';
-import format from '@/mixins/format';
 import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable.vue';
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
 
+dayjs.extend(customParseFormat);
 // ============================================================================
 // 1. INTERFACES & TYPES (Updated to match the new JSON structure)
 // ============================================================================
@@ -189,6 +161,7 @@ interface ComponentDetail {
   requiredWeight?: string;
   actualWeight?: string;
   operator?: string;
+  operatorId?: string;
   weighingTime?: string;
 }
 
@@ -217,6 +190,7 @@ const isLoadingLine = ref(true);
 const isLoadingComponent = ref(true);
 const hourlyValidity = ref<string>('0');
 const hidenTable1 = ref(false);
+const mixGlueConfirm = ref(false);
 
 watch(componentDetailsFull, () => {
   if (!isLoadingComponent.value) isDirty.value = true;
@@ -224,7 +198,6 @@ watch(componentDetailsFull, () => {
 
 const fetchWorkOrderDetail = async (id: string) => {
   resetState();
-
   isLoadingLine.value = true;
   isLoadingComponent.value = true;
   currentWorkOrderId.value = id;
@@ -234,18 +207,21 @@ const fetchWorkOrderDetail = async (id: string) => {
     const existingDraft = draftStore.getDraft(id);
 
     if (existingDraft && existingDraft.componentDetailsFull?.length > 0) {
-      // 2. NẾU CÓ DRAFT: Khôi phục dữ liệu từ Draft
       headerInfo.value = existingDraft.headerInfo;
       componentDetailsFull.value = existingDraft.componentDetailsFull;
 
-      selectedItem.value = componentDetailsFull.value[0];
-      activeComponent.value = { ...componentDetailsFull.value[0] };
-      mixingProcess.value.component = componentDetailsFull.value[0].materialName || '';
+      const firstUnconfirmed = componentDetailsFull.value.find(item => !item.weighingTime) || componentDetailsFull.value[0];
+      selectedItem.value = firstUnconfirmed;
+      activeComponent.value = { ...firstUnconfirmed };
+      mixingProcess.value.component = firstUnconfirmed.materialName || '';
+
+      await scrollToActiveRow();
 
       const { data } = await workOrder.getWorkOrder(id, 1);
       if (data?.success) {
         lineDetails.value = data.data.orderDetails || [];
         hourlyValidity.value = data.data.hourlyValidity || '0';
+        mixGlueConfirm.value = data.data.mixGlueConfirm;
       }
 
       toast.add({
@@ -259,6 +235,8 @@ const fetchWorkOrderDetail = async (id: string) => {
       const { data } = await workOrder.getWorkOrder(id, 1);
       if (data?.success) {
         const respData = data.data;
+        mixGlueConfirm.value = respData.mixGlueConfirm;
+        console.log(mixGlueConfirm.value);
 
         hourlyValidity.value = respData.hourlyValidity || '0';
 
@@ -307,9 +285,16 @@ const finalizeLoading = async () => {
   isDirty.value = false;
 };
 
-const buildPayload = (recordStatus: string) => {
+type BuildPayloadOpts = { onlyProgressLines?: boolean };
+
+const buildPayload = (recordStatus: string, opts?: BuildPayloadOpts) => {
   const factoryId = authStore.user?.factoryId || '';
   const employeeId = authStore.user?.employeeId || '';
+
+  let rows = componentDetailsFull.value;
+  if (opts?.onlyProgressLines) {
+    rows = rows.filter(item => !!item.weighingTime || Number(item.actualWeight) > 0);
+  }
 
   return {
     factoryId: factoryId,
@@ -318,16 +303,16 @@ const buildPayload = (recordStatus: string) => {
     hourlyValidity: Number(hourlyValidity.value),
     createrId: employeeId,
     updaterId: employeeId,
-    mixGlues: componentDetailsFull.value.map(item => ({
+    mixGlues: rows.map(item => ({
       factoryId: factoryId,
       materialCode: item.materialCode || 0,
       mixGlueWeight: Number(item.actualWeight) || 0,
       mixGlueWeightUnit: item.weightUnit || 'Kg',
       glueExtra: item.glueExtra || false,
       recordStatus: recordStatus,
-      createrId: employeeId,
-      updaterId: employeeId,
-      weightCompleteDate: item.weighingTime ? dayjs(item.weighingTime, VI_FORMATS).toISOString() : null
+      createrId: item.operatorId || employeeId,
+      updaterId: item.operatorId || employeeId,
+      weightCompleteDate: item.weighingTime ? dayjs(item.weighingTime).format('YYYY-MM-DDTHH:mm:ss.SSS') : null
     }))
   };
 };
@@ -336,66 +321,39 @@ const handleHidenTable1 = () => {
   hidenTable1.value = !hidenTable1.value;
 };
 
-const handleSaveDraft = async () => {
+const handleComplete = async () => {
   const isIncomplete = componentDetailsFull.value.some(
     item => !item.actualWeight || Number(item.actualWeight) <= 0
   );
 
   if (isIncomplete) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Cảnh báo',
-      detail: 'Vui lòng thực hiện cân đầy đủ tất cả các thành phần trước khi xác nhận hoàn thành!',
-      life: 4000
-    });
+    toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng cân đầy đủ...', life: 4000 });
     return;
   }
 
   try {
+    const payloadToSubmit = buildPayload("1");
+
+    await mixGlueApi.postMixGlueCommand(payloadToSubmit);
+
     draftStore.saveDraft(currentWorkOrderId.value, {
       headerInfo: headerInfo.value,
-      componentDetailsFull: componentDetailsFull.value
+      componentDetailsFull: componentDetailsFull.value,
+      hourlyValidity: hourlyValidity.value
     });
 
-    const payload = buildPayload("0");
-    await mixGlueApi.postMixGlueCommand(payload);
-
     isDirty.value = false;
-    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu bản nháp lên server', life: 3000 });
-  } catch (error) {
-    console.error(error);
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể lưu bản nháp', life: 3000 });
-  }
-};
-
-const handleComplete = async () => {
-  // 1. KIỂM TRA CÁC CỘT BẮT BUỘC 
-  const isIncomplete = componentDetailsFull.value.some(
-    item => !item.actualWeight || Number(item.actualWeight) <= 0
-  );
-
-  if (isIncomplete) {
     toast.add({
-      severity: 'warn',
-      summary: 'Cảnh báo',
-      detail: 'Vui lòng thực hiện cân đầy đủ tất cả các thành phần trước khi xác nhận hoàn thành!',
-      life: 4000
+      severity: 'success',
+      summary: 'Lưu thành công',
+      detail: 'Dữ liệu đã được lưu. Vui lòng ra danh sách để Xác nhận!',
+      life: 3000
     });
-    return;
-  }
 
-  // 2. GỬI API
-  try {
-    const payload = buildPayload("1");
-    await mixGlueApi.postMixGlueCommand(payload);
-
-    draftStore.clearDraft(currentWorkOrderId.value);
-    isDirty.value = false;
-    toast.add({ severity: 'success', summary: 'Hoàn thành', detail: 'Đã gửi dữ liệu thành công', life: 3000 });
     router.push('/list-mix-glue');
   } catch (error) {
     console.error(error);
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể xác nhận hoàn thành', life: 3000 });
+    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể lưu dữ liệu', life: 3000 });
   }
 };
 
@@ -408,9 +366,16 @@ const activeComponent = ref<ComponentDetail | null>(null);
 const onRowClick = (event: { data: ComponentDetail }) => {
   if (isLoadingComponent.value || !event.data?.materialName) return;
 
+  // Chặn không cho chọn lại dòng đã có thông tin thời gian cân (đã xác nhận)
+  if (event.data.weighingTime) {
+    // toast.add({ severity: 'info', summary: 'Thông báo', detail: 'Thành phần này đã được cân và xác nhận.', life: 3000 });
+    return;
+  }
+
   mixingProcess.value.component = event.data.materialName;
   const rowIndex = componentDetailsFull.value.findIndex(item => item === event.data);
   activeComponent.value = { ...event.data };
+  selectedItem.value = event.data; // Lưu ý: Cần gán selectedItem để bảng Highlight đúng dòng
 
   if (rowIndex === 0) {
     activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
@@ -421,7 +386,37 @@ const handleWeightChange = (newWeight: string) => {
   mixingProcess.value.weight = newWeight;
 };
 
-const handleConfirmWeight = (actualWeight: string) => {
+const scrollToActiveRow = async () => {
+  // Dùng setTimeout để nhường 1 nhịp cho Vue render lại bảng
+  setTimeout(() => {
+    if (!table2Ref.value || !activeComponent.value) return;
+
+    // 1. Tìm vị trí (index) của dòng đang được active trong mảng dữ liệu
+    const index = componentDetailsFull.value.findIndex(
+      item => item.materialName === activeComponent.value?.materialName
+    );
+
+    if (index !== -1) {
+      // 2. Tìm thẻ tbody chứa các dòng dữ liệu của PrimeVue DataTable
+      const tbody = table2Ref.value.querySelector('.p-datatable-tbody');
+
+      if (tbody) {
+        // Lấy tất cả các thẻ tr (dòng) bên trong tbody
+        const rows = tbody.querySelectorAll('tr');
+
+        if (rows && rows[index]) {
+          const activeRow = rows[index];
+
+          // 3. Cuộn bảng đến dòng được active
+          // Dùng scrollIntoView với block: 'center' để dòng luôn nằm giữa màn hình bảng
+          activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }, 100);
+};
+
+const handleConfirmWeight = async (actualWeight: string) => { // Thêm async ở đây
   if (!activeComponent.value) return;
 
   const index = componentDetailsFull.value.findIndex(
@@ -430,23 +425,60 @@ const handleConfirmWeight = (actualWeight: string) => {
 
   if (index !== -1) {
     componentDetailsFull.value[index].actualWeight = actualWeight;
-    componentDetailsFull.value[index].operator = authStore.user?.employeeName || 'Chưa xác định';
-    componentDetailsFull.value[index].weighingTime = format.formatDate(new Date().toISOString());
+    componentDetailsFull.value[index].operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
+    componentDetailsFull.value[index].operatorId = authStore.user?.employeeId || '';
+    componentDetailsFull.value[index].weighingTime = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
 
     const baseItem = componentDetailsFull.value[0];
     const baseActualWeight = Number(baseItem.actualWeight || '0');
     const baseMixingRatio = Number(baseItem.mixingRatio || '100');
 
     if (baseActualWeight > 0) {
+      const baseUnit = baseItem.weightUnit?.toLowerCase() || 'kg';
+
       componentDetailsFull.value.forEach((item, i) => {
         if (i !== 0) {
           const currentRatio = Number(item.mixingRatio || '0');
-          const newRequiredWeight = (currentRatio * baseActualWeight) / baseMixingRatio;
+          let newRequiredWeight = (currentRatio * baseActualWeight) / baseMixingRatio;
+
+          // Xử lý khác biệt đơn vị giữa thành phần gốc và thành phần hiện tại
+          const currentUnit = item.weightUnit?.toLowerCase() || 'kg';
+          if (baseUnit === 'kg' && currentUnit === 'g') {
+            newRequiredWeight *= 1000;
+          } else if (baseUnit === 'g' && currentUnit === 'kg') {
+            newRequiredWeight /= 1000;
+          }
+
           item.requiredWeight = (newRequiredWeight.toFixed(3)) || '';
         }
       });
     }
-    activeComponent.value = { ...componentDetailsFull.value[index] };
+
+    // 2. TỰ ĐỘNG CHUYỂN DÒNG TIẾP THEO VÀ SCROLL
+    const nextIndex = componentDetailsFull.value.findIndex(item => !item.weighingTime);
+
+    if (nextIndex !== -1) {
+      const nextItem = componentDetailsFull.value[nextIndex];
+      selectedItem.value = nextItem;
+      activeComponent.value = { ...nextItem };
+      mixingProcess.value.component = nextItem.materialName || '';
+
+      if (nextIndex === 0) {
+        activeComponent.value.requiredWeight = headerInfo.value.totalWeight;
+      }
+
+      // Gọi hàm scroll
+      await scrollToActiveRow();
+
+    } else {
+      activeComponent.value = { ...componentDetailsFull.value[index] };
+      toast.add({ severity: 'success', summary: 'Hoàn tất', detail: 'Đã cân xong tất cả các thành phần.', life: 4000 });
+    }
+
+    draftStore.saveDraft(currentWorkOrderId.value, {
+      headerInfo: headerInfo.value,
+      componentDetailsFull: componentDetailsFull.value
+    });
   }
 };
 
@@ -475,9 +507,19 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
   const baseMixingRatio = Number(baseItem?.mixingRatio || '100');
   const newPercentage = Number(newComponentData.percentage || '0');
 
-  const calculatedRequiredWeight = baseMixingRatio > 0
+  let calculatedRequiredWeight = baseMixingRatio > 0
     ? (newPercentage * baseActualWeight) / baseMixingRatio
     : 0;
+
+  // Xử lý khác biệt đơn vị
+  const baseUnit = baseItem?.weightUnit?.toLowerCase() || 'kg';
+  const currentUnit = newComponentData.weightUnit?.toLowerCase() || 'kg';
+
+  if (baseUnit === 'kg' && currentUnit === 'g') {
+    calculatedRequiredWeight *= 1000;
+  } else if (baseUnit === 'g' && currentUnit === 'kg') {
+    calculatedRequiredWeight /= 1000;
+  }
 
   componentDetailsFull.value.push({
     materialName: newComponentData.name,
@@ -486,6 +528,7 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
     requiredWeight: calculatedRequiredWeight > 0 ? calculatedRequiredWeight.toFixed(3) : '',
     actualWeight: '',
     operator: '',
+    operatorId: '',
     weighingTime: '',
     lowerTolerance: '',
     upperTolerance: '',
@@ -494,6 +537,11 @@ const handleSaveNewComponent = (newComponentData: { name: string, percentage: st
     mixGlue: true,
     noMixGlue: false,
     factoryId: authStore.user?.factoryId || ''
+  });
+
+  draftStore.saveDraft(currentWorkOrderId.value, {
+    headerInfo: headerInfo.value,
+    componentDetailsFull: componentDetailsFull.value
   });
 
   toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã thêm thành phần mới', life: 3000 });
@@ -548,59 +596,80 @@ const fetchMaterials = async () => {
 };
 
 // ============================================================================
-// 6. UI & SCROLL CHUNKS
+// 6. UI CHUNKS
 // ============================================================================
-const contentRef = ref<any>(null);
 const table2Ref = ref<HTMLDivElement | null>(null);
-const showScrollButton = ref(false);
-
-const handleScroll = (event: CustomEvent) => {
-  showScrollButton.value = event.detail.scrollTop > 100;
-};
-
-const scrollToTop = () => {
-  contentRef.value?.$el?.scrollToTop(500);
-};
 
 // ============================================================================
 // 7. NAVIGATION & GUARDS (CHẶN THOÁT)
 // ============================================================================
-const goBack = () => router.back();
-
-const alertKhongChoPhepThoat = async (nextFunction?: any) => {
-  const alert = await alertController.create({
-    header: 'Cảnh báo chưa lưu',
-    message: 'Dữ liệu chưa được lưu. Bạn có chắc chắn muốn thoát? Dữ liệu đang cân sẽ bị mất.',
-    buttons: [
-      {
-        text: 'Ở lại',
-        role: 'cancel',
-        handler: () => {
-          if (nextFunction) nextFunction(false);
-        }
-      },
-      {
-        text: 'Thoát',
-        role: 'confirm',
-        cssClass: 'text-red-500',
-        handler: () => {
-          draftStore.clearDraft(currentWorkOrderId.value);
-          isDirty.value = false;
-          nextFunction ? nextFunction() : router.back();
-        }
-      }
-    ]
-  });
-
-  await alert.present();
+const goBack = async () => {
+  if (isDirty.value) {
+    const ok = await alertExitPage();
+    if (ok) router.back();
+  } else {
+    router.back();
+  }
 };
 
-useBackButton(10, (processNextHandler) => {
-  isDirty.value ? alertKhongChoPhepThoat() : processNextHandler();
+/** Thoát có đồng bộ server: recordStatus C, chỉ gửi dòng đã cân; bảng chưa làm gì → mixGlues []. Không xóa draft. */
+const alertExitPage = (): Promise<boolean> =>
+  new Promise(resolve => {
+    void (async () => {
+      const alert = await alertController.create({
+        header: 'Cảnh báo chưa lưu',
+        message:
+          'Dữ liệu sẽ được gửi lên máy chủ dạng lưu tiến độ (C). Bản nháp trên máy vẫn được giữ để vào lại tiếp tục làm. Bạn có chắc muốn thoát?',
+        buttons: [
+          { text: 'Ở lại', role: 'cancel', handler: () => resolve(false) },
+          {
+            text: 'Thoát',
+            role: 'confirm',
+            cssClass: 'text-red-500',
+            handler: () => {
+              void (async () => {
+                try {
+                  const payload = buildPayload('C', { onlyProgressLines: true });
+                  await mixGlueApi.postMixGlueCommand(payload);
+                  draftStore.saveDraft(currentWorkOrderId.value, {
+                    headerInfo: headerInfo.value,
+                    componentDetailsFull: componentDetailsFull.value,
+                    hourlyValidity: hourlyValidity.value
+                  });
+                  isDirty.value = false;
+                  resolve(true);
+                } catch (error) {
+                  console.error(error);
+                  toast.add({
+                    severity: 'error',
+                    summary: 'Lỗi',
+                    detail: 'Không thể gửi lưu tiến độ (C) lên server.',
+                    life: 3500
+                  });
+                  resolve(false);
+                }
+              })();
+            }
+          }
+        ]
+      });
+      await alert.present();
+    })();
+  });
+
+useBackButton(10, processNextHandler => {
+  if (!isDirty.value) {
+    processNextHandler();
+    return;
+  }
+  void alertExitPage().then(ok => {
+    if (ok) processNextHandler();
+  });
 });
 
-onBeforeRouteLeave((to, from, next) => {
-  isDirty.value ? alertKhongChoPhepThoat(next) : next();
+onBeforeRouteLeave(async () => {
+  if (!isDirty.value) return true;
+  return await alertExitPage();
 });
 
 // ============================================================================
@@ -615,6 +684,7 @@ const resetState = () => {
   selectedItem.value = null;
   mixingProcess.value = { component: '', weight: '' };
   isDirty.value = false;
+  mixGlueConfirm.value = false;
 };
 
 onIonViewDidEnter(async () => {
