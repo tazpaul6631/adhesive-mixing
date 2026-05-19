@@ -7,35 +7,76 @@
         <div class="form-inner">
           <div class="side-info">
             <img src="/assets/icon/icon.png" alt="Logo" class="form-logo" />
-            <div class="login-header ion-padding">
+            <div class="login-header">
               <h3>Xin chào!</h3>
               <p>Hệ thống phòng pha keo</p>
             </div>
           </div>
 
           <div class="side-form">
-            <div class="scan-instruction shadow-sm">
-              <div class="scan-icon-wrapper">
-                <ion-icon :icon="qrCodeOutline" class="scan-icon pulse-animation"></ion-icon>
-              </div>
-              <h4>Đăng nhập bằng thẻ</h4>
-              <p v-if="!errorLogin">Vui lòng quét mã QR hoặc Mã vạch/Barcode trên thẻ nhân viên của bạn để vào hệ
-                thống.</p>
-              <p v-else class="text-danger">{{ errorMessage }}</p>
+            <template v-if="!isTablet">
+              <div class="scan-instruction shadow-sm">
+                <div class="scan-icon-wrapper">
+                  <i class="pi pi-qrcode scan-icon pulse-animation"></i>
+                </div>
+                <h4>Đăng nhập bằng thẻ</h4>
+                <p v-if="!errorLogin">Vui lòng quét mã QR hoặc Mã vạch/Barcode trên thẻ nhân viên của bạn để vào hệ
+                  thống.</p>
+                <p v-else class="text-danger">{{ errorMessage }}</p>
 
-              <div v-if="code" class="animate__animated animate__fadeIn"
-                :class="errorLogin ? 'scanned-result-error' : 'scanned-result'">
-                <ion-icon :icon="errorLogin ? closeCircleOutline : checkmarkCircleOutline"
-                  :color="errorLogin ? 'danger' : 'success'"></ion-icon>
-                <span>Mã NV: {{ code }}</span>
+                <div v-if="code" class="animate__animated animate__fadeIn"
+                  :class="errorLogin ? 'scanned-result-error' : 'scanned-result'">
+                  <i :class="errorLogin ? 'pi pi-times-circle' : 'pi pi-check-circle'"></i>
+                  <span>Mã NV: {{ code }}</span>
+                </div>
               </div>
-            </div>
 
-            <ion-button expand="block" class="login-btn scan-btn" @click="startScan" :disabled="isLoading">
-              <ion-spinner v-if="isLoading" name="crescent" slot="start"></ion-spinner>
-              <ion-icon v-else slot="start" :icon="cameraOutline"></ion-icon>
-              {{ isLoading ? 'ĐANG XỬ LÝ...' : 'QUÉT MÃ' }}
-            </ion-button>
+              <Button class="login-btn scan-btn w-full" :label="isLoading ? 'ĐANG XỬ LÝ...' : 'QUÉT MÃ'"
+                :icon="isLoading ? undefined : 'pi pi-camera'" :loading="isLoading" @click="startScan" />
+            </template>
+
+            <template v-else>
+              <div class="tablet-login-form shadow-sm">
+                <div class="field-group">
+                  <label for="factory" class="field-label">Công ty</label>
+                  <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
+                    optionValue="value" placeholder="Chọn công ty" class="w-full" :disabled="isLoading" />
+                </div>
+
+                <div class="field-group">
+                  <label for="factory" class="field-label">Nhà máy</label>
+                  <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
+                    optionValue="value" placeholder="Chọn nhà máy" class="w-full" :disabled="isLoading" />
+                </div>
+
+                <div class="field-group">
+                  <label for="username" class="field-label">Tài khoản</label>
+                  <IconField>
+                    <InputIcon class="pi pi-user" />
+                    <InputText id="username" v-model="username" placeholder="Mã số nhân viên" class="w-full"
+                      :disabled="isLoading" />
+                  </IconField>
+                </div>
+
+                <div class="field-group">
+                  <label for="password" class="field-label">Mật khẩu</label>
+                  <IconField>
+                    <InputIcon class="pi pi-lock" />
+                    <InputText id="password" v-model="password" type="password" placeholder="********" class="w-full"
+                      :disabled="isLoading" @keyup.enter="handleTabletLogin" />
+                  </IconField>
+                </div>
+
+                <p v-if="errorLogin" class="text-danger">{{ errorMessage }}</p>
+
+                <div class="tablet-login-actions">
+                  <Button class="tablet-login-btn flex-1" :label="isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP'"
+                    :loading="isLoading" @click="handleTabletLogin" />
+                  <Button class="tablet-scan-btn" icon="pi pi-qrcode" severity="secondary" outlined
+                    :disabled="isLoading" @click="startScan" />
+                </div>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -48,9 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { IonIcon, IonButton, IonSpinner } from '@ionic/vue';
-import { qrCodeOutline, cameraOutline, checkmarkCircleOutline, closeCircleOutline } from 'ionicons/icons';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import employee from '@/api/employee';
 import { useAuthStore } from '@/store/auth';
@@ -58,12 +97,99 @@ import { useRouter } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 
 const code = ref('');
+const username = ref('');
+const password = ref('');
+const selectedFactory = ref('01');
+const factoryOptions = [
+  { label: 'BU1', value: '01' }
+];
 const authStore = useAuthStore();
 const router = useRouter();
 const isNative = Capacitor.isNativePlatform();
+const isTablet = ref(window.innerWidth >= 768);
 const errorLogin = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
+
+const updateDeviceType = () => {
+  isTablet.value = window.innerWidth >= 768;
+};
+
+onMounted(() => {
+  window.addEventListener('resize', updateDeviceType);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateDeviceType);
+});
+
+const navigateAfterLogin = () => {
+  if (isNative) {
+    router.push('/app-menu');
+  } else {
+    router.push('/dashboard');
+  }
+};
+
+const handleLoginResponse = (response: any, loginCode: string) => {
+  if (response.data?.success) {
+    authStore.setAuthData(response.data.data);
+    navigateAfterLogin();
+    return;
+  }
+
+  code.value = loginCode;
+  errorLogin.value = true;
+  errorMessage.value = response.data?.message || 'Đăng nhập thất bại.';
+};
+
+const handleLoginError = (loginCode: string) => {
+  code.value = loginCode;
+  errorLogin.value = true;
+  errorMessage.value = 'Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)';
+};
+
+const handleTabletLogin = async () => {
+  const employeeId = username.value.trim();
+  const employeePassword = password.value;
+
+  if (!employeeId) {
+    alert('Vui lòng nhập tài khoản!');
+    return;
+  }
+
+  if (!employeePassword) {
+    alert('Vui lòng nhập mật khẩu!');
+    return;
+  }
+
+  if (!selectedFactory.value) {
+    alert('Vui lòng chọn nhà máy!');
+    return;
+  }
+
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+
+  isLoading.value = true;
+  errorLogin.value = false;
+  errorMessage.value = '';
+
+  try {
+    const response = await employee.employeeLogin({
+      employeeId,
+      password: employeePassword,
+      factoryId: selectedFactory.value
+    });
+    handleLoginResponse(response, employeeId);
+  } catch (error: any) {
+    console.error('Lỗi gọi API đăng nhập:', error);
+    handleLoginError(employeeId);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const startScan = async () => {
   isLoading.value = true;
@@ -86,12 +212,11 @@ const startScan = async () => {
       if (scannedValue) {
         await processScannedData(scannedValue);
       } else {
-        alert("Mã thẻ không hợp lệ hoặc không có dữ liệu!");
+        alert('Mã thẻ không hợp lệ hoặc không có dữ liệu!');
       }
     }
   } catch (error) {
-    console.error("Lỗi khi quét:", error);
-    alert('Có lỗi xảy ra khi mở camera.');
+    console.error('Lỗi khi quét:', error);
   } finally {
     isLoading.value = false;
   }
@@ -107,50 +232,15 @@ const processScannedData = async (scannedCode: string) => {
 
   try {
     const response = await employee.employeeLogin({ employeeId: scannedCode });
-
-    if (response.data && response.data.success) {
-      authStore.setAuthData(response.data.data);
-
-      if (isNative) {
-        router.push('/app-menu');
-      } else {
-        router.push('/dashboard');
-      }
-    } else {
-      errorLogin.value = true;
-      errorMessage.value = response.data?.message;
-      console.log('Login failed:', errorMessage.value);
-    }
-
-    // const fakeResponse = {
-    //   data: {
-    //     success: true,
-    //     data: {
-    //       employeeId: scannedCode,
-    //       name: 'Nhân viên giả lập',
-    //       token: 'fake-token-bypass-api'
-    //     }
-    //   }
-    // };
-
-    // authStore.setAuthData(fakeResponse.data.data);
-
-    // // Chuyển hướng thẳng dựa trên nền tảng
-    // if (isNative) {
-    //   router.push('/app-menu'); // Vào thẳng App
-    // } else {
-    //   router.push('/dashboard'); // Vào thẳng Web
-    // }
+    handleLoginResponse(response, scannedCode);
   } catch (error: any) {
     console.error('Lỗi gọi API đăng nhập:', error);
-    errorLogin.value = true;
-    errorMessage.value = 'Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)';
+    handleLoginError(scannedCode);
   }
 };
 </script>
 
 <style scoped>
-/* Giữ nguyên toàn bộ CSS của bạn */
 .mobile-login-wrapper {
   background: #f4f7f9;
   min-height: 100vh;
@@ -259,8 +349,8 @@ const processScannedData = async (scannedCode: string) => {
 }
 
 .scan-icon {
-  font-size: 40px;
-  color: var(--ion-color-primary);
+  font-size: 2.5rem;
+  color: var(--p-primary-color, #3880ff);
 }
 
 .pulse-animation {
@@ -327,17 +417,61 @@ const processScannedData = async (scannedCode: string) => {
 .text-danger {
   color: #b84040 !important;
   font-weight: 700;
+  margin: 0 0 8px;
 }
 
 .login-btn.scan-btn {
-  --background: var(--ion-color-primary);
-  --border-radius: 16px;
-  --box-shadow: 0 8px 20px rgba(56, 128, 255, 0.3);
   margin-top: 20px;
-  height: 60px;
+  height: 3.75rem;
   font-weight: 700;
   letter-spacing: 1px;
   font-size: 1.1rem;
+  border-radius: 16px;
+}
+
+.tablet-login-form {
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 28px 22px;
+  border: 1px solid #e2e8f0;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.field-label {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.tablet-login-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.tablet-login-btn {
+  height: 3.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 14px;
+}
+
+.tablet-scan-btn {
+  width: 3.5rem;
+  min-width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 14px;
+}
+
+.tablet-scan-btn :deep(.pi) {
+  font-size: 1.35rem;
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
@@ -397,7 +531,6 @@ const processScannedData = async (scannedCode: string) => {
   .side-info {
     flex: 1;
     border-right: 1px solid #e2e8f0;
-    padding-right: 40px;
   }
 
   .side-form {
@@ -409,9 +542,8 @@ const processScannedData = async (scannedCode: string) => {
   }
 
   .form-logo {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 20px;
+    width: auto;
+    height: 130px;
   }
 }
 </style>
