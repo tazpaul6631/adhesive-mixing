@@ -1,10 +1,10 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="700px"
-      tableStyle="width: 100%; table-layout: fixed;" stripedRows class="modern-table">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="400px"
+      tableStyle="min-width: 800px; width: 100%; table-layout: fixed;" stripedRows class="modern-table">
 
       <template #empty>
-        <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
+        <div style="text-align: center; height: 280px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
         </div>

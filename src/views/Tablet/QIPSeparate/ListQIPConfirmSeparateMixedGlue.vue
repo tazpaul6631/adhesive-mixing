@@ -7,39 +7,34 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>Danh sách chiết keo</ion-title>
+        <ion-title>List QIP Confirm Separate Mixed Glue</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
+        <div class="segment-tabs">
+          <ion-segment v-model="selectedTab" mode="ios" scrollable @ionChange="onSegmentIonChange">
+            <ion-segment-button value="table1">
+              <ion-label class="font-bold">KEO CHIẾT</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="table2">
+              <ion-label class="font-bold">KEO KHÔNG CHIẾT</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
 
-        <!-- THÊM content-id VÀO BUTTON -->
-        <ion-segment v-model="selectedTab" mode="ios" @ionChange="onTabChange">
-          <ion-segment-button value="table1" content-id="table1">
-            <ion-label class="font-bold">KEO CHIẾT</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="table2" content-id="table2">
-            <ion-label class="font-bold">KEO KHÔNG CHIẾT</ion-label>
-          </ion-segment-button>
-        </ion-segment>
+        <div v-show="selectedTab === 'table1'" class="tab-panel">
+          <MixedGlueTable :items="mixedGlueList" :totalRecords="mixedTotal" :isLoading="isLoadingMixed"
+            :rowsPerPage="mixedRowsPerPage" v-model:selectedItem="selectedMixedItem" @page="onPageMixed"
+            @row-click="onRowClickMixed" />
+        </div>
 
-        <!-- SỬ DỤNG ION-SEGMENT-VIEW VÀ CONTENT -->
-        <ion-segment-view>
-          <ion-segment-content id="table1">
-            <MixedGlueTable :items="mixedGlueList" :totalRecords="mixedTotal" :isLoading="isLoadingMixed"
-              :rowsPerPage="mixedRowsPerPage" v-model:selectedItem="selectedMixedItem" @page="onPageMixed"
-              @row-click="onRowClickMixed" />
-          </ion-segment-content>
-
-          <ion-segment-content id="table2">
-            <NoMixGlueTable :items="noMixGlueList" :totalRecords="noMixTotal" :isLoading="isLoadingNoMix"
-              :rowsPerPage="noMixRowsPerPage" v-model:selectedItem="selectedNoMixItem" @page="onPageNoMix"
-              @row-click="onRowClickNoMix" />
-          </ion-segment-content>
-        </ion-segment-view>
-
-        <div class="h-3rem flex-shrink-0"></div>
+        <div v-show="selectedTab === 'table2'" class="tab-panel">
+          <NoMixGlueTable :items="noMixGlueList" :totalRecords="noMixTotal" :isLoading="isLoadingNoMix"
+            :rowsPerPage="noMixRowsPerPage" v-model:selectedItem="selectedNoMixItem" @page="onPageNoMix"
+            @row-click="onRowClickNoMix" />
+        </div>
       </div>
     </ion-content>
   </ion-page>
@@ -48,9 +43,9 @@
 <script setup lang="ts">
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
-  IonSegment, IonSegmentButton, IonLabel, onIonViewWillEnter, IonSegmentView, IonSegmentContent
+  IonSegment, IonSegmentButton, IonLabel, onIonViewWillEnter
 } from '@ionic/vue';
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
 import separateGlue from '@/api/separate';
@@ -59,19 +54,14 @@ import NoMixGlueTable from '@/views/Tablet/QIPSeparate/components/NoMixGlueTable
 
 const router = useRouter();
 const authStore = useAuthStore();
-
-const selectedTab = ref('table1');
+const selectedTab = ref<'table1' | 'table2'>('table1');
 const goBack = () => router.push('/app-menu');
-
-// --- STATE BẢNG 1 ---
 const isLoadingMixed = ref(false);
 const mixedGlueList = ref<any[]>([]);
 const mixedTotal = ref(0);
 const mixedCurrentPage = ref(1);
 const mixedRowsPerPage = ref(5);
 const selectedMixedItem = ref<any>(null);
-
-// --- STATE BẢNG 2 ---
 const isLoadingNoMix = ref(false);
 const noMixGlueList = ref<any[]>([]);
 const noMixTotal = ref(0);
@@ -79,27 +69,45 @@ const noMixCurrentPage = ref(1);
 const noMixRowsPerPage = ref(5);
 const selectedNoMixItem = ref<any>(null);
 
-// SỬA HÀM 1: Bảng Keo Trộn
+const parsePagedResponse = (resData: any) => {
+  const pageData = resData?.data ?? resData ?? {};
+  const items = Array.isArray(pageData.items) ? pageData.items : [];
+  const totalCount = Number(pageData.totalCount) || 0;
+  return { items, totalCount };
+};
+
+const pickDefaultTab = () => {
+  if (mixedGlueList.value.length > 0 || mixedTotal.value > 0) {
+    selectedTab.value = 'table1';
+    return;
+  }
+
+  if (noMixGlueList.value.length > 0 || noMixTotal.value > 0) {
+    selectedTab.value = 'table2';
+    return;
+  }
+  selectedTab.value = 'table1';
+};
+
 const fetchMixedGlue = async (page: number, pageSize: number) => {
   isLoadingMixed.value = true;
-  mixedGlueList.value = Array.from({ length: pageSize }).map((_, index) => ({
-    separateGlueId: `skeleton-mix-${index}`
-  }));
+  mixedGlueList.value = [];
 
   try {
-    const payload = { factoryId: authStore.user?.factoryId || "01", qipconfirmComplete: false, page, pageSize };
+    const payload = { factoryId: authStore.user?.factoryId || '01', qipconfirmComplete: false, page, pageSize };
     const response = await separateGlue.postSGQueryResult(payload);
     const resData = response.data as any;
 
     if (resData?.success) {
-      // THÊM || [] VÀO ĐÂY ĐỂ CHỐNG CRASH
-      mixedGlueList.value = resData.data.items || [];
-      mixedTotal.value = Number(resData.data.totalCount) || 0;
+      const { items, totalCount } = parsePagedResponse(resData);
+      mixedGlueList.value = items;
+      mixedTotal.value = totalCount;
     } else {
       mixedGlueList.value = [];
-      mixedTotal.value = 0; // Đảm bảo total cũng về 0
+      mixedTotal.value = 0;
     }
   } catch (error) {
+    console.error('Lỗi fetch keo chiết:', error);
     mixedGlueList.value = [];
     mixedTotal.value = 0;
   } finally {
@@ -107,27 +115,25 @@ const fetchMixedGlue = async (page: number, pageSize: number) => {
   }
 };
 
-// SỬA HÀM 2: Bảng Keo Không Trộn (Tương tự)
 const fetchNoMixGlue = async (page: number, pageSize: number) => {
   isLoadingNoMix.value = true;
-  noMixGlueList.value = Array.from({ length: pageSize }).map((_, index) => ({
-    noSeparateGlueId: `skeleton-nomix-${index}`
-  }));
+  noMixGlueList.value = [];
 
   try {
-    const payload = { factoryId: authStore.user?.factoryId || "01", qipconfirmComplete: false, page, pageSize };
+    const payload = { factoryId: authStore.user?.factoryId || '01', qipconfirmComplete: false, page, pageSize };
     const response = await separateGlue.postNSGQueryResult(payload);
     const resData = response.data as any;
 
     if (resData?.success) {
-      // THÊM || [] VÀO ĐÂY ĐỂ CHỐNG CRASH
-      noMixGlueList.value = resData.data.items || [];
-      noMixTotal.value = Number(resData.data.totalCount) || 0;
+      const { items, totalCount } = parsePagedResponse(resData);
+      noMixGlueList.value = items;
+      noMixTotal.value = totalCount;
     } else {
       noMixGlueList.value = [];
       noMixTotal.value = 0;
     }
   } catch (error) {
+    console.error('Lỗi fetch keo không chiết:', error);
     noMixGlueList.value = [];
     noMixTotal.value = 0;
   } finally {
@@ -135,34 +141,31 @@ const fetchNoMixGlue = async (page: number, pageSize: number) => {
   }
 };
 
-// Tab thay đổi => gọi API tương ứng nếu chưa có data
-const onTabChange = (event: CustomEvent) => {
-  const tab = event.detail.value;
+const onSegmentIonChange = (event: CustomEvent) => {
+  const tab = (event.detail as { value?: 'table1' | 'table2' })?.value;
+  if (!tab) return;
+
+  selectedTab.value = tab;
 
   if (tab === 'table1') {
-    // Reset page về 1 (tuỳ chọn) và gọi lại API bảng 1
-    mixedCurrentPage.value = 1;
     fetchMixedGlue(mixedCurrentPage.value, mixedRowsPerPage.value);
-  } else if (tab === 'table2') {
-    // Reset page về 1 (tuỳ chọn) và gọi lại API bảng 2
-    noMixCurrentPage.value = 1;
-    fetchNoMixGlue(noMixCurrentPage.value, noMixRowsPerPage.value);
+    return;
   }
+  fetchNoMixGlue(noMixCurrentPage.value, noMixRowsPerPage.value);
 };
 
-// Phân trang
 const onPageMixed = (event: any) => {
   mixedCurrentPage.value = event.page + 1;
   mixedRowsPerPage.value = event.rows;
   fetchMixedGlue(mixedCurrentPage.value, mixedRowsPerPage.value);
 };
+
 const onPageNoMix = (event: any) => {
   noMixCurrentPage.value = event.page + 1;
   noMixRowsPerPage.value = event.rows;
   fetchNoMixGlue(noMixCurrentPage.value, noMixRowsPerPage.value);
 };
 
-// Xử lý click cho bảng Keo Trộn (Table 1)
 const onRowClickMixed = (event: { data: any }) => {
   const separateGlueId = event.data.separateGlueId;
   const requestDetailId = event.data.requestDetailId;
@@ -171,8 +174,8 @@ const onRowClickMixed = (event: { data: any }) => {
     router.push({
       path: '/qip-confirm-separate-mixed-glue',
       query: {
-        separateGlueId: separateGlueId,
-        requestDetailId: requestDetailId,
+        separateGlueId,
+        requestDetailId,
         type: 'mixed'
       }
     });
@@ -181,7 +184,6 @@ const onRowClickMixed = (event: { data: any }) => {
   }
 };
 
-// Xử lý click cho bảng Keo Không Trộn (Table 2)
 const onRowClickNoMix = (event: { data: any }) => {
   const noSeparateGlueId = event.data.noSeparateGlueId;
   const workOrderMasterId = event.data.workOrderMasterId;
@@ -190,8 +192,8 @@ const onRowClickNoMix = (event: { data: any }) => {
     router.push({
       path: '/qip-confirm-separate-mixed-glue',
       query: {
-        noSeparateGlueId: noSeparateGlueId,
-        workOrderMasterId: workOrderMasterId,
+        noSeparateGlueId,
+        workOrderMasterId,
         type: 'nomix'
       }
     });
@@ -200,28 +202,43 @@ const onRowClickNoMix = (event: { data: any }) => {
   }
 };
 
-// Tự động gọi API của Tab mặc định khi mở màn hình
+const loadInitialData = async () => {
+  mixedCurrentPage.value = 1;
+  noMixCurrentPage.value = 1;
+  selectedMixedItem.value = null;
+  selectedNoMixItem.value = null;
+
+  await Promise.all([
+    fetchMixedGlue(mixedCurrentPage.value, mixedRowsPerPage.value),
+    fetchNoMixGlue(noMixCurrentPage.value, noMixRowsPerPage.value)
+  ]);
+  pickDefaultTab();
+  await nextTick();
+};
+
 onIonViewWillEnter(() => {
-  selectedTab.value = 'table1'; // Đảm bảo segment đang focus đúng tab 1
-  fetchMixedGlue(mixedCurrentPage.value, mixedRowsPerPage.value);
+  void loadInitialData();
 });
 </script>
 
 <style scoped>
-/* Xóa các css lỗi cũ và thay bằng: */
-ion-segment-view {
-  min-height: 500px;
-  /* Chiều cao tối thiểu để chống co sập */
-  height: auto;
+.segment-tabs {
+  flex-shrink: 0;
   width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
-ion-segment-content {
+.tab-panel {
   width: 100%;
+  min-height: 500px;
 }
 
 ion-segment {
   height: 50px;
+  min-height: 50px;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 ion-segment-button {

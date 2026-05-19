@@ -6,7 +6,7 @@
       @update:selection="$emit('update:selectedItem', $event)">
 
       <template #empty>
-        <div style="text-align: center; padding: 3.3rem; height: 100%; align-content: center;">
+        <div style="text-align: center; height: 100%; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
         </div>

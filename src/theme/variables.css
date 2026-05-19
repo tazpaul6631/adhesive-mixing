@@ -3,17 +3,24 @@
    ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- 1. BASE HTML & BODY --- */
+/* --- 0. FONT SIZE CONTROLS (chỉnh 2 biến này, tách biệt Ionic / PrimeVue) --- */
+:root {
+    /* Ionic: ion-title, ion-label, ion-button, ion-item... */
+    --ion-font-size-base: 16px;
+
+    /* PrimeVue: DataTable, Select, InputText, Button, DatePicker... */
+    --primevue-font-size-base: 18px;
+}
+
+/* --- 1. BASE HTML & BODY (Ionic) --- */
 html {
-    /* Đặt mốc 18px làm chuẩn. Suy ra 1rem = 18px. 
-       Toàn bộ PrimeVue sẽ tự động scale to lên dựa trên mức này */
-    font-size: 16px !important;
+    /* Mốc rem chung — gắn với Ionic, KHÔNG dùng để scale PrimeVue */
+    font-size: var(--ion-font-size-base) !important;
 }
 
 body {
     font-family: 'Inter', sans-serif !important;
-    /* Ionic thường dựa vào biến này, ta đồng bộ luôn là 18px */
-    --ion-font-size: 18px !important;
+    --ion-font-size: var(--ion-font-size-base) !important;
     font-size: var(--ion-font-size);
 }
 
@@ -22,20 +29,24 @@ body {
     -webkit-tap-highlight-color: transparent !important;
 }
 
-/* --- 2. PRIMEVUE OVERRIDES --- */
+/* --- 2. PRIMEVUE OVERRIDES (chỉ ảnh hưởng .p-*) --- */
 
-/* Đảm bảo mọi root component của PrimeVue đều nhận font-size chuẩn */
 .p-component {
-    /* Mặc định PrimeVue dùng 1rem, nên nó sẽ tự lấy 18px từ thẻ html ở trên */
-    font-size: 1.4rem !important;
+    font-size: var(--primevue-font-size-base) !important;
 }
 
-/* Ghi đè cụ thể cho các input/dropdown của PrimeVue để tránh việc browser tự style */
 .p-inputtext,
+.p-select,
 .p-dropdown,
 .p-button,
-.p-menuitem-link {
-    font-size: 1rem !important;
+.p-menuitem-link,
+.p-paginator,
+.p-datatable,
+.p-column-title,
+.p-tag,
+.p-checkbox-label,
+.p-radiobutton-label {
+    font-size: var(--primevue-font-size-base) !important;
 }
 
 /* Tắt viền focus mặc định của PrimeVue */
@@ -50,21 +61,17 @@ body {
     outline: none !important;
 }
 
-/* Tùy chỉnh DatePicker (Đã tăng size so với code cũ của bạn) */
 .p-datepicker {
-    font-size: 1rem !important;
-    /* Đổi từ 0.8rem lên 1rem để to đều */
+    font-size: var(--primevue-font-size-base) !important;
 }
 
 .p-datepicker-input {
     padding: 8px 12px !important;
-    /* Tăng padding để cân đối với font chữ to */
-    font-size: 1rem !important;
+    font-size: var(--primevue-font-size-base) !important;
 }
 
 .p-datatable-filter-row td {
     padding: 6px !important;
-    /* Nhích padding lên 1 chút để chữ không dính viền */
 }
 
 /* --- 3. IONIC OVERRIDES --- */
@@ -84,14 +91,12 @@ ion-list {
 
 .custom-error-alert .alert-message {
     color: #333 !important;
-    font-size: 1rem !important;
-    /* Đồng bộ với hệ thống 1rem = 18px */
+    font-size: var(--ion-font-size-base) !important;
 }
 
 .custom-error-alert .highlight-point {
     color: #2fdf75;
     font-size: 1.2em;
-    /* 1.2 x 18px = 21.6px */
     text-decoration: underline;
 }
 
@@ -114,6 +119,15 @@ ion-list {
     margin: 0 auto;
 }
 
-.main-container * {
-    font-size: 18px !important;
+/* Chỉ scale PrimeVue trong layout tablet — không đụng Ionic */
+.main-container .p-component,
+.main-container .p-inputtext,
+.main-container .p-select,
+.main-container .p-dropdown,
+.main-container .p-button,
+.main-container .p-datatable,
+.main-container .p-paginator,
+.main-container .p-datepicker,
+.main-container .p-datepicker-input {
+    font-size: var(--primevue-font-size-base) !important;
 }

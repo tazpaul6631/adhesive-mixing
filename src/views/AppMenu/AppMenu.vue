@@ -121,14 +121,6 @@ const tabletFeatures = ref([
     icon: documentTextOutline,
     color: '#8b5cf6',
     bgLight: '#ede9fe'
-  },
-  {
-    path: '/glue-form-production',
-    title: 'Glue Form Production',
-    description: 'Quy trình sản xuất mẫu keo.',
-    icon: colorPaletteOutline,
-    color: '#f43f5e',
-    bgLight: '#ffe4e6'
   }
 ]);
 

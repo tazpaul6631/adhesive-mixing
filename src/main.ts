@@ -4,6 +4,7 @@ import router from './router';
 import i18n from '@/i18n';
 import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
+import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 
 import { IonicVue } from '@ionic/vue';
 
@@ -44,6 +45,7 @@ const app = createApp(App)
   .use(PrimeComponents)
   .use(ToastService);
 
-router.isReady().then(() => {
+router.isReady().then(async () => {
+  await useMixGlueDraftStore(pinia).ensureHydrated();
   app.mount('#app');
 });
