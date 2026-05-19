@@ -207,6 +207,7 @@ type AllocatedQrPayload = SeparateGlueQrPayload | MixGlueQrPayload;
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
 const invalidQrMessage = "Mã QR không hợp lệ.";
+const noGlueDataMessage = "Không tìm thấy dữ liệu.";
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -252,8 +253,9 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-  const isProductLineMatched = normalizeCompareValue(lineChemicalInfo.value.productLineId) ===
-    normalizeCompareValue(allocatedGlueInfo.value.productLineId);
+  const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
+  const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
+  const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
   const isGlueMatched = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId) ===
     normalizeCompareValue(allocatedGlueInfo.value.glueId);
 
@@ -304,6 +306,18 @@ function normalizeCompareValue(value: any) {
   return String(value).trim();
 }
 
+function getAllocatedProductLineIds(info: any) {
+  if (Array.isArray(info?.productLineIds)) {
+    return info.productLineIds
+      .map((productLineId: any) => normalizeCompareValue(productLineId))
+      .filter(Boolean);
+  }
+
+  const productLineId = normalizeCompareValue(info?.productLineId);
+
+  return productLineId ? [productLineId] : [];
+}
+
 async function triggerMismatchFeedback() {
   try {
     await Haptics.notification({
@@ -312,6 +326,11 @@ async function triggerMismatchFeedback() {
   } catch (error) {
     console.warn("Haptics is not available:", error);
   }
+}
+
+async function showWarningAlert(message: string) {
+  await triggerMismatchFeedback();
+  alert(message);
 }
 
 function notifyMismatchIfNeeded() {
@@ -349,7 +368,7 @@ async function openScanner(target: ScanTarget) {
           await handleConfirmScanResult(target, scannedValue);
         }
       } else {
-        alert("Mã QR không hợp lệ hoặc không có dữ liệu!");
+        await showWarningAlert(invalidQrMessage);
       }
     }
   } catch (error) {
@@ -380,7 +399,7 @@ async function handleLineQrScanResult(qrText: string) {
 
   if (!payload) {
     resetLineQrField();
-    alert(invalidQrMessage);
+    await showWarningAlert(invalidQrMessage);
     return;
   }
 
@@ -397,7 +416,7 @@ async function handleLineQrScanResult(qrText: string) {
 
     if (!responseData.success || !responseData.data) {
       resetLineQrField();
-      alert(invalidQrMessage);
+      await showWarningAlert(noGlueDataMessage);
       return;
     }
 
@@ -419,7 +438,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
   if (!payload) {
     resetAllocatedQrField();
-    alert(invalidQrMessage);
+    await showWarningAlert(invalidQrMessage);
     return;
   }
 
@@ -441,7 +460,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
     if (!responseData.success || !responseData.data) {
       resetAllocatedQrField();
-      alert(invalidQrMessage);
+      await showWarningAlert(noGlueDataMessage);
       return;
     }
 
