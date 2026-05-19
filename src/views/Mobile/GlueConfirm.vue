@@ -467,7 +467,7 @@ async function handleLineQrScanResult(qrText: string) {
     return;
   }
 
-  lineQrText.value = "Đang tải thông tin mã QR...";
+  lineQrText.value = "Đang tải thông tin...";
   isLoadingLineQr.value = true;
 
   try {
@@ -506,7 +506,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
     return;
   }
 
-  allocatedQrText.value = "Đang tải thông tin mã QR...";
+  allocatedQrText.value = "Đang tải thông tin...";
   isLoadingAllocatedQr.value = true;
 
   try {
