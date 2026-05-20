@@ -210,7 +210,8 @@ type AllocatedQrPayload = SeparateGlueQrPayload | MixGlueQrPayload;
 const authStore = useAuthStore();
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
-const invalidQrMessage = "Mã QR không hợp lệ.";
+const invalidLineQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.";
+const invalidAllocatedQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo phát.";
 const noGlueDataMessage = "Không có dữ liệu thùng keo.";
 const returnQrMismatchMessage = "Mã QR thùng keo không khớp.";
 
@@ -314,6 +315,10 @@ function normalizeCompareValue(value: any) {
   }
 
   return String(value).trim();
+}
+
+function hasPayloadValue(value: any) {
+  return value !== null && value !== undefined && normalizeCompareValue(value) !== "";
 }
 
 function getAllocatedProductLineIds(info: any) {
@@ -432,7 +437,7 @@ async function openScanner(target: ScanTarget) {
           await handleConfirmScanResult(target, scannedValue);
         }
       } else {
-        await showWarningAlert(invalidQrMessage);
+        await showWarningAlert(invalidAllocatedQrMessage);
       }
     }
   } catch (error) {
@@ -463,7 +468,7 @@ async function handleLineQrScanResult(qrText: string) {
 
   if (!payload) {
     resetLineQrField();
-    await showWarningAlert(invalidQrMessage);
+    await showWarningAlert(invalidLineQrMessage);
     return;
   }
 
@@ -502,7 +507,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
   if (!payload) {
     resetAllocatedQrField();
-    await showWarningAlert(invalidQrMessage);
+    await showWarningAlert(invalidAllocatedQrMessage);
     return;
   }
 
@@ -543,7 +548,7 @@ async function handleReturnScanResult(value: string) {
 
   if (!payload) {
     resetReturnField();
-    await showWarningAlert(invalidQrMessage);
+    await showWarningAlert(invalidAllocatedQrMessage);
     return;
   }
 
@@ -646,12 +651,26 @@ async function handleConfirmReturn() {
     return;
   }
 
-  const payload = {
+  const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
-    separateGlueId: allocatedGlueInfo.value.separateGlueId || 0,
-    noSeparateGlueId: allocatedGlueInfo.value.noSeparateGlueId || 0,
     updaterId: getCurrentUserId(),
   };
+
+  const mixGlueMasterId = allocatedGlueInfo.value.mixGlueMasterId;
+  const separateGlueId = allocatedGlueInfo.value.separateGlueId;
+  const noSeparateGlueId = allocatedGlueInfo.value.noSeparateGlueId;
+
+  if (hasPayloadValue(mixGlueMasterId)) {
+    payload.mixGlueMasterId = mixGlueMasterId;
+  }
+
+  if (hasPayloadValue(separateGlueId)) {
+    payload.separateGlueId = separateGlueId;
+  }
+
+  if (hasPayloadValue(noSeparateGlueId)) {
+    payload.noSeparateGlueId = noSeparateGlueId;
+  }
 
   console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");
   console.info("Request payload:", payload);
