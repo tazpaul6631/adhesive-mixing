@@ -321,16 +321,34 @@ function hasPayloadValue(value: any) {
   return value !== null && value !== undefined && normalizeCompareValue(value) !== "";
 }
 
-function getAllocatedProductLineIds(info: any) {
-  if (Array.isArray(info?.productLineIds)) {
-    return info.productLineIds
-      .map((productLineId: any) => normalizeCompareValue(productLineId))
+function normalizeProductLineIdList(value: any) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((productLineId: any) => normalizeCompareValue(productLineId).split(","))
+      .map((productLineId: string) => normalizeCompareValue(productLineId))
       .filter(Boolean);
   }
 
-  const productLineId = normalizeCompareValue(info?.productLineId);
+  const productLineIds = normalizeCompareValue(value);
 
-  return productLineId ? [productLineId] : [];
+  if (!productLineIds) {
+    return [];
+  }
+
+  return productLineIds
+    .split(",")
+    .map((productLineId: string) => normalizeCompareValue(productLineId))
+    .filter(Boolean);
+}
+
+function getAllocatedProductLineIds(info: any) {
+  const productLineIds = normalizeProductLineIdList(info?.productLineIds);
+
+  if (productLineIds.length) {
+    return productLineIds;
+  }
+
+  return normalizeProductLineIdList(info?.productLineId);
 }
 
 async function triggerMismatchFeedback() {
