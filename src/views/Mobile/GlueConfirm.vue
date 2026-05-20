@@ -123,13 +123,19 @@
             <ion-icon :icon="alertCircle"></ion-icon>
           </div>
 
-          <h2 class="return-confirm-dialog__title">Xác nhận trả về</h2>
+          <h2 class="return-confirm-dialog__title">Xác nhận thùng keo trả về</h2>
 
-          <p class="return-confirm-dialog__message">
-            Xác nhận trả về thùng keo
-            <strong>{{ pendingReturnDisplayText }}</strong>
-            ?
-          </p>
+          <div class="return-confirm-dialog__message">
+            <span>Xác nhận trả về thùng keo</span>
+            <span>
+              Chuyền:
+              <strong>{{ pendingReturnProductLineName }}</strong>
+            </span>
+            <span>
+              Keo:
+              <strong>{{ pendingReturnGlueId }}</strong>
+            </span>
+          </div>
 
           <div class="return-confirm-dialog__actions">
             <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="cancelReturnConfirm">
@@ -247,12 +253,12 @@ const isReturnScanButtonDisabled = computed(() => {
   return !isReturnScanReady.value;
 });
 
-const pendingReturnDisplayText = computed(() => {
-  if (pendingReturnGlueInfo.value) {
-    return formatAllocatedGlueDisplay(pendingReturnGlueInfo.value);
-  }
+const pendingReturnProductLineName = computed(() => {
+  return normalizeCompareValue(pendingReturnGlueInfo.value?.productLineName);
+});
 
-  return pendingReturnQrText.value;
+const pendingReturnGlueId = computed(() => {
+  return normalizeCompareValue(pendingReturnGlueInfo.value?.glueId);
 });
 
 const isFirstTwoQrReady = computed(() => {
