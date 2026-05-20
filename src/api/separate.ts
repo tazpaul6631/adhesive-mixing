@@ -31,5 +31,10 @@ export default {
         return request.get(
             `api/mobile/separateglue/scansgqr/${factoryId}/${sgId}`
         )
+    },
+    getNoSeparateGlueScanQr(factoryId: string, nsgId: string) {
+        return request.get(
+            `api/mobile/separateglue/scannsgqr/${factoryId}/${nsgId}`
+        )
     }
 };

@@ -204,6 +204,12 @@ type SeparateGlueQrPayload = {
   sgId: string;
 };
 
+type NoSeparateGlueQrPayload = {
+  type: "noSeparate";
+  factoryId: string;
+  nsgId: string;
+};
+
 type MixGlueQrPayload = {
   type: "mix";
   factoryId: string;
@@ -211,7 +217,7 @@ type MixGlueQrPayload = {
   womId: string;
 };
 
-type AllocatedQrPayload = SeparateGlueQrPayload | MixGlueQrPayload;
+type AllocatedQrPayload = SeparateGlueQrPayload | NoSeparateGlueQrPayload | MixGlueQrPayload;
 
 const authStore = useAuthStore();
 
@@ -258,7 +264,7 @@ const pendingReturnProductLineName = computed(() => {
 });
 
 const pendingReturnGlueId = computed(() => {
-  return normalizeCompareValue(pendingReturnGlueInfo.value?.glueId);
+  return normalizeCompareValue(getGlueIdValue(pendingReturnGlueInfo.value));
 });
 
 const isFirstTwoQrReady = computed(() => {
@@ -270,13 +276,10 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-  const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
-  const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
-  const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
-  const isGlueMatched = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId) ===
-    normalizeCompareValue(allocatedGlueInfo.value.glueId);
+  const lineChemicalMasterId = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId);
+  const allocatedCompareValue = getAllocatedGlueCompareValue(allocatedGlueInfo.value);
 
-  return isProductLineMatched && isGlueMatched;
+  return !!lineChemicalMasterId && !!allocatedCompareValue && lineChemicalMasterId === allocatedCompareValue;
 });
 
 const isConfirmButtonDisabled = computed(() => {
@@ -327,36 +330,6 @@ function hasPayloadValue(value: any) {
   return value !== null && value !== undefined && normalizeCompareValue(value) !== "";
 }
 
-function normalizeProductLineIdList(value: any) {
-  if (Array.isArray(value)) {
-    return value
-      .flatMap((productLineId: any) => normalizeCompareValue(productLineId).split(","))
-      .map((productLineId: string) => normalizeCompareValue(productLineId))
-      .filter(Boolean);
-  }
-
-  const productLineIds = normalizeCompareValue(value);
-
-  if (!productLineIds) {
-    return [];
-  }
-
-  return productLineIds
-    .split(",")
-    .map((productLineId: string) => normalizeCompareValue(productLineId))
-    .filter(Boolean);
-}
-
-function getAllocatedProductLineIds(info: any) {
-  const productLineIds = normalizeProductLineIdList(info?.productLineIds);
-
-  if (productLineIds.length) {
-    return productLineIds;
-  }
-
-  return normalizeProductLineIdList(info?.productLineId);
-}
-
 async function triggerMismatchFeedback() {
   try {
     await Haptics.notification({
@@ -387,20 +360,46 @@ function getCurrentUserId() {
 }
 
 function getGlueIdValue(info: any) {
-  return info?.glueId || 0;
+  if (hasPayloadValue(info?.glueId)) {
+    return info.glueId;
+  }
+
+  if (hasPayloadValue(info?.materialCode)) {
+    return info.materialCode;
+  }
+
+  return 0;
+}
+
+function getAllocatedGlueCompareValue(info: any) {
+  if (hasPayloadValue(info?.noSeparateGlueId)) {
+    return normalizeCompareValue(info?.materialCode);
+  }
+
+  return normalizeCompareValue(info?.glueId);
 }
 
 async function fetchAllocatedGlueInfo(payload: AllocatedQrPayload) {
-  const response = payload.type === "mix"
-    ? await mixGlueApi.getMixGlueScanQr(
-        payload.factoryId,
-        payload.mgmId,
-        payload.womId
-      )
-    : await separateGlueApi.getSeparateGlueScanQr(
-        payload.factoryId,
-        payload.sgId
-      );
+  let response;
+
+  if (payload.type === "mix") {
+    response = await mixGlueApi.getMixGlueScanQr(
+      payload.factoryId,
+      payload.mgmId,
+      payload.womId
+    );
+  } else if (payload.type === "noSeparate") {
+    response = await separateGlueApi.getNoSeparateGlueScanQr(
+      payload.factoryId,
+      payload.nsgId
+    );
+  } else {
+    response = await separateGlueApi.getSeparateGlueScanQr(
+      payload.factoryId,
+      payload.sgId
+    );
+  }
+
   const responseData = response.data as any;
 
   if (!responseData.success || !responseData.data) {
@@ -679,10 +678,10 @@ async function handleConfirmReturn() {
 
     isReturnScanReady.value = true;
     isConfirmReturnCompleted.value = true;
-    showToast("Xác nhận trả về thành công");
+    showToast("Xác nhận thành công");
   } catch (error) {
-    console.error("Không thể xác nhận trả về:", error);
-    alert("Không thể xác nhận trả về. Vui lòng thử lại!");
+    console.error("Không thể xác nhận:", error);
+    alert("Không thể xác nhận. Vui lòng thử lại!");
   } finally {
     console.groupEnd();
   }
@@ -829,6 +828,12 @@ function parseAllocatedQrPathPayload(pathname: string): AllocatedQrPayload | nul
     return separateGluePayload;
   }
 
+  const noSeparateGluePayload = parseNoSeparateGlueQrPathPayload(pathname);
+
+  if (noSeparateGluePayload) {
+    return noSeparateGluePayload;
+  }
+
   return parseMixGlueQrPathPayload(pathname);
 }
 
@@ -858,6 +863,35 @@ function parseSeparateGlueQrPathPayload(pathname: string): SeparateGlueQrPayload
     type: "separate",
     factoryId: decodeURIComponent(factoryId),
     sgId: decodeURIComponent(sgId),
+  };
+}
+
+function parseNoSeparateGlueQrPathPayload(pathname: string): NoSeparateGlueQrPayload | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const scanQrIndex = parts.findIndex((part, index) => {
+    return (
+      part.toLowerCase() === "scannsgqr" &&
+      parts[index - 3]?.toLowerCase() === "api" &&
+      parts[index - 2]?.toLowerCase() === "mobile" &&
+      parts[index - 1]?.toLowerCase() === "separateglue"
+    );
+  });
+
+  if (scanQrIndex === -1) {
+    return null;
+  }
+
+  const factoryId = parts[scanQrIndex + 1];
+  const nsgId = parts[scanQrIndex + 2];
+
+  if (!factoryId || !nsgId) {
+    return null;
+  }
+
+  return {
+    type: "noSeparate",
+    factoryId: decodeURIComponent(factoryId),
+    nsgId: decodeURIComponent(nsgId),
   };
 }
 
