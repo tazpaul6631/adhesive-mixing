@@ -167,21 +167,22 @@ const onPageNoMix = (event: any) => {
 };
 
 const onRowClickMixed = (event: { data: any }) => {
-  const separateGlueId = event.data.separateGlueId;
-  const requestDetailId = event.data.requestDetailId;
+  const separateGlueId = event.data?.separateGlueId;
+  const requestDetailId = event.data?.requestDetailId;
 
-  if (separateGlueId && requestDetailId) {
-    router.push({
-      path: '/qip-confirm-separate-mixed-glue',
-      query: {
-        separateGlueId,
-        requestDetailId,
-        type: 'mixed'
-      }
-    });
-  } else {
-    console.warn('separateGlueId & requestDetailId is missing in the clicked row data');
+  if (!separateGlueId) {
+    console.warn('separateGlueId is missing in the clicked row data');
+    return;
   }
+
+  router.push({
+    path: '/qip-confirm-separate-mixed-glue',
+    query: {
+      separateGlueId: String(separateGlueId),
+      type: 'mixed',
+      ...(requestDetailId ? { requestDetailId: String(requestDetailId) } : {}),
+    }
+  });
 };
 
 const onRowClickNoMix = (event: { data: any }) => {

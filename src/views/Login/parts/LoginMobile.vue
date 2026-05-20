@@ -57,10 +57,10 @@
                 </div>
 
                 <div class="field-group">
-                  <label for="username" class="field-label">Tài khoản</label>
+                  <label for="employeeId" class="field-label">Tài khoản</label>
                   <IconField>
                     <InputIcon class="pi pi-user" />
-                    <InputText id="username" v-model="username" placeholder="Mã số nhân viên" class="w-full"
+                    <InputText id="employeeId" v-model="employeeId" placeholder="Mã số nhân viên" class="w-full"
                       :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
                   </IconField>
                 </div>
@@ -69,9 +69,13 @@
                   <label for="password" class="field-label">Mật khẩu</label>
                   <IconField>
                     <InputIcon class="pi pi-lock" />
-                    <InputText id="password" v-model="password" type="password" placeholder="********" class="w-full"
+                    <InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
+                      placeholder="********" class="w-full"
                       :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn"
                       @keyup.enter="handleTabletLogin" />
+                    <InputIcon class="password-toggle-icon pi"
+                      :class="[showPassword ? 'pi-eye-slash' : 'pi-eye', { 'password-toggle-icon--disabled': !isCredentialFieldsEnabled || isLoading || isLoggingIn }]"
+                      @click="togglePasswordVisibility" />
                   </IconField>
                 </div>
 
@@ -121,13 +125,15 @@
             <span class="scan-frame-line"></span>
           </div>
 
-          <p class="scan-camera-hint">
-            <i class="pi pi-camera"></i>
-            Camera trước đang bật
-          </p>
+          <div class="scan-camera-hint-wrapper flex justify-center items-center gap-2">
+            <p class="scan-camera-hint">
+              <i class="pi pi-camera"></i>
+              Camera trước đang bật
+            </p>
 
-          <Button class="scan-cancel-btn" label="Hủy quét" icon="pi pi-times" severity="secondary"
-            @click="cancelScan" />
+            <Button class="scan-cancel-btn" label="Hủy quét" icon="pi pi-times" severity="secondary"
+              @click="cancelScan" />
+          </div>
         </div>
       </div>
     </Teleport>
@@ -136,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { useBackButton } from '@ionic/vue';
 import { BarcodeScanner, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import type { PluginListenerHandle } from '@capacitor/core';
 import employee from '@/api/employee';
@@ -148,8 +155,9 @@ import { Capacitor } from '@capacitor/core';
 type SelectOption = { label: string; value: string };
 
 const code = ref('');
-const username = ref('');
+const employeeId = ref('');
 const password = ref('');
+const showPassword = ref(false);
 const selectedCompany = ref('');
 const selectedFactory = ref('');
 const companyOptions = ref<SelectOption[]>([]);
@@ -174,7 +182,7 @@ const isCredentialFieldsEnabled = computed(() => !!selectedFactory.value && !isL
 const isLoginButtonEnabled = computed(() => {
   return !!selectedCompany.value
     && !!selectedFactory.value
-    && !!username.value.trim()
+    && !!employeeId.value.trim()
     && !!password.value
     && !isLoading.value
     && !isLoggingIn.value
@@ -182,6 +190,11 @@ const isLoginButtonEnabled = computed(() => {
 });
 
 const isLoginRoute = computed(() => route.path === '/login');
+
+const togglePasswordVisibility = () => {
+  if (!isCredentialFieldsEnabled.value || isLoading.value || isLoggingIn.value) return;
+  showPassword.value = !showPassword.value;
+};
 
 const resetLoginLoading = () => {
   isLoggingIn.value = false;
@@ -262,7 +275,7 @@ const fetchFactories = async (companyId: string) => {
 watch(selectedCompany, async (companyId) => {
   selectedFactory.value = '';
   factoryOptions.value = [];
-  username.value = '';
+  employeeId.value = '';
   password.value = '';
   errorLogin.value = false;
   errorMessage.value = '';
@@ -272,7 +285,7 @@ watch(selectedCompany, async (companyId) => {
 });
 
 watch(selectedFactory, () => {
-  username.value = '';
+  employeeId.value = '';
   password.value = '';
   errorLogin.value = false;
   errorMessage.value = '';
@@ -329,6 +342,15 @@ const cancelScan = async () => {
   }
 };
 
+// Tablet: nút Back vật lý thoát chế độ quét thay vì thoát app
+useBackButton(10, (processNextHandler) => {
+  if (isTablet.value && isScanning.value) {
+    void cancelScan();
+    return;
+  }
+  processNextHandler();
+});
+
 const getBarcodeValue = (barcode: { rawValue?: string; displayValue?: string }) => {
   return barcode.rawValue || barcode.displayValue || '';
 };
@@ -362,7 +384,7 @@ const beginFrontCameraScan = async () => {
 const buildTabletLoginPayload = () => ({
   companyId: String(selectedCompany.value ?? ''),
   factoryId: String(selectedFactory.value ?? ''),
-  username: String(username.value.trim()),
+  employeeId: String(employeeId.value.trim()),
   password: String(password.value)
 });
 
@@ -419,15 +441,16 @@ const handleTabletLogin = async () => {
 
   try {
     const response = await employee.employeeLogin({
-      employeeId: payload.username,
+      loginMode: 'Password',
       companyId: payload.companyId,
       factoryId: payload.factoryId,
+      employeeId: payload.employeeId,
       password: payload.password
     });
-    await handleLoginResponse(response, payload.username);
+    await handleLoginResponse(response, payload.employeeId);
   } catch (error: any) {
     console.error('Lỗi đăng nhập tablet:', error);
-    handleLoginError(payload.username);
+    handleLoginError(payload.employeeId);
   }
 };
 
@@ -484,6 +507,7 @@ const processScannedData = async (scannedCode: string) => {
 
   try {
     const response = await employee.employeeLogin({
+      loginMode: 'Scan',
       employeeId: String(scannedCode)
     });
     await handleLoginResponse(response, scannedCode);
@@ -568,7 +592,7 @@ const processScannedData = async (scannedCode: string) => {
 .form-logo {
   display: block;
   width: 100%;
-  height: 170px;
+  height: 105px;
   object-fit: cover;
 }
 
@@ -700,6 +724,11 @@ const processScannedData = async (scannedCode: string) => {
     font-size: 1.5rem !important;
     color: #fff;
   }
+
+  &:hover {
+    background-color: #6ed3b3;
+    color: #fff;
+  }
 }
 
 .tablet-login-form {
@@ -720,6 +749,22 @@ const processScannedData = async (scannedCode: string) => {
   font-weight: 700;
   color: #317af0;
   font-size: 0.95rem;
+}
+
+.password-toggle-icon {
+  cursor: pointer;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-icon:hover {
+  color: #317af0;
+}
+
+.password-toggle-icon--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .tablet-login-actions {
@@ -823,7 +868,7 @@ const processScannedData = async (scannedCode: string) => {
 
 :global(.scan-camera-title) {
   margin: 0 0 8px;
-  font-size: 1.35rem;
+  font-size: 2rem;
   font-weight: 800;
   color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -832,14 +877,14 @@ const processScannedData = async (scannedCode: string) => {
 :global(.scan-camera-note) {
   margin: 0 0 24px;
   max-width: 360px;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   line-height: 1.5;
-  color: #e2e8f0;
+  color: #fff;
 }
 
 :global(.scan-camera-frame) {
   position: relative;
-  width: min(78vw, 550px);
+  width: min(78vw, 600px);
   height: min(52vw, 280px);
   border: 2px solid rgba(255, 255, 255, 0.88);
   border-radius: 20px;
@@ -907,12 +952,24 @@ const processScannedData = async (scannedCode: string) => {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   color: #f8fafc;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   backdrop-filter: blur(4px);
 }
 
 :global(.scan-cancel-btn) {
-  min-width: 160px;
+  min-width: 180px;
+  height: 60px;
+  margin: 28px 0 20px;
+
+  &:deep(.pi) {
+    font-size: 1.2rem !important;
+    color: black;
+  }
+
+  &:deep(.p-button-label) {
+    font-size: 1.2rem !important;
+    color: black;
+  }
 }
 
 @keyframes scan-line-move {
@@ -987,7 +1044,7 @@ const processScannedData = async (scannedCode: string) => {
 
   .side-info {
     flex: 1;
-    border-right: 1px solid #e2e8f0;
+    border-right: 2px solid #e2e8f0;
   }
 
   .side-form {
@@ -1000,7 +1057,7 @@ const processScannedData = async (scannedCode: string) => {
 
   .form-logo {
     width: 100%;
-    height: 170px;
+    height: 120px;
     object-fit: cover;
   }
 }

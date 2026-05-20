@@ -6,8 +6,9 @@
       <span class="font-bold text-blue-600 text-lg">{{ chemical?.materialName }}</span>
     </div>
 
-    <SeparateGlue :is-loading="false" :order-details="orderDetails" :is-view-mode="isViewMode"
-      @update-bucket="$emit('update-bucket')" />
+    <SeparateGlue :is-loading="false" :order-details="orderDetails" :request-details="requestDetails"
+      :is-view-mode="isViewMode" @update-bucket="$emit('update-bucket')" @add-row="$emit('add-row')"
+      @delete-row="$emit('delete-row', $event)" />
 
     <template #footer>
       <Button label="Đóng" icon="pi pi-times" text @click="$emit('update:visible', false)" />
@@ -42,6 +43,7 @@ defineProps<{
   visible: boolean;
   chemical: ChemicalComponent | null;
   orderDetails: OrderDetails[];
+  requestDetails: any[];
   isViewMode?: boolean;
 }>();
 
@@ -49,5 +51,7 @@ defineEmits<{
   (e: 'update:visible', value: boolean): void;
   (e: 'update-bucket'): void;
   (e: 'confirm'): void;
+  (e: 'add-row'): void;
+  (e: 'delete-row', row: OrderDetails): void;
 }>();
 </script>
