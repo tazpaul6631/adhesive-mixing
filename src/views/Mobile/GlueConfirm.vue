@@ -31,6 +31,10 @@
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
+                      <span class="qr-scan-field__info-label">Chuyền:</span>
+                      <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
+                    </div>
+                    <div class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">Keo:</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.glueName }}</span>
                     </div>
@@ -236,10 +240,15 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
+  const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
+  const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
+  const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
+
   const lineChemicalMasterId = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId);
   const allocatedCompareValue = getAllocatedGlueCompareValue(allocatedGlueInfo.value);
+  const isGlueMatched = !!lineChemicalMasterId && !!allocatedCompareValue && lineChemicalMasterId === allocatedCompareValue;
 
-  return !!lineChemicalMasterId && !!allocatedCompareValue && lineChemicalMasterId === allocatedCompareValue;
+  return isProductLineMatched && isGlueMatched;
 });
 
 const isConfirmButtonDisabled = computed(() => {
@@ -329,6 +338,33 @@ function getGlueIdValue(info: any) {
   }
 
   return 0;
+}
+
+function normalizeProductLineIdList(value: any) {
+  if (Array.isArray(value)) {
+    return value
+      .map((productLineId: any) => normalizeCompareValue(productLineId))
+      .filter(Boolean);
+  }
+
+  if (!hasPayloadValue(value)) {
+    return [];
+  }
+
+  return normalizeCompareValue(value)
+    .split(",")
+    .map((productLineId: string) => productLineId.trim())
+    .filter(Boolean);
+}
+
+function getAllocatedProductLineIds(info: any) {
+  const productLineIds = normalizeProductLineIdList(info?.productLineIds);
+
+  if (productLineIds.length) {
+    return productLineIds;
+  }
+
+  return normalizeProductLineIdList(info?.productLineId);
 }
 
 function getAllocatedGlueCompareValue(info: any) {
@@ -768,7 +804,7 @@ function formatLineChemicalDisplay(info: any) {
 }
 
 function formatGlueDisplay(info: any) {
-  return `Keo: ${info.glueName}`;
+  return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
 }
 
 function formatAllocatedGlueDisplay(info: any) {
@@ -777,6 +813,7 @@ function formatAllocatedGlueDisplay(info: any) {
 
 function getAllocatedDisplayRows(info: any) {
   return [
+    { label: "Chuyền:", value: String(info.productLineName ?? "") },
     { label: "Keo:", value: String(info.glueName ?? "") },
   ];
 }
