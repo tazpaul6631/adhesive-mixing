@@ -31,10 +31,6 @@
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">Chuyền:</span>
-                      <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
-                    </div>
-                    <div class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">Keo:</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.glueName }}</span>
                     </div>
@@ -127,14 +123,6 @@
 
           <div class="return-confirm-dialog__message">
             <span>Xác nhận trả về thùng keo</span>
-            <span>
-              Chuyền:
-              <strong>{{ pendingReturnProductLineName }}</strong>
-            </span>
-            <span>
-              Keo:
-              <strong>{{ pendingReturnGlueId }}</strong>
-            </span>
           </div>
 
           <div class="return-confirm-dialog__actions">
@@ -182,8 +170,6 @@ import {
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
-import separateGlueApi from "@/api/separate";
-import mixGlueApi from "@/api/mixGlue";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 
@@ -191,33 +177,11 @@ type ConfirmScanTarget = "line" | "allocated";
 type ScanTarget = ConfirmScanTarget | "return";
 type ReturnScanButtonDisplayMode = "disabled" | "hidden";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
-
-type LineQrPayload = {
-  factoryId: string;
-  lineChemicalId: string;
-  productLineId: string;
+type GlueQrType = "lineChemical" | "mixGlue" | "separateGlue" | "noSeparateGlue";
+type ResolveGlueQrResult = {
+  data: any | null;
+  status: "success" | "invalid" | "noData";
 };
-
-type SeparateGlueQrPayload = {
-  type: "separate";
-  factoryId: string;
-  sgId: string;
-};
-
-type NoSeparateGlueQrPayload = {
-  type: "noSeparate";
-  factoryId: string;
-  nsgId: string;
-};
-
-type MixGlueQrPayload = {
-  type: "mix";
-  factoryId: string;
-  mgmId: string;
-  womId: string;
-};
-
-type AllocatedQrPayload = SeparateGlueQrPayload | NoSeparateGlueQrPayload | MixGlueQrPayload;
 
 const authStore = useAuthStore();
 
@@ -225,6 +189,10 @@ const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
 const invalidLineQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.";
 const invalidAllocatedQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo phát.";
 const noGlueDataMessage = "Không có dữ liệu thùng keo.";
+const systemQrUrlHosts = [
+  "10.0.111.118:7152",
+  "10.0.111.127:7152",
+];
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -257,14 +225,6 @@ const shouldShowReturnScanButton = computed(() => {
 
 const isReturnScanButtonDisabled = computed(() => {
   return !isReturnScanReady.value;
-});
-
-const pendingReturnProductLineName = computed(() => {
-  return normalizeCompareValue(pendingReturnGlueInfo.value?.productLineName);
-});
-
-const pendingReturnGlueId = computed(() => {
-  return normalizeCompareValue(getGlueIdValue(pendingReturnGlueInfo.value));
 });
 
 const isFirstTwoQrReady = computed(() => {
@@ -379,34 +339,101 @@ function getAllocatedGlueCompareValue(info: any) {
   return normalizeCompareValue(info?.glueId);
 }
 
-async function fetchAllocatedGlueInfo(payload: AllocatedQrPayload) {
-  let response;
+function getSystemQrUrl(qrText: string) {
+  const normalizedText = normalizeQrText(qrText);
 
-  if (payload.type === "mix") {
-    response = await mixGlueApi.getMixGlueScanQr(
-      payload.factoryId,
-      payload.mgmId,
-      payload.womId
-    );
-  } else if (payload.type === "noSeparate") {
-    response = await separateGlueApi.getNoSeparateGlueScanQr(
-      payload.factoryId,
-      payload.nsgId
-    );
-  } else {
-    response = await separateGlueApi.getSeparateGlueScanQr(
-      payload.factoryId,
-      payload.sgId
-    );
-  }
-
-  const responseData = response.data as any;
-
-  if (!responseData.success || !responseData.data) {
+  if (!normalizedText) {
     return null;
   }
 
-  return responseData.data;
+  try {
+    const url = new URL(normalizedText);
+    const protocol = url.protocol.toLowerCase();
+
+    if (protocol !== "http:" && protocol !== "https:") {
+      return null;
+    }
+
+    if (!systemQrUrlHosts.includes(url.host)) {
+      return null;
+    }
+
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function getGlueQrType(data: any): GlueQrType | null {
+  if (hasPayloadValue(data?.lineChemicalId) && hasPayloadValue(data?.chemicalMasterId)) {
+    return "lineChemical";
+  }
+
+  if (hasPayloadValue(data?.mixGlueMasterId) && hasPayloadValue(data?.glueId)) {
+    return "mixGlue";
+  }
+
+  if (hasPayloadValue(data?.separateGlueId) && hasPayloadValue(data?.glueId)) {
+    return "separateGlue";
+  }
+
+  if (hasPayloadValue(data?.noSeparateGlueId) && hasPayloadValue(data?.materialCode)) {
+    return "noSeparateGlue";
+  }
+
+  return null;
+}
+
+function isAllocatedGlueQrType(qrType: GlueQrType | null) {
+  return qrType === "mixGlue" || qrType === "separateGlue" || qrType === "noSeparateGlue";
+}
+
+async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQrResult> {
+  const systemUrl = getSystemQrUrl(qrText);
+
+  if (!systemUrl) {
+    return { data: null, status: "invalid" };
+  }
+
+  const userId = getCurrentUserId();
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  if (userId) {
+    headers.Authorization = `Bearer ${userId}`;
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(systemUrl.toString(), {
+      method: "GET",
+      headers,
+    });
+  } catch (error) {
+    console.error("Không thể gọi URL QR hệ thống:", error);
+    return { data: null, status: "invalid" };
+  }
+
+  if (!response.ok) {
+    return { data: null, status: "invalid" };
+  }
+
+  let responseData: any;
+
+  try {
+    responseData = await response.json();
+  } catch (error) {
+    console.error("Response QR không phải JSON:", error);
+    return { data: null, status: "invalid" };
+  }
+
+  if (responseData?.success === false || !responseData?.data) {
+    return { data: null, status: "noData" };
+  }
+
+  return { data: responseData.data, status: "success" };
 }
 
 async function openScanner(target: ScanTarget) {
@@ -461,34 +488,35 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
 }
 
 async function handleLineQrScanResult(qrText: string) {
-  const payload = parseLineQrPayload(qrText);
-
-  if (!payload) {
-    resetLineQrField();
-    await showWarningAlert(invalidLineQrMessage);
-    return;
-  }
-
   lineQrText.value = "Đang tải thông tin...";
   isLoadingLineQr.value = true;
 
   try {
-    const response = await separateGlueApi.getLineChemicalScanQr(
-      payload.factoryId,
-      payload.lineChemicalId,
-      payload.productLineId
-    );
-    const responseData = response.data as any;
+    const result = await resolveGlueQrFromSystemUrl(qrText);
 
-    if (!responseData.success || !responseData.data) {
+    if (result.status === "invalid") {
+      resetLineQrField();
+      await showWarningAlert(invalidLineQrMessage);
+      return;
+    }
+
+    if (result.status === "noData" || !result.data) {
       resetLineQrField();
       await showWarningAlert(noGlueDataMessage);
       return;
     }
 
+    const qrType = getGlueQrType(result.data);
+
+    if (qrType !== "lineChemical") {
+      resetLineQrField();
+      await showWarningAlert(invalidLineQrMessage);
+      return;
+    }
+
     lineQrRawText.value = qrText;
-    lineChemicalInfo.value = responseData.data;
-    lineQrText.value = formatLineChemicalDisplay(responseData.data);
+    lineChemicalInfo.value = result.data;
+    lineQrText.value = formatLineChemicalDisplay(result.data);
     resetConfirmReturnStatus();
     notifyMismatchIfNeeded();
   } catch (error) {
@@ -501,30 +529,36 @@ async function handleLineQrScanResult(qrText: string) {
 }
 
 async function handleAllocatedQrScanResult(qrText: string) {
-  const payload = parseAllocatedQrPayload(qrText);
-
-  if (!payload) {
-    resetAllocatedQrField();
-    await showWarningAlert(invalidAllocatedQrMessage);
-    return;
-  }
-
   allocatedQrText.value = "Đang tải thông tin...";
   isLoadingAllocatedQr.value = true;
 
   try {
-    const allocatedInfo = await fetchAllocatedGlueInfo(payload);
+    const result = await resolveGlueQrFromSystemUrl(qrText);
 
-    if (!allocatedInfo) {
+    if (result.status === "invalid") {
+      resetAllocatedQrField();
+      await showWarningAlert(invalidAllocatedQrMessage);
+      return;
+    }
+
+    if (result.status === "noData" || !result.data) {
       resetAllocatedQrField();
       await showWarningAlert(noGlueDataMessage);
       return;
     }
 
+    const qrType = getGlueQrType(result.data);
+
+    if (!isAllocatedGlueQrType(qrType)) {
+      resetAllocatedQrField();
+      await showWarningAlert(invalidAllocatedQrMessage);
+      return;
+    }
+
     allocatedQrRawText.value = qrText;
-    allocatedGlueInfo.value = allocatedInfo;
-    allocatedDisplayRows.value = getAllocatedDisplayRows(allocatedInfo);
-    allocatedQrText.value = formatAllocatedGlueDisplay(allocatedInfo);
+    allocatedGlueInfo.value = result.data;
+    allocatedDisplayRows.value = getAllocatedDisplayRows(result.data);
+    allocatedQrText.value = formatAllocatedGlueDisplay(result.data);
     resetConfirmReturnStatus();
     notifyMismatchIfNeeded();
   } catch (error) {
@@ -543,26 +577,32 @@ async function handleReturnScanResult(value: string) {
     return;
   }
 
-  const payload = parseAllocatedQrPayload(normalizedValue);
-
-  if (!payload) {
-    resetReturnField();
-    await showWarningAlert(invalidAllocatedQrMessage);
-    return;
-  }
-
   try {
-    const returnGlueInfo = await fetchAllocatedGlueInfo(payload);
+    const result = await resolveGlueQrFromSystemUrl(normalizedValue);
 
-    if (!returnGlueInfo) {
+    if (result.status === "invalid") {
+      resetReturnField();
+      await showWarningAlert(invalidAllocatedQrMessage);
+      return;
+    }
+
+    if (result.status === "noData" || !result.data) {
       resetReturnField();
       await showWarningAlert(noGlueDataMessage);
       return;
     }
 
-    returnQrText.value = formatAllocatedGlueDisplay(returnGlueInfo);
+    const qrType = getGlueQrType(result.data);
+
+    if (!isAllocatedGlueQrType(qrType)) {
+      resetReturnField();
+      await showWarningAlert(invalidAllocatedQrMessage);
+      return;
+    }
+
+    returnQrText.value = formatAllocatedGlueDisplay(result.data);
     pendingReturnQrText.value = normalizedValue;
-    pendingReturnGlueInfo.value = returnGlueInfo;
+    pendingReturnGlueInfo.value = result.data;
     isReturnConfirmDialogOpen.value = true;
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo trả về:", error);
@@ -702,19 +742,10 @@ function resetAllocatedQrField() {
   resetConfirmReturnStatus();
 }
 
-function resetConfirmFields() {
-  resetLineQrField();
-  resetAllocatedQrField();
-}
-
 function resetReturnField() {
   returnQrText.value = "";
   pendingReturnQrText.value = "";
   pendingReturnGlueInfo.value = null;
-}
-
-function resetReturnScanState() {
-  isReturnScanReady.value = false;
 }
 
 function resetConfirmReturnStatus() {
@@ -737,7 +768,7 @@ function formatLineChemicalDisplay(info: any) {
 }
 
 function formatGlueDisplay(info: any) {
-  return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
+  return `Keo: ${info.glueName}`;
 }
 
 function formatAllocatedGlueDisplay(info: any) {
@@ -746,185 +777,10 @@ function formatAllocatedGlueDisplay(info: any) {
 
 function getAllocatedDisplayRows(info: any) {
   return [
-    { label: "Chuyền:", value: String(info.productLineName ?? "") },
     { label: "Keo:", value: String(info.glueName ?? "") },
   ];
 }
 
-function parseLineQrPayload(qrText: string): LineQrPayload | null {
-  const normalizedText = normalizeQrText(qrText);
-
-  if (!normalizedText) {
-    return null;
-  }
-
-  const pathname = getQrPathname(normalizedText);
-
-  if (!pathname) {
-    return null;
-  }
-
-  return parseLineQrPathPayload(pathname);
-}
-
-function getQrPathname(qrText: string) {
-  try {
-    return new URL(qrText).pathname;
-  } catch {
-    return qrText.startsWith("/") ? qrText : "";
-  }
-}
-
-function parseLineQrPathPayload(pathname: string): LineQrPayload | null {
-  const parts = pathname.split("/").filter(Boolean);
-  const scanQrIndex = parts.findIndex((part, index) => {
-    return (
-      part.toLowerCase() === "scanqr" &&
-      parts[index - 3]?.toLowerCase() === "api" &&
-      parts[index - 2]?.toLowerCase() === "mobile" &&
-      parts[index - 1]?.toLowerCase() === "linechemical"
-    );
-  });
-
-  if (scanQrIndex === -1) {
-    return null;
-  }
-
-  const factoryId = parts[scanQrIndex + 1];
-  const lineChemicalId = parts[scanQrIndex + 2];
-  const productLineId = parts[scanQrIndex + 3];
-
-  if (!factoryId || !lineChemicalId || !productLineId) {
-    return null;
-  }
-
-  return {
-    factoryId: decodeURIComponent(factoryId),
-    lineChemicalId: decodeURIComponent(lineChemicalId),
-    productLineId: decodeURIComponent(productLineId),
-  };
-}
-
-function parseAllocatedQrPayload(qrText: string): AllocatedQrPayload | null {
-  const normalizedText = normalizeQrText(qrText);
-
-  if (!normalizedText) {
-    return null;
-  }
-
-  const pathname = getQrPathname(normalizedText);
-
-  if (!pathname) {
-    return null;
-  }
-
-  return parseAllocatedQrPathPayload(pathname);
-}
-
-function parseAllocatedQrPathPayload(pathname: string): AllocatedQrPayload | null {
-  const separateGluePayload = parseSeparateGlueQrPathPayload(pathname);
-
-  if (separateGluePayload) {
-    return separateGluePayload;
-  }
-
-  const noSeparateGluePayload = parseNoSeparateGlueQrPathPayload(pathname);
-
-  if (noSeparateGluePayload) {
-    return noSeparateGluePayload;
-  }
-
-  return parseMixGlueQrPathPayload(pathname);
-}
-
-function parseSeparateGlueQrPathPayload(pathname: string): SeparateGlueQrPayload | null {
-  const parts = pathname.split("/").filter(Boolean);
-  const scanQrIndex = parts.findIndex((part, index) => {
-    return (
-      part.toLowerCase() === "scansgqr" &&
-      parts[index - 3]?.toLowerCase() === "api" &&
-      parts[index - 2]?.toLowerCase() === "mobile" &&
-      parts[index - 1]?.toLowerCase() === "separateglue"
-    );
-  });
-
-  if (scanQrIndex === -1) {
-    return null;
-  }
-
-  const factoryId = parts[scanQrIndex + 1];
-  const sgId = parts[scanQrIndex + 2];
-
-  if (!factoryId || !sgId) {
-    return null;
-  }
-
-  return {
-    type: "separate",
-    factoryId: decodeURIComponent(factoryId),
-    sgId: decodeURIComponent(sgId),
-  };
-}
-
-function parseNoSeparateGlueQrPathPayload(pathname: string): NoSeparateGlueQrPayload | null {
-  const parts = pathname.split("/").filter(Boolean);
-  const scanQrIndex = parts.findIndex((part, index) => {
-    return (
-      part.toLowerCase() === "scannsgqr" &&
-      parts[index - 3]?.toLowerCase() === "api" &&
-      parts[index - 2]?.toLowerCase() === "mobile" &&
-      parts[index - 1]?.toLowerCase() === "separateglue"
-    );
-  });
-
-  if (scanQrIndex === -1) {
-    return null;
-  }
-
-  const factoryId = parts[scanQrIndex + 1];
-  const nsgId = parts[scanQrIndex + 2];
-
-  if (!factoryId || !nsgId) {
-    return null;
-  }
-
-  return {
-    type: "noSeparate",
-    factoryId: decodeURIComponent(factoryId),
-    nsgId: decodeURIComponent(nsgId),
-  };
-}
-
-function parseMixGlueQrPathPayload(pathname: string): MixGlueQrPayload | null {
-  const parts = pathname.split("/").filter(Boolean);
-  const scanQrIndex = parts.findIndex((part, index) => {
-    return (
-      part.toLowerCase() === "scanqr" &&
-      parts[index - 3]?.toLowerCase() === "api" &&
-      parts[index - 2]?.toLowerCase() === "mobile" &&
-      parts[index - 1]?.toLowerCase() === "mixglue"
-    );
-  });
-
-  if (scanQrIndex === -1) {
-    return null;
-  }
-
-  const factoryId = parts[scanQrIndex + 1];
-  const mgmId = parts[scanQrIndex + 2];
-  const womId = parts[scanQrIndex + 3];
-
-  if (!factoryId || !mgmId || !womId) {
-    return null;
-  }
-
-  return {
-    type: "mix",
-    factoryId: decodeURIComponent(factoryId),
-    mgmId: decodeURIComponent(mgmId),
-    womId: decodeURIComponent(womId),
-  };
-}
 </script>
 
 <style scoped lang="scss">
