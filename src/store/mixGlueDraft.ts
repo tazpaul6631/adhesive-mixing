@@ -23,7 +23,14 @@ export const isMixGlueDraftRestorable = (draft: MixGlueDraftPayload | undefined 
 export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined | null): boolean => {
   if (!draft) return false;
 
-  if (Array.isArray(draft.orderDetails) && draft.orderDetails.some((o: any) => !!o.selectedBucketId)) {
+  if (Array.isArray(draft.separateGlueDetails) && draft.separateGlueDetails.some((o: any) =>
+    !!o.selectedBucketId || (Array.isArray(o.selectedRequestDetailIds) && o.selectedRequestDetailIds.length > 0)
+  )) {
+    return true;
+  }
+  if (Array.isArray(draft.orderDetails) && draft.orderDetails.some((o: any) =>
+    !!o.selectedBucketId || (Array.isArray(o.selectedRequestDetailIds) && o.selectedRequestDetailIds.length > 0)
+  )) {
     return true;
   }
   if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {

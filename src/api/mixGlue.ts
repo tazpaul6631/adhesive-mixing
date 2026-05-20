@@ -7,8 +7,8 @@ export default {
     postMGMConfirmComplete(data: any) {
         return request.post(`api/mobile/mixglue/mgmconfirmcomplete`, data)
     },
-    postMixGlueConfirm(data: any) {
-        return request.post(`api/mobile/mixglue/confirm`, data)
+    postMGMQIPConfirm(data: any) {
+        return request.post(`api/mobile/mixglue/mgmqipconfirm`, data)
     },
     getMixGlueScanQr(factoryId: string, mgmId: string, womId: string) {
         return request.get(`api/mobile/mixglue/scanqr/${factoryId}/${mgmId}/${womId}`)

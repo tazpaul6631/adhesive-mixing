@@ -15,10 +15,10 @@
 
       <div class="flex flex-column gap-2">
         <label for="percentage" class="font-bold text-900">Trọng lượng thực tế</label>
-        <InputNumber id="percentage" v-model="percentage" suffix=" kg" :invalid="submitted && percentage === null"
-          class="w-full" />
+        <InputNumber id="percentage" v-model="percentage" :suffix="weightUnitSuffix"
+          :invalid="submitted && percentage === null" class="w-full" />
         <small v-if="submitted && percentage === null" class="text-red-500">
-          Vui lòng nhập số (KG)
+          Vui lòng nhập số ({{ selectedWeightUnit }})
         </small>
       </div>
     </div>
@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -44,6 +44,9 @@ const emit = defineEmits(['update:visible', 'save', 'fetch-materials']);
 const selectedMaterial = ref<any>(null);
 const percentage = ref<number | null>(null);
 const submitted = ref(false);
+
+const selectedWeightUnit = computed(() => selectedMaterial.value?.weightUnit || 'Kg');
+const weightUnitSuffix = computed(() => ` ${selectedWeightUnit.value}`);
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
@@ -64,7 +67,7 @@ const saveForm = () => {
       name: selectedMaterial.value.materialName,
       percentage: percentage.value,
       materialCode: selectedMaterial.value.materialCode,
-      weightUnit: selectedMaterial.value.weightUnit || 'Kg'
+      weightUnit: selectedWeightUnit.value
     });
     hideDialog();
   }

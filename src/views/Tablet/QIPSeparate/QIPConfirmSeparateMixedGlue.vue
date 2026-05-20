@@ -34,7 +34,8 @@
 
             <!-- BẢNG DÀNH CHO KEO TRỘN -->
             <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="separateGlueId">
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="separateGlueId"
+              selectionMode="single" v-model:selection="selectedTableRow" @row-click="onMixedRowClick">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -71,7 +72,8 @@
 
             <!-- BẢNG DÀNH CHO KEO KHÔNG TRỘN -->
             <DataTable v-else :value="lineDetails" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px" dataKey="noSeparateGlueId">
+              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px" dataKey="noSeparateGlueId"
+              selectionMode="single" v-model:selection="selectedTableRow" @row-click="onNoMixRowClick">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -131,6 +133,7 @@ const authStore = useAuthStore();
 
 const isLoadingLine = ref(true);
 const selectedItem = ref<any>(null);
+const selectedTableRow = ref<any>(null);
 const lineDetails = ref<any[]>([]);
 const bluetoothRef = ref<any>(null);
 
@@ -146,25 +149,34 @@ const handlePrintSuccess = () => {
 const resetState = () => {
   lineDetails.value = [];
   selectedItem.value = null;
+  selectedTableRow.value = null;
   isLoadingLine.value = true;
 };
 
 // --- GỌI API KEO TRỘN ---
 const fetchMixedGlueDetail = async (factoryId: string, sgId: string) => {
-
   try {
     const { data } = await separateGlue.getSGQueryResult(factoryId, sgId);
 
     if (data && data.success) {
-      lineDetails.value = data.data ? [data.data] : [];
+      const detail = data.data
+        ? { ...data.data, separateGlueId: data.data.separateGlueId ?? sgId }
+        : null;
+      lineDetails.value = detail ? [detail] : [];
+      selectedTableRow.value = detail;
       selectedItem.value = {
-        factoryId: factoryId,
-        separateGlueId: sgId
+        factoryId,
+        separateGlueId: sgId,
+        ...detail,
       };
     } else {
+      lineDetails.value = [];
+      selectedTableRow.value = null;
       console.error('API Error (Mixed):', data?.message);
     }
   } catch (error) {
+    lineDetails.value = [];
+    selectedTableRow.value = null;
     console.error('Fetch Mixed Glue Detail Error:', error);
   }
 };
@@ -175,44 +187,74 @@ const fetchNoMixGlueDetail = async (factoryId: string, nsgId: string) => {
     const { data } = await separateGlue.getNSGQueryResult(factoryId, nsgId);
 
     if (data && data.success) {
-      lineDetails.value = data.data ? [data.data] : [];
+      const detail = data.data
+        ? { ...data.data, noSeparateGlueId: data.data.noSeparateGlueId ?? nsgId }
+        : null;
+      lineDetails.value = detail ? [detail] : [];
+      selectedTableRow.value = detail;
       selectedItem.value = {
-        factoryId: factoryId,
-        noSeparateGlueId: nsgId
+        factoryId,
+        noSeparateGlueId: nsgId,
+        ...detail,
       };
     } else {
+      lineDetails.value = [];
+      selectedTableRow.value = null;
       console.error('API Error (NoMix):', data?.message);
     }
   } catch (error) {
+    lineDetails.value = [];
+    selectedTableRow.value = null;
     console.error('Fetch NoMix Glue Detail Error:', error);
   }
 };
 
-// --- LIFECYCLE ---
-onIonViewWillEnter(async () => {
-  await nextTick();
-  bluetoothRef.value?.initBluetooth?.();
-
+const loadDetailFromRoute = async () => {
   resetState();
 
-  const factoryId = authStore.user?.factoryId || "01";
+  const factoryId = authStore.user?.factoryId || '01';
   const type = route.query.type as string;
 
   if (type === 'mixed') {
     const separateGlueId = route.query.separateGlueId as string;
-
     if (separateGlueId) {
       await fetchMixedGlueDetail(factoryId, separateGlueId);
     }
   } else if (type === 'nomix') {
     const noSeparateGlueId = route.query.noSeparateGlueId as string;
-
     if (noSeparateGlueId) {
       await fetchNoMixGlueDetail(factoryId, noSeparateGlueId);
     }
   }
 
   isLoadingLine.value = false;
+};
+
+const onMixedRowClick = async (event: { data: any }) => {
+  const separateGlueId = event.data?.separateGlueId;
+  if (!separateGlueId) return;
+
+  isLoadingLine.value = true;
+  const factoryId = authStore.user?.factoryId || '01';
+  await fetchMixedGlueDetail(factoryId, String(separateGlueId));
+  isLoadingLine.value = false;
+};
+
+const onNoMixRowClick = async (event: { data: any }) => {
+  const noSeparateGlueId = event.data?.noSeparateGlueId;
+  if (!noSeparateGlueId) return;
+
+  isLoadingLine.value = true;
+  const factoryId = authStore.user?.factoryId || '01';
+  await fetchNoMixGlueDetail(factoryId, String(noSeparateGlueId));
+  isLoadingLine.value = false;
+};
+
+// --- LIFECYCLE ---
+onIonViewWillEnter(async () => {
+  await nextTick();
+  bluetoothRef.value?.initBluetooth?.();
+  await loadDetailFromRoute();
 });
 
 onIonViewDidLeave(() => {

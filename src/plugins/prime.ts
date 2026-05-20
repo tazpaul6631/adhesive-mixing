@@ -23,6 +23,7 @@ export default {
     install: (app: App) => {
         app.component('DataTable', DataTable);
         app.component('Column', Column);
+        app.component('MultiSelect', MultiSelect);
         app.component('InputText', InputText);
         app.component('IconField', IconField);
         app.component('InputIcon', InputIcon);

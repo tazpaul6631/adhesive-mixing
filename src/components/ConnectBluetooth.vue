@@ -38,7 +38,14 @@ import separateGlue from '@/api/separate';
 const props = defineProps<{
   templateType?: string;
   printData?: any;
+  /** Vào page: tự bật Bluetooth (và kết nối máy in đã lưu nếu có). */
+  autoEnableOnEnter?: boolean;
+  /** Rời page: ngắt kết nối và tắt Bluetooth adapter (Android) để tiết kiệm pin. */
+  autoDisableOnLeave?: boolean;
 }>();
+
+const autoEnableOnEnter = props.autoEnableOnEnter ?? true;
+const autoDisableOnLeave = props.autoDisableOnLeave ?? true;
 
 const status = ref<'disconnected' | 'connecting' | 'connected'>('disconnected');
 const pairedDevices = ref<any[]>([]);
@@ -50,30 +57,112 @@ let autoReconnectInterval: any = null;
 let pendingInitTimer: ReturnType<typeof setTimeout> | null = null;
 const emit = defineEmits(['printSuccess']);
 
+const getBluetooth = () => (window as any).bluetoothSerial;
+
+const ensureBluetoothEnabled = (onReady: () => void, onFailure?: (err: unknown) => void) => {
+  const bt = getBluetooth();
+  if (!bt) return;
+
+  bt.isEnabled(
+    () => onReady(),
+    () => {
+      bt.enable(
+        () => {
+          console.log('Bluetooth đã được bật tự động.');
+          onReady();
+        },
+        (err: any) => {
+          console.log('Không thể bật Bluetooth:', err);
+          onFailure?.(err);
+        }
+      );
+    }
+  );
+};
+
+const scanPairedDevices = (onComplete?: (devices: any[]) => void) => {
+  const bt = getBluetooth();
+  if (!bt) return;
+
+  bt.list(
+    (devices: any[]) => {
+      pairedDevices.value = devices;
+      onComplete?.(devices);
+    },
+    (err: any) => console.error('Lỗi quét thiết bị đã ghép đôi:', err)
+  );
+};
+
+const disconnectDevice = (): Promise<void> => {
+  return new Promise((resolve) => {
+    const bt = getBluetooth();
+    if (!bt) {
+      resolve();
+      return;
+    }
+
+    bt.isConnected(
+      () => {
+        bt.disconnect(
+          () => {
+            status.value = 'disconnected';
+            console.log('Đã ngắt kết nối máy in.');
+            resolve();
+          },
+          () => resolve()
+        );
+      },
+      () => resolve()
+    );
+  });
+};
+
+const disableBluetoothAdapter = (): Promise<void> => {
+  return new Promise((resolve) => {
+    const bt = getBluetooth();
+    if (!bt || typeof bt.disable !== 'function') {
+      resolve();
+      return;
+    }
+
+    bt.isEnabled(
+      () => {
+        bt.disable(
+          () => {
+            console.log('Đã tắt Bluetooth để tiết kiệm pin.');
+            resolve();
+          },
+          (err: any) => {
+            console.log('Không thể tắt Bluetooth (có thể bị hạn chế trên thiết bị):', err);
+            resolve();
+          }
+        );
+      },
+      () => resolve()
+    );
+  });
+};
+
 // --- 1. Xử lý Bật Bluetooth & Quét thiết bị ---
 const turnOnAndScan = () => {
-  const bt = (window as any).bluetoothSerial;
+  const bt = getBluetooth();
   if (!bt) return console.error("Plugin bluetoothSerial chưa load.");
 
-  bt.enable(
+  ensureBluetoothEnabled(
     () => {
-      console.log("Bluetooth đã bật!");
-      // Sau khi bật, tìm các thiết bị đã ghép đôi
-      bt.list((devices: any[]) => {
-        pairedDevices.value = devices;
-        if (devices.length === 0) alert("Không tìm thấy máy in nào đã ghép đôi trong cài đặt Bluetooth.");
-      }, (err: any) => console.error("Lỗi quét:", err));
+      scanPairedDevices((devices) => {
+        if (devices.length === 0) {
+          alert("Không tìm thấy máy in nào đã ghép đôi trong cài đặt Bluetooth.");
+        }
+      });
     },
-    (err: any) => {
-      console.log("Lỗi bật Bluetooth:", err);
-      bt.showBluetoothSettings();
-    }
+    () => bt.showBluetoothSettings?.()
   );
 };
 
 // --- 2. Kết nối tới MAC đã chọn CÓ TIMEOUT ---
 const connectToDevice = () => {
-  const bt = (window as any).bluetoothSerial;
+  const bt = getBluetooth();
   if (!bt || !selectedMac.value) return;
 
   status.value = 'connecting';
@@ -105,7 +194,7 @@ const cancelConnection = () => {
   status.value = 'disconnected';
   clearTimeout(connectionTimeout);
 
-  const bt = (window as any).bluetoothSerial;
+  const bt = getBluetooth();
   if (bt) {
     // Bắn lệnh disconnect để giải phóng cổng bluetooth đang bị kẹt
     bt.disconnect(() => console.log("Đã hủy kết nối ngang."));
@@ -118,7 +207,7 @@ const startAutoReconnectWatchdog = () => {
   clearInterval(autoReconnectInterval);
 
   autoReconnectInterval = setInterval(() => {
-    const bt = (window as any).bluetoothSerial;
+    const bt = getBluetooth();
     if (!bt) return;
 
     // Kiểm tra xem máy in thực tế còn kết nối không
@@ -163,7 +252,7 @@ const saveAndConnect = async () => {
 
 // --- 4. Ngắt kết nối (Tuỳ chọn) ---
 const disconnect = () => {
-  const bt = (window as any).bluetoothSerial;
+  const bt = getBluetooth();
   if (bt) {
     bt.disconnect(() => {
       status.value = 'disconnected';
@@ -172,47 +261,38 @@ const disconnect = () => {
   }
 };
 
-// --- 5. Chỉ chạy khi parent gọi initBluetooth() (vd. onIonViewWillEnter). Không tự onMounted — tránh quét/kết nối khi không ở màn có máy in.
+// --- 5. Gọi từ onIonViewWillEnter: bật BT, quét máy in, tự kết nối MAC đã lưu ---
 const initBluetooth = async () => {
+  if (!autoEnableOnEnter) return;
+
   if (pendingInitTimer) {
     clearTimeout(pendingInitTimer);
     pendingInitTimer = null;
   }
 
   const { value } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
-  if (!value) return;
-
-  selectedMac.value = value;
+  if (value) {
+    selectedMac.value = value;
+  }
 
   pendingInitTimer = setTimeout(() => {
     pendingInitTimer = null;
-    const bt = (window as any).bluetoothSerial;
-    if (bt) {
-      bt.isEnabled(
-        () => {
-          if (status.value !== 'connected') {
-            connectToDevice();
-          }
-          startAutoReconnectWatchdog();
-        },
-        () => {
-          console.log("Bluetooth đang tắt, tự động yêu cầu bật...");
-          bt.enable(
-            () => {
-              console.log("Bluetooth đã được bật tự động.");
-              connectToDevice();
-              startAutoReconnectWatchdog();
-            },
-            (err: any) => {
-              console.log("Người dùng từ chối bật Bluetooth hoặc có lỗi:", err);
-            }
-          );
-        }
-      );
-    }
+    const bt = getBluetooth();
+    if (!bt) return;
+
+    ensureBluetoothEnabled(() => {
+      scanPairedDevices();
+
+      if (selectedMac.value && status.value !== 'connected') {
+        connectToDevice();
+      }
+
+      startAutoReconnectWatchdog();
+    });
   }, 500);
 };
 
+// --- 6. Gọi từ onIonViewDidLeave: ngắt kết nối + tắt BT tiết kiệm pin ---
 const cleanupBluetooth = () => {
   clearTimeout(connectionTimeout);
   if (pendingInitTimer) {
@@ -220,7 +300,14 @@ const cleanupBluetooth = () => {
     pendingInitTimer = null;
   }
   clearInterval(autoReconnectInterval);
-  // disconnect(); // Tùy chọn: comment lại nếu muốn giữ kết nối khi đổi tab
+
+  void (async () => {
+    await disconnectDevice();
+
+    if (autoDisableOnLeave) {
+      await disableBluetoothAdapter();
+    }
+  })();
 };
 
 onUnmounted(() => {
@@ -261,7 +348,7 @@ const tsplBoldText = (x: number, y: number, text: string, xMul = TSPL_TEXT_XMUL,
 
 // --- 6. Logic In TSPL ---
 const printLabel = async () => {
-  const bt = (window as any).bluetoothSerial;
+  const bt = getBluetooth();
   if (!bt || status.value !== 'connected') return alert("Máy in chưa sẵn sàng!");
   if (!props.printData) return alert("Không tìm thấy dữ liệu để in!");
 
@@ -278,7 +365,7 @@ const printLabel = async () => {
         mixGlueMasterId: mixGlueMasterId
       };
 
-      const response = await mixGlue.postMixGlueConfirm(payload);
+      const response = await mixGlue.postMGMQIPConfirm(payload);
 
       if (response.data?.success) {
         const { styleName, startDate, endDate, domainApi, action } = response.data.data;

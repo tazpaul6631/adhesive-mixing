@@ -1,12 +1,12 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="400px" stripedRows
+    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px" stripedRows
       class="modern-table" tableStyle="min-width: 800px; width: 100%; table-layout: fixed;"
       @row-click="(e) => $emit('row-click', e)" selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
 
       <template #empty>
-        <div style="text-align: center; height: 280px; align-content: center;">
+        <div style="text-align: center; height: 100px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
         </div>
@@ -17,20 +17,6 @@
           <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="$emit('open-new')" />
         </div>
       </template>
-
-      <!-- <Column header="Xưởng" style="width: 10%; height: 60px">
-        <template #body="{ data }">
-          <Skeleton v-if="isLoading" width="60%" height="1rem" class="mx-auto" />
-          <span v-else>{{ data.factoryName }}</span>
-        </template>
-      </Column> -->
-
-      <Column header="Hình thể" style="width: 13%; height: 60px">
-        <template #body="{ data }">
-          <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <span v-else>{{ data.styleName }}</span>
-        </template>
-      </Column>
 
       <Column field="materialName" header="Keo" class="font-medium" style="width: 20%; height: 60px">
         <template #body="{ data }">

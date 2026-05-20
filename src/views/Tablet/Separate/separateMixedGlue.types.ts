@@ -1,0 +1,52 @@
+export type HeaderInfo = {
+  orderNo: string;
+  glue: string;
+  totalWeight: string;
+};
+
+export type MixingProcess = {
+  component: string;
+  weight: string;
+  styleName: string;
+};
+
+export type SeparateGlueRow = {
+  glueId: string;
+  selectedRequestDetailIds: string[];
+  selectedBucketId: string | null;
+  operator: string;
+  operatorId: string;
+  confirmTime: string | null;
+  confirmDate: string | null;
+  chemicalId?: string;
+  bucketId?: string;
+  requestDetailIds?: string[];
+};
+
+export type RequestDetailOption = {
+  requestDetailId: string;
+  requestDetailName: string;
+  workOrderWeight: string | number;
+  workOrderWeightUnit: string;
+  label: string;
+};
+
+export type NewComponentFormData = {
+  name: string;
+  percentage: string;
+  materialCode: string;
+  weightUnit: string;
+};
+
+export type PayloadBuildContext = {
+  factoryId: string;
+  employeeId: string;
+  workOrderMasterId: string;
+  startDate: string;
+  endDate: string;
+  mixGlueMasterId: string;
+  mixChemicals: any[];
+  separateGlueDetails: any[];
+  extraChietList: any[];
+  noMixComponents: any[];
+};
