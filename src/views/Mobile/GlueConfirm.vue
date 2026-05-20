@@ -213,7 +213,6 @@ const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
 const invalidLineQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.";
 const invalidAllocatedQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo phát.";
 const noGlueDataMessage = "Không có dữ liệu thùng keo.";
-const returnQrMismatchMessage = "Mã QR thùng keo không khớp.";
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -232,6 +231,7 @@ const toastMessage = ref("");
 const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const isReturnScanReady = ref(false);
+const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
 const isLoadingAllocatedQr = ref(false);
 
@@ -274,7 +274,7 @@ const isFirstTwoQrMatched = computed(() => {
 });
 
 const isConfirmButtonDisabled = computed(() => {
-  return !isFirstTwoQrMatched.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
+  return isConfirmReturnCompleted.value || !isFirstTwoQrMatched.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
 });
 
 const statusMessage = computed(() => {
@@ -384,32 +384,6 @@ function getGlueIdValue(info: any) {
   return info?.glueId || 0;
 }
 
-function getAllocatedMainId(info: any) {
-  return (
-    normalizeCompareValue(info?.separateGlueId) ||
-    normalizeCompareValue(info?.noSeparateGlueId) ||
-    normalizeCompareValue(info?.mixGlueMasterId)
-  );
-}
-
-function isSameAllocatedGlue(returnInfo: any, originalInfo: any) {
-  if (!returnInfo || !originalInfo) {
-    return false;
-  }
-
-  const returnFactoryId = normalizeCompareValue(returnInfo.factoryId);
-  const originalFactoryId = normalizeCompareValue(originalInfo.factoryId);
-  const returnMainId = getAllocatedMainId(returnInfo);
-  const originalMainId = getAllocatedMainId(originalInfo);
-
-  return !!returnFactoryId &&
-    !!originalFactoryId &&
-    !!returnMainId &&
-    !!originalMainId &&
-    returnFactoryId === originalFactoryId &&
-    returnMainId === originalMainId;
-}
-
 async function fetchAllocatedGlueInfo(payload: AllocatedQrPayload) {
   const response = payload.type === "mix"
     ? await mixGlueApi.getMixGlueScanQr(
@@ -510,6 +484,7 @@ async function handleLineQrScanResult(qrText: string) {
     lineQrRawText.value = qrText;
     lineChemicalInfo.value = responseData.data;
     lineQrText.value = formatLineChemicalDisplay(responseData.data);
+    resetConfirmReturnStatus();
     notifyMismatchIfNeeded();
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
@@ -545,6 +520,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
     allocatedGlueInfo.value = allocatedInfo;
     allocatedDisplayRows.value = getAllocatedDisplayRows(allocatedInfo);
     allocatedQrText.value = formatAllocatedGlueDisplay(allocatedInfo);
+    resetConfirmReturnStatus();
     notifyMismatchIfNeeded();
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo phát:", error);
@@ -576,12 +552,6 @@ async function handleReturnScanResult(value: string) {
     if (!returnGlueInfo) {
       resetReturnField();
       await showWarningAlert(noGlueDataMessage);
-      return;
-    }
-
-    if (!isSameAllocatedGlue(returnGlueInfo, allocatedGlueInfo.value)) {
-      resetReturnField();
-      await showWarningAlert(returnQrMismatchMessage);
       return;
     }
 
@@ -621,8 +591,6 @@ async function confirmReturnQr() {
     await submitReturnQr();
     isReturnConfirmDialogOpen.value = false;
     resetReturnField();
-    resetReturnScanState();
-    resetConfirmFields();
     showToast("Trả về thành công");
   } catch (error) {
     console.error("Không thể xác nhận trả về thùng keo:", error);
@@ -704,6 +672,7 @@ async function handleConfirmReturn() {
     }
 
     isReturnScanReady.value = true;
+    isConfirmReturnCompleted.value = true;
     showToast("Xác nhận trả về thành công");
   } catch (error) {
     console.error("Không thể xác nhận trả về:", error);
@@ -717,6 +686,7 @@ function resetLineQrField() {
   lineQrText.value = "";
   lineQrRawText.value = "";
   lineChemicalInfo.value = null;
+  resetConfirmReturnStatus();
 }
 
 function resetAllocatedQrField() {
@@ -724,6 +694,7 @@ function resetAllocatedQrField() {
   allocatedQrRawText.value = "";
   allocatedGlueInfo.value = null;
   allocatedDisplayRows.value = [];
+  resetConfirmReturnStatus();
 }
 
 function resetConfirmFields() {
@@ -739,6 +710,12 @@ function resetReturnField() {
 
 function resetReturnScanState() {
   isReturnScanReady.value = false;
+}
+
+function resetConfirmReturnStatus() {
+  isReturnScanReady.value = false;
+  isConfirmReturnCompleted.value = false;
+  resetReturnField();
 }
 
 function showToast(message: string) {
