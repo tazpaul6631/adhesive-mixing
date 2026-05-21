@@ -27,7 +27,7 @@
                     v-if="!lineQrText"
                     class="qr-scan-field__text qr-scan-field__text--empty"
                   >
-                    Quét mã QR thùng keo chuyền
+                    Chạm để quét mã QR
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
@@ -61,7 +61,7 @@
                     v-if="!allocatedQrText"
                     class="qr-scan-field__text qr-scan-field__text--empty"
                   >
-                    Quét mã QR thùng keo phát
+                    Chạm để quét mã QR
                   </span>
                   <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
                     <div
@@ -126,15 +126,20 @@
           <h2 class="return-confirm-dialog__title">Xác nhận thùng keo trả về</h2>
 
           <div class="return-confirm-dialog__message">
-            <span>Xác nhận trả về thùng keo</span>
+            <span>Xác nhận trả về thùng keo đã quét?</span>
           </div>
 
           <div class="return-confirm-dialog__actions">
             <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="cancelReturnConfirm">
               HỦY
             </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click="confirmReturnQr">
-              OK
+            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click.stop="confirmReturnQr">
+              <ion-spinner
+                v-if="isSubmittingReturn"
+                name="crescent"
+                class="return-confirm-dialog__button-spinner"
+              ></ion-spinner>
+              <span>{{ isSubmittingReturn ? "Đang gửi..." : "OK" }}</span>
             </ion-button>
           </div>
         </div>
@@ -167,6 +172,7 @@ import {
   IonIcon,
   IonModal,
   IonPage,
+  IonSpinner,
   IonTitle,
   IonToast,
   IonToolbar,
@@ -214,6 +220,7 @@ const showSuccessToast = ref(false);
 const toastMessage = ref("");
 const isReturnConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
+let isReturnSubmitLocked = false;
 const isReturnScanReady = ref(false);
 const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
@@ -656,16 +663,20 @@ function handleReturnDialogDismiss() {
 }
 
 function cancelReturnConfirm() {
+  if (isSubmittingReturn.value) {
+    return;
+  }
+
   isReturnConfirmDialogOpen.value = false;
-  isSubmittingReturn.value = false;
   resetReturnField();
 }
 
 async function confirmReturnQr() {
-  if (!pendingReturnQrText.value || isSubmittingReturn.value) {
+  if (!pendingReturnQrText.value || isSubmittingReturn.value || isReturnSubmitLocked) {
     return;
   }
 
+  isReturnSubmitLocked = true;
   isSubmittingReturn.value = true;
 
   try {
@@ -678,6 +689,7 @@ async function confirmReturnQr() {
     alert("Không thể xác nhận trả về thùng keo. Vui lòng thử lại!");
   } finally {
     isSubmittingReturn.value = false;
+    isReturnSubmitLocked = false;
   }
 }
 
@@ -960,7 +972,7 @@ function getAllocatedDisplayRows(info: any) {
   border-radius: 16px;
   font-weight: 500;
   text-transform: none;
-  font-size: 14px !important;
+  font-size: 15px !important;
   min-height: 50px;
 
   ion-icon {
@@ -1081,6 +1093,12 @@ function getAllocatedDisplayRows(info: any) {
     justify-content: flex-end;
     gap: 6px;
     margin-top: 22px;
+  }
+
+  &__button-spinner {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
   }
 }
 
