@@ -15,6 +15,8 @@ import Aura from '@primeuix/themes/aura';
 
 import '@ionic/vue/css/core.css';
 import './theme/variables.css';
+import './theme/toast.css';
+import './theme/datatable.css';
 import 'primeflex/primeflex.css';
 
 const pinia = createPinia();

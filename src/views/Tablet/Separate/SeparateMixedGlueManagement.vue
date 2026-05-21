@@ -12,7 +12,6 @@
     </ion-header>
 
     <ion-content class="ion-padding" :scroll-events="true">
-      <Toast position="top-right" />
 
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
@@ -42,80 +41,75 @@
 
         <div class="segment-tabs">
           <ion-segment v-model="selectedTab" mode="ios" scrollable @ionChange="onSegmentIonChange">
-            <ion-segment-button value="table1" content-id="table1">
+            <ion-segment-button value="table1">
               <ion-label class="font-bold">KEO TRỘN</ion-label>
             </ion-segment-button>
-            <ion-segment-button value="table2" content-id="table2">
+            <ion-segment-button value="table2">
               <ion-label class="font-bold">KEO KHÔNG TRỘN</ion-label>
             </ion-segment-button>
           </ion-segment>
         </div>
 
-        <ion-segment-view>
-          <ion-segment-content id="table1">
-            <div class="surface-card p-0 shadow-1 border-round-xl">
-              <div class="surface-100 p-3 border-round-top-xl">
-                <span class="font-bold text-700 text-lg">
-                  <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu chiết thùng keo trộn
-                </span>
-              </div>
-              <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails"
-                :request-details="requestDetails" @update-bucket="saveDraftToStoreOnly"
-                @add-row="handleAddSeparateGlueRow" @delete-row="handleDeleteSeparateGlueRow" />
+        <div v-show="selectedTab === 'table1'" class="tab-panel">
+          <div class="surface-card p-0 shadow-1 border-round-xl">
+            <div class="surface-100 p-3 border-round-top-xl">
+              <span class="font-bold text-700 text-lg">
+                <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu chiết thùng keo trộn
+              </span>
             </div>
-          </ion-segment-content>
+            <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails"
+              :request-details="requestDetails" :target-weight="headerInfo.totalWeight" target-weight-unit="Kg"
+              @update-bucket="saveDraftToStoreOnly" @add-row="handleAddSeparateGlueRow"
+              @delete-row="handleDeleteSeparateGlueRow" />
+          </div>
+        </div>
 
-          <ion-segment-content id="table2">
-            <div class="surface-card p-0 shadow-1 border-round-xl">
-              <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
-                <span class="font-bold text-700 text-lg">
-                  <i class="pi pi-box mr-2"></i>Chi tiết đơn yêu cầu sử dụng keo không trộn
-                </span>
-              </div>
+        <div v-show="selectedTab === 'table2'" class="tab-panel">
+          <div class="surface-card p-0 shadow-1 border-round-xl">
+            <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
+              <span class="font-bold text-700 text-lg">
+                <i class="pi pi-box mr-2"></i>Chi tiết đơn yêu cầu sử dụng keo không trộn
+              </span>
+            </div>
 
-              <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
-                <div class="grid formgrid align-items-end">
-                  <div class="col-12 sm:col-6 lg:col-3 lg:mb-0">
-                    <label class="text-800 font-medium mb-2 block">Hình thể</label>
-                    <InputText v-model="mixingProcess.styleName" readonly class="font-bold text-primary border-blue-200"
-                      style="width: 280px;" fluid />
-                  </div>
-
-                  <div class="col-12 sm:col-6 lg:col-3 lg:mb-0">
-                    <label class="text-800 font-medium mb-2 block">Keo</label>
-                    <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
-                      style="width: 280px;" fluid />
-                  </div>
-
-                  <ElectronicScale :weight-unit="activeComponent?.weightUnit"
-                    :target-weight="activeComponent?.requiredWeight ?? 0"
-                    :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
-                    :upper-tolerance="activeComponent?.upperTolerance ?? ''"
-                    :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
-                    :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
-                    @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
-                </div>
-              </div>
-
-              <div class="overflow-x-auto border-round-bottom-xl">
-                <div class="table-wrapper">
-                  <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
-                    :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                    @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent"
-                    @chiet-row="handleChietRow" @view-row="handleViewRow" />
+            <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
+              <div class="grid formgrid align-items-end">
+                <div class="col-12 sm:col-6 lg:col-6 lg:mb-0">
+                  <label class="text-800 font-medium mb-2 block">Keo</label>
+                  <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
+                    style="width: 280px;" fluid />
                 </div>
 
-                <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
-                  :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
-                  @save="handleSaveNewComponent" />
-
-                <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
-                  :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
-                  @confirm="confirmChiet" @add-row="handleAddChietRow" @delete-row="handleDeleteChietRow" />
+                <ElectronicScale :weight-unit="activeComponent?.weightUnit"
+                  :target-weight="activeComponent?.requiredWeight ?? 0"
+                  :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
+                  :upper-tolerance="activeComponent?.upperTolerance ?? ''"
+                  :enforce-tolerance="!!activeComponent?.glueExtra"
+                  :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
+                  :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
+                  @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
               </div>
             </div>
-          </ion-segment-content>
-        </ion-segment-view>
+
+            <div class="overflow-x-auto border-round-bottom-xl">
+              <div class="table-wrapper">
+                <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
+                  :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
+                  @row-click="onRowClick" @open-new="openNewComponentDialog" @delete-row="handleDeleteComponent"
+                  @chiet-row="handleChietRow" @view-row="handleViewRow" />
+              </div>
+
+              <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
+                :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
+                @save="handleSaveNewComponent" />
+
+              <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
+                :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
+                @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet" @add-row="handleAddChietRow"
+                @delete-row="handleDeleteChietRow" />
+            </div>
+          </div>
+        </div>
       </div>
     </ion-content>
   </ion-page>
@@ -124,7 +118,7 @@
 <script setup lang="ts">
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
-  IonTitle, IonSegment, IonSegmentButton, IonLabel, IonSegmentView, IonSegmentContent,
+  IonTitle, IonSegment, IonSegmentButton, IonLabel,
 } from '@ionic/vue';
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
@@ -154,6 +148,7 @@ const {
   isViewMode,
   onSegmentIonChange,
   saveDraftToStoreOnly,
+  saveChietDraftToStoreOnly,
   handleAddSeparateGlueRow,
   handleDeleteSeparateGlueRow,
   handleComplete,
@@ -164,6 +159,7 @@ const {
   handleSaveNewComponent,
   handleDeleteComponent,
   fetchMaterials,
+  openNewComponentDialog,
   handleChietRow,
   handleViewRow,
   confirmChiet,
@@ -182,16 +178,9 @@ const {
   z-index: 2;
 }
 
-/* Xóa các css lỗi cũ và thay bằng: */
-ion-segment-view {
+.tab-panel {
+  width: 100%;
   min-height: 500px;
-  /* Chiều cao tối thiểu để chống co sập */
-  height: auto;
-  width: 100%;
-}
-
-ion-segment-content {
-  width: 100%;
 }
 
 ion-segment {

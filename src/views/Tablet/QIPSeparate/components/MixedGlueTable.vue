@@ -7,7 +7,7 @@
     </div>
     <div class="overflow-x-auto border-round-bottom-xl">
       <DataTable :value="items" lazy :totalRecords="totalRecords" @page="onPage" scrollable scrollHeight="460px"
-        stripedRows class="modern-table" tableStyle="width: 100%; min-width: 800px;" @row-click="onRowClick"
+        stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="onRowClick"
         :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]" selectionMode="single"
         v-model:selection="localSelected" dataKey="separateGlueId">
         <template #empty>
@@ -17,35 +17,36 @@
           </div>
         </template>
 
-        <Column field="workOrderMasterName" header="Đơn điều công" style="width: 25%; height: 60px">
+        <Column field="workOrderMasterName" header="Đơn điều công" headerClass="dt-col-primary"
+          bodyClass="dt-col-primary">
           <template #body="{ data }">
             <Skeleton v-if="isLoading" width="80%" height="1rem" />
-            <span v-else class="text-wrap font-bold">{{ data.workOrderMasterName }}</span>
+            <span v-else class="dt-cell-wrap font-bold">{{ data.workOrderMasterName }}</span>
           </template>
         </Column>
 
-        <Column field="productLineName" header="Chuyền" style="width: 15%; height: 60px">
+        <Column field="productLineName" header="Chuyền" headerClass="dt-col-text" bodyClass="dt-col-text">
           <template #body="{ data }">
             <Skeleton v-if="isLoading" width="60%" height="1rem" />
             <span v-else>{{ data.productLineName }}</span>
           </template>
         </Column>
 
-        <Column field="glueName" header="Keo" style="width: 20%; height: 60px">
+        <Column field="glueName" header="Keo" headerClass="dt-col-primary" bodyClass="dt-col-primary">
           <template #body="{ data }">
             <Skeleton v-if="isLoading" width="60%" height="1rem" />
             <span v-else>{{ data.glueName }}</span>
           </template>
         </Column>
 
-        <Column header="Tổng TL" style="width: 15%; height: 60px">
+        <Column header="Tổng TL" headerClass="dt-col-weight" bodyClass="dt-col-weight">
           <template #body="{ data }">
             <Skeleton v-if="isLoading" width="60%" height="1rem" />
             <span v-else>{{ data.capacity }}</span>
           </template>
         </Column>
 
-        <Column field="updateDate" header="Ngày cập nhật" style="width: 25%; height: 60px">
+        <Column field="updateDate" header="Ngày cập nhật" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
           <template #body="{ data }">
             <Skeleton v-if="isLoading" width="80%" height="1rem" />
             <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.updateDate ?
@@ -86,10 +87,3 @@ const onPage = (event: any) => emit('page', event);
 const onRowClick = (event: any) => emit('row-click', event);
 const formatDate = (date: string) => format.formatDate(date);
 </script>
-
-<style scoped>
-.text-wrap {
-  word-break: break-word;
-  white-space: normal;
-}
-</style>

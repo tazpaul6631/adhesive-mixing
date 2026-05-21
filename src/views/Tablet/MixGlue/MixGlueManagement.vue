@@ -12,7 +12,6 @@
     </ion-header>
 
     <ion-content class="ion-padding" :scroll-events="true">
-      <Toast position="top-right" />
 
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
@@ -103,9 +102,10 @@ import { useRoute, onBeforeRouteLeave, useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
   IonTitle, onIonViewDidEnter, useBackButton, alertController,
-  onIonViewWillEnter
+  onIonViewWillEnter, onIonViewWillLeave
 } from '@ionic/vue';
 import { useToast } from 'primevue/usetoast';
+import { toastMsg } from '@/utils/toastFormat';
 import UI from '@/mixins/present';
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -120,8 +120,10 @@ import ElectronicScale from '@/components/ElectronicScale.vue';
 import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable.vue';
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
+import { useScaleManager } from '@/composables/useScaleManager';
 
 dayjs.extend(customParseFormat);
+const { releaseScaleConnection } = useScaleManager();
 // ============================================================================
 // 1. INTERFACES & TYPES (Updated to match the new JSON structure)
 // ============================================================================
@@ -432,7 +434,7 @@ const handleConfirmWeight = async (actualWeight: string) => { // Thêm async ở
       const baseUnit = baseItem.weightUnit?.toLowerCase() || 'kg';
 
       componentDetailsFull.value.forEach((item, i) => {
-        if (i !== 0) {
+        if (i !== 0 && !item.glueExtra) {
           const currentRatio = Number(item.mixingRatio || '0');
           let newRequiredWeight = (currentRatio * baseActualWeight) / baseMixingRatio;
 
@@ -562,7 +564,7 @@ const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
       toast.add({
         severity: 'success',
         summary: 'Đã xóa',
-        detail: `Xóa thành phần thành công: ${rowToDelete.materialName}`,
+        detail: toastMsg`Xóa thành phần thành công: ${rowToDelete.materialName ?? ''}`,
         life: 3000
       });
     },
@@ -687,6 +689,10 @@ onIonViewDidEnter(async () => {
   if (table2Ref.value) {
     table2Ref.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+});
+
+onIonViewWillLeave(() => {
+  releaseScaleConnection();
 });
 
 onIonViewWillEnter(() => {

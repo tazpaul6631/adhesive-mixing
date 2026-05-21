@@ -46,8 +46,9 @@
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="isLoadingLine ? skeletonData : mixGlues" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" rowGroupMode="rowspan" groupRowsBy="totalMixGlueWeight">
+            <DataTable :value="isLoadingLine ? skeletonData : mixGlues" stripedRows
+              class="custom-bordered-table auto-columns-table" tableStyle="width: 100%;" rowGroupMode="rowspan"
+              groupRowsBy="totalMixGlueWeight">
 
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
@@ -56,21 +57,22 @@
                 </div>
               </template>
 
-              <Column header="#" style="width: 5%; height: 60px">
+              <Column header="#" headerClass="dt-col-index" bodyClass="dt-col-index">
                 <template #body="{ index }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" class="mx-auto" />
                   <span v-else>{{ index + 1 }}</span>
                 </template>
               </Column>
 
-              <Column header="Tên thành phần" field="materialName" style="width: 20%; height: 60px">
+              <Column header="Tên thành phần" field="materialName" headerClass="dt-col-primary"
+                bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
                   <span v-else class="font-medium text-800">{{ data.materialName }}</span>
                 </template>
               </Column>
 
-              <Column header="Loại keo" style="width: 13%; height: 60px" bodyStyle="text-align: center">
+              <Column header="Loại keo" headerClass="dt-col-tag" bodyClass="dt-col-tag">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
                   <Tag v-else :value="data.glueExtra ? 'Keo thêm' : 'Keo chính'" :severity="getSeverity(data.glueExtra)"
@@ -78,7 +80,7 @@
                 </template>
               </Column>
 
-              <Column header="TL thực tế" style="width: 13%; height: 60px">
+              <Column header="TL thực tế" headerClass="dt-col-weight" bodyClass="dt-col-weight">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
                   <div v-else class="flex align-items-center gap-2">
@@ -88,23 +90,23 @@
                 </template>
               </Column>
 
-              <Column field="totalMixGlueWeight" header="Tổng (KG)" style="width: 13%; height: 60px"
-                bodyStyle="text-align: center">
+              <Column field="totalMixGlueWeight" header="Tổng (KG)" headerClass="dt-col-weight"
+                bodyClass="dt-col-weight">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
                   <span v-else class="font-bold text-green-600 text-lg">{{ totalMixGlueWeight }}</span>
                 </template>
               </Column>
 
-              <Column header="Người cân" field="updaterId" style="width: 13%; height: 60px"
-                bodyStyle="text-align: center">
+              <Column header="Người cân" field="updaterId" headerClass="dt-col-text" bodyClass="dt-col-text">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
                   <span v-else class="text-700">{{ data.updaterId }}</span>
                 </template>
               </Column>
 
-              <Column header="Thời gian hoàn thành" field="weightCompleteDate" style="width: 15%; height: 60px">
+              <Column header="Thời gian hoàn thành" field="weightCompleteDate" headerClass="dt-col-datetime"
+                bodyClass="dt-col-datetime">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" class="w-full" height="1.5rem" />
                   <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ format.formatDate(data.weightCompleteDate)

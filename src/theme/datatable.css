@@ -1,0 +1,72 @@
+/* Auto column sizing for PrimeVue DataTable */
+.auto-columns-table .p-datatable-table {
+  width: 100%;
+  table-layout: auto;
+}
+
+.auto-columns-table .p-datatable-thead>tr>th,
+.auto-columns-table .p-datatable-tbody>tr>td {
+  height: 60px;
+  vertical-align: middle;
+}
+
+.auto-columns-table .dt-col-index {
+  width: auto;
+  min-width: auto;
+  text-align: center;
+}
+
+.auto-columns-table .dt-col-action {
+  width: auto;
+  min-width: auto;
+  text-align: center;
+}
+
+.auto-columns-table .dt-col-primary {
+  min-width: 11rem;
+  width: 22%;
+}
+
+.auto-columns-table .dt-col-text {
+  min-width: 9rem;
+  width: 16%;
+}
+
+.auto-columns-table .dt-col-datetime {
+  min-width: auto;
+  width: auto;
+  white-space: nowrap;
+}
+
+.auto-columns-table .dt-col-weight {
+  min-width: 7rem;
+  width: 10%;
+  white-space: nowrap;
+}
+
+.auto-columns-table .dt-col-input {
+  min-width: 11rem;
+  width: 20%;
+}
+
+.auto-columns-table .dt-col-tag {
+  min-width: 8rem;
+  width: 12%;
+  text-align: center;
+}
+
+.dt-cell-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-cell-wrap {
+  word-break: break-word;
+  white-space: normal;
+}
+
+.auto-columns-table th.dt-col-index .p-datatable-column-header-content {
+  justify-content: center;
+}

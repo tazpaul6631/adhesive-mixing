@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : lineDetails" scrollable scrollHeight="700px"
-      tableStyle="width: 100%; table-layout: fixed;" stripedRows class="modern-table">
+    <DataTable :value="isLoading ? skeletons : lineDetails" scrollable scrollHeight="700px" tableStyle="width: 100%;"
+      stripedRows class="modern-table auto-columns-table">
 
       <template #empty>
         <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
@@ -10,44 +10,44 @@
         </div>
       </template>
 
-      <Column field="productLineName" header="Xưởng" style="width: 23%; height: 60px">
+      <Column field="productLineName" header="Xưởng" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ data.productLineName }}</span>
+          <span v-else class="dt-cell-ellipsis">{{ data.productLineName }}</span>
         </template>
       </Column>
 
-      <Column field="workOrderMasterName" header="Đơn yêu cầu" style="width: 20%; height: 60px">
+      <Column field="workOrderMasterName" header="Đơn yêu cầu" headerClass="dt-col-primary" bodyClass="dt-col-primary">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
-          <span v-else>{{ data.workOrderMasterName }}</span>
+          <span v-else class="dt-cell-wrap">{{ data.workOrderMasterName }}</span>
         </template>
       </Column>
 
-      <Column field="styleName" header="Hình thể" style="width: 15%; height: 60px">
+      <Column field="styleName" header="Hình thể" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="70%" height="1rem" />
-          <span v-else>{{ data.styleName }}</span>
+          <span v-else class="dt-cell-ellipsis">{{ data.styleName }}</span>
         </template>
       </Column>
 
-      <Column field="requestDetailName" header="Chuyền" style="width: 24%; height: 60px">
+      <Column field="requestDetailName" header="Chuyền" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
-          <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm">
+          <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm dt-cell-wrap">
             {{ data.requestDetailName }}
           </span>
         </template>
       </Column>
 
-      <Column field="workOrderWeight" header="Trọng lượng" style="width: 18%; height: 60px">
+      <Column field="workOrderWeight" header="Trọng lượng" headerClass="dt-col-weight" bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <span v-else>{{ data.workOrderWeight }} {{ data.workOrderWeightUnit }}</span>
         </template>
       </Column>
 
-      <Column field="requestTime" header="Thời gian lãnh" style="width: 15%; height: 60px">
+      <Column field="requestTime" header="Thời gian lãnh" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">

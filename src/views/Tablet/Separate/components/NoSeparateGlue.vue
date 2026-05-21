@@ -1,8 +1,8 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl">
     <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px" stripedRows
-      class="modern-table" tableStyle="min-width: 800px; width: 100%; table-layout: fixed;"
-      @row-click="(e) => $emit('row-click', e)" selectionMode="single" dataKey="materialCode" :selection="selectedItem"
+      class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
+      selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
 
       <template #empty>
@@ -18,14 +18,14 @@
         </div>
       </template>
 
-      <Column field="materialName" header="Keo" class="font-medium" style="width: 20%; height: 60px">
+      <Column field="materialName" header="Keo" headerClass="dt-col-primary" bodyClass="dt-col-primary">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
-          <span v-else>{{ data.materialName }}</span>
+          <span v-else class="font-medium dt-cell-wrap">{{ data.materialName }}</span>
         </template>
       </Column>
 
-      <Column header="TL thực tế" style="width: 13%; height: 60px">
+      <Column header="TL thực tế" headerClass="dt-col-weight" bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else
@@ -35,14 +35,14 @@
         </template>
       </Column>
 
-      <Column header="Người thao tác" style="width: 20%; height: 60px">
+      <Column header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ data.operator }}</span>
+          <span v-else class="dt-cell-ellipsis">{{ data.operator }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian cân" style="width: 14%; height: 60px">
+      <Column header="Thời gian cân" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
@@ -52,7 +52,7 @@
         </template>
       </Column>
 
-      <Column header="Thao tác" :exportable="false" style="width: 15%; height: 60px">
+      <Column header="Thao tác" :exportable="false" headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded aria-label="Add"

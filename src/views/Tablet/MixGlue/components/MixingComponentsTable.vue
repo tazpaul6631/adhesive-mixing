@@ -1,7 +1,7 @@
 <template>
   <div class="border-round-bottom-xl">
     <DataTable :value="isLoading ? skeletons : components" scrollable scrollHeight="290px" stripedRows
-      class="modern-table" tableStyle="min-width: 800px; width: 100%; table-layout: fixed;"
+      class="modern-table auto-columns-table" tableStyle="width: 100%;"
       @row-click="(e) => $emit('row-click', e)" selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
 
@@ -18,28 +18,28 @@
         </div>
       </template>
 
-      <Column header="#" style="width: 5%; height: 60px">
+      <Column header="#" headerClass="dt-col-index" bodyClass="dt-col-index">
         <template #body="{ index }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" class="mx-auto" />
           <span v-else>{{ index + 1 }}</span>
         </template>
       </Column>
 
-      <Column field="materialName" header="Tên thành phần" class="font-medium" style="width: 20%; height: 60px">
+      <Column field="materialName" header="Tên thành phần" headerClass="dt-col-primary" bodyClass="dt-col-primary">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
-          <span v-else>{{ data.materialName }}</span>
+          <span v-else class="font-medium dt-cell-wrap">{{ data.materialName }}</span>
         </template>
       </Column>
 
-      <Column header="TL yêu cầu" style="width: 13%; height: 60px">
+      <Column header="TL yêu cầu" headerClass="dt-col-weight" bodyClass="dt-col-weight">
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <span v-else>{{ index === 0 ? headerTotalWeight : data.requiredWeight }}</span>
         </template>
       </Column>
 
-      <Column header="TL thực tế (Kg)" style="width: 13%; height: 60px">
+      <Column header="TL thực tế (Kg)" headerClass="dt-col-weight" bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else
@@ -49,14 +49,14 @@
         </template>
       </Column>
 
-      <Column header="Người thao tác" style="width: 28%; height: 60px">
+      <Column header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ data.operator }}</span>
+          <span v-else class="dt-cell-ellipsis">{{ data.operator }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian cân" style="width: 14%; height: 60px">
+      <Column header="Thời gian cân" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
@@ -66,7 +66,7 @@
         </template>
       </Column>
 
-      <Column header="Thao tác" :exportable="false" style="width: 12%; height: 60px">
+      <Column header="Thao tác" :exportable="false" headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="slotProps">
           <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
             text rounded aria-label="Delete" @click.stop="$emit('delete-row', slotProps.data)" />

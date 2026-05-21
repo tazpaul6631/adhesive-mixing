@@ -1,0 +1,36 @@
+.p-toast-message {
+  min-width: 20rem;
+  max-width: 25rem;
+}
+
+.p-toast-message .p-toast-message-content {
+  padding: 0.7rem 0.7rem;
+}
+
+.p-toast-message .p-toast-summary {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.p-toast-message .p-toast-detail {
+  font-size: 1.2rem;
+  line-height: 1.5rem;
+  margin-top: 0.1rem;
+}
+
+.p-toast-detail .toast-em {
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.p-toast-message-warn .p-toast-detail .toast-em {
+  color: #b45309;
+}
+
+.p-toast-message-error .p-toast-detail .toast-em {
+  color: #dc2626;
+}
+
+.p-toast-message-success .p-toast-detail .toast-em {
+  color: #15803d;
+}

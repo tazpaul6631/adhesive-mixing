@@ -33,7 +33,7 @@ export type RequestDetailOption = {
 
 export type NewComponentFormData = {
   name: string;
-  percentage: string;
+  percentage: string | number;
   materialCode: string;
   weightUnit: string;
 };

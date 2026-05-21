@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
     <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="320px"
-      tableStyle="min-width: 800px; width: 100%; table-layout: fixed;" stripedRows class="modern-table">
+      tableStyle="width: 100%;" stripedRows class="modern-table auto-columns-table">
 
       <template #empty>
         <div style="text-align: center; height: 240px; align-content: center;">
@@ -17,49 +17,50 @@
         </div>
       </template>
 
-      <Column field="requestDetailName" header="#" style="width: 4%; height: 60px">
+      <Column field="requestDetailName" header="#" headerClass="dt-col-index" bodyClass="dt-col-index">
         <template #body="{ index }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
           <span v-else>{{ index + 1 }}</span>
         </template>
       </Column>
 
-      <Column field="productLineName" header="Đơn yêu cầu" style="width: 24%; height: 60px">
+      <Column field="productLineName" header="Đơn yêu cầu" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
           <MultiSelect v-else v-model="data.selectedRequestDetailIds" :options="getAvailableRequestDetails(data)"
-            :maxSelectedLabels="3" optionLabel="label" optionValue="requestDetailId" filter
+            :maxSelectedLabels="1" optionLabel="label" optionValue="requestDetailId" filter
             selectedItemsLabel="{0} đơn yêu cầu" placeholder="Chọn đơn yêu cầu" class="w-full" appendTo="body"
             :disabled="isViewMode" @change="handleRequestDetailChange(data)" />
         </template>
       </Column>
 
-      <Column header="Thùng chứa" style="width: 18%; height: 60px">
-        <template #body="{ data }">
+      <Column header="Thùng chứa" headerClass="dt-col-input" bodyClass="dt-col-input">
+        <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <Select v-else v-model="data.selectedBucketId" :options="bucketList" optionLabel="label"
-            optionValue="bucketId" placeholder="Chọn thùng" class="w-full" appendTo="body" :disabled="isViewMode"
-            @change="handleBucketChange(data)" />
+          <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
+            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" placeholder="Chọn thùng"
+            class="w-full" appendTo="body" :disabled="isViewMode" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
-      <Column field="operator" header="Người thao tác" style="width: 28%; height: 60px">
+      <Column field="operator" header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ data.operator || '' }}</span>
+          <span v-else class="dt-cell-ellipsis">{{ data.operator || '' }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian hoàn thành" style="width: 20%; height: 60px">
+      <Column header="Thời gian hoàn thành" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
-          <span v-else class="text-500">
+          <span v-else class="text-500 dt-cell-ellipsis">
             <i v-if="data.confirmTime" class="pi pi-clock text-xs mr-1"></i>{{ data.confirmTime }}
           </span>
         </template>
       </Column>
 
-      <Column v-if="!isViewMode" header="Thao tác" :exportable="false" style="width: 10%; height: 60px">
+      <Column v-if="!isViewMode" header="Thao tác" :exportable="false" headerClass="dt-col-action"
+        bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
@@ -72,24 +73,93 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
+import {
+  normalizeWeightToKg,
+  sortBucketsByClosestCapacity,
+  sumSelectedBucketCapacityKg,
+  validateSeparateGlueAllocation,
+  formatTargetWeightLabel,
+  WEIGHT_EPSILON,
+  type BucketOption,
+} from '@/views/Tablet/Separate/separateGlue.bucket';
+import { toastMsg } from '@/utils/toastFormat';
 
 const props = defineProps<{
   isLoading: boolean;
   orderDetails: any[];
   requestDetails: any[];
+  targetWeight?: number | string;
+  targetWeightUnit?: string;
+  requireAllRequestDetails?: boolean;
   isViewMode?: boolean;
 }>();
 
 const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
 
+const toast = useToast();
 const skeletons = ref(new Array(1).fill({}));
 const authStore = useAuthStore();
-const bucketList = ref<any[]>([]);
+const bucketList = ref<BucketOption[]>([]);
+const bucketSelectResetKeys = ref<Record<number, number>>({});
+
+const clearRowBucketSelection = async (rowData: any, rowIndex: number) => {
+  rowData.selectedBucketId = null;
+  rowData.bucketId = undefined;
+  updateRowCompletionInfo(rowData);
+  bucketSelectResetKeys.value[rowIndex] = (bucketSelectResetKeys.value[rowIndex] ?? 0) + 1;
+  await nextTick();
+};
+
+const getTargetWeightKg = () =>
+  normalizeWeightToKg(props.targetWeight ?? 0, props.targetWeightUnit || 'Kg');
+
+const getTargetWeightLabel = () =>
+  formatTargetWeightLabel(props.targetWeight, props.targetWeightUnit || 'Kg');
+
+const getBucketOptionsForRow = (currentRow: any) => {
+  const targetWeightKg = getTargetWeightKg();
+  if (targetWeightKg <= 0 || bucketList.value.length === 0) {
+    return bucketList.value;
+  }
+
+  const remainingKg = targetWeightKg - sumSelectedBucketCapacityKg(
+    props.orderDetails,
+    bucketList.value,
+    currentRow
+  );
+
+  return sortBucketsByClosestCapacity(bucketList.value, remainingKg);
+};
+
+const isAllocationComplete = () => {
+  const targetWeightKg = getTargetWeightKg();
+  const requireAllRequestDetails = props.requireAllRequestDetails ?? true;
+
+  if (targetWeightKg <= 0) {
+    return !requireAllRequestDetails || areAllRequestDetailsUsed();
+  }
+
+  const totalKg = sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
+  const capacityMatched = Math.abs(totalKg - targetWeightKg) <= WEIGHT_EPSILON;
+  const requestsMatched = !requireAllRequestDetails || areAllRequestDetailsUsed();
+
+  return capacityMatched && requestsMatched;
+};
+
+const areAllRequestDetailsUsed = () => {
+  const assignedIds = new Set<string>();
+  props.orderDetails.forEach((row) => {
+    (row.selectedRequestDetailIds ?? []).forEach((id: string) => assignedIds.add(String(id)));
+  });
+
+  return props.requestDetails.every((item) => assignedIds.has(String(item.requestDetailId)));
+};
 
 const getSelectedIdsInOtherRows = (currentRow: any) => {
   const selectedIds = new Set<string>();
@@ -142,7 +212,32 @@ const handleRequestDetailChange = (rowData: any) => {
   emit('update-bucket');
 };
 
+const isRowComplete = (rowData: any) => hasRequestSelection(rowData) && hasBucketSelection(rowData);
+
 const handleAddRow = () => {
+  const rows = props.orderDetails || [];
+  if (rows.length > 0) {
+    const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
+    if (incompleteIndex !== -1) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Chưa hoàn thành',
+        detail: toastMsg`Vui lòng chọn đơn yêu cầu và thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
+        life: 4000,
+      });
+      return;
+    }
+
+    if (isAllocationComplete()) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Đã phân bổ đủ',
+        detail: 'Tổng trọng lượng thùng chứa và đơn yêu cầu đã đạt, không cần thêm mới.',
+        life: 4000,
+      });
+      return;
+    }
+  }
   emit('add-row');
 };
 
@@ -150,10 +245,36 @@ const handleDeleteRow = (rowData: any) => {
   emit('delete-row', rowData);
 };
 
-const handleBucketChange = (rowData: any) => {
+const handleBucketChange = async (rowData: any, rowIndex: number) => {
+  const targetWeightKg = getTargetWeightKg();
+  if (targetWeightKg > 0 && rowData.selectedBucketId) {
+    const totalKg = sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
+    if (totalKg > targetWeightKg + WEIGHT_EPSILON) {
+      await clearRowBucketSelection(rowData, rowIndex);
+      toast.add({
+        severity: 'warn',
+        summary: 'Vượt trọng lượng',
+        detail: toastMsg`Tổng dung tích thùng vượt quá ${getTargetWeightLabel()}. Vui lòng chọn thùng có dung tích phù hợp hơn.`,
+        life: 4000,
+      });
+      return;
+    }
+  }
+
   updateRowCompletionInfo(rowData);
   emit('update-bucket');
 };
+
+defineExpose({
+  validateAllocation: () => validateSeparateGlueAllocation(
+    props.orderDetails,
+    props.requestDetails,
+    bucketList.value,
+    props.targetWeight,
+    props.targetWeightUnit || 'Kg',
+    { requireAllRequestDetails: props.requireAllRequestDetails ?? true }
+  ),
+});
 
 onMounted(async () => {
   try {

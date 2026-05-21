@@ -1,24 +1,14 @@
 <template>
   <div class="flex align-items-center gap-2">
     <!-- Khu vực nút Kết nối -->
-    <Button v-if="status === 'disconnected'" label="Bật & Kết nối B300" icon="pi pi-bluetooth" severity="primary"
+    <Button v-if="status === 'disconnected'" label="Kết nối lại máy in" icon="pi pi-bluetooth" severity="primary"
       @click="turnOnAndScan" />
 
-    <!-- SỬA Ở ĐÂY: Bỏ thuộc tính disabled, đổi thành nút Hủy -->
-    <Button v-else-if="status === 'connecting'" label="Đang kết nối... (Bấm để Hủy)" icon="pi pi-spin pi-spinner"
-      severity="warning" @click="cancelConnection" />
+    <Button v-else-if="status === 'scanning'" label="Đang tìm máy in... (Bấm để Hủy)" icon="pi pi-spin pi-spinner"
+      severity="info" @click="cancelConnection" />
 
     <Button v-else-if="status === 'connected'" :label="'Đã kết nối máy in'" icon="pi pi-check-circle" severity="success"
       @click="disconnect" />
-
-    <!-- Select chọn máy in -->
-    <select v-if="status === 'disconnected' && pairedDevices.length > 0" v-model="selectedMac" @change="saveAndConnect"
-      class="p-dropdown p-component p-inputtext ml-2" style="max-width: 150px;">
-      <option value="" disabled>Chọn máy in</option>
-      <option v-for="device in pairedDevices" :key="device.address" :value="device.address">
-        {{ device.name || 'Unknown' }}
-      </option>
-    </select>
 
     <!-- Nút In -->
     <Button :label="isPrinting ? 'Đang in...' : 'Xác nhận hoàn thành'" icon="pi pi-print" outlined size="large"
@@ -38,7 +28,7 @@ import separateGlue from '@/api/separate';
 const props = defineProps<{
   templateType?: string;
   printData?: any;
-  /** Vào page: tự bật Bluetooth (và kết nối máy in đã lưu nếu có). */
+  /** Vào page: tự bật Bluetooth (nếu cần) và tự quét/kết nối máy in. */
   autoEnableOnEnter?: boolean;
   /** Rời page: ngắt kết nối và tắt Bluetooth adapter (Android) để tiết kiệm pin. */
   autoDisableOnLeave?: boolean;
@@ -47,17 +37,140 @@ const props = defineProps<{
 const autoEnableOnEnter = props.autoEnableOnEnter ?? true;
 const autoDisableOnLeave = props.autoDisableOnLeave ?? true;
 
-const status = ref<'disconnected' | 'connecting' | 'connected'>('disconnected');
-const pairedDevices = ref<any[]>([]);
+const status = ref<'disconnected' | 'scanning' | 'connected'>('disconnected');
 const selectedMac = ref<string>('');
 const isPrinting = ref(false);
 const authStore = useAuthStore();
-let connectionTimeout: any = null;
-let autoReconnectInterval: any = null;
+let autoReconnectInterval: ReturnType<typeof setInterval> | null = null;
 let pendingInitTimer: ReturnType<typeof setTimeout> | null = null;
+let scanAborted = false;
+/** discoverUnpaired trên Android thường chậm — giới hạn thời gian quét. */
+const DISCOVER_UNPAIRED_TIMEOUT_MS = 4000;
+const SAVED_MAC_CONNECT_TIMEOUT_MS = 5000;
 const emit = defineEmits(['printSuccess']);
 
 const getBluetooth = () => (window as any).bluetoothSerial;
+
+/** Ưu tiên B300, TSC và các tên máy in tem phổ biến. */
+const PRINTER_NAME_PATTERNS = [/b300/i, /tsc/i, /printer/i, /label/i, /barcode/i, /spp/i];
+
+const isLikelyPrinter = (name?: string) => {
+  if (!name) return false;
+  return PRINTER_NAME_PATTERNS.some((pattern) => pattern.test(name));
+};
+
+/** Lấy danh sách máy in có thể thử — ưu tiên MAC đã lưu, sau đó B300/TSC. */
+const collectPrinterCandidates = (devices: any[], preferredMac?: string | null) => {
+  const pool = (devices || []).filter((device) => {
+    if (!device?.address) return false;
+    if (preferredMac && device.address === preferredMac) return true;
+    return isLikelyPrinter(device.name);
+  });
+
+  const fallbackPool = pool.length > 0 ? pool : (devices || []).filter((device) => device?.address);
+  const unique = new Map<string, any>();
+  fallbackPool.forEach((device) => unique.set(device.address, device));
+
+  return [...unique.values()].sort((a, b) => {
+    if (preferredMac && a.address === preferredMac) return -1;
+    if (preferredMac && b.address === preferredMac) return 1;
+
+    const aIsB300 = /b300/i.test(a.name || '') ? 0 : 1;
+    const bIsB300 = /b300/i.test(b.name || '') ? 0 : 1;
+    if (aIsB300 !== bIsB300) return aIsB300 - bIsB300;
+
+    return (a.name || a.address).localeCompare(b.name || b.address);
+  });
+};
+
+const tryConnectCandidates = async (candidates: any[]): Promise<any | null> => {
+  const bt = getBluetooth();
+  if (!bt || candidates.length === 0) return null;
+
+  for (const device of candidates) {
+    if (scanAborted) return null;
+
+    const connected = await tryConnectDirect(device.address, SAVED_MAC_CONNECT_TIMEOUT_MS);
+    if (connected) return device;
+
+    await new Promise<void>((resolve) => {
+      bt.disconnect(() => resolve(), () => resolve());
+    });
+  }
+
+  return null;
+};
+
+const listPairedDevices = (): Promise<any[]> => {
+  return new Promise((resolve) => {
+    const bt = getBluetooth();
+    if (!bt) {
+      resolve([]);
+      return;
+    }
+
+    bt.list(
+      (devices: any[]) => resolve(devices || []),
+      () => resolve([])
+    );
+  });
+};
+
+const discoverUnpairedWithTimeout = (timeoutMs: number): Promise<any[]> => {
+  return new Promise((resolve) => {
+    const bt = getBluetooth();
+    if (!bt || typeof bt.discoverUnpaired !== 'function') {
+      resolve([]);
+      return;
+    }
+
+    let settled = false;
+    const finish = (devices: any[]) => {
+      if (settled) return;
+      settled = true;
+      resolve(devices || []);
+    };
+
+    const timer = setTimeout(() => finish([]), timeoutMs);
+
+    bt.discoverUnpaired(
+      (devices: any[]) => {
+        clearTimeout(timer);
+        finish(devices);
+      },
+      () => {
+        clearTimeout(timer);
+        finish([]);
+      }
+    );
+  });
+};
+
+const tryConnectDirect = (mac: string, timeoutMs: number): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const bt = getBluetooth();
+    if (!bt || !mac) {
+      resolve(false);
+      return;
+    }
+
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(ok);
+    };
+
+    const timer = setTimeout(() => finish(false), timeoutMs);
+
+    bt.connect(
+      mac,
+      () => finish(true),
+      () => finish(false)
+    );
+  });
+};
 
 const ensureBluetoothEnabled = (onReady: () => void, onFailure?: (err: unknown) => void) => {
   const bt = getBluetooth();
@@ -80,17 +193,58 @@ const ensureBluetoothEnabled = (onReady: () => void, onFailure?: (err: unknown) 
   );
 };
 
-const scanPairedDevices = (onComplete?: (devices: any[]) => void) => {
+/** Tự tìm máy in — thử lần lượt từng máy cho đến khi kết nối được (máy đang bận sẽ bỏ qua). */
+const autoConnectPrinter = async () => {
   const bt = getBluetooth();
-  if (!bt) return;
+  if (!bt || status.value === 'connected' || status.value === 'scanning') {
+    return;
+  }
 
-  bt.list(
-    (devices: any[]) => {
-      pairedDevices.value = devices;
-      onComplete?.(devices);
-    },
-    (err: any) => console.error('Lỗi quét thiết bị đã ghép đôi:', err)
-  );
+  scanAborted = false;
+  status.value = 'scanning';
+
+  try {
+    const { value: savedMac } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
+
+    const paired = await listPairedDevices();
+    if (scanAborted) return;
+
+    const unpaired = await discoverUnpairedWithTimeout(DISCOVER_UNPAIRED_TIMEOUT_MS);
+    if (scanAborted) return;
+
+    const allDevices = [...paired];
+    unpaired.forEach((device) => {
+      if (device?.address && !allDevices.some((item) => item.address === device.address)) {
+        allDevices.push(device);
+      }
+    });
+
+    const candidates = collectPrinterCandidates(allDevices, savedMac);
+    if (candidates.length === 0) {
+      status.value = 'disconnected';
+      console.log('Không tìm thấy máy in B300/TSC đang phát Bluetooth.');
+      return;
+    }
+
+    const connectedDevice = await tryConnectCandidates(candidates);
+    if (scanAborted) return;
+
+    if (connectedDevice?.address) {
+      selectedMac.value = connectedDevice.address;
+      await Preferences.set({ key: 'SAVED_PRINTER_MAC', value: connectedDevice.address });
+      status.value = 'connected';
+      console.log(`MÁY IN ĐÃ SẴN SÀNG: ${connectedDevice.name || connectedDevice.address}`);
+      return;
+    }
+
+    status.value = 'disconnected';
+    console.log('Không kết nối được máy in nào — có thể tất cả đang được dùng bởi thiết bị khác.');
+  } catch (error) {
+    console.error('Lỗi autoConnectPrinter:', error);
+    if (!scanAborted && status.value === 'scanning') {
+      status.value = 'disconnected';
+    }
+  }
 };
 
 const disconnectDevice = (): Promise<void> => {
@@ -143,68 +297,47 @@ const disableBluetoothAdapter = (): Promise<void> => {
   });
 };
 
-// --- 1. Xử lý Bật Bluetooth & Quét thiết bị ---
-const turnOnAndScan = () => {
+/** Bật BT (nếu cần) rồi tự quét + kết nối máy in. */
+const startBluetoothAutoFlow = (onEnableFailed?: () => void) => {
   const bt = getBluetooth();
-  if (!bt) return console.error("Plugin bluetoothSerial chưa load.");
+  if (!bt) return;
 
   ensureBluetoothEnabled(
     () => {
-      scanPairedDevices((devices) => {
-        if (devices.length === 0) {
-          alert("Không tìm thấy máy in nào đã ghép đôi trong cài đặt Bluetooth.");
-        }
-      });
+      void autoConnectPrinter();
+      startAutoReconnectWatchdog();
     },
-    () => bt.showBluetoothSettings?.()
+    () => {
+      status.value = 'disconnected';
+      onEnableFailed?.();
+    }
   );
 };
 
-// --- 2. Kết nối tới MAC đã chọn CÓ TIMEOUT ---
-const connectToDevice = () => {
+// --- 1. User bấm thử lại khi auto-connect thất bại ---
+const turnOnAndScan = () => {
   const bt = getBluetooth();
-  if (!bt || !selectedMac.value) return;
+  if (!bt) return console.error('Plugin bluetoothSerial chưa load.');
 
-  status.value = 'connecting';
-
-  // Đặt Timeout 10 giây. Nếu 10 giây không kết nối được thì tự động ngắt
-  clearTimeout(connectionTimeout);
-  connectionTimeout = setTimeout(() => {
-    if (status.value === 'connecting') {
-      status.value = 'disconnected';
-      alert("Kết nối quá thời gian. Máy in có thể đang tắt hoặc ở xa.");
-    }
-  }, 10000); // 10000ms = 10 giây
-
-  bt.connect(selectedMac.value,
-    () => {
-      clearTimeout(connectionTimeout); // Hủy timeout nếu thành công
-      status.value = 'connected';
-      console.log("MÁY IN ĐÃ SẴN SÀNG.");
-    },
-    (err: any) => {
-      clearTimeout(connectionTimeout); // Hủy timeout nếu thất bại
-      status.value = 'disconnected';
-      console.error("Kết nối thất bại:", err);
-    }
-  );
+  startBluetoothAutoFlow(() => bt.showBluetoothSettings?.());
 };
 
 const cancelConnection = () => {
+  scanAborted = true;
   status.value = 'disconnected';
-  clearTimeout(connectionTimeout);
 
   const bt = getBluetooth();
   if (bt) {
-    // Bắn lệnh disconnect để giải phóng cổng bluetooth đang bị kẹt
-    bt.disconnect(() => console.log("Đã hủy kết nối ngang."));
+    bt.disconnect(() => console.log('Đã hủy kết nối/quét.'));
   }
 };
 
 // --- Cơ chế theo dõi và tự động kết nối lại ---
 const startAutoReconnectWatchdog = () => {
-  // Tránh việc tạo nhiều interval trùng lặp
-  clearInterval(autoReconnectInterval);
+  if (autoReconnectInterval) {
+    clearInterval(autoReconnectInterval);
+    autoReconnectInterval = null;
+  }
 
   autoReconnectInterval = setInterval(() => {
     const bt = getBluetooth();
@@ -230,12 +363,10 @@ const startAutoReconnectWatchdog = () => {
         if (status.value === 'disconnected' && selectedMac.value) {
           bt.isEnabled(
             () => {
-              console.log("Đang tự động thử kết nối lại...");
-              connectToDevice();
+              console.log('Đang tự động thử kết nối lại...');
+              void autoConnectPrinter();
             },
-            () => {
-              // Bluetooth điện thoại bị tắt, không làm gì cả
-            }
+            () => { }
           );
         }
       }
@@ -243,25 +374,7 @@ const startAutoReconnectWatchdog = () => {
   }, 5000); // Kiểm tra mỗi 5 giây (bạn có thể điều chỉnh 3000ms hoặc 5000ms)
 };
 
-// --- 3. Lưu MAC và kết nối (Dùng khi user chọn từ Dropdown) ---
-const saveAndConnect = async () => {
-  if (!selectedMac.value) return;
-  await Preferences.set({ key: 'SAVED_PRINTER_MAC', value: selectedMac.value });
-  connectToDevice();
-};
-
-// --- 4. Ngắt kết nối (Tuỳ chọn) ---
-const disconnect = () => {
-  const bt = getBluetooth();
-  if (bt) {
-    bt.disconnect(() => {
-      status.value = 'disconnected';
-      console.log("Đã ngắt kết nối.");
-    });
-  }
-};
-
-// --- 5. Gọi từ onIonViewWillEnter: bật BT, quét máy in, tự kết nối MAC đã lưu ---
+// --- 5. Vào page: tự bật BT + tự tìm/kết nối máy in (không cần bấm nút) ---
 const initBluetooth = async () => {
   if (!autoEnableOnEnter) return;
 
@@ -277,29 +390,32 @@ const initBluetooth = async () => {
 
   pendingInitTimer = setTimeout(() => {
     pendingInitTimer = null;
-    const bt = getBluetooth();
-    if (!bt) return;
+    startBluetoothAutoFlow();
+  }, 300);
+};
 
-    ensureBluetoothEnabled(() => {
-      scanPairedDevices();
-
-      if (selectedMac.value && status.value !== 'connected') {
-        connectToDevice();
-      }
-
-      startAutoReconnectWatchdog();
+// --- 4. Ngắt kết nối (Tuỳ chọn) ---
+const disconnect = () => {
+  const bt = getBluetooth();
+  if (bt) {
+    bt.disconnect(() => {
+      status.value = 'disconnected';
+      console.log('Đã ngắt kết nối.');
     });
-  }, 500);
+  }
 };
 
 // --- 6. Gọi từ onIonViewDidLeave: ngắt kết nối + tắt BT tiết kiệm pin ---
 const cleanupBluetooth = () => {
-  clearTimeout(connectionTimeout);
+  scanAborted = true;
   if (pendingInitTimer) {
     clearTimeout(pendingInitTimer);
     pendingInitTimer = null;
   }
-  clearInterval(autoReconnectInterval);
+  if (autoReconnectInterval) {
+    clearInterval(autoReconnectInterval);
+    autoReconnectInterval = null;
+  }
 
   void (async () => {
     await disconnectDevice();
@@ -320,12 +436,12 @@ defineExpose({
 });
 
 // --- TSPL chữ đậm: TSC không có "font-weight"; dùng font đậm trong máy hoặc in 2 lớp lệch dot ---
-const TSPL_FONT_REGULAR = 'TIMESNEWROMAN.TTF';
-// Đặt true nếu đã nạp font đậm (TIMESNEWROMANBD.TTF) vào máy. Tên file .TTF phải khớp đúng máy in.
+const TSPL_FONT_REGULAR = "3";
+// Đặt true nếu đã nạp font đậm (ARIALBD.TTF) vào máy. Tên file .TTF phải khớp đúng máy in.
 const USE_TSPL_BOLD_FONT_FILE = false;
-const TSPL_FONT_BOLD = 'TIMESNEWROMANBD.TTF';
-const TSPL_TEXT_XMUL = 13;
-const TSPL_TEXT_YMUL = 13;
+const TSPL_FONT_BOLD = '3';
+const TSPL_TEXT_XMUL = 11;
+const TSPL_TEXT_YMUL = 11;
 /** Khi không dùng font đậm: in lệnh TEXT lần 2 lệch N dot theo trục X để nét dày hơn. */
 const TSPL_BOLD_SIM_OFFSET_DOTS = 2;
 
@@ -344,6 +460,128 @@ const tsplBoldText = (x: number, y: number, text: string, xMul = TSPL_TEXT_XMUL,
     `TEXT ${x},${y},"${font}",0,${xMul},${yMul},"${inner}"\n` +
     `TEXT ${x + TSPL_BOLD_SIM_OFFSET_DOTS},${y},"${font}",0,${xMul},${yMul},"${inner}"\n`
   );
+};
+
+const TSPL_LINE_HEIGHT = 40;
+const TSPL_LEFT_X = 15;
+const TSPL_TEXT_MAX_Y = 370;
+/** QR phải thường ở x=420; dòng 1 gồm nhãn + nội dung phải nằm trước vị trí này. */
+const TSPL_MAX_CHARS_FIRST_LINE = 24;
+/** Các dòng tiếp theo in tại x=15, rộng hơn vì không có nhãn. */
+const TSPL_MAX_CHARS_CONTINUATION = 26;
+
+const splitTsplTextSegments = (rawText: string): string[] => {
+  if (!rawText) return [];
+
+  return rawText
+    .split(',')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+};
+
+const expandLongTsplSegments = (segments: string[], maxCharsPerLine: number): string[] => {
+  const expanded: string[] = [];
+
+  segments.forEach((segment) => {
+    if (segment.length <= maxCharsPerLine) {
+      expanded.push(segment);
+      return;
+    }
+
+    let remaining = segment;
+    while (remaining.length > maxCharsPerLine) {
+      let cutAt = remaining.lastIndexOf(' ', maxCharsPerLine);
+      if (cutAt <= 0) cutAt = maxCharsPerLine;
+
+      expanded.push(remaining.slice(0, cutAt).trim());
+      remaining = remaining.slice(cutAt).trim();
+    }
+
+    if (remaining) expanded.push(remaining);
+  });
+
+  return expanded;
+};
+
+const wrapTsplLabeledLines = (
+  rawText: string,
+  label: string,
+  maxCharsFirstLine: number,
+  maxCharsContinuation: number,
+  maxLines: number
+): string[] => {
+  const labelPrefix = `${label} `;
+  const trimmedText = rawText.trim();
+
+  if (!trimmedText) {
+    return [label];
+  }
+
+  const firstLineContentLimit = Math.max(1, maxCharsFirstLine - labelPrefix.length);
+  const segments = expandLongTsplSegments(splitTsplTextSegments(trimmedText), maxCharsContinuation);
+  const contentLines: string[] = [];
+  let currentLine = '';
+  let isFirstContentLine = true;
+
+  const getCurrentLimit = () => (isFirstContentLine ? firstLineContentLimit : maxCharsContinuation);
+
+  segments.forEach((segment) => {
+    const testLine = currentLine.length === 0 ? segment : `${currentLine}, ${segment}`;
+    if (testLine.length > getCurrentLimit()) {
+      if (currentLine) {
+        contentLines.push(currentLine);
+        isFirstContentLine = false;
+      }
+      currentLine = segment;
+    } else {
+      currentLine = testLine;
+    }
+  });
+
+  if (currentLine) contentLines.push(currentLine);
+
+  const displayLines = [`${labelPrefix}${contentLines[0]}`];
+  for (let i = 1; i < contentLines.length; i++) {
+    displayLines.push(contentLines[i]);
+  }
+
+  if (displayLines.length > maxLines) {
+    const truncated = displayLines.slice(0, maxLines);
+    truncated[maxLines - 1] = `${truncated[maxLines - 1]}`;
+    return truncated;
+  }
+
+  return displayLines;
+};
+
+const appendTsplLabeledBlock = (
+  baseTspl: string,
+  x: number,
+  startY: number,
+  label: string,
+  rawText: string,
+  maxCharsFirstLine: number,
+  maxCharsContinuation: number,
+  maxLines: number,
+  maxEndY = TSPL_TEXT_MAX_Y
+): { tspl: string; nextY: number } => {
+  const lines = wrapTsplLabeledLines(
+    rawText,
+    label,
+    maxCharsFirstLine,
+    maxCharsContinuation,
+    maxLines
+  );
+  let tspl = baseTspl;
+  let y = startY;
+
+  lines.forEach((lineText) => {
+    if (y + TSPL_LINE_HEIGHT > maxEndY) return;
+    tspl += tsplBoldText(x, y, lineText);
+    y += TSPL_LINE_HEIGHT;
+  });
+
+  return { tspl, nextY: y };
 };
 
 // --- 6. Logic In TSPL ---
@@ -368,7 +606,7 @@ const printLabel = async () => {
       const response = await mixGlue.postMGMQIPConfirm(payload);
 
       if (response.data?.success) {
-        const { styleName, startDate, endDate, domainApi, action } = response.data.data;
+        const { styleName, startDate, endDate, domainApi, action, productLineName } = response.data.data;
 
         const formattedStart = format.formatDate(startDate);
         const formattedEnd = format.formatDate(endDate);
@@ -381,49 +619,38 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}/${workOrderMasterId}"
+QRCODE 15,40,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
+QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
         tspl += tsplBoldText(180, 40, 'Từ ngày:');
         tspl += tsplBoldText(180, 80, formattedStart);
         tspl += tsplBoldText(180, 120, 'Đến ngày:');
         tspl += tsplBoldText(180, 160, formattedEnd);
 
-        // 2. Thuật toán gom dòng cho Hình thể
-        const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
-        const MAX_CHARS_PER_LINE = 30; // Số ký tự tối đa trên 1 dòng
-        const MAX_LINES = 3;           // Chỉ cho phép in tối đa 3 dòng hình thể
+        const chuyenBlock = appendTsplLabeledBlock(
+          tspl,
+          TSPL_LEFT_X,
+          200,
+          'Chuyền:',
+          productLineName || '',
+          TSPL_MAX_CHARS_FIRST_LINE,
+          TSPL_MAX_CHARS_CONTINUATION,
+          3
+        );
+        tspl = chuyenBlock.tspl;
 
-        let lines: string[] = [];
-        let currentLine = "";
+        const styleBlock = appendTsplLabeledBlock(
+          tspl,
+          TSPL_LEFT_X,
+          chuyenBlock.nextY,
+          'Hình thể:',
+          styleName || '',
+          TSPL_MAX_CHARS_FIRST_LINE,
+          TSPL_MAX_CHARS_CONTINUATION,
+          3
+        );
+        tspl = styleBlock.tspl;
 
-        // Chạy vòng lặp để ghép các hình thể lại
-        styles.forEach((style: string) => {
-          let testLine = currentLine.length === 0 ? style : `${currentLine}, ${style}`;
-          if (testLine.length > MAX_CHARS_PER_LINE) {
-            lines.push(currentLine);
-            currentLine = style;
-          } else {
-            currentLine = testLine;
-          }
-        });
-        if (currentLine) lines.push(currentLine);
-
-        // 3. Xử lý giới hạn dòng
-        if (lines.length > MAX_LINES) {
-          lines = lines.slice(0, MAX_LINES);
-          // Thêm dấu 3 chấm vào dòng cuối cùng để báo hiệu văn bản bị cắt
-          lines[MAX_LINES - 1] = lines[MAX_LINES - 1] + " ...";
-        }
-
-        // 4. In các dòng hình thể ra (Bắt đầu từ Y = 230, X = 10 y như bản test)
-        let currentY = 210;
-        lines.forEach((lineText: string, index: number) => {
-          const prefix = index === 0 ? "Hình thể: " : "          "; // Thụt lề 10 khoảng trắng cho dòng dưới
-          tspl += tsplBoldText(15, currentY, `${prefix}${lineText}`);
-          currentY += 40; // Khoảng cách giữa các dòng là 50 (250 -> 300 -> 350)
-        });
-
-        // 5. Kết thúc lệnh in
         tspl += `PRINT 1,1\n`;
 
       } else {
@@ -465,7 +692,7 @@ QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMaster
 
       // 2. Xử lý kết quả trả về từ API (Chung cho cả 2 loại)
       if (response && response.data?.success) {
-        const { styleName, startDate, endDate, domainApi, action } = response.data.data;
+        const { styleName, startDate, endDate, domainApi, action, productLineName } = response.data.data;
 
         const formattedStart = format.formatDate(startDate);
         const formattedEnd = format.formatDate(endDate);
@@ -478,45 +705,38 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,3,A,0,"${domainApi}${action}/${qrCodeParams}"
+QRCODE 15,40,H,4,A,0,"${domainApi}${action}/${qrCodeParams}"
+QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${qrCodeParams}"
 `;
         tspl += tsplBoldText(180, 40, 'Từ ngày:');
         tspl += tsplBoldText(180, 80, formattedStart);
         tspl += tsplBoldText(180, 120, 'Đến ngày:');
         tspl += tsplBoldText(180, 160, formattedEnd);
 
-        // Thuật toán gom dòng cho Hình thể
-        const styles = styleName ? styleName.split(',').map((s: string) => s.trim()) : [];
-        const MAX_CHARS_PER_LINE = 30;
-        const MAX_LINES = 3;
+        const productLineBlock = appendTsplLabeledBlock(
+          tspl,
+          TSPL_LEFT_X,
+          200,
+          'Chuyền:',
+          productLineName || '',
+          TSPL_MAX_CHARS_FIRST_LINE,
+          TSPL_MAX_CHARS_CONTINUATION,
+          3
+        );
+        tspl = productLineBlock.tspl;
 
-        let lines: string[] = [];
-        let currentLine = "";
+        const styleBlock = appendTsplLabeledBlock(
+          tspl,
+          TSPL_LEFT_X,
+          productLineBlock.nextY,
+          'Hình thể:',
+          styleName || '',
+          TSPL_MAX_CHARS_FIRST_LINE,
+          TSPL_MAX_CHARS_CONTINUATION,
+          3
+        );
+        tspl = styleBlock.tspl;
 
-        styles.forEach((style: string) => {
-          let testLine = currentLine.length === 0 ? style : `${currentLine}, ${style}`;
-          if (testLine.length > MAX_CHARS_PER_LINE) {
-            lines.push(currentLine);
-            currentLine = style;
-          } else {
-            currentLine = testLine;
-          }
-        });
-        if (currentLine) lines.push(currentLine);
-
-        if (lines.length > MAX_LINES) {
-          lines = lines.slice(0, MAX_LINES);
-          lines[MAX_LINES - 1] = lines[MAX_LINES - 1] + " ...";
-        }
-
-        let currentY = 210;
-        lines.forEach((lineText: string, index: number) => {
-          const prefix = index === 0 ? "Hình thể: " : "          ";
-          tspl += tsplBoldText(15, currentY, `${prefix}${lineText}`);
-          currentY += 40;
-        });
-
-        // Kết thúc lệnh in
         tspl += `PRINT 1,1\n`;
 
       } else {

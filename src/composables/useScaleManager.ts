@@ -50,8 +50,18 @@ let dataListener: any = null;
 let watchdog: any = null;
 let autoConnectInterval: any = null;
 let dataBuffer = '';
+/** Page/component đang sở hữu kết nối cân — tránh 2 page cùng auto-connect. */
+let activeScaleSessionId: string | number | symbol | null = null;
 
 export function useScaleManager() {
+
+  const internalStop = async () => {
+    clearInterval(autoConnectInterval);
+    autoConnectInterval = null;
+    clearTimeout(watchdog);
+    watchdog = null;
+    await forceDisconnect();
+  };
 
   // Hàm ép buộc ngắt kết nối phần cứng khi cân bị tắt
   const forceDisconnect = async () => {
@@ -125,21 +135,33 @@ export function useScaleManager() {
     }
   };
 
-  const startAutoConnect = () => {
-    connectToScale();
+  const startAutoConnect = (sessionId: string | number | symbol) => {
+    if (activeScaleSessionId !== null && activeScaleSessionId !== sessionId) {
+      void internalStop();
+    }
+
+    activeScaleSessionId = sessionId;
+    void connectToScale();
+
     if (!autoConnectInterval) {
       autoConnectInterval = setInterval(() => {
-        // Chỉ cố gắng kết nối lại nếu đang bị mất kết nối
-        if (!isGlobalConnected.value) connectToScale();
+        if (activeScaleSessionId === null) return;
+        if (!isGlobalConnected.value) void connectToScale();
       }, 3000);
     }
   };
 
-  const stopAutoConnect = () => {
-    clearInterval(autoConnectInterval);
-    autoConnectInterval = null;
-    clearTimeout(watchdog);
-    forceDisconnect();
+  const stopAutoConnect = (sessionId: string | number | symbol) => {
+    if (activeScaleSessionId !== sessionId) return;
+
+    activeScaleSessionId = null;
+    void internalStop();
+  };
+
+  /** Ngắt cân khi rời page (Ionic cache — component con có thể chưa unmount). */
+  const releaseScaleConnection = () => {
+    activeScaleSessionId = null;
+    void internalStop();
   };
 
   return {
@@ -147,6 +169,7 @@ export function useScaleManager() {
     isGlobalConnected,
     isGlobalStable,
     startAutoConnect,
-    stopAutoConnect
+    stopAutoConnect,
+    releaseScaleConnection,
   };
 }

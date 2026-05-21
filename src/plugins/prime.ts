@@ -16,6 +16,7 @@ import Skeleton from 'primevue/skeleton';
 import InputNumber from 'primevue/inputnumber';
 import Dialog from 'primevue/dialog';
 import Toast from 'primevue/toast';
+import AppToast from '@/components/AppToast.vue';
 
 import 'primeicons/primeicons.css';
 
@@ -38,5 +39,6 @@ export default {
         app.component('InputNumber', InputNumber);
         app.component('Dialog', Dialog);
         app.component('Toast', Toast);
+        app.component('AppToast', AppToast);
     }
 };

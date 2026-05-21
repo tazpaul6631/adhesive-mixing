@@ -23,9 +23,7 @@ export const isMixGlueDraftRestorable = (draft: MixGlueDraftPayload | undefined 
 export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined | null): boolean => {
   if (!draft) return false;
 
-  if (Array.isArray(draft.separateGlueDetails) && draft.separateGlueDetails.some((o: any) =>
-    !!o.selectedBucketId || (Array.isArray(o.selectedRequestDetailIds) && o.selectedRequestDetailIds.length > 0)
-  )) {
+  if (Array.isArray(draft.separateGlueDetails) && draft.separateGlueDetails.length > 0) {
     return true;
   }
   if (Array.isArray(draft.orderDetails) && draft.orderDetails.some((o: any) =>
@@ -36,13 +34,23 @@ export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined
   if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
     return true;
   }
+
+  const pendingByMaterial = draft.chietPendingByMaterial;
+  if (pendingByMaterial && typeof pendingByMaterial === 'object') {
+    const hasPendingChiet = Object.values(pendingByMaterial as Record<string, unknown>).some(
+      (rows) => Array.isArray(rows) && rows.length > 0
+    );
+    if (hasPendingChiet) return true;
+  }
+
   const weighed = (items: any[]) =>
     Array.isArray(items) &&
     items.some(
       (item: any) =>
         item.weighingTime ||
         (item.actualWeight && Number(item.actualWeight) > 0) ||
-        item.isChietCompleted
+        item.isChietCompleted ||
+        (item.glueExtra && item.requiredWeight && Number(item.requiredWeight) > 0)
     );
 
   return weighed(draft.noMixComponents as any[]) || weighed(draft.noMixChemicalsFull as any[]);

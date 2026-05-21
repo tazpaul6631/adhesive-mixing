@@ -29,6 +29,7 @@ export const toApiRequestDetailIds = (ids: unknown): Array<string | number> => {
 
 export const isSeparateGlueRowReady = (item: any) => {
   return !!item.selectedBucketId
+    || !!item.bucketId
     || (Array.isArray(item.selectedRequestDetailIds) && item.selectedRequestDetailIds.length > 0);
 };
 
@@ -36,11 +37,12 @@ const buildSeparateGluePayloadItem = (
   item: any,
   glueId: unknown,
   recordStatus: string,
-  defaultTime: string
+  defaultTime: string,
+  forceRecordStatus?: string
 ) => ({
   glueId: toApiId(glueId),
   bucketId: toApiId(item.selectedBucketId ?? item.bucketId),
-  recordStatus,
+  recordStatus: forceRecordStatus ?? (item.recordStatus ? item.recordStatus : recordStatus),
   confirmDate: item.confirmDate || defaultTime,
   requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
 });
@@ -49,98 +51,114 @@ const buildMixSeparateGluePayloadItem = (
   item: any,
   mixGlueMasterId: string,
   recordStatus: string,
-  defaultTime: string
-) => buildSeparateGluePayloadItem(item, mixGlueMasterId, recordStatus, defaultTime);
+  defaultTime: string,
+  forceRecordStatus?: string
+) => buildSeparateGluePayloadItem(item, mixGlueMasterId, recordStatus, defaultTime, forceRecordStatus);
 
-const collectSelectedRequestDetailIds = (ctx: PayloadBuildContext): Array<string | number> => {
+const collectChietModalRequestDetailIds = (
+  extraChietList: any[],
+  materialCode: unknown
+): Array<string | number> => {
   const ids = new Set<string>();
 
-  ctx.separateGlueDetails.forEach((row) => {
-    toApiRequestDetailIds(row.selectedRequestDetailIds).forEach((id) => ids.add(String(id)));
-  });
-
-  ctx.extraChietList.forEach((row) => {
-    toApiRequestDetailIds(row.selectedRequestDetailIds ?? row.requestDetailIds).forEach((id) => ids.add(String(id)));
-  });
+  extraChietList
+    .filter((extra) => String(extra.glueId) === String(materialCode))
+    .forEach((extra) => {
+      toApiRequestDetailIds(extra.selectedRequestDetailIds ?? extra.requestDetailIds)
+        .forEach((id) => ids.add(String(id)));
+    });
 
   return [...ids].map((id) => toApiId(id));
 };
 
+const NO_CHIET_RECORD_STATUS = '1';
+const CHIET_MAIN_RECORD_STATUS = 'C';
+const CHIET_EXTRA_RECORD_STATUS = '1';
+
 const buildNoSeparateGlues = (
   ctx: PayloadBuildContext,
-  recordStatus: string,
   defaultTime: string,
-  sharedRequestDetailIds: Array<string | number>
+  forceRecordStatus?: string
 ) => {
-  return ctx.noMixComponents
+  const result: Array<Record<string, unknown>> = [];
+
+  ctx.noMixComponents
     .filter(item => item.actualWeight && Number(item.actualWeight) > 0)
-    .map(item => ({
-      materialCode: toApiId(item.materialCode),
-      glueWeight: Number(item.actualWeight) || 0,
-      glueWeightUnit: item.weightUnit || 'Kg',
-      glueExtra: !!item.glueExtra,
-      recordStatus: item.recordStatus ? item.recordStatus : recordStatus,
-      confirmDate: item.confirmDate || defaultTime,
-      requestDetailIds: sharedRequestDetailIds,
-    }));
+    .forEach((item) => {
+      const materialCode = item.materialCode;
+      const glueWeight = Number(item.actualWeight) || 0;
+      const glueWeightUnit = item.weightUnit || 'Kg';
+      const confirmDate = item.confirmDate || defaultTime;
+
+      if (!item.isChietCompleted) {
+        result.push({
+          materialCode: toApiId(materialCode),
+          glueWeight,
+          glueWeightUnit,
+          bucketId: toApiId(0, 0),
+          glueExtra: !!item.glueExtra,
+          recordStatus: forceRecordStatus ?? NO_CHIET_RECORD_STATUS,
+          confirmDate,
+          requestDetailIds: [],
+        });
+        return;
+      }
+
+      result.push({
+        materialCode: toApiId(materialCode),
+        glueWeight,
+        glueWeightUnit,
+        bucketId: toApiId(item.bucketId ?? 0, 0),
+        glueExtra: !!item.glueExtra,
+        recordStatus: forceRecordStatus ?? (item.recordStatus || CHIET_MAIN_RECORD_STATUS),
+        confirmDate,
+        requestDetailIds: collectChietModalRequestDetailIds(ctx.extraChietList, materialCode),
+      });
+
+      ctx.extraChietList
+        .filter(extra => String(extra.glueId) === String(materialCode))
+        .filter(isSeparateGlueRowReady)
+        .forEach((extra) => {
+          result.push({
+            materialCode: toApiId(materialCode),
+            glueWeight,
+            glueWeightUnit,
+            bucketId: toApiId(extra.bucketId ?? extra.selectedBucketId),
+            glueExtra: extra.glueExtra != null ? !!extra.glueExtra : !!item.glueExtra,
+            recordStatus: forceRecordStatus ?? (extra.recordStatus || CHIET_EXTRA_RECORD_STATUS),
+            confirmDate: extra.confirmDate || defaultTime,
+            requestDetailIds: toApiRequestDetailIds(
+              extra.selectedRequestDetailIds ?? extra.requestDetailIds
+            ),
+          });
+        });
+    });
+
+  return result;
 };
 
 export const buildSeparateGlueCommandPayload = (
   ctx: PayloadBuildContext,
   recordStatus: string,
-  options?: { forComplete?: boolean }
+  options?: { forComplete?: boolean; forceAllRecordStatus?: string }
 ) => {
   const defaultTime = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
+  const forceRecordStatus = options?.forceAllRecordStatus;
 
   const separateGlueDetailsForPayload =
     options?.forComplete && ctx.mixChemicals.length === 0 ? [] : ctx.separateGlueDetails;
 
   const baseSeparateGlues = separateGlueDetailsForPayload
     .filter(isSeparateGlueRowReady)
-    .map((item) => buildMixSeparateGluePayloadItem(item, ctx.mixGlueMasterId, recordStatus, defaultTime));
+    .map((item) => buildMixSeparateGluePayloadItem(
+      item,
+      ctx.mixGlueMasterId,
+      recordStatus,
+      defaultTime,
+      forceRecordStatus
+    ));
 
-  const separateGluesFromChiet = ctx.extraChietList
-    .filter(isSeparateGlueRowReady)
-    .map((item) => buildSeparateGluePayloadItem(item, item.glueId, recordStatus, defaultTime));
-
-  const finalSeparateGlues = [...baseSeparateGlues, ...separateGluesFromChiet];
-  const sharedRequestDetailIds = collectSelectedRequestDetailIds(ctx);
-
-  return {
-    factoryId: ctx.factoryId,
-    workOrderMasterId: toApiId(ctx.workOrderMasterId),
-    startDate: ctx.startDate,
-    endDate: ctx.endDate,
-    createrId: ctx.employeeId,
-    updaterId: ctx.employeeId,
-    separateGlues: finalSeparateGlues,
-    noSeparateGlues: buildNoSeparateGlues(ctx, recordStatus, defaultTime, sharedRequestDetailIds),
-  };
-};
-
-/** Thoát: recordStatus C — chỉ gửi bảng 1 nếu có chọn thùng / chiết; bảng 2 chỉ dòng đã cân. */
-export const buildSeparateGlueExitPayload = (ctx: PayloadBuildContext) => {
-  const recordStatus = 'C';
-  const defaultTime = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
-
-  const table1Touched =
-    ctx.separateGlueDetails.some(isSeparateGlueRowReady)
-    || ctx.extraChietList.some(isSeparateGlueRowReady);
-
-  const baseSeparateGlues = table1Touched
-    ? ctx.separateGlueDetails
-      .filter(isSeparateGlueRowReady)
-      .map((item) => buildMixSeparateGluePayloadItem(item, ctx.mixGlueMasterId, recordStatus, defaultTime))
-    : [];
-
-  const separateGluesExtra = table1Touched
-    ? ctx.extraChietList
-      .filter(isSeparateGlueRowReady)
-      .map((item) => buildSeparateGluePayloadItem(item, item.glueId, recordStatus, defaultTime))
-    : [];
-
-  const finalSeparateGlues = table1Touched ? [...baseSeparateGlues, ...separateGluesExtra] : [];
-  const sharedRequestDetailIds = collectSelectedRequestDetailIds(ctx);
+  const finalSeparateGlues = baseSeparateGlues;
 
   return {
     factoryId: ctx.factoryId,
@@ -150,6 +168,10 @@ export const buildSeparateGlueExitPayload = (ctx: PayloadBuildContext) => {
     createrId: ctx.employeeId,
     updaterId: ctx.employeeId,
     separateGlues: finalSeparateGlues,
-    noSeparateGlues: buildNoSeparateGlues(ctx, recordStatus, defaultTime, sharedRequestDetailIds),
+    noSeparateGlues: buildNoSeparateGlues(ctx, defaultTime, forceRecordStatus),
   };
 };
+
+/** Thoát: cùng cấu trúc handleComplete, toàn bộ recordStatus = C. */
+export const buildSeparateGlueExitPayload = (ctx: PayloadBuildContext) =>
+  buildSeparateGlueCommandPayload(ctx, 'C', { forComplete: true, forceAllRecordStatus: 'C' });

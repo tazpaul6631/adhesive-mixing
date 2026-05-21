@@ -33,8 +33,8 @@
           <div class="overflow-x-auto border-round-bottom-xl" :key="isMixedMode ? 'mixed' : 'nomix'">
 
             <!-- BẢNG DÀNH CHO KEO TRỘN -->
-            <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="500px" dataKey="separateGlueId"
+            <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table auto-columns-table"
+              tableStyle="width: 100%;" scrollable scrollHeight="500px" dataKey="separateGlueId"
               selectionMode="single" v-model:selection="selectedTableRow" @row-click="onMixedRowClick">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
@@ -44,25 +44,26 @@
               </template>
 
               <!-- Các cột thực tế cho Keo Trộn -->
-              <Column field="workOrderMasterName" header="Đơn điều công" style="min-width: 200px">
+              <Column field="workOrderMasterName" header="Đơn điều công" headerClass="dt-col-primary"
+                bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <span v-else class="font-bold">{{ data.workOrderMasterName }}</span>
                 </template>
               </Column>
-              <Column field="productLineName" header="Chuyền" style="min-width: 150px">
+              <Column field="productLineName" header="Chuyền" headerClass="dt-col-text" bodyClass="dt-col-text">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.productLineName }}</span>
                 </template>
               </Column>
-              <Column field="bucketName" header="Bình chứa" style="min-width: 150px">
+              <Column field="bucketName" header="Bình chứa" headerClass="dt-col-text" bodyClass="dt-col-text">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <span v-else>{{ data.bucketName }}</span>
                 </template>
               </Column>
-              <Column header="Dung lượng" style="min-width: 150px">
+              <Column header="Dung lượng" headerClass="dt-col-weight" bodyClass="dt-col-weight">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.capacity }} {{ data.capacityUnit }}</span>
@@ -71,8 +72,8 @@
             </DataTable>
 
             <!-- BẢNG DÀNH CHO KEO KHÔNG TRỘN -->
-            <DataTable v-else :value="lineDetails" stripedRows class="custom-bordered-table"
-              tableStyle="width: 100%; table-layout: fixed;" scrollable scrollHeight="700px" dataKey="noSeparateGlueId"
+            <DataTable v-else :value="lineDetails" stripedRows class="custom-bordered-table auto-columns-table"
+              tableStyle="width: 100%;" scrollable scrollHeight="700px" dataKey="noSeparateGlueId"
               selectionMode="single" v-model:selection="selectedTableRow" @row-click="onNoMixRowClick">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
@@ -82,25 +83,26 @@
               </template>
 
               <!-- Các cột thực tế cho Keo Không Trộn -->
-              <Column field="workOrderMasterName" header="Đơn điều công" style="min-width: 200px">
+              <Column field="workOrderMasterName" header="Đơn điều công" headerClass="dt-col-primary"
+                bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <span v-else class="font-bold">{{ data.workOrderMasterName }}</span>
                 </template>
               </Column>
-              <Column field="productLineName" header="Chuyền" style="min-width: 150px">
+              <Column field="productLineName" header="Chuyền" headerClass="dt-col-text" bodyClass="dt-col-text">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.productLineName }}</span>
                 </template>
               </Column>
-              <Column field="glueName" header="Tên Keo" style="min-width: 150px">
+              <Column field="glueName" header="Tên Keo" headerClass="dt-col-primary" bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <span v-else>{{ data.glueName }}</span>
                 </template>
               </Column>
-              <Column header="Trọng lượng" style="min-width: 150px">
+              <Column header="Trọng lượng" headerClass="dt-col-weight" bodyClass="dt-col-weight">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else>{{ data.glueWeight }} {{ data.glueWeightUnit }}</span>

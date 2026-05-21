@@ -12,32 +12,33 @@
 
     <div class="flex justify-content-between align-items-end">
       <div class="p-inputgroup flex align-items-center">
-        <InputText v-model="mixingProcess.weight" readonly class="text-right font-bold bg-white" style="width: 250px;"
+        <InputText :model-value="displayWeight" readonly class="text-right font-bold bg-white" style="width: 250px;"
           :class="{
             'border-green-500': isStable && isConnected,
             'text-red-500': isExceedingLimit,
             'text-primary': !isExceedingLimit
           }" />
-        <span class="p-inputgroup-addon font-bold px-1">{{ weightUnit }}</span>
+        <span class="p-inputgroup-addon font-bold px-1">{{ effectiveDisplayUnit }}</span>
 
-        <!-- Luôn hiển thị sai số do đã có mặc định 5g -->
-        <div class="ml-1 min-w-max border-left-1 border-300 pl-3">
+        <!-- Sai số chỉ hiển thị khi bắt buộc kiểm tra dung sai -->
+        <div v-if="enforceTolerance" class="ml-1 min-w-max border-left-1 border-300 pl-3">
           <div class="text-red-500 font-bold text-xs">-{{ effectiveLowerTolerance }} g</div>
           <div class="text-green-600 font-bold text-xs">+{{ effectiveUpperTolerance }} g</div>
         </div>
       </div>
 
-      <Button :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm || !hasTargetWeight || hasLockedWeight"
-        label="Xác nhận"
-        icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
+      <Button
+        :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm || !hasTargetWeight || hasLockedWeight"
+        label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, onActivated, onDeactivated, watch, computed, getCurrentInstance } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useScaleManager } from '@/composables/useScaleManager';
+import { toastMsg } from '@/utils/toastFormat';
 
 const toast = useToast();
 
@@ -48,60 +49,116 @@ const props = defineProps({
   upperTolerance: { type: [Number, String], default: '' },
   weightUnit: { type: [Number, String], default: '' },
   disableConfirm: { type: Boolean, default: false },
+  /** false = cân bao nhiêu xác nhận bấy nhiêu; true = bắt buộc nằm trong sai số. */
+  enforceTolerance: { type: Boolean, default: true },
   /** Dòng đã xác nhận cân: hiển thị TL thực tế đã lưu, không lấy số live từ cân. */
   lockedWeight: { type: [Number, String], default: '' }
 });
 
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
 
-// --- TÍNH TOÁN SAI SỐ ---
+// --- TÍNH TOÁN SAI SỐ (gram) ---
 const effectiveLowerTolerance = computed(() => {
   if (props.lowerTolerance === '' || props.lowerTolerance === null || props.lowerTolerance === undefined) return 5;
   if (Number(props.lowerTolerance) === 0) return 5;
-  return props.lowerTolerance;
+  return Number(props.lowerTolerance);
 });
 
 const effectiveUpperTolerance = computed(() => {
   if (props.upperTolerance === '' || props.upperTolerance === null || props.upperTolerance === undefined) return 5;
   if (Number(props.upperTolerance) === 0) return 5;
-  return props.upperTolerance;
+  return Number(props.upperTolerance);
 });
 
-const weightUnit = computed(() => props.weightUnit);
+const isKgUnit = computed(() => props.weightUnit?.toString().toLowerCase() === 'kg');
 
-// --- STATE ---
-const mixingProcess = ref({ weight: '0.000' });
+/** Đơn vị hiển thị trên UI — theo weightUnit của dòng. */
+const effectiveDisplayUnit = computed(() => {
+  const unit = String(props.weightUnit || 'g').trim();
+  return unit.toLowerCase() === 'kg' ? 'Kg' : 'g';
+});
+
+/** Cân serial luôn trả về kg → quy đổi sang gram để tính nội bộ. */
+const scaleKgToGrams = (kgVal: number) =>
+  Number((Number.isFinite(kgVal) ? kgVal * 1000 : 0).toFixed(3));
+
+/** Quy đổi trọng lượng dòng (kg/g) sang gram. */
+const toGrams = (weight: number, fromKgUnit: boolean) => {
+  const normalized = Number.isFinite(weight) ? weight : 0;
+  return fromKgUnit ? scaleKgToGrams(normalized) : Number(normalized.toFixed(3));
+};
+
+/** Hiển thị / emit từ gram về đơn vị UI của dòng. */
+const formatGramsForDisplay = (grams: number) => {
+  const normalized = Number.isFinite(grams) ? grams : 0;
+  return isKgUnit.value
+    ? (normalized / 1000).toFixed(3)
+    : normalized.toFixed(3);
+};
+
+const fromGrams = (grams: number) => {
+  const normalized = Number.isFinite(grams) ? grams : 0;
+  return isKgUnit.value
+    ? Number((normalized / 1000).toFixed(3))
+    : Number(normalized.toFixed(3));
+};
+
+// --- STATE (nội bộ luôn tính theo gram) ---
+const weightGrams = ref(0);
+
+const displayWeight = computed(() => formatGramsForDisplay(weightGrams.value));
+
+const getCurrentWeightInGrams = () => weightGrams.value;
+
+const getToleranceRangeInGrams = () => {
+  const targetGrams = toGrams(parseFloat(String(props.targetWeight ?? '0')), isKgUnit.value);
+  const lowerTolGram = Number(effectiveLowerTolerance.value) || 0;
+  const upperTolGram = Number(effectiveUpperTolerance.value) || 0;
+
+  return {
+    targetGrams,
+    minGrams: Number((targetGrams - lowerTolGram).toFixed(3)),
+    maxGrams: Number((targetGrams + upperTolGram).toFixed(3)),
+  };
+};
+
+const isWeightWithinTolerance = (currentGrams: number) => {
+  const { minGrams, maxGrams } = getToleranceRangeInGrams();
+  return currentGrams >= minGrams && currentGrams <= maxGrams;
+};
 
 // --- GỌI GLOBAL MANAGER ---
 const { globalWeight, isGlobalConnected, isGlobalStable, startAutoConnect, stopAutoConnect } = useScaleManager();
+const scaleSessionId = getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
+
+const beginScaleSession = () => {
+  startAutoConnect(scaleSessionId);
+};
+
+const endScaleSession = () => {
+  stopAutoConnect(scaleSessionId);
+  resetDisplayedWeight();
+  emit('connection-status', false);
+};
 
 // Đồng bộ trạng thái kết nối ra UI
 const isConnected = computed(() => isGlobalConnected.value);
 const isStable = computed(() => isGlobalStable.value);
 
 // --- LOGIC KIỂM TRA & XÁC NHẬN ---
-const isKgUnit = computed(() => {
-  return props.weightUnit?.toString().toLowerCase() === 'kg';
-});
-
-/** Chỉ cho phép nhận số cân khi dòng đang chọn đã có TL yêu cầu (> 0). */
+/** Chỉ bắt TL yêu cầu khi kiểm tra dung sai (keo thêm từ modal). */
 const hasTargetWeight = computed(() => {
+  if (!props.enforceTolerance) return true;
+
   const raw = props.targetWeight;
   if (raw === '' || raw === null || raw === undefined) return false;
   const num = parseFloat(String(raw));
   return !Number.isNaN(num) && num > 0;
 });
 
-const formatScaleReading = (newWeight: string | number, isKg: boolean) => {
-  if (isKg) {
-    return String(newWeight);
-  }
-  return (parseFloat(String(newWeight) || '0') * 1000).toFixed(3);
-};
-
 const resetDisplayedWeight = () => {
-  mixingProcess.value.weight = '0.000';
-  emit('update:weight', '0.000');
+  weightGrams.value = 0;
+  emit('update:weight', formatGramsForDisplay(0));
 };
 
 const hasLockedWeight = computed(() => {
@@ -111,16 +168,10 @@ const hasLockedWeight = computed(() => {
   return !Number.isNaN(num);
 });
 
-const formatLockedWeightDisplay = (weight: string | number) => {
-  const num = parseFloat(String(weight) || '0');
-  if (Number.isNaN(num)) return '0.000';
-  return num.toFixed(3);
-};
-
 const applyLockedWeightDisplay = () => {
-  const display = formatLockedWeightDisplay(props.lockedWeight as string | number);
-  mixingProcess.value.weight = display;
-  emit('update:weight', display);
+  const num = parseFloat(String(props.lockedWeight) || '0');
+  weightGrams.value = Number.isNaN(num) ? 0 : toGrams(num, isKgUnit.value);
+  emit('update:weight', formatGramsForDisplay(weightGrams.value));
 };
 
 // --- CÁC WATCHER ĐỂ ĐỒNG BỘ UI VÀ EMIT ---
@@ -129,46 +180,45 @@ watch(isGlobalConnected, (newStatus) => {
 });
 
 // Dòng đã xác nhận → hiển thị actualWeight đã lưu; chưa xác nhận → live cân hoặc 0.000
-watch([globalWeight, isKgUnit, hasTargetWeight, hasLockedWeight, () => props.lockedWeight], ([newWeight, isKg, canWeigh]) => {
-  if (hasLockedWeight.value) {
-    applyLockedWeightDisplay();
-    return;
-  }
+watch(
+  [
+    globalWeight,
+    isKgUnit,
+    hasTargetWeight,
+    hasLockedWeight,
+    () => props.lockedWeight,
+    () => props.enforceTolerance,
+    () => props.targetWeight,
+    () => props.disableConfirm,
+  ],
+  ([newWeight, , canWeigh]) => {
+    if (hasLockedWeight.value) {
+      applyLockedWeightDisplay();
+      return;
+    }
 
-  if (!canWeigh) {
-    resetDisplayedWeight();
-    return;
-  }
+    if (!canWeigh) {
+      resetDisplayedWeight();
+      return;
+    }
 
-  const formatted = formatScaleReading(newWeight as string, isKg as boolean);
-  mixingProcess.value.weight = formatted;
-  emit('update:weight', formatted);
-}, { immediate: true });
+    const kgFromScale = parseFloat(String(newWeight) || '0');
+    weightGrams.value = scaleKgToGrams(kgFromScale);
+    emit('update:weight', formatGramsForDisplay(weightGrams.value));
+  },
+  { immediate: true }
+);
 
 const isExceedingLimit = computed(() => {
+  if (!props.enforceTolerance) return false;
   if (hasLockedWeight.value) return false;
   if (!hasTargetWeight.value) return false;
 
-  const currentWeight = parseFloat(mixingProcess.value.weight || '0');
-  const target = parseFloat(props.targetWeight?.toString() || '0');
-  const current = Number(currentWeight.toFixed(3));
-
-  // Sai số mặc định là Gram
-  const lowerTolGram = parseFloat(effectiveLowerTolerance.value.toString()) || 0;
-  const upperTolGram = parseFloat(effectiveUpperTolerance.value.toString()) || 0;
-
-  // Quy đổi sai số về cùng đơn vị với targetWeight
-  const lowerDiff = isKgUnit.value ? lowerTolGram / 1000 : lowerTolGram;
-  const upperDiff = isKgUnit.value ? upperTolGram / 1000 : upperTolGram;
-
-  const minAcceptable = Number((target - lowerDiff).toFixed(3));
-  const maxAcceptable = Number((target + upperDiff).toFixed(3));
-
-  return current < minAcceptable || current > maxAcceptable;
+  return !isWeightWithinTolerance(getCurrentWeightInGrams());
 });
 
 const confirmWeight = () => {
-  if (!hasTargetWeight.value) {
+  if (props.enforceTolerance && !hasTargetWeight.value) {
     toast.add({
       severity: 'warn',
       summary: 'Chưa có TL yêu cầu',
@@ -178,43 +228,61 @@ const confirmWeight = () => {
     return;
   }
 
-  const currentWeight = parseFloat(mixingProcess.value.weight || '0');
-  const target = parseFloat(props.targetWeight?.toString() || '0');
-  const current = Number(currentWeight.toFixed(3));
-  const unit = props.weightUnit || 'Kg';
+  const currentGrams = getCurrentWeightInGrams();
+  const weightForRow = fromGrams(currentGrams).toFixed(3);
 
-  // Sai số mặc định là Gram
-  const lowerTolGram = parseFloat(effectiveLowerTolerance.value.toString()) || 0;
-  const upperTolGram = parseFloat(effectiveUpperTolerance.value.toString()) || 0;
+  if (props.enforceTolerance) {
+    const { minGrams, maxGrams } = getToleranceRangeInGrams();
+    const unit = effectiveDisplayUnit.value;
+    const minDisplay = fromGrams(minGrams);
+    const maxDisplay = fromGrams(maxGrams);
 
-  // Quy đổi sai số về cùng đơn vị với targetWeight
-  const lowerDiff = isKgUnit.value ? lowerTolGram / 1000 : lowerTolGram;
-  const upperDiff = isKgUnit.value ? upperTolGram / 1000 : upperTolGram;
+    if (currentGrams < minGrams) {
+      toast.add({
+        severity: 'error',
+        summary: 'Không đạt yêu cầu',
+        detail: toastMsg`Trọng lượng không được thấp hơn ${minDisplay.toFixed(3)} ${unit}.`,
+        life: 5000
+      });
+      return;
+    }
 
-  const minAcceptable = Number((target - lowerDiff).toFixed(3));
-  const maxAcceptable = Number((target + upperDiff).toFixed(3));
-
-  if (current < minAcceptable) {
-    toast.add({ severity: 'error', summary: 'Không đạt yêu cầu', detail: `Trọng lượng không được thấp hơn ${minAcceptable.toFixed(3)} ${unit}.`, life: 5000 });
-    return;
+    if (currentGrams > maxGrams) {
+      toast.add({
+        severity: 'error',
+        summary: 'Vượt giới hạn',
+        detail: toastMsg`Trọng lượng tối đa chỉ được phép đến ${maxDisplay.toFixed(3)} ${unit}.`,
+        life: 5000
+      });
+      return;
+    }
   }
 
-  if (current > maxAcceptable) {
-    toast.add({ severity: 'error', summary: 'Vượt giới hạn', detail: `Trọng lượng tối đa chỉ được phép đến ${maxAcceptable.toFixed(3)} ${unit}.`, life: 5000 });
-    return;
-  }
-
-  emit('confirm-weight', current.toFixed(3));
-  toast.add({ severity: 'success', summary: 'Thành công', detail: 'Trọng lượng đạt yêu cầu', life: 3000 });
+  emit('confirm-weight', weightForRow);
+  toast.add({
+    severity: 'success',
+    summary: 'Thành công',
+    detail: props.enforceTolerance ? 'Trọng lượng đạt yêu cầu' : 'Đã xác nhận trọng lượng',
+    life: 3000
+  });
 };
 
 // --- LIFECYCLE ---
+// Ionic cache page → dùng activated/deactivated; session owner tránh page cũ vẫn auto-connect.
 onMounted(() => {
-  setTimeout(() => startAutoConnect(), 500);
+  setTimeout(() => beginScaleSession(), 500);
+});
+
+onActivated(() => {
+  beginScaleSession();
+});
+
+onDeactivated(() => {
+  endScaleSession();
 });
 
 onUnmounted(() => {
-  stopAutoConnect(); // Dọn dẹp khi chuyển sang màn hình khác
+  endScaleSession();
 });
 </script>
 
