@@ -1,23 +1,32 @@
 <template>
-  <div class="flex align-items-center gap-2">
-    <!-- Khu vực nút Kết nối -->
-    <Button v-if="status === 'disconnected'" label="Kết nối lại máy in" icon="pi pi-bluetooth" severity="primary"
-      @click="turnOnAndScan" />
+  <div class="flex align-items-center gap-2 flex-wrap">
+    <span v-if="status === 'connected'" class="text-green-600 font-medium text-sm">
+      <i class="pi pi-check-circle"></i> Đã kết nối máy in
+    </span>
+    <span v-else-if="status === 'scanning'" class="text-orange-500 font-medium text-sm">
+      <i class="pi pi-spin pi-spinner"></i> {{ scanningLabel }}
+    </span>
+    <span v-else class="text-red-500 font-medium text-sm fade-blink">
+      <i class="pi pi-bluetooth"></i> Chưa kết nối máy in
+    </span>
 
-    <Button v-else-if="status === 'scanning'" label="Đang tìm máy in... (Bấm để Hủy)" icon="pi pi-spin pi-spinner"
-      severity="info" @click="cancelConnection" />
+    <Button v-if="status === 'connected'" icon="pi pi-times" severity="secondary" text rounded size="small"
+      title="Ngắt kết nối máy in" aria-label="Ngắt kết nối máy in" @click="disconnect" />
 
-    <Button v-else-if="status === 'connected'" :label="'Đã kết nối máy in'" icon="pi pi-check-circle" severity="success"
-      @click="disconnect" />
+    <Button v-else-if="status === 'scanning'" label="Hủy" icon="pi pi-times" severity="secondary" text size="small"
+      @click="cancelConnection" />
 
-    <!-- Nút In -->
+    <Button v-else icon="pi pi-refresh" severity="primary" text outlined size="large" class="bt-refresh-btn"
+      title="Tìm lại / kết nối máy in" aria-label="Tìm lại máy in" @click="refreshScan" />
+
+    <!-- Nút In — chỉ bật khi đã kết nối máy in -->
     <Button :label="isPrinting ? 'Đang in...' : 'Xác nhận hoàn thành'" icon="pi pi-print" outlined size="large"
-      @click="printLabel" />
+      :disabled="!canPrint" @click="printLabel" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, onActivated } from 'vue';
 import { Button } from 'primevue';
 import { Preferences } from '@capacitor/preferences';
 import format from '@/mixins/format';
@@ -30,14 +39,18 @@ const props = defineProps<{
   printData?: any;
   /** Vào page: tự bật Bluetooth (nếu cần) và tự quét/kết nối máy in. */
   autoEnableOnEnter?: boolean;
-  /** Rời page: ngắt kết nối và tắt Bluetooth adapter (Android) để tiết kiệm pin. */
+  /** Rời page: tắt Bluetooth adapter (Android). Mặc định false. */
   autoDisableOnLeave?: boolean;
+  /** Rời page: ngắt kết nối máy in. false = giữ kết nối khi quay list → confirm liên tục. */
+  disconnectOnLeave?: boolean;
 }>();
 
 const autoEnableOnEnter = props.autoEnableOnEnter ?? true;
-const autoDisableOnLeave = props.autoDisableOnLeave ?? true;
+const autoDisableOnLeave = props.autoDisableOnLeave ?? false;
+const disconnectOnLeave = props.disconnectOnLeave ?? false;
 
 const status = ref<'disconnected' | 'scanning' | 'connected'>('disconnected');
+const scanPhase = ref<'saved-mac' | 'discover'>('discover');
 const selectedMac = ref<string>('');
 const isPrinting = ref(false);
 const authStore = useAuthStore();
@@ -46,7 +59,18 @@ let pendingInitTimer: ReturnType<typeof setTimeout> | null = null;
 let scanAborted = false;
 /** discoverUnpaired trên Android thường chậm — giới hạn thời gian quét. */
 const DISCOVER_UNPAIRED_TIMEOUT_MS = 4000;
-const SAVED_MAC_CONNECT_TIMEOUT_MS = 5000;
+const SAVED_MAC_CONNECT_TIMEOUT_MS = 6000;
+const INIT_RETRY_DELAYS_MS = [0, 400, 900, 1500];
+
+let connectFlowPromise: Promise<void> | null = null;
+
+const scanningLabel = computed(() =>
+  scanPhase.value === 'saved-mac'
+    ? 'Đang kết nối máy in đã lưu...'
+    : 'Đang tìm máy in...'
+);
+
+const canPrint = computed(() => status.value === 'connected' && !isPrinting.value);
 const emit = defineEmits(['printSuccess']);
 
 const getBluetooth = () => (window as any).bluetoothSerial;
@@ -193,18 +217,74 @@ const ensureBluetoothEnabled = (onReady: () => void, onFailure?: (err: unknown) 
   );
 };
 
-/** Tự tìm máy in — thử lần lượt từng máy cho đến khi kết nối được (máy đang bận sẽ bỏ qua). */
+const getSavedPrinterMac = async () => {
+  const { value } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
+  return value || '';
+};
+
+const savePrinterMac = async (mac: string) => {
+  selectedMac.value = mac;
+  await Preferences.set({ key: 'SAVED_PRINTER_MAC', value: mac });
+};
+
+const isAlreadyConnected = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const bt = getBluetooth();
+    if (!bt) {
+      resolve(false);
+      return;
+    }
+
+    bt.isConnected(
+      () => resolve(true),
+      () => resolve(false)
+    );
+  });
+};
+
+const tryConnectSavedMac = async (savedMac: string): Promise<boolean> => {
+  if (!savedMac || scanAborted) return false;
+
+  scanPhase.value = 'saved-mac';
+  const connected = await tryConnectDirect(savedMac, SAVED_MAC_CONNECT_TIMEOUT_MS);
+  if (scanAborted) return false;
+
+  if (connected) {
+    await savePrinterMac(savedMac);
+    status.value = 'connected';
+    console.log(`Kết nối nhanh MAC đã lưu: ${savedMac}`);
+    return true;
+  }
+
+  return false;
+};
+
+/** Tự tìm máy in — ưu tiên MAC đã lưu, sau đó quét paired/unpaired. */
 const autoConnectPrinter = async () => {
   const bt = getBluetooth();
-  if (!bt || status.value === 'connected' || status.value === 'scanning') {
-    return;
+  if (!bt) return;
+
+  if (status.value === 'connected') return;
+
+  if (status.value === 'scanning') {
+    scanAborted = true;
+    await new Promise<void>((resolve) => {
+      bt.disconnect(() => resolve(), () => resolve());
+    });
   }
 
   scanAborted = false;
   status.value = 'scanning';
 
   try {
-    const { value: savedMac } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
+    const savedMac = selectedMac.value || await getSavedPrinterMac();
+    if (savedMac) {
+      selectedMac.value = savedMac;
+      const connectedByMac = await tryConnectSavedMac(savedMac);
+      if (connectedByMac || scanAborted) return;
+    }
+
+    scanPhase.value = 'discover';
 
     const paired = await listPairedDevices();
     if (scanAborted) return;
@@ -219,7 +299,7 @@ const autoConnectPrinter = async () => {
       }
     });
 
-    const candidates = collectPrinterCandidates(allDevices, savedMac);
+    const candidates = collectPrinterCandidates(allDevices, savedMac || selectedMac.value);
     if (candidates.length === 0) {
       status.value = 'disconnected';
       console.log('Không tìm thấy máy in B300/TSC đang phát Bluetooth.');
@@ -230,8 +310,7 @@ const autoConnectPrinter = async () => {
     if (scanAborted) return;
 
     if (connectedDevice?.address) {
-      selectedMac.value = connectedDevice.address;
-      await Preferences.set({ key: 'SAVED_PRINTER_MAC', value: connectedDevice.address });
+      await savePrinterMac(connectedDevice.address);
       status.value = 'connected';
       console.log(`MÁY IN ĐÃ SẴN SÀNG: ${connectedDevice.name || connectedDevice.address}`);
       return;
@@ -298,28 +377,79 @@ const disableBluetoothAdapter = (): Promise<void> => {
 };
 
 /** Bật BT (nếu cần) rồi tự quét + kết nối máy in. */
-const startBluetoothAutoFlow = (onEnableFailed?: () => void) => {
-  const bt = getBluetooth();
-  if (!bt) return;
+const startBluetoothAutoFlow = (
+  onEnableFailed?: () => void,
+  options?: { force?: boolean },
+  pluginRetry = 0
+): Promise<void> => {
+  if (connectFlowPromise) {
+    return connectFlowPromise;
+  }
 
-  ensureBluetoothEnabled(
-    () => {
-      void autoConnectPrinter();
-      startAutoReconnectWatchdog();
-    },
-    () => {
-      status.value = 'disconnected';
-      onEnableFailed?.();
+  connectFlowPromise = new Promise((resolve) => {
+    const finish = () => {
+      connectFlowPromise = null;
+      resolve();
+    };
+
+    const bt = getBluetooth();
+    if (!bt) {
+      if (pluginRetry < 8) {
+        setTimeout(() => {
+          startBluetoothAutoFlow(onEnableFailed, options, pluginRetry + 1).then(finish);
+        }, 400);
+      } else {
+        console.error('Plugin bluetoothSerial chưa load sau nhiều lần thử.');
+        finish();
+      }
+      return;
     }
-  );
+
+    ensureBluetoothEnabled(
+      () => {
+        void (async () => {
+          try {
+            const force = options?.force ?? false;
+
+            if (!force && await isAlreadyConnected()) {
+              status.value = 'connected';
+              if (!selectedMac.value) {
+                selectedMac.value = await getSavedPrinterMac();
+              }
+              startAutoReconnectWatchdog();
+              return;
+            }
+
+            await autoConnectPrinter();
+            startAutoReconnectWatchdog();
+          } finally {
+            finish();
+          }
+        })();
+      },
+      () => {
+        status.value = 'disconnected';
+        onEnableFailed?.();
+        finish();
+      }
+    );
+  });
+
+  return connectFlowPromise;
 };
 
-// --- 1. User bấm thử lại khi auto-connect thất bại ---
+const refreshScan = () => {
+  scanAborted = false;
+  void startBluetoothAutoFlow(undefined, { force: true });
+};
+
+// --- User bấm refresh / thử lại khi auto-connect thất bại ---
 const turnOnAndScan = () => {
   const bt = getBluetooth();
   if (!bt) return console.error('Plugin bluetoothSerial chưa load.');
 
-  startBluetoothAutoFlow(() => bt.showBluetoothSettings?.());
+  scanAborted = false;
+  void startBluetoothAutoFlow(() => bt.showBluetoothSettings?.(), { force: true });
 };
 
 const cancelConnection = () => {
@@ -356,15 +486,16 @@ const startAutoReconnectWatchdog = () => {
           status.value = 'disconnected';
         }
 
-        // Tự động thử kết nối lại nếu:
-        // 1. Trạng thái đang ngắt kết nối
-        // 2. Đã có địa chỉ MAC lưu trước đó
-        // 3. Bluetooth của điện thoại đang bật
-        if (status.value === 'disconnected' && selectedMac.value) {
+        // Tự động thử kết nối lại nếu đang ngắt và Bluetooth đang bật
+        if (status.value === 'disconnected') {
           bt.isEnabled(
             () => {
-              console.log('Đang tự động thử kết nối lại...');
-              void autoConnectPrinter();
+              void (async () => {
+                const savedMac = selectedMac.value || await getSavedPrinterMac();
+                if (savedMac) selectedMac.value = savedMac;
+                console.log('Đang tự động thử kết nối lại máy in...');
+                await autoConnectPrinter();
+              })();
             },
             () => { }
           );
@@ -374,27 +505,62 @@ const startAutoReconnectWatchdog = () => {
   }, 5000); // Kiểm tra mỗi 5 giây (bạn có thể điều chỉnh 3000ms hoặc 5000ms)
 };
 
-// --- 5. Vào page: tự bật BT + tự tìm/kết nối máy in (không cần bấm nút) ---
+const syncStatusFromHardware = async (): Promise<boolean> => {
+  if (!await isAlreadyConnected()) {
+    if (status.value === 'connected') {
+      status.value = 'disconnected';
+    }
+    return false;
+  }
+
+  status.value = 'connected';
+  if (!selectedMac.value) {
+    selectedMac.value = await getSavedPrinterMac();
+  }
+  startAutoReconnectWatchdog();
+  return true;
+};
+
+const runConnectWithRetry = async () => {
+  for (let attempt = 0; attempt < INIT_RETRY_DELAYS_MS.length; attempt++) {
+    if (scanAborted) return;
+
+    const delay = INIT_RETRY_DELAYS_MS[attempt];
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    if (await syncStatusFromHardware()) {
+      return;
+    }
+
+    await startBluetoothAutoFlow(undefined, { force: attempt > 0 });
+    if (status.value === 'connected' || scanAborted) {
+      return;
+    }
+  }
+};
+
+// --- Vào page: tự bật BT (nếu cần) + tự kết nối MAC đã lưu / quét máy in ---
 const initBluetooth = async () => {
   if (!autoEnableOnEnter) return;
+
+  scanAborted = false;
 
   if (pendingInitTimer) {
     clearTimeout(pendingInitTimer);
     pendingInitTimer = null;
   }
 
-  const { value } = await Preferences.get({ key: 'SAVED_PRINTER_MAC' });
-  if (value) {
-    selectedMac.value = value;
+  const savedMac = await getSavedPrinterMac();
+  if (savedMac) {
+    selectedMac.value = savedMac;
   }
 
-  pendingInitTimer = setTimeout(() => {
-    pendingInitTimer = null;
-    startBluetoothAutoFlow();
-  }, 300);
+  void runConnectWithRetry();
 };
 
-// --- 4. Ngắt kết nối (Tuỳ chọn) ---
+// --- 4. Ngắt kết nối thủ công ---
 const disconnect = () => {
   const bt = getBluetooth();
   if (bt) {
@@ -405,9 +571,10 @@ const disconnect = () => {
   }
 };
 
-// --- 6. Gọi từ onIonViewDidLeave: ngắt kết nối + tắt BT tiết kiệm pin ---
-const cleanupBluetooth = () => {
+/** Tạm dừng watchdog khi rời page — giữ kết nối máy in nếu disconnectOnLeave=false. */
+const pauseBluetooth = () => {
   scanAborted = true;
+
   if (pendingInitTimer) {
     clearTimeout(pendingInitTimer);
     pendingInitTimer = null;
@@ -416,6 +583,18 @@ const cleanupBluetooth = () => {
     clearInterval(autoReconnectInterval);
     autoReconnectInterval = null;
   }
+};
+
+// --- Rời page: mặc định chỉ pause; hard disconnect khi unmount hoặc disconnectOnLeave=true ---
+const cleanupBluetooth = (hard = disconnectOnLeave) => {
+  pauseBluetooth();
+
+  if (!hard) {
+    return;
+  }
+
+  status.value = 'disconnected';
+  scanPhase.value = 'discover';
 
   void (async () => {
     await disconnectDevice();
@@ -426,13 +605,23 @@ const cleanupBluetooth = () => {
   })();
 };
 
+onMounted(() => {
+  void initBluetooth();
+});
+
+onActivated(() => {
+  void initBluetooth();
+});
+
 onUnmounted(() => {
-  cleanupBluetooth();
+  cleanupBluetooth(true);
 });
 
 defineExpose({
   initBluetooth,
-  cleanupBluetooth
+  pauseBluetooth,
+  cleanupBluetooth,
+  refreshScan,
 });
 
 // --- TSPL chữ đậm: TSC không có "font-weight"; dùng font đậm trong máy hoặc in 2 lớp lệch dot ---
@@ -771,3 +960,27 @@ QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${qrCodeParams}"
   }
 };
 </script>
+
+<style scoped>
+.fade-blink {
+  animation: fadeBlink 1.5s infinite;
+}
+
+@keyframes fadeBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.bt-refresh-btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+</style>

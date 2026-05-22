@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router';
 import i18n from '@/i18n';
+import { initAppLocale } from '@/composables/useAppLocale';
 import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
@@ -48,6 +49,9 @@ const app = createApp(App)
   .use(ToastService);
 
 router.isReady().then(async () => {
-  await useMixGlueDraftStore(pinia).ensureHydrated();
+  await Promise.all([
+    useMixGlueDraftStore(pinia).ensureHydrated(),
+    initAppLocale(window.innerWidth),
+  ]);
   app.mount('#app');
 });

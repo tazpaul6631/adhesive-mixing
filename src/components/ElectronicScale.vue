@@ -1,11 +1,18 @@
 <template>
   <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
-    <label class="text-800 font-medium mb-2 block">
-      Trọng lượng cân thực tế
-      <span v-if="isConnected" class="text-green-500 font-normal text-sm ml-2">
+    <label class="text-800 font-medium mb-2 block flex align-items-center flex-wrap gap-2">
+      <span>Trọng lượng cân thực tế</span>
+      <Button icon="pi pi-refresh" severity="secondary" text rounded size="small" class="scale-refresh-btn"
+        title="Kết nối lại cân (dùng khi đổi cân trên hub hoặc cân không phản hồi)"
+        :loading="isRefreshing" :disabled="isRefreshing" aria-label="Kết nối lại cân"
+        @click="handleRefreshConnection" />
+      <span v-if="isConnected" class="text-green-500 font-normal text-sm">
         <i class="pi pi-check-circle"></i> Đã kết nối với cân
       </span>
-      <span v-else class="text-red-500 font-normal text-sm ml-2 fade-blink">
+      <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm">
+        <i class="pi pi-spin pi-spinner"></i> Đang kết nối cổng cân...
+      </span>
+      <span v-else class="text-red-500 font-normal text-sm fade-blink">
         <i class="pi pi-spin pi-spinner"></i> Đang tìm kết nối...
       </span>
     </label>
@@ -128,8 +135,17 @@ const isWeightWithinTolerance = (currentGrams: number) => {
 };
 
 // --- GỌI GLOBAL MANAGER ---
-const { globalWeight, isGlobalConnected, isGlobalStable, startAutoConnect, stopAutoConnect } = useScaleManager();
+const {
+  globalWeight,
+  isGlobalConnected,
+  isGlobalStable,
+  isScaleConnecting,
+  startAutoConnect,
+  stopAutoConnect,
+  forceReconnect,
+} = useScaleManager();
 const scaleSessionId = getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
+const isRefreshing = ref(false);
 
 const beginScaleSession = () => {
   startAutoConnect(scaleSessionId);
@@ -141,8 +157,36 @@ const endScaleSession = () => {
   emit('connection-status', false);
 };
 
-// Đồng bộ trạng thái kết nối ra UI
+const handleRefreshConnection = async () => {
+  if (isRefreshing.value) return;
+
+  isRefreshing.value = true;
+  resetDisplayedWeight();
+
+  try {
+    await forceReconnect(scaleSessionId, { pickPort: true });
+    toast.add({
+      severity: 'info',
+      summary: 'Đang kết nối lại',
+      detail: 'Đã reset kết nối cân. Nếu có nhiều cân trên hub, hãy chọn đúng cổng khi được hỏi.',
+      life: 4000,
+    });
+  } catch (error) {
+    console.error('[ElectronicScale] refresh connection failed:', error);
+    toast.add({
+      severity: 'warn',
+      summary: 'Không kết nối được',
+      detail: 'Vui lòng kiểm tra hub/cáp USB và thử lại.',
+      life: 4000,
+    });
+  } finally {
+    isRefreshing.value = false;
+  }
+};
+
+// Đồng bộ trạng thái kết nối ra UI — chỉ "đã kết nối" khi thực sự nhận được dữ liệu cân
 const isConnected = computed(() => isGlobalConnected.value);
+const isConnecting = computed(() => isScaleConnecting.value || isRefreshing.value);
 const isStable = computed(() => isGlobalStable.value);
 
 // --- LOGIC KIỂM TRA & XÁC NHẬN ---
@@ -287,6 +331,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.scale-refresh-btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
 .fade-blink {
   animation: fadeBlink 1.5s infinite;
 }

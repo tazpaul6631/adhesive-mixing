@@ -1,0 +1,44 @@
+{
+  "common": {
+    "welcome": "歡迎",
+    "save": "儲存",
+    "cancel": "取消"
+  },
+  "home": {
+    "title": "首頁"
+  },
+  "login": {
+    "hello": "您好！",
+    "subtitle": "膠水調配室系統",
+    "scanTitle": "使用員工卡登入",
+    "scanInstructionPrefix": "請掃描員工卡上的 ",
+    "scanInstructionQr": "QR 或條碼",
+    "scanInstructionSuffix": " 以進入系統。",
+    "employeeCode": "員工編號",
+    "scanButton": "掃描",
+    "loggingIn": "登入中...",
+    "processing": "處理中...",
+    "company": "公司",
+    "factory": "工廠",
+    "account": "帳號",
+    "password": "密碼",
+    "selectCompany": "選擇公司",
+    "selectFactory": "選擇工廠",
+    "employeeIdPlaceholder": "員工編號",
+    "loginButton": "登入",
+    "loadingTitle": "登入中...",
+    "loadingNote": "請稍候",
+    "scanOverlayTitle": "掃描員工卡",
+    "scanOverlayNotePrefix": "將卡片上的 ",
+    "scanOverlayNoteSuffix": " 對準下方框內",
+    "cameraFrontOn": "前鏡頭已開啟",
+    "cancelScan": "取消掃描",
+    "footer": "© 2026 IT Jia Hsin",
+    "loginFailed": "登入失敗。",
+    "serverMaintenance": "伺服器維護中，請稍後再試。（若問題持續請聯絡 IT）",
+    "cameraPermission": "需要相機權限才能掃描員工卡！",
+    "invalidBarcode": "卡片條碼無效或沒有資料！",
+    "enterEmployeeId": "請輸入員工編號！",
+    "changeLanguage": "切換語言"
+  }
+}

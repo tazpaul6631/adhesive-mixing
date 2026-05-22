@@ -129,7 +129,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
-  IonTitle, onIonViewWillEnter, onIonViewDidLeave
+  IonTitle, onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave
 } from '@ionic/vue';
 
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
@@ -245,9 +245,6 @@ const goBack = () => router.back();
 
 // --- LIFECYCLE ---
 onIonViewWillEnter(async () => {
-  await nextTick();
-  bluetoothRef.value?.initBluetooth?.();
-
   const workOrderMasterId = route.query.workOrderMasterId as string;
   if (workOrderMasterId) {
     fetchWorkOrderDetail(workOrderMasterId);
@@ -256,8 +253,14 @@ onIonViewWillEnter(async () => {
   }
 });
 
+onIonViewDidEnter(async () => {
+  await nextTick();
+  await nextTick();
+  bluetoothRef.value?.initBluetooth?.();
+});
+
 onIonViewDidLeave(() => {
-  bluetoothRef.value?.cleanupBluetooth?.();
+  bluetoothRef.value?.pauseBluetooth?.();
 });
 </script>
 

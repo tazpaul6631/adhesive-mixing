@@ -792,9 +792,9 @@ export function useSeparateMixedGlueManagement() {
               handler: () => {
                 void (async () => {
                   try {
-                    // const payload = buildSeparateGlueExitPayload(getPayloadContext());
-                    // await separateGlue.postSeparateGlueCommand(payload);
-                    await draftStore.clearDraft(currentWorkOrderId.value);
+                    const payload = buildSeparateGlueExitPayload(getPayloadContext());
+                    await separateGlue.postSeparateGlueCommand(payload);
+                    // await draftStore.clearDraft(currentWorkOrderId.value);
                     isDirty.value = false;
                     resolve(true);
                   } catch (error) {

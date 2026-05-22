@@ -1,0 +1,54 @@
+{
+  "common": {
+    "welcome": "Chào mừng",
+    "save": "Lưu",
+    "cancel": "Hủy"
+  },
+  "home": {
+    "title": "Trang chủ"
+  },
+  "valid": {
+    "required": "Vui lòng không để trống",
+    "min_reason": "Vui lòng chọn ít nhất {n} lý do",
+    "max_reason": "Tối đa chỉ được {n} lý do",
+    "rating_required": "Vui lòng đánh giá mục này"
+  },
+  "messages": {
+    "notifi": "Thông báo!",
+    "submitted": "Đã gửi thành công, cám ơn!"
+  },
+  "login": {
+    "hello": "Xin chào!",
+    "subtitle": "Hệ thống phòng pha keo",
+    "scanTitle": "Đăng nhập bằng thẻ",
+    "scanInstructionPrefix": "Vui lòng quét mã ",
+    "scanInstructionQr": "QR hoặc Mã vạch/Barcode",
+    "scanInstructionSuffix": " trên thẻ nhân viên của bạn để vào hệ thống.",
+    "employeeCode": "Mã NV",
+    "scanButton": "QUÉT MÃ",
+    "loggingIn": "ĐANG ĐĂNG NHẬP...",
+    "processing": "ĐANG XỬ LÝ...",
+    "company": "Công ty",
+    "factory": "Nhà máy",
+    "account": "Tài khoản",
+    "password": "Mật khẩu",
+    "selectCompany": "Chọn công ty",
+    "selectFactory": "Chọn nhà máy",
+    "employeeIdPlaceholder": "Mã số nhân viên",
+    "loginButton": "ĐĂNG NHẬP",
+    "loadingTitle": "Đang đăng nhập...",
+    "loadingNote": "Vui lòng đợi trong giây lát",
+    "scanOverlayTitle": "Quét thẻ nhân viên",
+    "scanOverlayNotePrefix": "Đưa mã ",
+    "scanOverlayNoteSuffix": " trên thẻ vào khung bên dưới",
+    "cameraFrontOn": "Camera trước đang bật",
+    "cancelScan": "Hủy quét",
+    "footer": "© 2026 IT Jia Hsin",
+    "loginFailed": "Đăng nhập thất bại.",
+    "serverMaintenance": "Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)",
+    "cameraPermission": "Cần cấp quyền camera để quét thẻ!",
+    "invalidBarcode": "Mã thẻ không hợp lệ hoặc không có dữ liệu!",
+    "enterEmployeeId": "Vui lòng nhập mã nhân viên!",
+    "changeLanguage": "Đổi ngôn ngữ"
+  }
+}

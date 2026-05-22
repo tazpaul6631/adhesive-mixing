@@ -122,7 +122,7 @@
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, onIonViewWillEnter, onIonViewDidLeave
+  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave
 } from '@ionic/vue';
 import { ref, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -254,13 +254,17 @@ const onNoMixRowClick = async (event: { data: any }) => {
 
 // --- LIFECYCLE ---
 onIonViewWillEnter(async () => {
-  await nextTick();
-  bluetoothRef.value?.initBluetooth?.();
   await loadDetailFromRoute();
 });
 
+onIonViewDidEnter(async () => {
+  await nextTick();
+  await nextTick();
+  bluetoothRef.value?.initBluetooth?.();
+});
+
 onIonViewDidLeave(() => {
-  bluetoothRef.value?.cleanupBluetooth?.();
+  bluetoothRef.value?.pauseBluetooth?.();
 });
 
 const goBack = () => router.back(); 

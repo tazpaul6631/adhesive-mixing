@@ -5,12 +5,22 @@
 
     <div class="content-wrapper login-layer" :class="{ 'login-layer--hidden': isScanning }">
       <div class="form-container shadow-lg">
+        <div v-if="!isTablet" class="mobile-lang-bar">
+          <Select v-model="selectedLocaleOption" :options="localeOptions" option-label="name"
+            :placeholder="t('login.changeLanguage')" class="lang-select" :aria-label="t('login.changeLanguage')" />
+        </div>
         <div class="form-inner">
-          <div class="side-info">
-            <img src="/assets/icon/icon.png" alt="Logo" class="form-logo" />
-            <div class="login-header">
-              <h3>Xin chào!</h3>
-              <p>Hệ thống phòng pha keo</p>
+          <div class="side-info" :class="{ 'side-info--tablet shadow-sm': isTablet }">
+            <div v-if="isTablet" class="side-info-toolbar">
+              <Select v-model="selectedLocaleOption" :options="localeOptions" option-label="name"
+                :placeholder="t('login.changeLanguage')" class="lang-select" :aria-label="t('login.changeLanguage')" />
+            </div>
+            <div class="side-info-content">
+              <img src="/assets/icon/icon.png" alt="Logo" class="form-logo" />
+              <div class="login-header">
+                <h3>{{ t('login.hello') }}</h3>
+                <p>{{ t('login.subtitle') }}</p>
+              </div>
             </div>
           </div>
 
@@ -20,21 +30,22 @@
                 <div class="scan-icon-wrapper">
                   <i class="pi pi-qrcode scan-icon pulse-animation"></i>
                 </div>
-                <h4>Đăng nhập bằng thẻ</h4>
-                <p v-if="!errorLogin">Vui lòng quét mã <strong>QR hoặc Mã vạch/Barcode</strong> trên thẻ nhân viên của
-                  bạn để vào hệ
-                  thống.</p>
+                <h4>{{ t('login.scanTitle') }}</h4>
+                <p v-if="!errorLogin">
+                  {{ t('login.scanInstructionPrefix') }}<strong>{{ t('login.scanInstructionQr') }}</strong>{{
+                    t('login.scanInstructionSuffix') }}
+                </p>
                 <p v-else class="text-danger">{{ errorMessage }}</p>
 
                 <div v-if="code" class="animate__animated animate__fadeIn"
                   :class="errorLogin ? 'scanned-result-error' : 'scanned-result'">
                   <i :class="errorLogin ? 'pi pi-times-circle' : 'pi pi-check-circle'"></i>
-                  <span>Mã NV: {{ code }}</span>
+                  <span>{{ t('login.employeeCode') }}: {{ code }}</span>
                 </div>
               </div>
 
               <Button class="login-btn scan-btn w-full"
-                :label="isLoggingIn ? 'ĐANG ĐĂNG NHẬP...' : (isLoading ? 'ĐANG XỬ LÝ...' : 'QUÉT MÃ')"
+                :label="isLoggingIn ? t('login.loggingIn') : (isLoading ? t('login.processing') : t('login.scanButton'))"
                 :icon="isLoading || isLoggingIn ? undefined : 'pi pi-camera'" :loading="isLoading || isLoggingIn"
                 :disabled="isLoggingIn" @click="startScan" />
             </template>
@@ -42,31 +53,31 @@
             <template v-else>
               <div class="tablet-login-form shadow-sm">
                 <div class="field-group">
-                  <label for="company" class="field-label">Công ty</label>
+                  <label for="company" class="field-label">{{ t('login.company') }}</label>
                   <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
-                    optionValue="value" placeholder="Chọn công ty" class="w-full"
+                    optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
                     :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies" />
                 </div>
 
                 <div class="field-group">
-                  <label for="factory" class="field-label">Nhà máy</label>
+                  <label for="factory" class="field-label">{{ t('login.factory') }}</label>
                   <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
-                    optionValue="value" placeholder="Chọn nhà máy" class="w-full"
+                    optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
                     :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
                     :loading="isLoadingFactories" />
                 </div>
 
                 <div class="field-group">
-                  <label for="employeeId" class="field-label">Tài khoản</label>
+                  <label for="employeeId" class="field-label">{{ t('login.account') }}</label>
                   <IconField>
                     <InputIcon class="pi pi-user" />
-                    <InputText id="employeeId" v-model="employeeId" placeholder="Mã số nhân viên" class="w-full"
-                      :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
+                    <InputText id="employeeId" v-model="employeeId" :placeholder="t('login.employeeIdPlaceholder')"
+                      class="w-full" :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
                   </IconField>
                 </div>
 
                 <div class="field-group">
-                  <label for="password" class="field-label">Mật khẩu</label>
+                  <label for="password" class="field-label">{{ t('login.password') }}</label>
                   <IconField>
                     <InputIcon class="pi pi-lock" />
                     <InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
@@ -83,7 +94,7 @@
 
                 <div class="tablet-login-actions">
                   <Button class="tablet-login-btn flex-1"
-                    :label="isLoggingIn ? 'ĐANG ĐĂNG NHẬP...' : (isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP')"
+                    :label="isLoggingIn ? t('login.loggingIn') : (isLoading ? t('login.processing') : t('login.loginButton'))"
                     :loading="isLoading || isLoggingIn" :disabled="!isLoginButtonEnabled || isLoggingIn"
                     @click="handleTabletLogin" />
                   <Button class="tablet-scan-btn" icon="pi pi-qrcode" severity="secondary" outlined
@@ -96,7 +107,7 @@
         </div>
 
         <div class="footer-note">
-          <p>© 2026 IT Jia Hsin</p>
+          <p>{{ t('login.footer') }}</p>
         </div>
       </div>
     </div>
@@ -105,8 +116,8 @@
       <div v-if="isLoggingIn && isLoginRoute" class="login-loading-overlay">
         <div class="login-loading-panel">
           <i class="pi pi-spinner login-loading-spinner"></i>
-          <p class="login-loading-title">Đang đăng nhập...</p>
-          <p class="login-loading-note">Vui lòng đợi trong giây lát</p>
+          <p class="login-loading-title">{{ t('login.loadingTitle') }}</p>
+          <p class="login-loading-note">{{ t('login.loadingNote') }}</p>
         </div>
       </div>
     </Teleport>
@@ -114,8 +125,11 @@
     <Teleport to="body">
       <div v-if="isScanning" class="scan-camera-overlay">
         <div class="scan-camera-content">
-          <p class="scan-camera-title">Quét thẻ nhân viên</p>
-          <p class="scan-camera-note">Đưa mã <strong>QR hoặc Barcode</strong> trên thẻ vào khung bên dưới</p>
+          <p class="scan-camera-title">{{ t('login.scanOverlayTitle') }}</p>
+          <p class="scan-camera-note">
+            {{ t('login.scanOverlayNotePrefix') }}<strong>{{ t('login.scanInstructionQr') }}</strong>{{
+              t('login.scanOverlayNoteSuffix') }}
+          </p>
 
           <div class="scan-camera-frame">
             <span class="scan-corner scan-corner--tl"></span>
@@ -128,10 +142,10 @@
           <div class="scan-camera-hint-wrapper flex justify-center items-center gap-2">
             <p class="scan-camera-hint">
               <i class="pi pi-camera"></i>
-              Camera trước đang bật
+              {{ t('login.cameraFrontOn') }}
             </p>
 
-            <Button class="scan-cancel-btn" label="Hủy quét" icon="pi pi-times" severity="secondary"
+            <Button class="scan-cancel-btn" :label="t('login.cancelScan')" icon="pi pi-times" severity="secondary"
               @click="cancelScan" />
           </div>
         </div>
@@ -151,8 +165,14 @@ import factoryApi from '@/api/factory';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, useRoute } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
+import { useAppLocale } from '@/composables/useAppLocale';
+import { LOCALE_ORDER, LOCALE_NAMES, type AppLocale, type DeviceLocaleScope } from '@/i18n';
 
 type SelectOption = { label: string; value: string };
+type LocaleOption = {
+  value: AppLocale;
+  name: string;
+};
 
 const code = ref('');
 const employeeId = ref('');
@@ -167,6 +187,23 @@ const router = useRouter();
 const route = useRoute();
 const isNative = Capacitor.isNativePlatform();
 const isTablet = ref(window.innerWidth >= 768);
+const { t, locale, applyLocale, syncLocaleForDevice } = useAppLocale(
+  () => (isTablet.value ? 'tablet' : 'mobile') as DeviceLocaleScope
+);
+
+const localeOptions: LocaleOption[] = LOCALE_ORDER.map((value) => ({
+  value,
+  name: LOCALE_NAMES[value],
+}));
+
+const selectedLocaleOption = computed({
+  get: () => localeOptions.find((option) => option.value === (locale.value as AppLocale)) ?? localeOptions[0],
+  set: (option: LocaleOption | null) => {
+    if (option?.value) {
+      void applyLocale(option.value);
+    }
+  },
+});
 const errorLogin = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
@@ -298,11 +335,16 @@ watch(() => route.path, (path) => {
 });
 
 const updateDeviceType = () => {
+  const wasTablet = isTablet.value;
   isTablet.value = window.innerWidth >= 768;
+  if (wasTablet !== isTablet.value) {
+    void syncLocaleForDevice();
+  }
 };
 
 onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
+  await syncLocaleForDevice();
   if (isTablet.value) {
     await fetchCompanies();
   }
@@ -413,7 +455,7 @@ const handleLoginResponse = async (response: any, loginCode: string): Promise<bo
 
   code.value = loginCode;
   errorLogin.value = true;
-  errorMessage.value = response.data?.message || 'Đăng nhập thất bại.';
+  errorMessage.value = response.data?.message || t('login.loginFailed');
   resetLoginLoading();
   return false;
 };
@@ -421,7 +463,7 @@ const handleLoginResponse = async (response: any, loginCode: string): Promise<bo
 const handleLoginError = (loginCode: string) => {
   code.value = loginCode;
   errorLogin.value = true;
-  errorMessage.value = 'Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)';
+  errorMessage.value = t('login.serverMaintenance');
   resetLoginLoading();
 };
 
@@ -463,7 +505,7 @@ const startScan = async () => {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
     if (camera !== 'granted' && camera !== 'limited') {
-      alert('Cần cấp quyền camera để quét thẻ!');
+      alert(t('login.cameraPermission'));
       isLoading.value = false;
       return;
     }
@@ -480,7 +522,7 @@ const startScan = async () => {
       if (scannedValue) {
         await processScannedData(scannedValue);
       } else {
-        alert('Mã thẻ không hợp lệ hoặc không có dữ liệu!');
+        alert(t('login.invalidBarcode'));
       }
     }
   } catch (error) {
@@ -499,7 +541,7 @@ const processScannedData = async (scannedCode: string) => {
   code.value = scannedCode;
 
   if (!scannedCode) {
-    alert('Vui lòng nhập mã nhân viên!');
+    alert(t('login.enterEmployeeId'));
     isLoggingIn.value = false;
     isLoading.value = false;
     return;
@@ -579,14 +621,73 @@ const processScannedData = async (scannedCode: string) => {
   transition: all 0.3s ease;
 }
 
+.mobile-lang-bar {
+  display: flex;
+  justify-content: end;
+  margin-bottom: 18px;
+}
+
+.mobile-lang-bar .lang-select {
+  width: 100%;
+  max-width: 100px;
+}
+
 .form-inner {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  align-items: stretch;
 }
 
 .side-info {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   text-align: center;
+  min-height: 0;
+}
+
+.side-info--tablet {
+  padding: 28px 22px;
+}
+
+.side-info-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+}
+
+.side-info-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.side-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.lang-select {
+  min-width: 9rem;
+}
+
+.lang-select :deep(.p-select-label) {
+  display: flex;
+  align-items: center;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.lang-select :deep(.p-select-dropdown) {
+  width: 2rem;
 }
 
 .form-logo {
@@ -736,6 +837,10 @@ const processScannedData = async (scannedCode: string) => {
   border-radius: 20px;
   padding: 28px 22px;
   border: 1px solid #e2e8f0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .field-group {
@@ -1038,17 +1143,13 @@ const processScannedData = async (scannedCode: string) => {
 
   .form-inner {
     flex-direction: row;
-    align-items: center;
+    align-items: stretch;
     gap: 50px;
   }
 
-  .side-info {
-    flex: 1;
-    border-right: 2px solid #e2e8f0;
-  }
-
+  .side-info,
   .side-form {
-    flex: 1.2;
+    flex: 1;
   }
 
   .login-header h3 {
