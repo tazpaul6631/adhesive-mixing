@@ -16,9 +16,9 @@
       <div class="menu-container">
         <div class="welcome-banner animate__animated animate__fadeInDown">
           <div class="welcome-text">
-            <h2>Xin chào!</h2>
+            <h2>{{ t('mobile.appMenu.hello') }}</h2>
             <p v-if="isTablet">Hệ thống quản lý trên Tablet</p>
-            <p v-else>Hệ thống quản lý trên Mobile</p>
+            <p v-else>{{ t('mobile.appMenu.system') }}</p>
           </div>
         </div>
 
@@ -68,9 +68,11 @@ import {
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { t } = useI18n();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
@@ -128,8 +130,8 @@ const tabletFeatures = ref([
 const mobileFeatures = ref([
   {
     path: '/mobile',
-    title: 'Chuyền xác nhận phát keo & trả keo',
-    description: 'Sử dụng camera điện thoại để quét mã vạch.',
+    title: t('mobile.appMenu.glueConfirm'),
+    description: t('mobile.appMenu.description'),
     icon: qrCodeOutline,
     color: '#0ea5e9',
     bgLight: '#e0f2fe'
