@@ -84,13 +84,13 @@
         "confirmSuccess": "Xác nhận thành công",
         "statusMismatch": "Mã QR thùng keo chuyền không khớp với mã QR thùng keo phát.",
         "statusMatched": "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát."
-      },
-      "appMenu": {
-        "hello": "Xin chào!",
-        "system": "Hệ thống quản lý trên Mobile",
-        "glueConfirm": "Chuyền xác nhận keo chuyền & trả keo",
-        "description": "Sử dụng camera điện thoại để quét mã vạch"
       }
+    },
+    "appMenu": {
+      "hello": "Xin chào!",
+      "system": "Hệ thống quản lý trên Mobile",
+      "glueConfirm": "Chuyền xác nhận keo & trả keo",
+      "description": "Sử dụng camera điện thoại để quét mã vạch"
     }
   }
 }

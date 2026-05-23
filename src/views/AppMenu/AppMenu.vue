@@ -67,7 +67,7 @@ import {
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
@@ -127,7 +127,7 @@ const tabletFeatures = ref([
 ]);
 
 // --- DATA CHO MOBILE FEATURES ---
-const mobileFeatures = ref([
+const mobileFeatures = computed(() =>[
   {
     path: '/mobile',
     title: t('mobile.appMenu.glueConfirm'),

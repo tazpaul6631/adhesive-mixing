@@ -74,13 +74,13 @@
         "confirmSuccess": "Confirmed successfully",
         "statusMismatch": "The line glue bucket QR code does not match the allocated glue bucket QR code.",
         "statusMatched": "The line glue bucket QR code matches the allocated glue bucket QR code."
-      },
-      "appMenu": {
+      }
+    },
+    "appMenu": {
         "hello": "Hello!",
         "system": "Mobile Management System",
         "glueConfirm": "Line Glue Confirmation & Glue Return",
         "description": "Use the phone camera to scan QR codes"
       }
-    }
   }
 }

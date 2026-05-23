@@ -74,13 +74,13 @@
         "confirmSuccess": "確認成功",
         "statusMismatch": "產線膠桶 QR 碼與發放膠桶 QR 碼不相符。",
         "statusMatched": "產線膠桶 QR 碼與發放膠桶 QR 碼相符。"
-      },
-      "appMenu": {
+      }
+    },
+    "appMenu": {
         "hello": "您好！",
         "system": "行動端管理系統",
         "glueConfirm": "生產線用膠確認與退膠",
         "description": "使用手機相機掃描 QR Code"
       }
-    }
   }
 }
