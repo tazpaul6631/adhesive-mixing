@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
-        <ion-title>Chuyền xác nhận keo & trả keo</ion-title>
+        <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -15,7 +15,7 @@
           <div class="qr-panel__body">
             <ion-card class="qr-container">
               <ion-card-header>
-                <ion-card-title>Mã QR thùng keo chuyền</ion-card-title>
+                <ion-card-title>{{ t("mobile.glueConfirm.lineQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
                 <button
@@ -27,15 +27,15 @@
                     v-if="!lineQrText"
                     class="qr-scan-field__text qr-scan-field__text--empty"
                   >
-                    Chạm để quét mã QR
+                    {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">Chuyền:</span>
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel") }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">Keo:</span>
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.glueLabel") }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.glueName }}</span>
                     </div>
                   </div>
@@ -49,7 +49,7 @@
 
             <ion-card class="qr-container">
               <ion-card-header>
-                <ion-card-title>Mã QR thùng keo phát</ion-card-title>
+                <ion-card-title>{{ t("mobile.glueConfirm.allocatedQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
                 <button
@@ -61,7 +61,7 @@
                     v-if="!allocatedQrText"
                     class="qr-scan-field__text qr-scan-field__text--empty"
                   >
-                    Chạm để quét mã QR
+                    {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
                     <div
@@ -84,7 +84,7 @@
             <div v-if="statusMessage" class="status-box" :class="statusClass">
               <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
               <div class="status-box__content">
-                <p><strong>Trạng thái: </strong>{{ statusMessage }}</p>
+                <p><strong>{{ t("mobile.glueConfirm.statusLabel") }} </strong>{{ statusMessage }}</p>
               </div>
             </div>
 
@@ -95,7 +95,7 @@
               @click="handleConfirmReturn"
             >
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
-              Xác nhận trả về
+              {{ t("mobile.glueConfirm.confirmReturnButton") }}
             </ion-button>
 
             <ion-button
@@ -106,7 +106,7 @@
               @click="openScanner('return')"
             >
               <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
-              Quét Mã QR thùng keo trả về
+              {{ t("mobile.glueConfirm.scanReturnQrButton") }}
             </ion-button>
           </div>
         </section>
@@ -123,15 +123,15 @@
             <ion-icon :icon="alertCircle"></ion-icon>
           </div>
 
-          <h2 class="return-confirm-dialog__title">Xác nhận thùng keo trả về</h2>
+          <h2 class="return-confirm-dialog__title">{{ t("mobile.glueConfirm.returnDialogTitle") }}</h2>
 
           <div class="return-confirm-dialog__message">
-            <span>Xác nhận trả về thùng keo đã quét?</span>
+            <span>{{ t("mobile.glueConfirm.returnDialogMessage") }}</span>
           </div>
 
           <div class="return-confirm-dialog__actions">
             <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="cancelReturnConfirm">
-              HỦY
+              {{ t("mobile.glueConfirm.cancelButton") }}
             </ion-button>
             <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click.stop="confirmReturnQr">
               <ion-spinner
@@ -139,7 +139,7 @@
                 name="crescent"
                 class="return-confirm-dialog__button-spinner"
               ></ion-spinner>
-              <span>{{ isSubmittingReturn ? "Đang gửi..." : "OK" }}</span>
+              <span>{{ isSubmittingReturn ? t("mobile.glueConfirm.submittingButton") : t("mobile.glueConfirm.okButton") }}</span>
             </ion-button>
           </div>
         </div>
@@ -180,6 +180,7 @@ import {
 import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
+import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 
@@ -194,11 +195,9 @@ type ResolveGlueQrResult = {
 };
 
 const authStore = useAuthStore();
+const { t } = useI18n();
 
 const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
-const invalidLineQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.";
-const invalidAllocatedQrMessage = "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo phát.";
-const noGlueDataMessage = "Không có dữ liệu thùng keo.";
 const systemQrUrlHosts = [
   "10.0.111.118:7152",
   "10.0.111.127:7152",
@@ -268,10 +267,10 @@ const statusMessage = computed(() => {
   }
 
   if (!isFirstTwoQrMatched.value) {
-    return "Mã QR thùng keo chuyền không khớp với mã QR thùng keo phát.";
+    return t("mobile.glueConfirm.messages.statusMismatch");
   }
 
-  return "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát.";
+  return t("mobile.glueConfirm.messages.statusMatched");
 });
 
 const statusClass = computed<StatusBoxClass>(() => {
@@ -488,7 +487,7 @@ async function openScanner(target: ScanTarget) {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== "granted" && camera !== "limited") {
-      alert("Cần cấp quyền camera để quét mã QR!");
+      alert(t("mobile.glueConfirm.messages.cameraPermission"));
       return;
     }
 
@@ -504,7 +503,7 @@ async function openScanner(target: ScanTarget) {
           await handleConfirmScanResult(target, scannedValue);
         }
       } else {
-        await showWarningAlert(invalidAllocatedQrMessage);
+        await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
       }
     }
   } catch (error) {
@@ -531,7 +530,7 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
 }
 
 async function handleLineQrScanResult(qrText: string) {
-  lineQrText.value = "Đang tải thông tin...";
+  lineQrText.value = t("mobile.glueConfirm.messages.loadingInfo");
   isLoadingLineQr.value = true;
 
   try {
@@ -539,13 +538,13 @@ async function handleLineQrScanResult(qrText: string) {
 
     if (result.status === "invalid") {
       resetLineQrField();
-      await showWarningAlert(invalidLineQrMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidLineQr"));
       return;
     }
 
     if (result.status === "noData" || !result.data) {
       resetLineQrField();
-      await showWarningAlert(noGlueDataMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.noGlueData"));
       return;
     }
 
@@ -553,7 +552,7 @@ async function handleLineQrScanResult(qrText: string) {
 
     if (qrType !== "lineChemical") {
       resetLineQrField();
-      await showWarningAlert(invalidLineQrMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidLineQr"));
       return;
     }
 
@@ -565,14 +564,14 @@ async function handleLineQrScanResult(qrText: string) {
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
     resetLineQrField();
-    alert("Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!");
+    alert(t("mobile.glueConfirm.messages.loadLineError"));
   } finally {
     isLoadingLineQr.value = false;
   }
 }
 
 async function handleAllocatedQrScanResult(qrText: string) {
-  allocatedQrText.value = "Đang tải thông tin...";
+  allocatedQrText.value = t("mobile.glueConfirm.messages.loadingInfo");
   isLoadingAllocatedQr.value = true;
 
   try {
@@ -580,13 +579,13 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
     if (result.status === "invalid") {
       resetAllocatedQrField();
-      await showWarningAlert(invalidAllocatedQrMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
       return;
     }
 
     if (result.status === "noData" || !result.data) {
       resetAllocatedQrField();
-      await showWarningAlert(noGlueDataMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.noGlueData"));
       return;
     }
 
@@ -594,7 +593,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
 
     if (!isAllocatedGlueQrType(qrType)) {
       resetAllocatedQrField();
-      await showWarningAlert(invalidAllocatedQrMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
       return;
     }
 
@@ -607,7 +606,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo phát:", error);
     resetAllocatedQrField();
-    alert("Không thể lấy thông tin mã QR thùng keo phát. Vui lòng kiểm tra kết nối API!");
+    alert(t("mobile.glueConfirm.messages.loadAllocatedError"));
   } finally {
     isLoadingAllocatedQr.value = false;
   }
@@ -625,13 +624,13 @@ async function handleReturnScanResult(value: string) {
 
     if (result.status === "invalid") {
       resetReturnField();
-      await showWarningAlert(invalidAllocatedQrMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
       return;
     }
 
     if (result.status === "noData" || !result.data) {
       resetReturnField();
-      await showWarningAlert(noGlueDataMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.noGlueData"));
       return;
     }
 
@@ -639,7 +638,7 @@ async function handleReturnScanResult(value: string) {
 
     if (!isAllocatedGlueQrType(qrType)) {
       resetReturnField();
-      await showWarningAlert(invalidAllocatedQrMessage);
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
       return;
     }
 
@@ -650,7 +649,7 @@ async function handleReturnScanResult(value: string) {
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo trả về:", error);
     resetReturnField();
-    alert("Không thể lấy thông tin mã QR thùng keo trả về. Vui lòng kiểm tra kết nối API!");
+    alert(t("mobile.glueConfirm.messages.loadReturnError"));
   }
 }
 
@@ -683,10 +682,10 @@ async function confirmReturnQr() {
     await submitReturnQr();
     isReturnConfirmDialogOpen.value = false;
     resetReturnField();
-    showToast("Trả về thành công");
+    showToast(t("mobile.glueConfirm.messages.returnSuccess"));
   } catch (error) {
     console.error("Không thể xác nhận trả về thùng keo:", error);
-    alert("Không thể xác nhận trả về thùng keo. Vui lòng thử lại!");
+    alert(t("mobile.glueConfirm.messages.returnConfirmError"));
   } finally {
     isSubmittingReturn.value = false;
     isReturnSubmitLocked = false;
@@ -766,10 +765,10 @@ async function handleConfirmReturn() {
 
     isReturnScanReady.value = true;
     isConfirmReturnCompleted.value = true;
-    showToast("Xác nhận thành công");
+    showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
   } catch (error) {
     console.error("Không thể xác nhận:", error);
-    alert("Không thể xác nhận. Vui lòng thử lại!");
+    alert(t("mobile.glueConfirm.messages.confirmError"));
   } finally {
     console.groupEnd();
   }
@@ -816,7 +815,7 @@ function formatLineChemicalDisplay(info: any) {
 }
 
 function formatGlueDisplay(info: any) {
-  return `Chuyền: ${info.productLineName}\nKeo: ${info.glueName}`;
+  return `${t("mobile.glueConfirm.fields.productLineLabel")} ${info.productLineName}\n${t("mobile.glueConfirm.fields.glueLabel")} ${info.glueName}`;
 }
 
 function formatAllocatedGlueDisplay(info: any) {
@@ -825,8 +824,8 @@ function formatAllocatedGlueDisplay(info: any) {
 
 function getAllocatedDisplayRows(info: any) {
   return [
-    { label: "Chuyền:", value: String(info.productLineName ?? "") },
-    { label: "Keo:", value: String(info.glueName ?? "") },
+    { label: t("mobile.glueConfirm.fields.productLineLabel"), value: String(info.productLineName ?? "") },
+    { label: t("mobile.glueConfirm.fields.glueLabel"), value: String(info.glueName ?? "") },
   ];
 }
 
