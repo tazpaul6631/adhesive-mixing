@@ -7,17 +7,21 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>List Separate Mixed Glue</ion-title>
+        <div class="flex align-items-center justify-content-between">
+          <ion-title>List Separate Mixed Glue</ion-title>
+          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+        </div>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
         <div class="surface-card p-0 shadow-1 border-round-xl">
-          <div class="surface-100 p-3 border-round-top-xl">
+          <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-2">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>List Separate Mixed Glue
             </span>
+            <BluetoothPrinterStatus ref="bluetoothRef" />
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
@@ -56,18 +60,29 @@
                 </template>
               </Column>
 
-              <Column field="createrId" header="Người tạo" headerClass="dt-col-text" bodyClass="dt-col-text">
+              <Column field="updaterId" header="Người cập nhật" headerClass="dt-col-text" bodyClass="dt-col-text">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
-                  <span v-else>{{ data.createrId }}</span>
+                  <span v-else>{{ data.updaterId }}</span>
                 </template>
               </Column>
 
-              <Column field="createDate" header="Ngày tạo" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
+              <Column field="updateDate" header="Ngày cập nhật" headerClass="dt-col-datetime"
+                bodyClass="dt-col-datetime">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.createDate ?
-                    format.formatDate(data.createDate) : '' }}</span>
+                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.updateDate ?
+                    format.formatDate(data.updateDate) : '' }}</span>
+                </template>
+              </Column>
+
+              <Column header="Xác nhận" :exportable="false" headerClass="dt-col-action" bodyClass="dt-col-action">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
+                  <div v-else class="flex gap-2">
+                    <Button icon="pi pi-check-circle" severity="success" size="large" />
+                    <Button icon="pi pi-print" severity="success" size="large" />
+                  </div>
                 </template>
               </Column>
             </DataTable>
@@ -88,6 +103,8 @@ import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
 import { useRouter } from 'vue-router';
+import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
+import LocaleSelect from '@/components/LocaleSelect.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -156,9 +173,7 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
-      mixGlueComplete: true,
-      qipConfirm: true,
-      separateGlueComplete: false,
+      separateGlueCheck: true,
       page: page,
       pageSize: pageSize
     };

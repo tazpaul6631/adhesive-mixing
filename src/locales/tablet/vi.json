@@ -7,6 +7,161 @@
   "home": {
     "title": "Trang chủ"
   },
+  "appMenu": {
+    "title": "Trang Chủ",
+    "logout": "Đăng xuất",
+    "tabletSubtitle": "Hệ thống quản lý trên Tablet",
+    "features": {
+      "mixGlue": {
+        "title": "List Mix Glue Management",
+        "description": "Quản lý trộn keo, kiểm tra kết nối và lấy dữ liệu từ cân."
+      },
+      "separateMixedGlue": {
+        "title": "Separate Mixed Glue Management",
+        "description": "Quản lý việc đóng gói lại keo đã trộn."
+      }
+    }
+  },
+  "listMixGlue": {
+    "sectionTitle": "List Mix Glue",
+    "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
+    "columns": {
+      "workOrder": "Đơn điều công",
+      "glue": "Keo",
+      "totalWeight": "Tổng TL (kg)",
+      "updater": "Người cập nhật",
+      "updateDate": "Ngày cập nhật",
+      "confirm": "Xác nhận"
+    },
+    "scan": {
+      "employeeNote": "Đưa <strong>barcode</strong> trên thẻ nhân viên vào khung hình"
+    },
+    "toast": {
+      "warning": "Cảnh báo",
+      "success": "Hoàn thành",
+      "error": "Lỗi",
+      "draftNotFound": "Không tìm thấy bản nháp đơn hàng.",
+      "confirmSuccess": "Đã xác nhận đơn hàng!",
+      "confirmFailed": "Xác nhận thất bại!",
+      "factoryNotFound": "Không tìm thấy thông tin nhà máy.",
+      "printerNotConnected": "Chưa kết nối máy in.",
+      "scanFailed": "Không quét được thẻ nhân viên hoặc đã hủy quét.",
+      "invalidEmployeeCard": "Thẻ nhân viên không hợp lệ.",
+      "loadOrderFailed": "Không tải được chi tiết đơn hàng.",
+      "mixGlueIdNotFound": "Không tìm thấy mã trộn keo.",
+      "noLabels": "Không có tem để in.",
+      "printSuccess": "Đã in {count} tem.",
+      "printFailPartial": "In tem thất bại ({printed}/{total}).",
+      "printFailStage": "In tem thất bại ({stage}).",
+      "printFailed": "In tem thất bại!"
+    }
+  },
+  "bluetoothPrinter": {
+    "connected": "Đã kết nối máy in",
+    "disconnected": "Chưa kết nối máy in",
+    "connectingSaved": "Đang kết nối máy in đã lưu...",
+    "searching": "Đang tìm máy in...",
+    "disconnect": "Ngắt kết nối máy in",
+    "reconnectTitle": "Tìm lại / kết nối máy in",
+    "reconnectAriaLabel": "Tìm lại máy in"
+  },
+  "electronicScale": {
+    "label": "Trọng lượng cân thực tế",
+    "refreshTitle": "Kết nối lại cân (dùng khi đổi cân trên hub hoặc cân không phản hồi)",
+    "refreshAriaLabel": "Kết nối lại cân",
+    "connected": "Đã kết nối với cân",
+    "connecting": "Đang kết nối cổng cân...",
+    "searching": "Đang tìm kết nối...",
+    "confirm": "Xác nhận",
+    "toast": {
+      "reconnecting": "Đang kết nối lại",
+      "reconnectingDetail": "Đã reset kết nối cân. Nếu có nhiều cân trên hub, hãy chọn đúng cổng khi được hỏi.",
+      "connectFailed": "Không kết nối được",
+      "connectFailedDetail": "Vui lòng kiểm tra hub/cáp USB và thử lại.",
+      "noTargetWeight": "Chưa có TL yêu cầu",
+      "noTargetWeightDetail": "Dòng này chưa có trọng lượng yêu cầu. Vui lòng cân thành phần gốc trước hoặc chọn dòng khác.",
+      "belowMin": "Không đạt yêu cầu",
+      "belowMinDetail": "Trọng lượng không được thấp hơn {weight} {unit}.",
+      "aboveMax": "Vượt giới hạn",
+      "aboveMaxDetail": "Trọng lượng tối đa chỉ được phép đến {weight} {unit}.",
+      "success": "Thành công",
+      "successWithinTolerance": "Trọng lượng đạt yêu cầu",
+      "successConfirmed": "Đã xác nhận trọng lượng"
+    }
+  },
+  "mixGlueManagement": {
+    "pageTitle": "Mix Glue Management",
+    "fields": {
+      "workOrder": "Đơn điều công",
+      "glue": "Keo",
+      "totalWeight": "Tổng trọng lượng (Kg)",
+      "componentCode": "Mã thành phần"
+    },
+    "sections": {
+      "lineDetails": "Chi tiết dây chuyền",
+      "mixingComponents": "Thành phần trộn keo"
+    },
+    "lineDetailsTable": {
+      "columns": {
+        "workshop": "Xưởng",
+        "requestOrder": "Đơn yêu cầu",
+        "style": "Hình thể",
+        "line": "Chuyền",
+        "weight": "Trọng lượng",
+        "requestTime": "Thời gian lãnh"
+      }
+    },
+    "componentsTable": {
+      "columns": {
+        "name": "Tên thành phần",
+        "requiredWeight": "TL yêu cầu",
+        "actualWeight": "TL thực tế (Kg)",
+        "operator": "Người thao tác",
+        "weighingTime": "Thời gian cân",
+        "action": "Thao tác"
+      },
+      "deleteAriaLabel": "Xóa"
+    },
+    "addComponentDialog": {
+      "title": "Thêm thành phần",
+      "nameLabel": "Tên thành phần",
+      "namePlaceholder": "Chọn thành phần",
+      "nameRequired": "Tên thành phần là bắt buộc.",
+      "percentageLabel": "Phần trăm (%)",
+      "percentageRequired": "Vui lòng nhập phần trăm."
+    },
+    "unknownOperator": "Chưa xác định",
+    "confirmDelete": {
+      "title": "Xác nhận xóa",
+      "componentLabel": "Thành phần: {name}",
+      "message": "Bạn có chắc chắn muốn xóa thành phần này?"
+    },
+    "exitAlert": {
+      "header": "Cảnh báo chưa lưu",
+      "message": "Bản nháp trên máy vẫn được giữ để vào lại tiếp tục làm. Bạn có chắc muốn thoát?",
+      "stay": "Ở lại",
+      "exit": "Thoát"
+    },
+    "toast": {
+      "restore": "Khôi phục",
+      "restoreDetail": "Đã tải lại dữ liệu đã lưu",
+      "loadFailed": "Không thể tải dữ liệu đơn hàng",
+      "incompleteWeighing": "Vui lòng cân đầy đủ...",
+      "saveSuccess": "Lưu thành công",
+      "saveSuccessDetail": "Dữ liệu đã được lưu. Vui lòng ra danh sách để Xác nhận!",
+      "saveFailed": "Không thể lưu dữ liệu",
+      "weighingComplete": "Hoàn tất",
+      "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
+      "baseNotFound": "Không tìm thấy hóa chất gốc",
+      "weighBaseFirst": "Vui lòng cân thành phần gốc trước khi thêm thành phần mới",
+      "addSuccess": "Thành công",
+      "addSuccessDetail": "Đã thêm thành phần mới",
+      "deleteSuccess": "Đã xóa",
+      "deleteSuccessDetail": "Xóa thành phần thành công: {name}",
+      "loadMaterialsFailed": "Không thể tải thành phần",
+      "progressSaveFailed": "Không thể gửi lưu tiến độ (C) lên server."
+    }
+  },
   "valid": {
     "required": "Vui lòng không để trống",
     "min_reason": "Vui lòng chọn ít nhất {n} lý do",

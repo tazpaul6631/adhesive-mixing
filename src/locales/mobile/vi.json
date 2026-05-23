@@ -7,6 +7,10 @@
   "home": {
     "title": "Trang chủ"
   },
+  "appMenu": {
+    "title": "Trang Chủ",
+    "logout": "Đăng xuất"
+  },
   "valid": {
     "required": "Vui lòng không để trống",
     "min_reason": "Vui lòng chọn ít nhất {n} lý do",

@@ -7,6 +7,10 @@
   "home": {
     "title": "Home"
   },
+  "appMenu": {
+    "title": "Home",
+    "logout": "Log out"
+  },
   "login": {
     "hello": "Hello!",
     "subtitle": "Adhesive mixing room system",

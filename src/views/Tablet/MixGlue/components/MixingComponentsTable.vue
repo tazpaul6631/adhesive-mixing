@@ -1,5 +1,5 @@
 <template>
-  <div class="border-round-bottom-xl">
+  <div ref="tableWrapperRef" class="border-round-bottom-xl">
     <DataTable :value="isLoading ? skeletons : components" scrollable scrollHeight="290px" stripedRows
       class="modern-table auto-columns-table" tableStyle="width: 100%;"
       @row-click="(e) => $emit('row-click', e)" selectionMode="single" dataKey="materialCode" :selection="selectedItem"
@@ -8,13 +8,13 @@
       <template #empty>
         <div style="text-align: center; height: 100%; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-          <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+          <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
       </template>
 
       <template #footer>
         <div class="flex justify-start">
-          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="$emit('open-new')" />
+          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="handleOpenNew" />
         </div>
       </template>
 
@@ -25,21 +25,24 @@
         </template>
       </Column>
 
-      <Column field="materialName" header="Tên thành phần" headerClass="dt-col-primary" bodyClass="dt-col-primary">
+      <Column field="materialName" :header="t('mixGlueManagement.componentsTable.columns.name')"
+        headerClass="dt-col-primary" bodyClass="dt-col-primary">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
           <span v-else class="font-medium dt-cell-wrap">{{ data.materialName }}</span>
         </template>
       </Column>
 
-      <Column header="TL yêu cầu" headerClass="dt-col-weight" bodyClass="dt-col-weight">
+      <Column :header="t('mixGlueManagement.componentsTable.columns.requiredWeight')" headerClass="dt-col-weight"
+        bodyClass="dt-col-weight">
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <span v-else>{{ index === 0 ? headerTotalWeight : data.requiredWeight }}</span>
         </template>
       </Column>
 
-      <Column header="TL thực tế (Kg)" headerClass="dt-col-weight" bodyClass="dt-col-weight">
+      <Column :header="t('mixGlueManagement.componentsTable.columns.actualWeight')" headerClass="dt-col-weight"
+        bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else
@@ -49,14 +52,16 @@
         </template>
       </Column>
 
-      <Column header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column :header="t('mixGlueManagement.componentsTable.columns.operator')" headerClass="dt-col-text"
+        bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else class="dt-cell-ellipsis">{{ data.operator }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian cân" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
+      <Column :header="t('mixGlueManagement.componentsTable.columns.weighingTime')" headerClass="dt-col-datetime"
+        bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
@@ -66,10 +71,12 @@
         </template>
       </Column>
 
-      <Column header="Thao tác" :exportable="false" headerClass="dt-col-action" bodyClass="dt-col-action">
+      <Column :header="t('mixGlueManagement.componentsTable.columns.action')" :exportable="false"
+        headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="slotProps">
           <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
-            text rounded aria-label="Delete" @click.stop="$emit('delete-row', slotProps.data)" />
+            text rounded :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')"
+            @click.stop="$emit('delete-row', slotProps.data)" />
         </template>
       </Column>
     </DataTable>
@@ -79,15 +86,29 @@
 <script setup lang="ts">
 import format from '@/mixins/format';
 import { ref } from 'vue';
+import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
+import { useAppLocale } from '@/composables/useAppLocale';
 
-defineProps<{
+const props = defineProps<{
   isLoading: boolean;
   components: any[];
   headerTotalWeight: string | number;
   selectedItem: any;
 }>();
 
-defineEmits(['row-click', 'open-new', 'delete-row', 'update:selectedItem']);
+const emit = defineEmits(['row-click', 'open-new', 'delete-row', 'update:selectedItem']);
 
+const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(5).fill({}));
+const tableWrapperRef = ref<HTMLElement | null>(null);
+
+const { markPendingScrollToNewRow } = useScrollToNewTableRow(
+  tableWrapperRef,
+  () => props.components.length
+);
+
+const handleOpenNew = () => {
+  markPendingScrollToNewRow();
+  emit('open-new');
+};
 </script>

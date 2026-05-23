@@ -7,6 +7,10 @@
   "home": {
     "title": "首頁"
   },
+  "appMenu": {
+    "title": "首頁",
+    "logout": "登出"
+  },
   "login": {
     "hello": "您好！",
     "subtitle": "膠水調配室系統",

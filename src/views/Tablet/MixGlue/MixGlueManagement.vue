@@ -7,7 +7,10 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>Mix Glue Management</ion-title>
+        <div class="flex align-items-center justify-content-between">
+          <ion-title>{{ t('mixGlueManagement.pageTitle') }}</ion-title>
+          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+        </div>
       </ion-toolbar>
     </ion-header>
 
@@ -19,15 +22,15 @@
           <div class="flex flex-wrap align-items-center justify-content-between">
             <div v-show="hidenTable1" class="grid formgrid p-fluid flex">
               <div class="col-12 sm:col-6 lg:col-4">
-                <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
+                <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.workOrder') }}</label>
                 <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
               </div>
               <div class="col-12 sm:col-6 lg:col-4">
-                <label class="text-800 font-medium mb-1 block">Keo</label>
+                <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.glue') }}</label>
                 <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
               </div>
               <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
-                <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
+                <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeight') }}</label>
                 <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
               </div>
             </div>
@@ -44,7 +47,7 @@
         <transition name="slide-fade">
           <div v-show="hidenTable1" class="surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl">
-              <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>Chi tiết dây chuyền</span>
+              <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>{{ t('mixGlueManagement.sections.lineDetails') }}</span>
             </div>
             <LineDetailsTable :is-loading="isLoadingLine" :line-details="lineDetails" />
           </div>
@@ -55,14 +58,14 @@
           <div class="surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
               <span class="font-bold text-700 text-lg">
-                <i class="pi pi-box mr-2"></i>Thành phần trộn keo
+                <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.mixingComponents') }}
               </span>
             </div>
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
-                  <label class="text-800 font-medium mb-2 block">Mã thành phần</label>
+                  <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode') }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
@@ -105,7 +108,6 @@ import {
   onIonViewWillEnter, onIonViewWillLeave
 } from '@ionic/vue';
 import { useToast } from 'primevue/usetoast';
-import { toastMsg } from '@/utils/toastFormat';
 import UI from '@/mixins/present';
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -121,9 +123,12 @@ import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
 import { useScaleManager } from '@/composables/useScaleManager';
+import LocaleSelect from '@/components/LocaleSelect.vue';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 dayjs.extend(customParseFormat);
 const { releaseScaleConnection } = useScaleManager();
+const { t } = useAppLocale(() => 'tablet');
 // ============================================================================
 // 1. INTERFACES & TYPES (Updated to match the new JSON structure)
 // ============================================================================
@@ -229,8 +234,8 @@ const fetchWorkOrderDetail = async (id: string) => {
 
       toast.add({
         severity: 'info',
-        summary: 'Khôi phục',
-        detail: 'Đã tải lại dữ liệu đã lưu',
+        summary: t('mixGlueManagement.toast.restore'),
+        detail: t('mixGlueManagement.toast.restoreDetail'),
         life: 3000
       });
     } else {
@@ -275,7 +280,7 @@ const fetchWorkOrderDetail = async (id: string) => {
     }
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu chi tiết:', error);
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể tải dữ liệu đơn hàng', life: 3000 });
+    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadFailed'), life: 3000 });
   } finally {
     await finalizeLoading();
   }
@@ -330,7 +335,7 @@ const handleComplete = async () => {
   );
 
   if (isIncomplete) {
-    toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng cân đầy đủ...', life: 4000 });
+    toast.add({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 4000 });
     return;
   }
 
@@ -348,15 +353,15 @@ const handleComplete = async () => {
     isDirty.value = false;
     toast.add({
       severity: 'success',
-      summary: 'Lưu thành công',
-      detail: 'Dữ liệu đã được lưu. Vui lòng ra danh sách để Xác nhận!',
+      summary: t('mixGlueManagement.toast.saveSuccess'),
+      detail: t('mixGlueManagement.toast.saveSuccessDetail'),
       life: 3000
     });
 
     router.push('/list-mix-glue');
   } catch (error) {
     console.error(error);
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể lưu dữ liệu', life: 3000 });
+    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 3000 });
   }
 };
 
@@ -422,7 +427,7 @@ const handleConfirmWeight = async (actualWeight: string) => { // Thêm async ở
 
   if (index !== -1) {
     componentDetailsFull.value[index].actualWeight = actualWeight;
-    componentDetailsFull.value[index].operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
+    componentDetailsFull.value[index].operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || t('mixGlueManagement.unknownOperator');
     componentDetailsFull.value[index].operatorId = authStore.user?.employeeId || '';
     componentDetailsFull.value[index].weighingTime = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
 
@@ -469,7 +474,7 @@ const handleConfirmWeight = async (actualWeight: string) => { // Thêm async ở
 
     } else {
       activeComponent.value = { ...componentDetailsFull.value[index] };
-      toast.add({ severity: 'success', summary: 'Hoàn tất', detail: 'Đã cân xong tất cả các thành phần.', life: 4000 });
+      toast.add({ severity: 'success', summary: t('mixGlueManagement.toast.weighingComplete'), detail: t('mixGlueManagement.toast.weighingCompleteDetail'), life: 4000 });
     }
 
     await draftStore.saveDraft(currentWorkOrderId.value, {
@@ -493,11 +498,11 @@ const isLoadingMaterials = ref(false);
 const handleSaveNewComponent = async (newComponentData: { name: string, percentage: string, materialCode: string, weightUnit: string }) => {
   const baseItem = componentDetailsFull.value[0];
   if (!baseItem) {
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không tìm thấy hóa chất gốc', life: 3000 });
+    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 3000 });
     return;
   }
   if (Number(baseItem?.actualWeight || 0) <= 0) {
-    toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Vui lòng cân thành phần gốc trước khi thêm thành phần mới', life: 3000 });
+    toast.add({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.weighBaseFirst'), life: 3000 });
     return;
   }
   const baseActualWeight = Number(baseItem?.actualWeight || '0');
@@ -541,14 +546,14 @@ const handleSaveNewComponent = async (newComponentData: { name: string, percenta
     componentDetailsFull: componentDetailsFull.value
   });
 
-  toast.add({ severity: 'success', summary: 'Thành công', detail: 'Đã thêm thành phần mới', life: 3000 });
+  toast.add({ severity: 'success', summary: t('mixGlueManagement.toast.addSuccess'), detail: t('mixGlueManagement.toast.addSuccessDetail'), life: 3000 });
 };
 
 const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
   await UI.Confirm(
-    'Xác nhận xóa',
-    `Thành phần: ${rowToDelete.materialName}`,
-    `Bạn có chắc chắn muốn xóa thành phần này?`,
+    t('mixGlueManagement.confirmDelete.title'),
+    t('mixGlueManagement.confirmDelete.componentLabel', { name: rowToDelete.materialName ?? '' }),
+    t('mixGlueManagement.confirmDelete.message'),
     () => {
       // 1. Xóa khỏi UI
       componentDetailsFull.value = componentDetailsFull.value.filter(
@@ -563,8 +568,8 @@ const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
 
       toast.add({
         severity: 'success',
-        summary: 'Đã xóa',
-        detail: toastMsg`Xóa thành phần thành công: ${rowToDelete.materialName ?? ''}`,
+        summary: t('mixGlueManagement.toast.deleteSuccess'),
+        detail: t('mixGlueManagement.toast.deleteSuccessDetail', { name: rowToDelete.materialName ?? '' }),
         life: 3000
       });
     },
@@ -586,7 +591,7 @@ const fetchMaterials = async () => {
       );
     }
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Lỗi', detail: 'Không thể tải thành phần', life: 3000 });
+    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 3000 });
   } finally {
     isLoadingMaterials.value = false;
   }
@@ -614,13 +619,12 @@ const alertExitPage = (): Promise<boolean> =>
   new Promise(resolve => {
     void (async () => {
       const alert = await alertController.create({
-        header: 'Cảnh báo chưa lưu',
-        message:
-          'Dữ liệu sẽ được gửi lên máy chủ dạng lưu tiến độ (C). Bản nháp trên máy vẫn được giữ để vào lại tiếp tục làm. Bạn có chắc muốn thoát?',
+        header: t('mixGlueManagement.exitAlert.header'),
+        message: t('mixGlueManagement.exitAlert.message'),
         buttons: [
-          { text: 'Ở lại', role: 'cancel', handler: () => resolve(false) },
+          { text: t('mixGlueManagement.exitAlert.stay'), role: 'cancel', handler: () => resolve(false) },
           {
-            text: 'Thoát',
+            text: t('mixGlueManagement.exitAlert.exit'),
             role: 'confirm',
             cssClass: 'text-red-500',
             handler: () => {
@@ -639,8 +643,8 @@ const alertExitPage = (): Promise<boolean> =>
                   console.error(error);
                   toast.add({
                     severity: 'error',
-                    summary: 'Lỗi',
-                    detail: 'Không thể gửi lưu tiến độ (C) lên server.',
+                    summary: t('listMixGlue.toast.error'),
+                    detail: t('mixGlueManagement.toast.progressSaveFailed'),
                     life: 3500
                   });
                   resolve(false);

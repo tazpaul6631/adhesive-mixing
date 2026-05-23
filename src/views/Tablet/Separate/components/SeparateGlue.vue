@@ -1,7 +1,7 @@
 <template>
-  <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="320px"
-      tableStyle="width: 100%;" stripedRows class="modern-table auto-columns-table">
+  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="320px" tableStyle="width: 100%;"
+      stripedRows class="modern-table auto-columns-table">
 
       <template #empty>
         <div style="text-align: center; height: 240px; align-content: center;">
@@ -24,6 +24,7 @@
         </template>
       </Column>
 
+      <!-- Tạm ẩn: chọn đơn yêu cầu
       <Column field="productLineName" header="Đơn yêu cầu" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
@@ -33,6 +34,7 @@
             :disabled="isViewMode" @change="handleRequestDetailChange(data)" />
         </template>
       </Column>
+      -->
 
       <Column header="Thùng chứa" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data, index }">
@@ -79,6 +81,7 @@ import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
+import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import {
   normalizeWeightToKg,
   sortBucketsByClosestCapacity,
@@ -107,6 +110,13 @@ const skeletons = ref(new Array(1).fill({}));
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
 const bucketSelectResetKeys = ref<Record<number, number>>({});
+const tableWrapperRef = ref<HTMLElement | null>(null);
+
+const { markPendingScrollToNewRow } = useScrollToNewTableRow(
+  tableWrapperRef,
+  () => props.orderDetails.length,
+  { focusSelector: '.p-select' }
+);
 
 const clearRowBucketSelection = async (rowData: any, rowIndex: number) => {
   rowData.selectedBucketId = null;
@@ -139,61 +149,61 @@ const getBucketOptionsForRow = (currentRow: any) => {
 
 const isAllocationComplete = () => {
   const targetWeightKg = getTargetWeightKg();
-  const requireAllRequestDetails = props.requireAllRequestDetails ?? true;
 
   if (targetWeightKg <= 0) {
-    return !requireAllRequestDetails || areAllRequestDetailsUsed();
+    return true;
   }
 
   const totalKg = sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
-  const capacityMatched = Math.abs(totalKg - targetWeightKg) <= WEIGHT_EPSILON;
-  const requestsMatched = !requireAllRequestDetails || areAllRequestDetailsUsed();
+  return Math.abs(totalKg - targetWeightKg) <= WEIGHT_EPSILON;
 
-  return capacityMatched && requestsMatched;
+  // const requireAllRequestDetails = props.requireAllRequestDetails ?? true;
+  // if (targetWeightKg <= 0) {
+  //   return !requireAllRequestDetails || areAllRequestDetailsUsed();
+  // }
+  // const capacityMatched = Math.abs(totalKg - targetWeightKg) <= WEIGHT_EPSILON;
+  // const requestsMatched = !requireAllRequestDetails || areAllRequestDetailsUsed();
+  // return capacityMatched && requestsMatched;
 };
 
-const areAllRequestDetailsUsed = () => {
-  const assignedIds = new Set<string>();
-  props.orderDetails.forEach((row) => {
-    (row.selectedRequestDetailIds ?? []).forEach((id: string) => assignedIds.add(String(id)));
-  });
+// const areAllRequestDetailsUsed = () => {
+//   const assignedIds = new Set<string>();
+//   props.orderDetails.forEach((row) => {
+//     (row.selectedRequestDetailIds ?? []).forEach((id: string) => assignedIds.add(String(id)));
+//   });
+//   return props.requestDetails.every((item) => assignedIds.has(String(item.requestDetailId)));
+// };
 
-  return props.requestDetails.every((item) => assignedIds.has(String(item.requestDetailId)));
-};
+// const getSelectedIdsInOtherRows = (currentRow: any) => {
+//   const selectedIds = new Set<string>();
+//   props.orderDetails.forEach((row) => {
+//     if (row === currentRow) return;
+//     (row.selectedRequestDetailIds ?? []).forEach((id: string) => {
+//       selectedIds.add(String(id));
+//     });
+//   });
+//   return selectedIds;
+// };
 
-const getSelectedIdsInOtherRows = (currentRow: any) => {
-  const selectedIds = new Set<string>();
+// const getAvailableRequestDetails = (currentRow: any) => {
+//   const selectedInOtherRows = getSelectedIdsInOtherRows(currentRow);
+//   const currentSelected = new Set((currentRow.selectedRequestDetailIds ?? []).map((id: string) => String(id)));
+//   return props.requestDetails.filter((item) => {
+//     const id = String(item.requestDetailId);
+//     return currentSelected.has(id) || !selectedInOtherRows.has(id);
+//   });
+// };
 
-  props.orderDetails.forEach((row) => {
-    if (row === currentRow) return;
-    (row.selectedRequestDetailIds ?? []).forEach((id: string) => {
-      selectedIds.add(String(id));
-    });
-  });
-
-  return selectedIds;
-};
-
-const getAvailableRequestDetails = (currentRow: any) => {
-  const selectedInOtherRows = getSelectedIdsInOtherRows(currentRow);
-  const currentSelected = new Set((currentRow.selectedRequestDetailIds ?? []).map((id: string) => String(id)));
-
-  return props.requestDetails.filter((item) => {
-    const id = String(item.requestDetailId);
-    return currentSelected.has(id) || !selectedInOtherRows.has(id);
-  });
-};
-
-const hasRequestSelection = (rowData: any) => {
-  return Array.isArray(rowData.selectedRequestDetailIds) && rowData.selectedRequestDetailIds.length > 0;
-};
+// const hasRequestSelection = (rowData: any) => {
+//   return Array.isArray(rowData.selectedRequestDetailIds) && rowData.selectedRequestDetailIds.length > 0;
+// };
 
 const hasBucketSelection = (rowData: any) => {
   return !!rowData.selectedBucketId;
 };
 
 const updateRowCompletionInfo = (rowData: any) => {
-  if (hasRequestSelection(rowData) || hasBucketSelection(rowData)) {
+  if (hasBucketSelection(rowData)) {
     rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
     rowData.operatorId = authStore.user?.employeeId || '';
     const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
@@ -207,12 +217,12 @@ const updateRowCompletionInfo = (rowData: any) => {
   }
 };
 
-const handleRequestDetailChange = (rowData: any) => {
-  updateRowCompletionInfo(rowData);
-  emit('update-bucket');
-};
+// const handleRequestDetailChange = (rowData: any) => {
+//   updateRowCompletionInfo(rowData);
+//   emit('update-bucket');
+// };
 
-const isRowComplete = (rowData: any) => hasRequestSelection(rowData) && hasBucketSelection(rowData);
+const isRowComplete = (rowData: any) => hasBucketSelection(rowData);
 
 const handleAddRow = () => {
   const rows = props.orderDetails || [];
@@ -222,7 +232,7 @@ const handleAddRow = () => {
       toast.add({
         severity: 'warn',
         summary: 'Chưa hoàn thành',
-        detail: toastMsg`Vui lòng chọn đơn yêu cầu và thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
+        detail: toastMsg`Vui lòng chọn thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
         life: 4000,
       });
       return;
@@ -232,12 +242,13 @@ const handleAddRow = () => {
       toast.add({
         severity: 'warn',
         summary: 'Đã phân bổ đủ',
-        detail: 'Tổng trọng lượng thùng chứa và đơn yêu cầu đã đạt, không cần thêm mới.',
+        detail: 'Tổng trọng lượng thùng chứa đã đạt, không cần thêm mới.',
         life: 4000,
       });
       return;
     }
   }
+  markPendingScrollToNewRow();
   emit('add-row');
 };
 
@@ -272,7 +283,7 @@ defineExpose({
     bucketList.value,
     props.targetWeight,
     props.targetWeightUnit || 'Kg',
-    { requireAllRequestDetails: props.requireAllRequestDetails ?? true }
+    { requireAllRequestDetails: false }
   ),
 });
 

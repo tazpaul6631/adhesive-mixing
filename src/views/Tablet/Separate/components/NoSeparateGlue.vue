@@ -1,5 +1,6 @@
 <template>
-  <div class="overflow-x-auto border-round-bottom-xl">
+
+  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl">
     <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px" stripedRows
       class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
       selectionMode="single" dataKey="materialCode" :selection="selectedItem"
@@ -14,7 +15,7 @@
 
       <template #footer>
         <div class="flex justify-start">
-          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="$emit('open-new')" />
+          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="handleOpenNew" />
         </div>
       </template>
 
@@ -73,15 +74,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import format from '@/mixins/format';
+import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 
-defineProps<{
+const props = defineProps<{
   isLoading: boolean;
   noMixChemicals: any[];
   headerTotalWeight: string | number;
   selectedItem: any;
 }>();
 
-defineEmits([
+const emit = defineEmits([
   'row-click',
   'open-new',
   'delete-row',
@@ -91,4 +93,15 @@ defineEmits([
 ]);
 
 const skeletons = ref(new Array(5).fill({}));
+const tableWrapperRef = ref<HTMLElement | null>(null);
+
+const { markPendingScrollToNewRow } = useScrollToNewTableRow(
+  tableWrapperRef,
+  () => props.noMixChemicals.length
+);
+
+const handleOpenNew = () => {
+  markPendingScrollToNewRow();
+  emit('open-new');
+};
 </script>

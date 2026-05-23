@@ -9,8 +9,5 @@ export default {
     },
     postMGMQIPConfirm(data: any) {
         return request.post(`api/mobile/mixglue/mgmqipconfirm`, data)
-    },
-    getMixGlueScanQr(factoryId: string, mgmId: string, womId: string) {
-        return request.get(`api/mobile/mixglue/scanqr/${factoryId}/${mgmId}/${womId}`)
     }
 };

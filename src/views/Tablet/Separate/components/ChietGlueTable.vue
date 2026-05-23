@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
+  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
     <DataTable :value="orderDetails" scrollable scrollHeight="320px" tableStyle="width: 100%;" stripedRows
       class="modern-table auto-columns-table">
 
@@ -22,6 +22,7 @@
         </template>
       </Column>
 
+      <!-- Tạm ẩn: chọn đơn yêu cầu
       <Column header="Đơn yêu cầu" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data }">
           <MultiSelect v-model="data.selectedRequestDetailIds" :options="getAvailableRequestDetails(data)"
@@ -30,6 +31,7 @@
             :disabled="isViewMode" @change="handleRequestDetailChange(data)" />
         </template>
       </Column>
+      -->
 
       <Column header="Thùng chứa" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data, index }">
@@ -57,8 +59,8 @@
         bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
-            <Button v-if="orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
-              aria-label="Delete" @click.stop="handleDeleteRow(data)" />
+            <Button v-if="orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
+              @click.stop="handleDeleteRow(data)" />
           </div>
         </template>
       </Column>
@@ -86,6 +88,7 @@ import {
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 import { toastMsg } from '@/utils/toastFormat';
+import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 
 const props = defineProps<{
   orderDetails: any[];
@@ -101,6 +104,13 @@ const toast = useToast();
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
 const bucketSelectResetKeys = ref<Record<number, number>>({});
+const tableWrapperRef = ref<HTMLElement | null>(null);
+
+const { markPendingScrollToNewRow } = useScrollToNewTableRow(
+  tableWrapperRef,
+  () => props.orderDetails.length,
+  { focusSelector: '.p-select' }
+);
 
 const logChietDebug = (action: string, extra?: Record<string, unknown>) => {
   const info = buildChietAddRowDebugInfo(
@@ -128,16 +138,16 @@ const getSelectedBucketTotalKg = () =>
 
 const orderDetailsSelectionKey = computed(() =>
   props.orderDetails.map((row) =>
-    `${String(row.selectedBucketId ?? row.bucketId ?? '')}:${(row.selectedRequestDetailIds ?? []).map(String).sort().join(',')}`
+    String(row.selectedBucketId ?? row.bucketId ?? '')
   ).join('|')
 );
 
-const hasRequestSelection = (rowData: any) =>
-  Array.isArray(rowData.selectedRequestDetailIds) && rowData.selectedRequestDetailIds.length > 0;
+// const hasRequestSelection = (rowData: any) =>
+//   Array.isArray(rowData.selectedRequestDetailIds) && rowData.selectedRequestDetailIds.length > 0;
 
 const hasBucketSelection = (rowData: any) => !!rowData.selectedBucketId;
 
-const isRowComplete = (rowData: any) => hasRequestSelection(rowData) && hasBucketSelection(rowData);
+const isRowComplete = (rowData: any) => hasBucketSelection(rowData);
 
 const isWeighedCapacityComplete = () =>
   isChietCapacityComplete(
@@ -157,24 +167,23 @@ const shouldBlockAddRow = () => {
   return isWeighedCapacityComplete();
 };
 
-const getSelectedIdsInOtherRows = (currentRow: any) => {
-  const selectedIds = new Set<string>();
-  props.orderDetails.forEach((row) => {
-    if (row === currentRow) return;
-    (row.selectedRequestDetailIds ?? []).forEach((id: string) => selectedIds.add(String(id)));
-  });
-  return selectedIds;
-};
+// const getSelectedIdsInOtherRows = (currentRow: any) => {
+//   const selectedIds = new Set<string>();
+//   props.orderDetails.forEach((row) => {
+//     if (row === currentRow) return;
+//     (row.selectedRequestDetailIds ?? []).forEach((id: string) => selectedIds.add(String(id)));
+//   });
+//   return selectedIds;
+// };
 
-const getAvailableRequestDetails = (currentRow: any) => {
-  const selectedInOtherRows = getSelectedIdsInOtherRows(currentRow);
-  const currentSelected = new Set((currentRow.selectedRequestDetailIds ?? []).map((id: string) => String(id)));
-
-  return props.requestDetails.filter((item) => {
-    const id = String(item.requestDetailId);
-    return currentSelected.has(id) || !selectedInOtherRows.has(id);
-  });
-};
+// const getAvailableRequestDetails = (currentRow: any) => {
+//   const selectedInOtherRows = getSelectedIdsInOtherRows(currentRow);
+//   const currentSelected = new Set((currentRow.selectedRequestDetailIds ?? []).map((id: string) => String(id)));
+//   return props.requestDetails.filter((item) => {
+//     const id = String(item.requestDetailId);
+//     return currentSelected.has(id) || !selectedInOtherRows.has(id);
+//   });
+// };
 
 const getBucketOptionsForRow = (currentRow: any) => {
   const targetKg = getWeighedWeightKg();
@@ -192,7 +201,7 @@ const getBucketOptionsForRow = (currentRow: any) => {
 };
 
 const updateRowCompletionInfo = (rowData: any) => {
-  if (hasRequestSelection(rowData) || hasBucketSelection(rowData)) {
+  if (hasBucketSelection(rowData)) {
     rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
     rowData.operatorId = authStore.user?.employeeId || '';
     const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
@@ -214,10 +223,10 @@ const clearRowBucketSelection = async (rowData: any, rowIndex: number) => {
   await nextTick();
 };
 
-const handleRequestDetailChange = (rowData: any) => {
-  updateRowCompletionInfo(rowData);
-  emit('update-bucket');
-};
+// const handleRequestDetailChange = (rowData: any) => {
+//   updateRowCompletionInfo(rowData);
+//   emit('update-bucket');
+// };
 
 const handleAddRow = () => {
   const rows = props.orderDetails || [];
@@ -240,7 +249,7 @@ const handleAddRow = () => {
       toast.add({
         severity: 'warn',
         summary: 'Chưa hoàn thành',
-        detail: toastMsg`Vui lòng chọn đơn yêu cầu và thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
+        detail: toastMsg`Vui lòng chọn thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
         life: 4000,
       });
       return;
@@ -257,6 +266,7 @@ const handleAddRow = () => {
     }
   }
 
+  markPendingScrollToNewRow();
   emit('add-row');
 };
 

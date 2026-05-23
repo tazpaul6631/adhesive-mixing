@@ -1,9 +1,9 @@
 <template>
   <Toast position="top-right">
     <template #message="slotProps">
-      <div class="p-toast-message-content">
-        <span v-if="slotProps.message.icon" class="p-toast-message-icon">
-          <i :class="slotProps.message.icon" />
+      <div class="app-toast-body">
+        <span v-if="getToastIcon(slotProps.message)" class="p-toast-message-icon">
+          <i :class="getToastIcon(slotProps.message)" />
         </span>
         <div class="p-toast-message-text">
           <span v-if="slotProps.message.summary" class="p-toast-summary">{{ slotProps.message.summary }}</span>
@@ -16,4 +16,14 @@
 
 <script setup lang="ts">
 import Toast from 'primevue/toast';
+
+const severityIcons: Record<string, string> = {
+  info: 'pi pi-info-circle',
+  success: 'pi pi-check-circle',
+  warn: 'pi pi-exclamation-triangle',
+  error: 'pi pi-times-circle',
+};
+
+const getToastIcon = (message: { icon?: string; severity?: string }) =>
+  message?.icon || (message?.severity ? severityIcons[message.severity] : undefined);
 </script>

@@ -289,11 +289,11 @@ export function useSeparateMixedGlueManagement() {
     !!row.actualWeight && Number(row.actualWeight) > 0;
 
   const isSeparateGlueRowFilled = (row: any) => {
-    const hasRequest =
-      (Array.isArray(row.selectedRequestDetailIds) && row.selectedRequestDetailIds.length > 0)
-      || (Array.isArray(row.requestDetailIds) && row.requestDetailIds.length > 0);
+    // const hasRequest =
+    //   (Array.isArray(row.selectedRequestDetailIds) && row.selectedRequestDetailIds.length > 0)
+    //   || (Array.isArray(row.requestDetailIds) && row.requestDetailIds.length > 0);
     const hasBucket = !!row.selectedBucketId || !!row.bucketId;
-    return hasRequest && hasBucket;
+    return hasBucket;
   };
 
   const bucketListForValidation = ref<BucketOption[]>([]);
@@ -318,7 +318,7 @@ export function useSeparateMixedGlueManagement() {
   const validateBeforeComplete = async (): Promise<string | null> => {
     for (let i = 0; i < separateGlueDetails.value.length; i++) {
       if (!isSeparateGlueRowFilled(separateGlueDetails.value[i])) {
-        return toastMsg`Keo trộn ở dòng ${i + 1}: vui lòng chọn đơn yêu cầu và thùng chứa.`;
+        return toastMsg`Keo trộn ở dòng ${i + 1}: vui lòng chọn thùng chứa.`;
       }
     }
 
@@ -328,7 +328,8 @@ export function useSeparateMixedGlueManagement() {
       requestDetails.value,
       bucketList,
       headerInfo.value.totalWeight,
-      'Kg'
+      'Kg',
+      { requireAllRequestDetails: false }
     );
     if (tab1AllocationError) {
       return `Keo trộn: ${tab1AllocationError}`;
@@ -354,7 +355,7 @@ export function useSeparateMixedGlueManagement() {
       );
       for (let i = 0; i < extras.length; i++) {
         if (!isSeparateGlueRowFilled(extras[i])) {
-          return toastMsg`Keo ${row.materialName} ở dòng chiết thùng ${i + 1}: vui lòng chọn đơn yêu cầu và thùng chứa.`;
+          return toastMsg`Keo ${row.materialName} ở dòng chiết thùng ${i + 1}: vui lòng chọn thùng chứa.`;
         }
       }
 
@@ -388,7 +389,7 @@ export function useSeparateMixedGlueManagement() {
 
     try {
       const payload = buildSeparateGlueCommandPayload(getPayloadContext(), '1', { forComplete: true });
-      await separateGlue.postSeparateGlueCommand(payload);
+      // await separateGlue.postSeparateGlueCommand(payload);
       console.log(payload);
 
       isNavigatingAway.value = true;
@@ -793,8 +794,8 @@ export function useSeparateMixedGlueManagement() {
                 void (async () => {
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
-                    await separateGlue.postSeparateGlueCommand(payload);
-                    // await draftStore.clearDraft(currentWorkOrderId.value);
+                    // await separateGlue.postSeparateGlueCommand(payload);
+                    await draftStore.clearDraft(currentWorkOrderId.value);
                     isDirty.value = false;
                     resolve(true);
                   } catch (error) {
@@ -877,6 +878,7 @@ export function useSeparateMixedGlueManagement() {
     chietOrderDetails,
     currentChietChemical,
     isViewMode,
+    mixChemicals,
     onSegmentIonChange,
     saveDraftToStoreOnly,
     saveChietDraftToStoreOnly,

@@ -1,19 +1,19 @@
 <template>
   <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
     <label class="text-800 font-medium mb-2 block flex align-items-center flex-wrap gap-2">
-      <span>Trọng lượng cân thực tế</span>
+      <span>{{ t('electronicScale.label') }}</span>
       <Button icon="pi pi-refresh" severity="secondary" text rounded size="small" class="scale-refresh-btn"
-        title="Kết nối lại cân (dùng khi đổi cân trên hub hoặc cân không phản hồi)"
-        :loading="isRefreshing" :disabled="isRefreshing" aria-label="Kết nối lại cân"
+        :title="t('electronicScale.refreshTitle')"
+        :loading="isRefreshing" :disabled="isRefreshing" :aria-label="t('electronicScale.refreshAriaLabel')"
         @click="handleRefreshConnection" />
       <span v-if="isConnected" class="text-green-500 font-normal text-sm">
-        <i class="pi pi-check-circle"></i> Đã kết nối với cân
+        <i class="pi pi-check-circle"></i> {{ t('electronicScale.connected') }}
       </span>
       <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm">
-        <i class="pi pi-spin pi-spinner"></i> Đang kết nối cổng cân...
+        <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.connecting') }}
       </span>
       <span v-else class="text-red-500 font-normal text-sm fade-blink">
-        <i class="pi pi-spin pi-spinner"></i> Đang tìm kết nối...
+        <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.searching') }}
       </span>
     </label>
 
@@ -36,7 +36,7 @@
 
       <Button
         :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm || !hasTargetWeight || hasLockedWeight"
-        label="Xác nhận" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
+        :label="t('electronicScale.confirm')" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
     </div>
   </div>
 </template>
@@ -45,9 +45,10 @@
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated, watch, computed, getCurrentInstance } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useScaleManager } from '@/composables/useScaleManager';
-import { toastMsg } from '@/utils/toastFormat';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 const toast = useToast();
+const { t } = useAppLocale(() => 'tablet');
 
 // --- NHẬN PROPS TỪ CHA ---
 const props = defineProps({
@@ -167,16 +168,16 @@ const handleRefreshConnection = async () => {
     await forceReconnect(scaleSessionId, { pickPort: true });
     toast.add({
       severity: 'info',
-      summary: 'Đang kết nối lại',
-      detail: 'Đã reset kết nối cân. Nếu có nhiều cân trên hub, hãy chọn đúng cổng khi được hỏi.',
+      summary: t('electronicScale.toast.reconnecting'),
+      detail: t('electronicScale.toast.reconnectingDetail'),
       life: 4000,
     });
   } catch (error) {
     console.error('[ElectronicScale] refresh connection failed:', error);
     toast.add({
       severity: 'warn',
-      summary: 'Không kết nối được',
-      detail: 'Vui lòng kiểm tra hub/cáp USB và thử lại.',
+      summary: t('electronicScale.toast.connectFailed'),
+      detail: t('electronicScale.toast.connectFailedDetail'),
       life: 4000,
     });
   } finally {
@@ -265,8 +266,8 @@ const confirmWeight = () => {
   if (props.enforceTolerance && !hasTargetWeight.value) {
     toast.add({
       severity: 'warn',
-      summary: 'Chưa có TL yêu cầu',
-      detail: 'Dòng này chưa có trọng lượng yêu cầu. Vui lòng cân thành phần gốc trước hoặc chọn dòng khác.',
+      summary: t('electronicScale.toast.noTargetWeight'),
+      detail: t('electronicScale.toast.noTargetWeightDetail'),
       life: 4000
     });
     return;
@@ -284,8 +285,11 @@ const confirmWeight = () => {
     if (currentGrams < minGrams) {
       toast.add({
         severity: 'error',
-        summary: 'Không đạt yêu cầu',
-        detail: toastMsg`Trọng lượng không được thấp hơn ${minDisplay.toFixed(3)} ${unit}.`,
+        summary: t('electronicScale.toast.belowMin'),
+        detail: t('electronicScale.toast.belowMinDetail', {
+          weight: minDisplay.toFixed(3),
+          unit,
+        }),
         life: 5000
       });
       return;
@@ -294,8 +298,11 @@ const confirmWeight = () => {
     if (currentGrams > maxGrams) {
       toast.add({
         severity: 'error',
-        summary: 'Vượt giới hạn',
-        detail: toastMsg`Trọng lượng tối đa chỉ được phép đến ${maxDisplay.toFixed(3)} ${unit}.`,
+        summary: t('electronicScale.toast.aboveMax'),
+        detail: t('electronicScale.toast.aboveMaxDetail', {
+          weight: maxDisplay.toFixed(3),
+          unit,
+        }),
         life: 5000
       });
       return;
@@ -305,8 +312,10 @@ const confirmWeight = () => {
   emit('confirm-weight', weightForRow);
   toast.add({
     severity: 'success',
-    summary: 'Thành công',
-    detail: props.enforceTolerance ? 'Trọng lượng đạt yêu cầu' : 'Đã xác nhận trọng lượng',
+    summary: t('electronicScale.toast.success'),
+    detail: props.enforceTolerance
+      ? t('electronicScale.toast.successWithinTolerance')
+      : t('electronicScale.toast.successConfirmed'),
     life: 3000
   });
 };

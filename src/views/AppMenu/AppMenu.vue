@@ -1,14 +1,16 @@
 <template>
   <ion-page>
     <ion-header class="ion-no-border header-container">
-      <ion-toolbar color="primary" class="no-padding">
-        <ion-title>Trang Chủ</ion-title>
-        <ion-buttons slot="end">
-          <ion-button @click="handleLogout" class="logout-btn">
+      <ion-toolbar color="primary" class="no-padding app-menu-toolbar">
+        <ion-title class="app-menu-toolbar__title">{{ t('appMenu.title') }}</ion-title>
+
+        <div slot="end" class="app-menu-toolbar__actions">
+          <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
+          <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
-            <span class="logout-text">Đăng xuất</span>
+            <span class="logout-text">{{ t('appMenu.logout') }}</span>
           </ion-button>
-        </ion-buttons>
+        </div>
       </ion-toolbar>
     </ion-header>
 
@@ -17,7 +19,7 @@
         <div class="welcome-banner animate__animated animate__fadeInDown">
           <div class="welcome-text">
             <h2>Xin chào!</h2>
-            <p v-if="isTablet">Hệ thống quản lý trên Tablet</p>
+            <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>Hệ thống quản lý trên Mobile</p>
           </div>
         </div>
@@ -58,7 +60,7 @@
 <script setup lang="ts">
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonIcon, IonButtons, IonButton
+  IonIcon, IonButton
 } from '@ionic/vue';
 import {
   scaleOutline, logOutOutline, qrCodeOutline,
@@ -67,13 +69,17 @@ import {
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import LocaleSelect from '@/components/LocaleSelect.vue';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
+
+const { t } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
 
 const updateDeviceType = () => {
   isTablet.value = window.innerWidth >= 768;
@@ -89,39 +95,39 @@ onUnmounted(() => {
 // --------------------------------
 
 // --- DATA MÔ PHỎNG API CHO TABLET FEATURES ---
-const tabletFeatures = ref([
+const tabletFeatures = computed(() => [
   {
     path: '/list-mix-glue',
-    title: 'List Mix Glue Management',
-    description: 'Quản lý trộn keo, kiểm tra kết nối và lấy dữ liệu từ cân.',
+    title: t('appMenu.features.mixGlue.title'),
+    description: t('appMenu.features.mixGlue.description'),
     icon: scaleOutline,
     color: '#0ea5e9',
     bgLight: '#e0f2fe'
   },
   {
     path: '/list-separate-mixed-glue-management',
-    title: 'Separate Mixed Glue Management',
-    description: 'Quản lý việc đóng gói lại keo đã trộn.',
+    title: t('appMenu.features.separateMixedGlue.title'),
+    description: t('appMenu.features.separateMixedGlue.description'),
     icon: cubeOutline,
     color: '#f59e0b',
     bgLight: '#fef3c7'
   },
-  {
-    path: '/list-qip-confirm-mix-glue',
-    title: 'QIP Confirm Mix Glue',
-    description: 'Xác nhận chất lượng keo trộn (QIP).',
-    icon: checkmarkDoneOutline,
-    color: '#10b981',
-    bgLight: '#d1fae5'
-  },
-  {
-    path: '/list-qip-confirm-separate-mixed-glue',
-    title: 'QIP Confirm Separate Mixed Glue',
-    description: 'Xác nhận chất lượng keo đóng gói lại (QIP).',
-    icon: documentTextOutline,
-    color: '#8b5cf6',
-    bgLight: '#ede9fe'
-  }
+  // {
+  //   path: '/list-qip-confirm-mix-glue',
+  //   title: 'QIP Confirm Mix Glue',
+  //   description: 'Xác nhận chất lượng keo trộn (QIP).',
+  //   icon: checkmarkDoneOutline,
+  //   color: '#10b981',
+  //   bgLight: '#d1fae5'
+  // },
+  // {
+  //   path: '/list-qip-confirm-separate-mixed-glue',
+  //   title: 'QIP Confirm Separate Mixed Glue',
+  //   description: 'Xác nhận chất lượng keo đóng gói lại (QIP).',
+  //   icon: documentTextOutline,
+  //   color: '#8b5cf6',
+  //   bgLight: '#ede9fe'
+  // }
 ]);
 
 // --- DATA CHO MOBILE FEATURES ---
@@ -156,6 +162,44 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
+.app-menu-toolbar {
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  --padding-start: 12px;
+  --padding-end: 8px;
+  --min-height: 56px;
+}
+
+.app-menu-toolbar__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding-inline: 0;
+}
+
+.app-menu-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.logout-btn {
+  --color: #fff;
+  --background-hover: rgba(255, 255, 255, 0.12);
+  --border-radius: 999px;
+  --padding-start: 10px;
+  --padding-end: 12px;
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  height: 40px;
+}
+
+.logout-btn ion-icon {
+  font-size: 2rem;
+}
+
 .custom-content {
   --background: #f4f7f9;
 }
@@ -240,11 +284,6 @@ const handleLogout = async () => {
   line-height: 1.4;
 }
 
-.logout-btn {
-  --color: white;
-  font-weight: 600;
-}
-
 @media (min-width: 768px) {
   .menu-container {
     padding: 20px;
@@ -269,7 +308,6 @@ const handleLogout = async () => {
 
   .feature-card {
     padding: 25px;
-    flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
@@ -279,15 +317,21 @@ const handleLogout = async () => {
     box-shadow: 0 15px 35px rgba(56, 128, 255, 0.1) !important;
     border-color: rgba(56, 128, 255, 0.2);
   }
-
-  .icon-wrapper {
-    margin-bottom: 10px;
-  }
 }
 
 @media (max-width: 480px) {
+  .app-menu-toolbar__title {
+    font-size: 1rem;
+  }
+
   .logout-text {
     display: none;
+  }
+
+  .logout-btn {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    min-width: 40px;
   }
 }
 </style>

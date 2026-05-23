@@ -7,6 +7,161 @@
   "home": {
     "title": "Home"
   },
+  "appMenu": {
+    "title": "Home",
+    "logout": "Log out",
+    "tabletSubtitle": "Tablet management system",
+    "features": {
+      "mixGlue": {
+        "title": "List Mix Glue Management",
+        "description": "Manage glue mixing, check connections, and retrieve data from the scale."
+      },
+      "separateMixedGlue": {
+        "title": "Separate Mixed Glue Management",
+        "description": "Manage repackaging of mixed glue."
+      }
+    }
+  },
+  "listMixGlue": {
+    "sectionTitle": "List Mix Glue",
+    "empty": "No data to display at the moment.",
+    "columns": {
+      "workOrder": "Work order",
+      "glue": "Glue",
+      "totalWeight": "Total weight (kg)",
+      "updater": "Updated by",
+      "updateDate": "Update date",
+      "confirm": "Confirm"
+    },
+    "scan": {
+      "employeeNote": "Place the employee card <strong>barcode</strong> inside the frame"
+    },
+    "toast": {
+      "warning": "Warning",
+      "success": "Completed",
+      "error": "Error",
+      "draftNotFound": "Order draft not found.",
+      "confirmSuccess": "Order confirmed!",
+      "confirmFailed": "Confirmation failed!",
+      "factoryNotFound": "Factory information not found.",
+      "printerNotConnected": "Printer is not connected.",
+      "scanFailed": "Could not scan employee card or scan was cancelled.",
+      "invalidEmployeeCard": "Invalid employee card.",
+      "loadOrderFailed": "Could not load order details.",
+      "mixGlueIdNotFound": "Mix glue ID not found.",
+      "noLabels": "No labels to print.",
+      "printSuccess": "Printed {count} label(s).",
+      "printFailPartial": "Label printing failed ({printed}/{total}).",
+      "printFailStage": "Label printing failed ({stage}).",
+      "printFailed": "Label printing failed!"
+    }
+  },
+  "bluetoothPrinter": {
+    "connected": "Printer connected",
+    "disconnected": "Printer not connected",
+    "connectingSaved": "Connecting to saved printer...",
+    "searching": "Searching for printer...",
+    "disconnect": "Disconnect printer",
+    "reconnectTitle": "Search and connect printer",
+    "reconnectAriaLabel": "Search printer"
+  },
+  "electronicScale": {
+    "label": "Actual scale weight",
+    "refreshTitle": "Reconnect scale (use when switching scales on the hub or when the scale is unresponsive)",
+    "refreshAriaLabel": "Reconnect scale",
+    "connected": "Scale connected",
+    "connecting": "Connecting to scale port...",
+    "searching": "Searching for connection...",
+    "confirm": "Confirm",
+    "toast": {
+      "reconnecting": "Reconnecting",
+      "reconnectingDetail": "Scale connection has been reset. If multiple scales are on the hub, select the correct port when prompted.",
+      "connectFailed": "Could not connect",
+      "connectFailedDetail": "Please check the hub/USB cable and try again.",
+      "noTargetWeight": "No required weight",
+      "noTargetWeightDetail": "This row has no required weight. Please weigh the base component first or select another row.",
+      "belowMin": "Below requirement",
+      "belowMinDetail": "Weight must not be lower than {weight} {unit}.",
+      "aboveMax": "Over limit",
+      "aboveMaxDetail": "Maximum allowed weight is {weight} {unit}.",
+      "success": "Success",
+      "successWithinTolerance": "Weight meets requirement",
+      "successConfirmed": "Weight confirmed"
+    }
+  },
+  "mixGlueManagement": {
+    "pageTitle": "Mix Glue Management",
+    "fields": {
+      "workOrder": "Work order",
+      "glue": "Glue",
+      "totalWeight": "Total weight (Kg)",
+      "componentCode": "Component code"
+    },
+    "sections": {
+      "lineDetails": "Line details",
+      "mixingComponents": "Mixing components"
+    },
+    "lineDetailsTable": {
+      "columns": {
+        "workshop": "Workshop",
+        "requestOrder": "Request order",
+        "style": "Style",
+        "line": "Line",
+        "weight": "Weight",
+        "requestTime": "Request time"
+      }
+    },
+    "componentsTable": {
+      "columns": {
+        "name": "Component name",
+        "requiredWeight": "Required weight",
+        "actualWeight": "Actual weight (Kg)",
+        "operator": "Operator",
+        "weighingTime": "Weighing time",
+        "action": "Action"
+      },
+      "deleteAriaLabel": "Delete"
+    },
+    "addComponentDialog": {
+      "title": "Add component",
+      "nameLabel": "Component name",
+      "namePlaceholder": "Select component",
+      "nameRequired": "Component name is required.",
+      "percentageLabel": "Percentage (%)",
+      "percentageRequired": "Please enter a percentage."
+    },
+    "unknownOperator": "Unknown",
+    "confirmDelete": {
+      "title": "Confirm delete",
+      "componentLabel": "Component: {name}",
+      "message": "Are you sure you want to delete this component?"
+    },
+    "exitAlert": {
+      "header": "Unsaved changes",
+      "message": "The local draft will be kept so you can continue later. Are you sure you want to leave?",
+      "stay": "Stay",
+      "exit": "Leave"
+    },
+    "toast": {
+      "restore": "Restored",
+      "restoreDetail": "Saved data has been reloaded",
+      "loadFailed": "Could not load order data",
+      "incompleteWeighing": "Please complete weighing for all components...",
+      "saveSuccess": "Saved successfully",
+      "saveSuccessDetail": "Data saved. Please go to the list to confirm!",
+      "saveFailed": "Could not save data",
+      "weighingComplete": "Completed",
+      "weighingCompleteDetail": "All components have been weighed.",
+      "baseNotFound": "Base chemical not found",
+      "weighBaseFirst": "Please weigh the base component before adding a new one",
+      "addSuccess": "Success",
+      "addSuccessDetail": "New component added",
+      "deleteSuccess": "Deleted",
+      "deleteSuccessDetail": "Component deleted successfully: {name}",
+      "loadMaterialsFailed": "Could not load components",
+      "progressSaveFailed": "Could not send progress save (C) to the server."
+    }
+  },
   "login": {
     "hello": "Hello!",
     "subtitle": "Adhesive mixing room system",

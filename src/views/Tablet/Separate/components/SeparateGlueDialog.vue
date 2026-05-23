@@ -1,6 +1,6 @@
 <template>
   <Dialog :visible="visible" @update:visible="$emit('update:visible', $event)" modal class="chiet-dialog"
-    :style="{ width: '98vw', maxWidth: '1200px' }" :draggable="false">
+    :style="{ width: '98vw', maxWidth: '1200px', height: '75vh' }" :draggable="false">
     <template #header>
       <div class="chiet-dialog-header">
         <span class="chiet-dialog-header__title">Chiết keo theo thùng</span>
@@ -106,9 +106,9 @@ const weighedWeightLabel = computed(() =>
 );
 
 const isRowComplete = (row: OrderDetails) => {
-  const hasRequest = Array.isArray(row.selectedRequestDetailIds) && row.selectedRequestDetailIds.length > 0;
+  // const hasRequest = Array.isArray(row.selectedRequestDetailIds) && row.selectedRequestDetailIds.length > 0;
   const hasBucket = !!row.selectedBucketId;
-  return hasRequest && hasBucket;
+  return hasBucket;
 };
 
 watch(
@@ -132,7 +132,7 @@ const handleConfirm = () => {
     toast.add({
       severity: 'warn',
       summary: 'Chưa hoàn thành',
-      detail: 'Vui lòng thêm ít nhất một dòng và chọn đơn yêu cầu + thùng chứa.',
+      detail: 'Vui lòng thêm ít nhất một dòng và chọn thùng chứa.',
       life: 4000,
     });
     return;
@@ -153,7 +153,7 @@ const handleConfirm = () => {
     toast.add({
       severity: 'warn',
       summary: 'Chưa hoàn thành',
-      detail: toastMsg`Vui lòng chọn đơn yêu cầu và thùng chứa ở dòng ${incompleteIndex + 1}.`,
+      detail: toastMsg`Vui lòng chọn thùng chứa ở dòng ${incompleteIndex + 1}.`,
       life: 4000,
     });
     return;

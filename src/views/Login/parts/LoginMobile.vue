@@ -6,14 +6,12 @@
     <div class="content-wrapper login-layer" :class="{ 'login-layer--hidden': isScanning }">
       <div class="form-container shadow-lg">
         <div v-if="!isTablet" class="mobile-lang-bar">
-          <Select v-model="selectedLocaleOption" :options="localeOptions" option-label="name"
-            :placeholder="t('login.changeLanguage')" class="lang-select" :aria-label="t('login.changeLanguage')" />
+          <LocaleSelect device-scope="mobile" />
         </div>
         <div class="form-inner">
           <div class="side-info" :class="{ 'side-info--tablet shadow-sm': isTablet }">
             <div v-if="isTablet" class="side-info-toolbar">
-              <Select v-model="selectedLocaleOption" :options="localeOptions" option-label="name"
-                :placeholder="t('login.changeLanguage')" class="lang-select" :aria-label="t('login.changeLanguage')" />
+              <LocaleSelect device-scope="tablet" />
             </div>
             <div class="side-info-content">
               <img src="/assets/icon/icon.png" alt="Logo" class="form-logo" />
@@ -56,7 +54,8 @@
                   <label for="company" class="field-label">{{ t('login.company') }}</label>
                   <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
                     optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
-                    :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies" />
+                    :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies"
+                    @show="handleCompanySelectShow" />
                 </div>
 
                 <div class="field-group">
@@ -64,7 +63,7 @@
                   <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
                     optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
                     :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
-                    :loading="isLoadingFactories" />
+                    :loading="isLoadingFactories" @show="handleFactorySelectShow" />
                 </div>
 
                 <div class="field-group">
@@ -166,13 +165,10 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter, useRoute } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 import { useAppLocale } from '@/composables/useAppLocale';
-import { LOCALE_ORDER, LOCALE_NAMES, type AppLocale, type DeviceLocaleScope } from '@/i18n';
+import type { DeviceLocaleScope } from '@/i18n';
+import LocaleSelect from '@/components/LocaleSelect.vue';
 
 type SelectOption = { label: string; value: string };
-type LocaleOption = {
-  value: AppLocale;
-  name: string;
-};
 
 const code = ref('');
 const employeeId = ref('');
@@ -187,23 +183,10 @@ const router = useRouter();
 const route = useRoute();
 const isNative = Capacitor.isNativePlatform();
 const isTablet = ref(window.innerWidth >= 768);
-const { t, locale, applyLocale, syncLocaleForDevice } = useAppLocale(
+const { t, syncLocaleForDevice } = useAppLocale(
   () => (isTablet.value ? 'tablet' : 'mobile') as DeviceLocaleScope
 );
 
-const localeOptions: LocaleOption[] = LOCALE_ORDER.map((value) => ({
-  value,
-  name: LOCALE_NAMES[value],
-}));
-
-const selectedLocaleOption = computed({
-  get: () => localeOptions.find((option) => option.value === (locale.value as AppLocale)) ?? localeOptions[0],
-  set: (option: LocaleOption | null) => {
-    if (option?.value) {
-      void applyLocale(option.value);
-    }
-  },
-});
 const errorLogin = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
@@ -287,8 +270,6 @@ const fetchCompanies = async () => {
 
 const fetchFactories = async (companyId: string) => {
   isLoadingFactories.value = true;
-  factoryOptions.value = [];
-  selectedFactory.value = '';
 
   try {
     const { data } = await factoryApi.postFactoryList(companyId);
@@ -309,7 +290,17 @@ const fetchFactories = async (companyId: string) => {
   }
 };
 
-watch(selectedCompany, async (companyId) => {
+const handleCompanySelectShow = () => {
+  if (isLoadingCompanies.value || isLoading.value || isLoggingIn.value) return;
+  void fetchCompanies();
+};
+
+const handleFactorySelectShow = () => {
+  if (!selectedCompany.value || isLoadingFactories.value || isLoading.value || isLoggingIn.value) return;
+  void fetchFactories(String(selectedCompany.value));
+};
+
+watch(selectedCompany, (companyId) => {
   selectedFactory.value = '';
   factoryOptions.value = [];
   employeeId.value = '';
@@ -318,7 +309,6 @@ watch(selectedCompany, async (companyId) => {
   errorMessage.value = '';
 
   if (!companyId) return;
-  await fetchFactories(String(companyId));
 });
 
 watch(selectedFactory, () => {
@@ -345,9 +335,6 @@ const updateDeviceType = () => {
 onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
   await syncLocaleForDevice();
-  if (isTablet.value) {
-    await fetchCompanies();
-  }
 });
 
 onUnmounted(() => {
@@ -627,7 +614,7 @@ const processScannedData = async (scannedCode: string) => {
   margin-bottom: 18px;
 }
 
-.mobile-lang-bar .lang-select {
+.mobile-lang-bar :deep(.locale-select) {
   width: 100%;
   max-width: 100px;
 }
@@ -673,21 +660,6 @@ const processScannedData = async (scannedCode: string) => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-}
-
-.lang-select {
-  min-width: 9rem;
-}
-
-.lang-select :deep(.p-select-label) {
-  display: flex;
-  align-items: center;
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
-}
-
-.lang-select :deep(.p-select-dropdown) {
-  width: 2rem;
 }
 
 .form-logo {

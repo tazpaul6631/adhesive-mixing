@@ -7,6 +7,161 @@
   "home": {
     "title": "首頁"
   },
+  "appMenu": {
+    "title": "首頁",
+    "logout": "登出",
+    "tabletSubtitle": "平板管理系統",
+    "features": {
+      "mixGlue": {
+        "title": "調膠清單管理",
+        "description": "管理調膠、檢查連線並從磅秤取得資料。"
+      },
+      "separateMixedGlue": {
+        "title": "混合膠分裝管理",
+        "description": "管理已調配膠水的重新包裝。"
+      }
+    }
+  },
+  "listMixGlue": {
+    "sectionTitle": "調膠清單",
+    "empty": "目前沒有可顯示的資料。",
+    "columns": {
+      "workOrder": "工單",
+      "glue": "膠水",
+      "totalWeight": "總重量 (kg)",
+      "updater": "更新人員",
+      "updateDate": "更新日期",
+      "confirm": "確認"
+    },
+    "scan": {
+      "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
+    },
+    "toast": {
+      "warning": "警告",
+      "success": "完成",
+      "error": "錯誤",
+      "draftNotFound": "找不到工單草稿。",
+      "confirmSuccess": "已確認工單！",
+      "confirmFailed": "確認失敗！",
+      "factoryNotFound": "找不到工廠資訊。",
+      "printerNotConnected": "尚未連接印表機。",
+      "scanFailed": "無法掃描員工卡或已取消掃描。",
+      "invalidEmployeeCard": "員工卡無效。",
+      "loadOrderFailed": "無法載入工單詳情。",
+      "mixGlueIdNotFound": "找不到調膠編號。",
+      "noLabels": "沒有可列印的標籤。",
+      "printSuccess": "已列印 {count} 張標籤。",
+      "printFailPartial": "標籤列印失敗 ({printed}/{total})。",
+      "printFailStage": "標籤列印失敗 ({stage})。",
+      "printFailed": "標籤列印失敗！"
+    }
+  },
+  "bluetoothPrinter": {
+    "connected": "已連接印表機",
+    "disconnected": "尚未連接印表機",
+    "connectingSaved": "正在連接已儲存的印表機...",
+    "searching": "正在搜尋印表機...",
+    "disconnect": "中斷印表機連線",
+    "reconnectTitle": "重新搜尋 / 連接印表機",
+    "reconnectAriaLabel": "重新搜尋印表機"
+  },
+  "electronicScale": {
+    "label": "實際秤重",
+    "refreshTitle": "重新連接磅秤（更換 hub 上的磅秤或磅秤無回應時使用）",
+    "refreshAriaLabel": "重新連接磅秤",
+    "connected": "已連接磅秤",
+    "connecting": "正在連接磅秤埠...",
+    "searching": "正在搜尋連線...",
+    "confirm": "確認",
+    "toast": {
+      "reconnecting": "重新連接中",
+      "reconnectingDetail": "已重置磅秤連線。若 hub 上有多台磅秤，請在提示時選擇正確埠口。",
+      "connectFailed": "無法連接",
+      "connectFailedDetail": "請檢查 hub/USB 線後再試。",
+      "noTargetWeight": "尚無需求重量",
+      "noTargetWeightDetail": "此列尚無需求重量。請先稱量基礎成分或選擇其他列。",
+      "belowMin": "未達要求",
+      "belowMinDetail": "重量不可低於 {weight} {unit}。",
+      "aboveMax": "超出上限",
+      "aboveMaxDetail": "最大允許重量為 {weight} {unit}。",
+      "success": "成功",
+      "successWithinTolerance": "重量符合要求",
+      "successConfirmed": "已確認重量"
+    }
+  },
+  "mixGlueManagement": {
+    "pageTitle": "調膠管理",
+    "fields": {
+      "workOrder": "工單",
+      "glue": "膠水",
+      "totalWeight": "總重量 (Kg)",
+      "componentCode": "成分代碼"
+    },
+    "sections": {
+      "lineDetails": "產線明細",
+      "mixingComponents": "調膠成分"
+    },
+    "lineDetailsTable": {
+      "columns": {
+        "workshop": "車間",
+        "requestOrder": "需求單",
+        "style": "型體",
+        "line": "產線",
+        "weight": "重量",
+        "requestTime": "領料時間"
+      }
+    },
+    "componentsTable": {
+      "columns": {
+        "name": "成分名稱",
+        "requiredWeight": "需求重量",
+        "actualWeight": "實際重量 (Kg)",
+        "operator": "操作人員",
+        "weighingTime": "稱重時間",
+        "action": "操作"
+      },
+      "deleteAriaLabel": "刪除"
+    },
+    "addComponentDialog": {
+      "title": "新增成分",
+      "nameLabel": "成分名稱",
+      "namePlaceholder": "選擇成分",
+      "nameRequired": "成分名稱為必填。",
+      "percentageLabel": "百分比 (%)",
+      "percentageRequired": "請輸入百分比。"
+    },
+    "unknownOperator": "未指定",
+    "confirmDelete": {
+      "title": "確認刪除",
+      "componentLabel": "成分：{name}",
+      "message": "確定要刪除此成分嗎？"
+    },
+    "exitAlert": {
+      "header": "尚未儲存",
+      "message": "本機草稿仍會保留以便稍後繼續。確定要離開嗎？",
+      "stay": "留下",
+      "exit": "離開"
+    },
+    "toast": {
+      "restore": "已還原",
+      "restoreDetail": "已重新載入已儲存的資料",
+      "loadFailed": "無法載入工單資料",
+      "incompleteWeighing": "請完成所有成分的稱重...",
+      "saveSuccess": "儲存成功",
+      "saveSuccessDetail": "資料已儲存。請返回清單進行確認！",
+      "saveFailed": "無法儲存資料",
+      "weighingComplete": "完成",
+      "weighingCompleteDetail": "所有成分已完成稱重。",
+      "baseNotFound": "找不到基礎化學品",
+      "weighBaseFirst": "請先稱量基礎成分再新增成分",
+      "addSuccess": "成功",
+      "addSuccessDetail": "已新增成分",
+      "deleteSuccess": "已刪除",
+      "deleteSuccessDetail": "成分刪除成功：{name}",
+      "loadMaterialsFailed": "無法載入成分",
+      "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。"
+    }
+  },
   "login": {
     "hello": "您好！",
     "subtitle": "膠水調配室系統",

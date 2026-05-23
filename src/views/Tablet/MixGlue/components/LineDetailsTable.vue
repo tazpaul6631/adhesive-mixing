@@ -6,32 +6,36 @@
       <template #empty>
         <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-          <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+          <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
       </template>
 
-      <Column field="productLineName" header="Xưởng" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column field="productLineName" :header="t('mixGlueManagement.lineDetailsTable.columns.workshop')"
+        headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else class="dt-cell-ellipsis">{{ data.productLineName }}</span>
         </template>
       </Column>
 
-      <Column field="workOrderMasterName" header="Đơn yêu cầu" headerClass="dt-col-primary" bodyClass="dt-col-primary">
+      <Column field="workOrderMasterName" :header="t('mixGlueManagement.lineDetailsTable.columns.requestOrder')"
+        headerClass="dt-col-primary" bodyClass="dt-col-primary">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
           <span v-else class="dt-cell-wrap">{{ data.workOrderMasterName }}</span>
         </template>
       </Column>
 
-      <Column field="styleName" header="Hình thể" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column field="styleName" :header="t('mixGlueManagement.lineDetailsTable.columns.style')" headerClass="dt-col-text"
+        bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="70%" height="1rem" />
           <span v-else class="dt-cell-ellipsis">{{ data.styleName }}</span>
         </template>
       </Column>
 
-      <Column field="requestDetailName" header="Chuyền" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column field="requestDetailName" :header="t('mixGlueManagement.lineDetailsTable.columns.line')"
+        headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
           <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm dt-cell-wrap">
@@ -40,14 +44,16 @@
         </template>
       </Column>
 
-      <Column field="workOrderWeight" header="Trọng lượng" headerClass="dt-col-weight" bodyClass="dt-col-weight">
+      <Column field="workOrderWeight" :header="t('mixGlueManagement.lineDetailsTable.columns.weight')"
+        headerClass="dt-col-weight" bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <span v-else>{{ data.workOrderWeight }} {{ data.workOrderWeightUnit }}</span>
         </template>
       </Column>
 
-      <Column field="requestTime" header="Thời gian lãnh" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
+      <Column field="requestTime" :header="t('mixGlueManagement.lineDetailsTable.columns.requestTime')"
+        headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
@@ -62,11 +68,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import format from '@/mixins/format';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 defineProps<{
   isLoading: boolean;
   lineDetails: any[];
 }>();
 
+const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(5).fill({}));
 </script>

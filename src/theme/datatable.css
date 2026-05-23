@@ -28,8 +28,8 @@
 }
 
 .auto-columns-table .dt-col-text {
-  min-width: 9rem;
-  width: 16%;
+  min-width: auto;
+  width: auto;
 }
 
 .auto-columns-table .dt-col-datetime {
@@ -69,4 +69,9 @@
 
 .auto-columns-table th.dt-col-index .p-datatable-column-header-content {
   justify-content: center;
+}
+
+.auto-columns-table tr.table-row-active>td {
+  background-color: #fef9c3 !important;
+  transition: background-color 0.25s ease;
 }
