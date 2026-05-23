@@ -54,5 +54,47 @@
     "invalidBarcode": "Mã thẻ không hợp lệ hoặc không có dữ liệu!",
     "enterEmployeeId": "Vui lòng nhập mã nhân viên!",
     "changeLanguage": "Đổi ngôn ngữ"
+  },
+  "mobile": {
+    "glueConfirm": {
+      "title": "Chuyền xác nhận keo & trả keo",
+      "lineQrTitle": "Mã QR thùng keo chuyền",
+      "allocatedQrTitle": "Mã QR thùng keo phát",
+      "scanPlaceholder": "Chạm để quét mã QR",
+      "statusLabel": "Trạng thái:",
+      "confirmReturnButton": "Xác nhận trả về",
+      "scanReturnQrButton": "Quét Mã QR thùng keo trả về",
+      "returnDialogTitle": "Xác nhận thùng keo trả về",
+      "returnDialogMessage": "Xác nhận trả về thùng keo đã quét?",
+      "cancelButton": "HỦY",
+      "okButton": "OK",
+      "submittingButton": "Đang gửi...",
+      "fields": {
+        "productLineLabel": "Chuyền:",
+        "glueLabel": "Keo:"
+      },
+      "messages": {
+        "invalidLineQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.",
+        "invalidAllocatedQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo phát.",
+        "noGlueData": "Không có dữ liệu thùng keo.",
+        "cameraPermission": "Cần cấp quyền camera để quét mã QR!",
+        "loadingInfo": "Đang tải thông tin...",
+        "loadLineError": "Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!",
+        "loadAllocatedError": "Không thể lấy thông tin mã QR thùng keo phát. Vui lòng kiểm tra kết nối API!",
+        "loadReturnError": "Không thể lấy thông tin mã QR thùng keo trả về. Vui lòng kiểm tra kết nối API!",
+        "returnSuccess": "Trả về thành công",
+        "returnConfirmError": "Không thể xác nhận trả về thùng keo. Vui lòng thử lại!",
+        "confirmError": "Không thể xác nhận. Vui lòng thử lại!",
+        "confirmSuccess": "Xác nhận thành công",
+        "statusMismatch": "Mã QR thùng keo chuyền không khớp với mã QR thùng keo phát.",
+        "statusMatched": "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát."
+      }
+    },
+    "appMenu": {
+      "hello": "Xin chào!",
+      "system": "Hệ thống quản lý trên Mobile",
+      "glueConfirm": "Chuyền xác nhận keo & trả keo",
+      "description": "Sử dụng camera điện thoại để quét mã vạch"
+    }
   }
 }

@@ -44,5 +44,47 @@
     "invalidBarcode": "Invalid card code or no data found!",
     "enterEmployeeId": "Please enter employee ID!",
     "changeLanguage": "Change language"
+  },
+  "mobile": {
+    "glueConfirm": {
+      "title": "Line glue confirmation & return",
+      "lineQrTitle": "Line glue bucket QR code",
+      "allocatedQrTitle": "Allocated glue bucket QR code",
+      "scanPlaceholder": "Tap to scan QR code",
+      "statusLabel": "Status:",
+      "confirmReturnButton": "Confirm return",
+      "scanReturnQrButton": "Scan return glue bucket QR code",
+      "returnDialogTitle": "Confirm return glue bucket",
+      "returnDialogMessage": "Confirm return of the scanned glue bucket?",
+      "cancelButton": "CANCEL",
+      "okButton": "OK",
+      "submittingButton": "Submitting...",
+      "fields": {
+        "productLineLabel": "Line:",
+        "glueLabel": "Glue:"
+      },
+      "messages": {
+        "invalidLineQr": "Invalid QR code. Please scan the line glue bucket QR code again.",
+        "invalidAllocatedQr": "Invalid QR code. Please scan the allocated glue bucket QR code again.",
+        "noGlueData": "No glue bucket data found.",
+        "cameraPermission": "Camera permission is required to scan the QR code!",
+        "loadingInfo": "Loading information...",
+        "loadLineError": "Unable to get the line glue bucket QR code information. Please check the API connection!",
+        "loadAllocatedError": "Unable to get the allocated glue bucket QR code information. Please check the API connection!",
+        "loadReturnError": "Unable to get the return glue bucket QR code information. Please check the API connection!",
+        "returnSuccess": "Return completed successfully",
+        "returnConfirmError": "Unable to confirm the glue bucket return. Please try again!",
+        "confirmError": "Unable to confirm. Please try again!",
+        "confirmSuccess": "Confirmed successfully",
+        "statusMismatch": "The line glue bucket QR code does not match the allocated glue bucket QR code.",
+        "statusMatched": "The line glue bucket QR code matches the allocated glue bucket QR code."
+      }
+    },
+    "appMenu": {
+        "hello": "Hello!",
+        "system": "Mobile Management System",
+        "glueConfirm": "Line Glue Confirmation & Glue Return",
+        "description": "Use the phone camera to scan QR codes"
+      }
   }
 }

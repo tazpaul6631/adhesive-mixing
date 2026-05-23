@@ -39,10 +39,52 @@
     "cancelScan": "取消掃描",
     "footer": "© 2026 IT Jia Hsin",
     "loginFailed": "登入失敗。",
-    "serverMaintenance": "伺服器維護中，請稍後再試。（若問題持續請聯絡 IT）",
+    "serverMaintenance": "伺服器維護中，請稍後再試。（若問題持續請聯絡 IT)",
     "cameraPermission": "需要相機權限才能掃描員工卡！",
     "invalidBarcode": "卡片條碼無效或沒有資料！",
     "enterEmployeeId": "請輸入員工編號！",
     "changeLanguage": "切換語言"
+  },
+  "mobile": {
+    "glueConfirm": {
+      "title": "產線膠水確認與退膠",
+      "lineQrTitle": "產線膠桶 QR 碼",
+      "allocatedQrTitle": "發放膠桶 QR 碼",
+      "scanPlaceholder": "點擊掃描 QR 碼",
+      "statusLabel": "狀態：",
+      "confirmReturnButton": "確認退回",
+      "scanReturnQrButton": "掃描退回膠桶 QR 碼",
+      "returnDialogTitle": "確認退回膠桶",
+      "returnDialogMessage": "確認退回已掃描的膠桶？",
+      "cancelButton": "取消",
+      "okButton": "OK",
+      "submittingButton": "送出中...",
+      "fields": {
+        "productLineLabel": "產線：",
+        "glueLabel": "膠水："
+      },
+      "messages": {
+        "invalidLineQr": "QR 碼無效。請重新掃描產線膠桶 QR 碼。",
+        "invalidAllocatedQr": "QR 碼無效。請重新掃描發放膠桶 QR 碼。",
+        "noGlueData": "沒有膠桶資料。",
+        "cameraPermission": "需要授權相機才能掃描 QR 碼！",
+        "loadingInfo": "正在載入資訊...",
+        "loadLineError": "無法取得產線膠桶 QR 碼資訊。請檢查 API 連線！",
+        "loadAllocatedError": "無法取得發放膠桶 QR 碼資訊。請檢查 API 連線！",
+        "loadReturnError": "無法取得退回膠桶 QR 碼資訊。請檢查 API 連線！",
+        "returnSuccess": "退回成功",
+        "returnConfirmError": "無法確認退回膠桶。請再試一次！",
+        "confirmError": "無法確認。請再試一次！",
+        "confirmSuccess": "確認成功",
+        "statusMismatch": "產線膠桶 QR 碼與發放膠桶 QR 碼不相符。",
+        "statusMatched": "產線膠桶 QR 碼與發放膠桶 QR 碼相符。"
+      }
+    },
+    "appMenu": {
+        "hello": "您好！",
+        "system": "行動端管理系統",
+        "glueConfirm": "生產線用膠確認與退膠",
+        "description": "使用手機相機掃描 QR Code"
+      }
   }
 }
