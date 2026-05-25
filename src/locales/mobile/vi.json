@@ -95,7 +95,38 @@
       "hello": "Xin chào!",
       "system": "Hệ thống quản lý trên Mobile",
       "glueConfirm": "Chuyền xác nhận keo & trả keo",
-      "description": "Sử dụng camera điện thoại để quét mã vạch"
+      "description": "Sử dụng camera điện thoại để quét mã vạch",
+      "glueInfoCheck": "Tra cứu thông tin thùng keo",
+      "glueInfoCheckDescription": "Kiểm tra thông tin thùng keo phát"
+    },
+    "glueInfoCheck": {
+      "title": "Tra cứu thông tin thùng keo",
+      "qrTitle": "Mã QR thùng keo",
+      "scanPlaceholder": "Quét mã QR thùng keo",
+      "scannedPlaceholder": "Đã quét thùng keo",
+      "infoTitle": "Thông tin thùng keo",
+      "types": {
+        "mixGlue": "Keo trộn",
+        "separateGlue": "Keo chiết",
+        "noSeparateGlue": "Keo không trộn"
+      },
+      "fields": {
+        "type": "Loại:",
+        "factory": "Xưởng:",
+        "bucketId": "Mã thùng:",
+        "requestDetail": "Đơn yêu cầu:",
+        "productLine": "Chuyền:",
+        "glue": "Keo:",
+        "glueId": "Mã keo:",
+        "materialCode": "Mã liệu:"
+      },
+      "messages": {
+        "invalidQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo.",
+        "noGlueData": "Không có dữ liệu thùng keo.",
+        "cameraPermission": "Cần cấp quyền camera để quét mã QR!",
+        "loadingInfo": "Đang tải thông tin...",
+        "loadError": "Không thể lấy thông tin mã QR thùng keo. Vui lòng kiểm tra kết nối API!"
+      }
     }
   }
 }

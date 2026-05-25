@@ -136,20 +136,24 @@ const tabletFeatures = computed(() => [
 ]);
 
 // --- DATA CHO MOBILE FEATURES ---
-const mobileFeatures = computed(() => {
-  if (isTablet.value) return [];
-
-  return [
-    {
-      path: '/mobile',
-      title: t('mobile.appMenu.glueConfirm'),
-      description: t('mobile.appMenu.description'),
-      icon: qrCodeOutline,
-      color: '#0ea5e9',
-      bgLight: '#e0f2fe'
-    },
-  ];
-});
+const mobileFeatures = computed(() => [
+  {
+    path: '/mobile',
+    title: t('mobile.appMenu.glueConfirm'),
+    description: t('mobile.appMenu.description'),
+    icon: qrCodeOutline,
+    color: '#0ea5e9',
+    bgLight: '#e0f2fe'
+  },
+  {
+    path: '/mobile/glue-info-check',
+    title: t('mobile.appMenu.glueInfoCheck'),
+    description: t('mobile.appMenu.glueInfoCheckDescription'),
+    icon: qrCodeOutline,
+    color: '#2563eb',
+    bgLight: '#dbeafe'
+  }
+]);
 
 // Hàm điều hướng chung
 const navigate = (path: string) => {

@@ -334,13 +334,17 @@ function getCurrentUserId() {
   return authStore.user?.employeeId || authStore.token || localStorage.getItem("web_token_backup") || "";
 }
 
-function getGlueIdValue(info: any) {
-  if (hasPayloadValue(info?.glueId)) {
-    return info.glueId;
+function getReturnGlueIdValue(info: any) {
+  if (hasPayloadValue(info?.mixGlueMasterId)) {
+    return normalizeCompareValue(info.mixGlueMasterId);
   }
 
-  if (hasPayloadValue(info?.materialCode)) {
-    return info.materialCode;
+  if (hasPayloadValue(info?.separateGlueId)) {
+    return normalizeCompareValue(info.separateGlueId);
+  }
+
+  if (hasPayloadValue(info?.noSeparateGlueId)) {
+    return normalizeCompareValue(info.noSeparateGlueId);
   }
 
   return 0;
@@ -700,7 +704,7 @@ async function submitReturnQr() {
   const userId = getCurrentUserId();
   const payload = {
     factoryId: normalizeCompareValue(pendingReturnGlueInfo.value.factoryId),
-    returnGlueId: getGlueIdValue(pendingReturnGlueInfo.value),
+    returnGlueId: getReturnGlueIdValue(pendingReturnGlueInfo.value),
     lineChemicalId: lineChemicalInfo.value.lineChemicalId || 0,
     recordStatus: "1",
     createrId: userId,
@@ -725,13 +729,14 @@ async function submitReturnQr() {
 }
 
 async function handleConfirmReturn() {
-  if (isConfirmButtonDisabled.value || !allocatedGlueInfo.value) {
+  if (isConfirmButtonDisabled.value || !lineChemicalInfo.value || !allocatedGlueInfo.value) {
     return;
   }
 
   const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
     updaterId: getCurrentUserId(),
+    productLineId: normalizeCompareValue(lineChemicalInfo.value?.productLineId)
   };
 
   const mixGlueMasterId = allocatedGlueInfo.value.mixGlueMasterId;

@@ -82,10 +82,41 @@
       }
     },
     "appMenu": {
-        "hello": "您好！",
-        "system": "行動端管理系統",
-        "glueConfirm": "生產線用膠確認與退膠",
-        "description": "使用手機相機掃描 QR Code"
+      "hello": "您好！",
+      "system": "行動端管理系統",
+      "glueConfirm": "生產線用膠確認與退膠",
+      "description": "使用手機相機掃描 QR Code",
+      "glueInfoCheck": "膠桶資訊查詢",
+      "glueInfoCheckDescription": "查看發放膠桶資訊"
+    },
+    "glueInfoCheck": {
+      "title": "膠桶資訊查詢",
+      "qrTitle": "膠桶 QR Code",
+      "scanPlaceholder": "掃描膠桶 QR Code",
+      "scannedPlaceholder": "已掃描膠桶",
+      "infoTitle": "膠桶資訊",
+      "types": {
+        "mixGlue": "混合膠",
+        "separateGlue": "分裝膠",
+        "noSeparateGlue": "未分裝膠"
+      },
+      "fields": {
+        "type": "類型：",
+        "factory": "廠別：",
+        "bucketId": "膠桶 ID：",
+        "requestDetail": "需求單：",
+        "productLine": "產線：",
+        "glue": "膠水：",
+        "glueId": "膠水 ID：",
+        "materialCode": "材料代碼："
+      },
+      "messages": {
+        "invalidQr": "QR Code 無效，請重新掃描膠桶 QR Code。",
+        "noGlueData": "找不到膠桶資料。",
+        "cameraPermission": "需要授予相機權限才能掃描 QR Code！",
+        "loadingInfo": "正在載入資訊...",
+        "loadError": "無法取得膠桶 QR 資訊，請檢查 API 連線！"
       }
+    }
   }
 }
