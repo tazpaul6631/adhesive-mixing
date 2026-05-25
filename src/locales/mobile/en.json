@@ -81,10 +81,41 @@
       }
     },
     "appMenu": {
-        "hello": "Hello!",
-        "system": "Mobile Management System",
-        "glueConfirm": "Line Glue Confirmation & Glue Return",
-        "description": "Use the phone camera to scan QR codes"
+      "hello": "Hello!",
+      "system": "Mobile Management System",
+      "glueConfirm": "Line Glue Confirmation & Glue Return",
+      "description": "Use the phone camera to scan QR codes",
+      "glueInfoCheck": "Glue Bucket Information Lookup",
+      "glueInfoCheckDescription": "Check allocated glue bucket information"
+    },
+    "glueInfoCheck": {
+      "title": "Glue Bucket Information Lookup",
+      "qrTitle": "Glue Bucket QR Code",
+      "scanPlaceholder": "Scan the glue bucket QR code",
+      "scannedPlaceholder": "Glue bucket scanned",
+      "infoTitle": "Glue Bucket Information",
+      "types": {
+        "mixGlue": "Mix glue",
+        "separateGlue": "Separate glue",
+        "noSeparateGlue": "No-separate glue"
+      },
+      "fields": {
+        "type": "Type:",
+        "factory": "Factory:",
+        "bucketId": "Bucket ID:",
+        "requestDetail": "Request order:",
+        "productLine": "Line:",
+        "glue": "Glue:",
+        "glueId": "Glue ID:",
+        "materialCode": "Material code:"
+      },
+      "messages": {
+        "invalidQr": "Invalid QR code. Please scan the glue bucket QR code again.",
+        "noGlueData": "No glue bucket data found.",
+        "cameraPermission": "Camera permission is required to scan QR codes!",
+        "loadingInfo": "Loading information...",
+        "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!"
       }
+    }
   }
 }

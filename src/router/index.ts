@@ -79,11 +79,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/Mobile/GlueConfirm.vue'),
     meta: { requiresAuth: true }
   },
-  // {
-  //   path: '/mobile/glue-returned',
-  //   component: () => import('@/views/Mobile/GlueInfoCheck.vue'),
-  //   meta: { requiresAuth: true }
-  // },
+  {
+    path: '/mobile/glue-info-check',
+    component: () => import('@/views/Mobile/GlueInfoCheck.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/:catchAll(.*)',
     redirect: '/404'
