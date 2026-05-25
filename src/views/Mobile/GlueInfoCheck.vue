@@ -1,11 +1,11 @@
-<!-- <template>
+<template>
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
-        <ion-title>Tra cứu thông tin thùng keo</ion-title>
+        <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -15,38 +15,32 @@
           <div class="qr-panel__body">
             <ion-card class="qr-container">
               <ion-card-header>
-                <ion-card-title>Mã QR thùng keo</ion-card-title>
+                <ion-card-title>{{ t('mobile.glueInfoCheck.qrTitle') }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner">
+                <button type="button" class="qr-scan-field" :disabled="isLoadingQr" @click="openScanner">
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !returnQrText }]">
-                    {{ returnQrText || 'Quét mã QR thùng keo' }}
+                    {{ returnQrText || t('mobile.glueInfoCheck.scanPlaceholder') }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <ion-spinner v-if="isLoadingQr" name="crescent" class="qr-scan-field__spinner"></ion-spinner>
+                  <ion-icon v-else class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
                 </button>
               </ion-card-content>
             </ion-card>
 
-            <ion-card v-if="returnQrText" class="info-container">
+            <ion-card v-if="returnQrInfo" class="info-container">
               <ion-card-header>
-                <ion-card-title>Thông tin thùng keo</ion-card-title>
+                <ion-card-title>{{ t('mobile.glueInfoCheck.infoTitle') }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <template v-if="returnInfoFields.length">
-                    <div
-                      v-for="field in returnInfoFields"
-                      :key="field.label"
-                      class="info-content__row"
-                    >
-                      <span class="info-content__label">{{ field.label }}</span>
-                      <span class="info-content__value">{{ field.value }}</span>
-                    </div>
-                  </template>
-
-                  <div v-else class="info-content__row">
-                    <span class="info-content__label">Dữ liệu mock</span>
-                    <span class="info-content__value">Không tìm thấy thông tin mock cho mã QR này</span>
+                  <div
+                    v-for="field in returnInfoFields"
+                    :key="field.label"
+                    class="info-content__row"
+                  >
+                    <span class="info-content__label">{{ field.label }}</span>
+                    <span class="info-content__value">{{ field.value }}</span>
                   </div>
                 </div>
               </ion-card-content>
@@ -71,31 +65,251 @@ import {
   IonHeader,
   IonIcon,
   IonPage,
+  IonSpinner,
   IonTitle,
   IonToolbar,
 } from '@ionic/vue';
 import { barcodeOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
-import { findMockGlueInfo, getGlueInfoFields, normalizeGlueQrText } from './glueQr.mock';
-import type { GlueQrInfo } from './glueQr.mock';
+import { Haptics, NotificationType } from '@capacitor/haptics';
+import { useI18n } from 'vue-i18n';
+import { useAuthStore } from '@/store/auth';
+
+type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
+type ResolveGlueQrResult = {
+  data: any | null;
+  status: 'success' | 'invalid' | 'noData';
+};
+
+const { t } = useI18n();
+const authStore = useAuthStore();
+
+const systemQrUrlHosts = [
+  '10.0.111.118:7152',
+  '10.0.111.127:7152',
+];
 
 const returnQrText = ref('');
-const returnQrInfo = ref<GlueQrInfo | null>(null);
+const returnQrInfo = ref<any | null>(null);
+const isLoadingQr = ref(false);
+
+const returnQrType = computed(() => getAllocatedGlueQrType(returnQrInfo.value));
 
 const returnInfoFields = computed(() => {
-  return returnQrInfo.value ? getGlueInfoFields(returnQrInfo.value) : [];
+  if (!returnQrInfo.value) {
+    return [];
+  }
+
+  return getGlueInfoFields(returnQrInfo.value, returnQrType.value);
 });
 
 function normalizeQrText(value: string) {
-  return normalizeGlueQrText(value);
+  return value.trim();
+}
+
+function normalizeCompareValue(value: any) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+}
+
+function hasPayloadValue(value: any) {
+  return value !== null && value !== undefined && normalizeCompareValue(value) !== '';
+}
+
+function getCurrentUserId() {
+  return authStore.user?.employeeId || authStore.token || localStorage.getItem('web_token_backup') || '';
+}
+
+function getSystemQrUrl(qrText: string) {
+  const normalizedText = normalizeQrText(qrText);
+
+  if (!normalizedText) {
+    return null;
+  }
+
+  try {
+    const url = new URL(normalizedText);
+    const protocol = url.protocol.toLowerCase();
+
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      return null;
+    }
+
+    if (!systemQrUrlHosts.includes(url.host)) {
+      return null;
+    }
+
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function getAllocatedGlueQrType(data: any): GlueQrType | null {
+  if (hasPayloadValue(data?.mixGlueMasterId) && hasPayloadValue(data?.glueId)) {
+    return 'mixGlue';
+  }
+
+  if (hasPayloadValue(data?.separateGlueId) && hasPayloadValue(data?.glueId)) {
+    return 'separateGlue';
+  }
+
+  if (hasPayloadValue(data?.noSeparateGlueId) && hasPayloadValue(data?.materialCode)) {
+    return 'noSeparateGlue';
+  }
+
+  return null;
+}
+
+function getGlueTypeLabel(qrType: GlueQrType | null) {
+  if (qrType === 'mixGlue') {
+    return t('mobile.glueInfoCheck.types.mixGlue');
+  }
+
+  if (qrType === 'separateGlue') {
+    return t('mobile.glueInfoCheck.types.separateGlue');
+  }
+
+  if (qrType === 'noSeparateGlue') {
+    return t('mobile.glueInfoCheck.types.noSeparateGlue');
+  }
+
+  return '';
+}
+
+function getGlueBucketId(info: any, qrType: GlueQrType | null) {
+  if (qrType === 'mixGlue') {
+    return normalizeCompareValue(info?.mixGlueMasterId);
+  }
+
+  if (qrType === 'separateGlue') {
+    return normalizeCompareValue(info?.separateGlueId);
+  }
+
+  if (qrType === 'noSeparateGlue') {
+    return normalizeCompareValue(info?.noSeparateGlueId);
+  }
+
+  return '';
+}
+
+function getGlueCodeValue(info: any, qrType: GlueQrType | null) {
+  if (qrType === 'noSeparateGlue') {
+    return normalizeCompareValue(info?.materialCode);
+  }
+
+  return normalizeCompareValue(info?.glueId);
+}
+
+function getRequestDetailName(info: any) {
+  return normalizeCompareValue(info?.requestDetailName);
+}
+
+function getGlueInfoFields(info: any, qrType: GlueQrType | null) {
+  const fields = [
+    // { label: t('mobile.glueInfoCheck.fields.type'), value: getGlueTypeLabel(qrType) },
+    { label: t('mobile.glueInfoCheck.fields.factory'), value: normalizeCompareValue(info?.factoryName) },
+    // { label: t('mobile.glueInfoCheck.fields.bucketId'), value: getGlueBucketId(info, qrType) },
+    { label: t('mobile.glueInfoCheck.fields.requestDetail'), value: getRequestDetailName(info) },
+    { label: t('mobile.glueInfoCheck.fields.productLine'), value: normalizeCompareValue(info?.productLineName) },
+    { label: t('mobile.glueInfoCheck.fields.glue'), value: normalizeCompareValue(info?.glueName) },
+    // { label: qrType === 'noSeparateGlue' ? t('mobile.glueInfoCheck.fields.materialCode') : t('mobile.glueInfoCheck.fields.glueId'), value: getGlueCodeValue(info, qrType) },
+  ];
+
+  return fields.filter((field) => hasPayloadValue(field.value));
+}
+
+function formatGlueDisplay(info: any) {
+  const glueName = normalizeCompareValue(info?.glueName);
+
+  if (glueName) {
+    return `${t('mobile.glueInfoCheck.fields.glue')} ${glueName}`;
+  }
+
+  return t('mobile.glueInfoCheck.scannedPlaceholder');
+}
+
+async function triggerWarningFeedback() {
+  try {
+    await Haptics.notification({
+      type: NotificationType.Warning,
+    });
+  } catch (error) {
+    console.warn('Haptics is not available:', error);
+  }
+}
+
+async function showWarningAlert(message: string) {
+  await triggerWarningFeedback();
+  alert(message);
+}
+
+async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQrResult> {
+  const systemUrl = getSystemQrUrl(qrText);
+
+  if (!systemUrl) {
+    return { data: null, status: 'invalid' };
+  }
+
+  const userId = getCurrentUserId();
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (userId) {
+    headers.Authorization = `Bearer ${userId}`;
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(systemUrl.toString(), {
+      method: 'GET',
+      headers,
+    });
+  } catch (error) {
+    console.error('Không thể gọi URL QR hệ thống:', error);
+    return { data: null, status: 'invalid' };
+  }
+
+  if (!response.ok) {
+    return { data: null, status: 'invalid' };
+  }
+
+  let responseData: any;
+
+  try {
+    responseData = await response.json();
+  } catch (error) {
+    console.error('Response QR không phải JSON:', error);
+    return { data: null, status: 'invalid' };
+  }
+
+  if (responseData?.success === false || !responseData?.data) {
+    return { data: null, status: 'noData' };
+  }
+
+  return { data: responseData.data, status: 'success' };
+}
+
+function resetGlueInfo() {
+  returnQrText.value = '';
+  returnQrInfo.value = null;
 }
 
 async function openScanner() {
+  if (isLoadingQr.value) {
+    return;
+  }
+
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert('Cần cấp quyền camera để quét mã QR!');
+      alert(t('mobile.glueInfoCheck.messages.cameraPermission'));
       return;
     }
 
@@ -105,9 +319,9 @@ async function openScanner() {
       const scannedValue = barcodes[0].rawValue;
 
       if (scannedValue) {
-        handleReturnScanResult(scannedValue);
+        await handleGlueInfoScanResult(scannedValue);
       } else {
-        alert('Mã QR không hợp lệ hoặc không có dữ liệu!');
+        await showWarningAlert(t('mobile.glueInfoCheck.messages.invalidQr'));
       }
     }
   } catch (error) {
@@ -115,15 +329,49 @@ async function openScanner() {
   }
 }
 
-function handleReturnScanResult(value: string) {
+async function handleGlueInfoScanResult(value: string) {
   const normalizedValue = normalizeQrText(value);
 
   if (!normalizedValue) {
     return;
   }
 
-  returnQrText.value = normalizedValue;
-  returnQrInfo.value = findMockGlueInfo(normalizedValue);
+  returnQrText.value = t('mobile.glueInfoCheck.messages.loadingInfo');
+  returnQrInfo.value = null;
+  isLoadingQr.value = true;
+
+  try {
+    const result = await resolveGlueQrFromSystemUrl(normalizedValue);
+
+    if (result.status === 'invalid') {
+      resetGlueInfo();
+      await showWarningAlert(t('mobile.glueInfoCheck.messages.invalidQr'));
+      return;
+    }
+
+    if (result.status === 'noData' || !result.data) {
+      resetGlueInfo();
+      await showWarningAlert(t('mobile.glueInfoCheck.messages.noGlueData'));
+      return;
+    }
+
+    const qrType = getAllocatedGlueQrType(result.data);
+
+    if (!qrType) {
+      resetGlueInfo();
+      await showWarningAlert(t('mobile.glueInfoCheck.messages.invalidQr'));
+      return;
+    }
+
+    returnQrInfo.value = result.data;
+    returnQrText.value = formatGlueDisplay(result.data);
+  } catch (error) {
+    console.error('Không thể lấy thông tin QR thùng keo phát:', error);
+    resetGlueInfo();
+    alert(t('mobile.glueInfoCheck.messages.loadError'));
+  } finally {
+    isLoadingQr.value = false;
+  }
 }
 </script>
 
@@ -205,7 +453,11 @@ function handleReturnScanResult(value: string) {
   text-align: left;
   outline: none;
 
-  &:active {
+  &:disabled {
+    opacity: 0.72;
+  }
+
+  &:active:not(:disabled) {
     border-color: #0b72ed;
     background: #f8fbff;
   }
@@ -224,9 +476,12 @@ function handleReturnScanResult(value: string) {
     font-size: 14px !important;
   }
 
-  &__icon {
+  &__icon,
+  &__spinner {
     flex-shrink: 0;
     font-size: 18px !important;
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -295,8 +550,11 @@ function handleReturnScanResult(value: string) {
       font-size: 16px !important;
     }
 
-    &__icon {
+    &__icon,
+    &__spinner {
       font-size: 18px !important;
+      width: 18px;
+      height: 18px;
     }
   }
 
@@ -317,4 +575,4 @@ function handleReturnScanResult(value: string) {
     }
   }
 }
-</style> -->
+</style>
