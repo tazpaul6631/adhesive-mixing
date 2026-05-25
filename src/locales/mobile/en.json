@@ -107,7 +107,8 @@
         "productLine": "Line:",
         "glue": "Glue:",
         "glueId": "Glue ID:",
-        "materialCode": "Material code:"
+        "materialCode": "Material code:",
+        "sequence": "Sequence:"
       },
       "messages": {
         "invalidQr": "Invalid QR code. Please scan the glue bucket QR code again.",
