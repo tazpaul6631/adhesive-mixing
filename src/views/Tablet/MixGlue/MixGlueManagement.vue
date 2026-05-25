@@ -8,7 +8,7 @@
           </ion-button>
         </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title>{{ t('mixGlueManagement.pageTitle') }}</ion-title>
+          <ion-title class="no-padding">{{ t('mixGlueManagement.pageTitle') }}</ion-title>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>
@@ -19,26 +19,26 @@
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div class="flex flex-wrap align-items-center justify-content-between">
-            <div v-show="hidenTable1" class="grid formgrid p-fluid flex">
-              <div class="col-12 sm:col-6 lg:col-4">
-                <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.workOrder') }}</label>
-                <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
-              </div>
-              <div class="col-12 sm:col-6 lg:col-4">
-                <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.glue') }}</label>
-                <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
-              </div>
-              <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
-                <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeight') }}</label>
-                <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
-              </div>
+          <div class="grid">
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.workOrder') }}</label>
+              <InputText v-model="headerInfo.orderNo" fluid readonly class="font-bold text-blue-600" />
             </div>
-            <div class="flex gap-2">
-              <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
-                @click="handleHidenTable1" />
-              <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" size="large"
-                @click="handleComplete" />
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.glue') }}</label>
+              <InputText v-model="headerInfo.glue" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeight') }}</label>
+              <InputText v-model="headerInfo.totalWeight" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3 text-right mt-4">
+              <div class="flex gap-2 justify-content-end">
+                <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
+                  @click="handleHidenTable1" />
+                <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" size="large"
+                  @click="handleComplete" />
+              </div>
             </div>
           </div>
         </div>
@@ -47,7 +47,8 @@
         <transition name="slide-fade">
           <div v-show="hidenTable1" class="surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl">
-              <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>{{ t('mixGlueManagement.sections.lineDetails') }}</span>
+              <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>{{
+                t('mixGlueManagement.sections.lineDetails') }}</span>
             </div>
             <LineDetailsTable :is-loading="isLoadingLine" :line-details="lineDetails" />
           </div>
@@ -65,7 +66,8 @@
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
-                  <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode') }}</label>
+                  <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
+                  }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
@@ -244,7 +246,6 @@ const fetchWorkOrderDetail = async (id: string) => {
       if (data?.success) {
         const respData = data.data;
         mixGlueConfirm.value = respData.mixGlueConfirm;
-        console.log(mixGlueConfirm.value);
 
         hourlyValidity.value = respData.hourlyValidity || '0';
 

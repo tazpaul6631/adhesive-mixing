@@ -2,7 +2,8 @@
   "common": {
     "welcome": "Chào mừng",
     "save": "Lưu",
-    "cancel": "Hủy"
+    "cancel": "Hủy",
+    "loading": "Đang tải..."
   },
   "home": {
     "title": "Trang chủ"

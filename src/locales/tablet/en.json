@@ -2,7 +2,8 @@
   "common": {
     "welcome": "Welcome",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "loading": "Loading..."
   },
   "home": {
     "title": "Home"
@@ -10,6 +11,7 @@
   "appMenu": {
     "title": "Home",
     "logout": "Log out",
+    "tabletH2title": "Hello!",
     "tabletSubtitle": "Tablet management system",
     "features": {
       "mixGlue": {
@@ -36,6 +38,23 @@
     "scan": {
       "employeeNote": "Place the employee card <strong>barcode</strong> inside the frame"
     },
+    "print": {
+      "overlayTitle": "Printing labels",
+      "overlayProgress": "Printing {current}/{total}",
+      "retryTitle": "Label print failed",
+      "retryMessage": "{count} label(s) were not printed successfully. Retry?",
+      "retryConfirm": "Retry",
+      "retryClose": "Close",
+      "pendingButtonTitle": "View {count} pending label(s)",
+      "labelItem": "Label {index}",
+      "reasons": {
+        "bluetooth_disconnect": "Bluetooth disconnected",
+        "out_of_battery": "Printer out of battery",
+        "out_of_paper": "Printer out of paper",
+        "tspl_build": "Failed to build print command",
+        "skipped_after_error": "Skipped due to earlier error"
+      }
+    },
     "toast": {
       "warning": "Warning",
       "success": "Completed",
@@ -53,7 +72,153 @@
       "printSuccess": "Printed {count} label(s).",
       "printFailPartial": "Label printing failed ({printed}/{total}).",
       "printFailStage": "Label printing failed ({stage}).",
-      "printFailed": "Label printing failed!"
+      "printFailed": "Label printing failed!",
+      "printPartial": "Partial print ({printed}/{total}).",
+      "pendingRestored": "{count} label(s) from the previous session are still pending.",
+      "pendingReplaced": "Replaced the pending label queue with the new order."
+    }
+  },
+  "listSeparateMixedGlue": {
+    "pageTitle": "List Separate Mixed Glue",
+    "sectionTitle": "List Separate Mixed Glue",
+    "scan": {
+      "employeeNote": "Place the employee card <strong>barcode</strong> inside the frame"
+    },
+    "print": {
+      "overlayTitle": "Printing labels",
+      "overlayProgress": "Printing {current}/{total}",
+      "retryTitle": "Label print failed",
+      "retryMessage": "{count} label(s) were not printed successfully. Retry?",
+      "retryConfirm": "Retry",
+      "retryClose": "Close",
+      "pendingButton": "Pending labels",
+      "pendingButtonTitle": "View {count} pending label(s)",
+      "labelItem": "Label {index}",
+      "reasons": {
+        "bluetooth_disconnect": "Bluetooth disconnected",
+        "out_of_battery": "Printer out of battery",
+        "out_of_paper": "Printer out of paper",
+        "tspl_build": "Failed to build print command",
+        "skipped_after_error": "Skipped due to earlier error"
+      }
+    },
+    "toast": {
+      "warning": "Warning",
+      "success": "Completed",
+      "error": "Error",
+      "factoryNotFound": "Factory information not found.",
+      "printerNotConnected": "Printer is not connected.",
+      "scanFailed": "Could not scan employee card or scan was cancelled.",
+      "invalidEmployeeCard": "Invalid employee card.",
+      "loadOrderFailed": "Could not load order details.",
+      "noLabels": "No labels to print.",
+      "printSuccess": "Printed {count} label(s).",
+      "printPartial": "Partial print ({printed}/{total}).",
+      "printFailed": "Label printing failed!",
+      "pendingRestored": "{count} label(s) from the previous session are still pending.",
+      "pendingReplaced": "Replaced the pending label queue with the new order."
+    }
+  },
+  "separateMixedGlue": {
+    "management": {
+      "pageTitle": "Separate Mixed Glue",
+      "sections": {
+        "mixedGlueBucket": "Mixed glue bucket allocation details",
+        "noMixGlue": "Non-mixed glue usage request details"
+      }
+    },
+    "table": {
+      "columns": {
+        "bucket": "Container",
+        "operator": "Operator",
+        "completedTime": "Completion time",
+        "action": "Action",
+        "glue": "Glue",
+        "actualWeight": "Actual weight",
+        "weighingTime": "Weighing time"
+      },
+      "placeholders": {
+        "selectBucket": "Select container"
+      },
+      "deleteAriaLabel": "Delete",
+      "addAriaLabel": "Add",
+      "viewAriaLabel": "View"
+    },
+    "addComponentDialog": {
+      "title": "Add component",
+      "nameLabel": "Component name",
+      "namePlaceholder": "Select component",
+      "nameRequired": "Component name is required.",
+      "weightLabel": "Actual weight",
+      "weightRequired": "Please enter a value ({unit})"
+    },
+    "chietDialog": {
+      "title": "Bucket glue allocation",
+      "currentGlue": "Glue being allocated",
+      "weighedWeight": "Weighed weight",
+      "capacityMustMatch": "Total container capacity must match weighed weight",
+      "viewOnly": "View only"
+    },
+    "toast": {
+      "restore": "Restored",
+      "restoreDetail": "Saved data has been reloaded",
+      "loadFailed": "Could not load order data",
+      "incomplete": "Incomplete",
+      "locked": "Cannot edit",
+      "completeFirst": "This order is already completed. Adding or deleting is not allowed.",
+      "completeSuccess": "Completed",
+      "completeSuccessDetail": "Data submitted successfully",
+      "completeFailed": "Could not confirm completion",
+      "weighingComplete": "Completed",
+      "weighingCompleteDetail": "All components have been weighed.",
+      "addSuccess": "Success",
+      "addSuccessDetail": "New component added",
+      "deleteSuccess": "Deleted",
+      "deleteSuccessDetail": "Component deleted successfully",
+      "loadMaterialsFailed": "Could not load components",
+      "notWeighed": "Not weighed",
+      "weighBeforeAdd": "Please weigh glue {name} before adding a new component.",
+      "weighBeforeChiet": "Please weigh glue {name} before bucket allocation.",
+      "chietSaved": "Allocation saved",
+      "chietSavedDetail": "Bucket allocation information temporarily saved",
+      "progressSaveFailed": "Could not send progress save (C) to the server.",
+      "selectBucketRow": "Please select a container on row {row} before adding a new row.",
+      "selectBucketRowShort": "Please select a container on row {row}.",
+      "allocationComplete": "Fully allocated",
+      "allocationCompleteDetail": "Total container weight has been reached; no need to add more.",
+      "weightExceeded": "Weight exceeded",
+      "bucketCapacityExceeded": "Total container capacity exceeds {label}. Please choose a more suitable container.",
+      "addRowMin": "Please add at least one row and select a container.",
+      "notWeighedForChiet": "Glue {name} has no weighed weight. Please weigh before allocation.",
+      "invalid": "Invalid",
+      "mixedGlueSelectBucket": "Mixed glue on row {row}: please select a container.",
+      "mixedGluePrefix": "Mixed glue: {message}",
+      "noMixWeighFirst": "Non-mixed glue {name}: please weigh before completing.",
+      "pendingChietModal": "Bucket allocation is not confirmed. Please complete the allocation dialog.",
+      "chietRequired": "Glue {name} has been weighed but bucket allocation is not confirmed. Open the dialog and confirm.",
+      "chietSelectBucket": "Glue {name} on allocation row {row}: please select a container.",
+      "chietPrefix": "Glue {name} allocation: {message}"
+    },
+    "confirmDelete": {
+      "title": "Confirm delete",
+      "componentLabel": "Component: {name}",
+      "message": "Are you sure you want to delete this component?"
+    },
+    "exitAlert": {
+      "header": "Unsaved changes",
+      "message": "Are you sure you want to leave?",
+      "stay": "Stay",
+      "exit": "Leave"
+    },
+    "validation": {
+      "capacityMismatch": "Total container capacity does not match required weight.",
+      "capacityMismatchWeighed": "Total container capacity does not match weighed weight.",
+      "capacityExceedsRequired": "Total container capacity ({total} Kg) exceeds required weight ({target}).",
+      "capacityBelowRequired": "Total container capacity ({total} Kg) is below required weight ({target}).",
+      "capacityExceedsWeighed": "Total container capacity ({total} Kg) exceeds weighed weight ({target}).",
+      "capacityShortageWeighed": "Total container capacity ({total} Kg) is short by 500g or more compared to {target}. Please choose a larger container (e.g. 6 Kg).",
+      "capacityMismatchWeighedGeneric": "Total container capacity ({total} Kg) does not match weighed weight ({target}).",
+      "chietCapacityBlock": "Total container capacity is sufficient for weighed weight {label} (shortage under 500g still counts as complete). No need to add a new row."
     }
   },
   "bluetoothPrinter": {
@@ -161,6 +326,16 @@
       "loadMaterialsFailed": "Could not load components",
       "progressSaveFailed": "Could not send progress save (C) to the server."
     }
+  },
+  "valid": {
+    "required": "This field is required",
+    "min_reason": "Please select at least {n} reason(s)",
+    "max_reason": "At most {n} reason(s) allowed",
+    "rating_required": "Please rate this item"
+  },
+  "messages": {
+    "notifi": "Notification!",
+    "submitted": "Submitted successfully. Thank you!"
   },
   "login": {
     "hello": "Hello!",

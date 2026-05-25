@@ -6,7 +6,7 @@
       <template #empty>
         <div style="text-align: center; height: 240px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-          <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+          <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
       </template>
 
@@ -36,23 +36,26 @@
       </Column>
       -->
 
-      <Column header="Thùng chứa" headerClass="dt-col-input" bodyClass="dt-col-input">
+      <Column :header="t('separateMixedGlue.table.columns.bucket')" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
-            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" placeholder="Chọn thùng"
-            class="w-full" appendTo="body" :disabled="isViewMode" @change="handleBucketChange(data, index)" />
+            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId"
+            :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
+            :disabled="isViewMode" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
-      <Column field="operator" header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column field="operator" :header="t('separateMixedGlue.table.columns.operator')" headerClass="dt-col-text"
+        bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else class="dt-cell-ellipsis">{{ data.operator || '' }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian hoàn thành" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
+      <Column :header="t('separateMixedGlue.table.columns.completedTime')" headerClass="dt-col-datetime"
+        bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500 dt-cell-ellipsis">
@@ -61,12 +64,12 @@
         </template>
       </Column>
 
-      <Column v-if="!isViewMode" header="Thao tác" :exportable="false" headerClass="dt-col-action"
-        bodyClass="dt-col-action">
+      <Column v-if="!isViewMode" :header="t('separateMixedGlue.table.columns.action')" :exportable="false"
+        headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
-              aria-label="Delete" @click.stop="handleDeleteRow(data)" />
+              :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="handleDeleteRow(data)" />
           </div>
         </template>
       </Column>
@@ -82,6 +85,7 @@ import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
+import { useAppLocale } from '@/composables/useAppLocale';
 import {
   normalizeWeightToKg,
   sortBucketsByClosestCapacity,
@@ -91,7 +95,6 @@ import {
   WEIGHT_EPSILON,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
-import { toastMsg } from '@/utils/toastFormat';
 
 const props = defineProps<{
   isLoading: boolean;
@@ -106,6 +109,7 @@ const props = defineProps<{
 const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
 
 const toast = useToast();
+const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(1).fill({}));
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
@@ -204,7 +208,7 @@ const hasBucketSelection = (rowData: any) => {
 
 const updateRowCompletionInfo = (rowData: any) => {
   if (hasBucketSelection(rowData)) {
-    rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
+    rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || t('mixGlueManagement.unknownOperator');
     rowData.operatorId = authStore.user?.employeeId || '';
     const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
     rowData.confirmTime = format.formatDate(now);
@@ -231,8 +235,8 @@ const handleAddRow = () => {
     if (incompleteIndex !== -1) {
       toast.add({
         severity: 'warn',
-        summary: 'Chưa hoàn thành',
-        detail: toastMsg`Vui lòng chọn thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
+        summary: t('separateMixedGlue.toast.incomplete'),
+        detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
         life: 4000,
       });
       return;
@@ -241,8 +245,8 @@ const handleAddRow = () => {
     if (isAllocationComplete()) {
       toast.add({
         severity: 'warn',
-        summary: 'Đã phân bổ đủ',
-        detail: 'Tổng trọng lượng thùng chứa đã đạt, không cần thêm mới.',
+        summary: t('separateMixedGlue.toast.allocationComplete'),
+        detail: t('separateMixedGlue.toast.allocationCompleteDetail'),
         life: 4000,
       });
       return;
@@ -264,8 +268,8 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
       await clearRowBucketSelection(rowData, rowIndex);
       toast.add({
         severity: 'warn',
-        summary: 'Vượt trọng lượng',
-        detail: toastMsg`Tổng dung tích thùng vượt quá ${getTargetWeightLabel()}. Vui lòng chọn thùng có dung tích phù hợp hơn.`,
+        summary: t('separateMixedGlue.toast.weightExceeded'),
+        detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getTargetWeightLabel() }),
         life: 4000,
       });
       return;

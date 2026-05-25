@@ -3,7 +3,7 @@
     :style="{ width: '98vw', maxWidth: '1200px', height: '75vh' }" :draggable="false">
     <template #header>
       <div class="chiet-dialog-header">
-        <span class="chiet-dialog-header__title">Chiết keo theo thùng</span>
+        <span class="chiet-dialog-header__title">{{ t('separateMixedGlue.chietDialog.title') }}</span>
         <Button v-if="!isViewMode" icon="pi pi-check-circle" severity="success" size="large" @click="handleConfirm" />
       </div>
     </template>
@@ -13,7 +13,7 @@
         <div class="chiet-summary-card chiet-summary-card--glue">
           <div class="chiet-summary-card__head">
             <span class="chiet-summary-card__icon"><i class="pi pi-box"></i></span>
-            <span class="chiet-summary-card__tag">Keo đang chiết</span>
+            <span class="chiet-summary-card__tag">{{ t('separateMixedGlue.chietDialog.currentGlue') }}</span>
             <p class="chiet-summary-card__value">{{ chemical?.materialName || '—' }}</p>
           </div>
         </div>
@@ -21,7 +21,7 @@
         <div class="chiet-summary-card chiet-summary-card--weight">
           <div class="chiet-summary-card__head">
             <span class="chiet-summary-card__icon"><i class="pi pi-chart-bar"></i></span>
-            <span class="chiet-summary-card__tag">Trọng lượng đã cân</span>
+            <span class="chiet-summary-card__tag">{{ t('separateMixedGlue.chietDialog.weighedWeight') }}</span>
             <p class="chiet-summary-card__value">{{ weighedWeightLabel }}</p>
           </div>
         </div>
@@ -32,11 +32,11 @@
           <div>
             <h3 class="chiet-table-panel__title">
               <i class="pi pi-list"></i>
-              Tổng dung tích thùng phải khớp trọng lượng đã cân
+              {{ t('separateMixedGlue.chietDialog.capacityMustMatch') }}
               <strong>{{ weighedWeightLabel }}</strong>
             </h3>
           </div>
-          <Tag v-if="isViewMode" severity="info" value="Chỉ xem" icon="pi pi-eye" />
+          <Tag v-if="isViewMode" severity="info" :value="t('separateMixedGlue.chietDialog.viewOnly')" icon="pi pi-eye" />
         </div>
 
         <div class="chiet-table-panel__content">
@@ -51,14 +51,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
 import ChietGlueTable from '@/views/Tablet/Separate/components/ChietGlueTable.vue';
-import { toastMsg } from '@/utils/toastFormat';
 import { formatTargetWeightLabel } from '@/views/Tablet/Separate/separateGlue.bucket';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 interface OrderDetails {
   workOrderDetailId?: string;
@@ -97,6 +97,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useAppLocale(() => 'tablet');
 const chietGlueTableRef = ref<InstanceType<typeof ChietGlueTable> | null>(null);
 
 const targetWeight = computed(() => props.chemical?.actualWeight ?? '');
@@ -111,28 +112,14 @@ const isRowComplete = (row: OrderDetails) => {
   return hasBucket;
 };
 
-watch(
-  () => props.visible,
-  (isVisible) => {
-    if (!isVisible) return;
-
-    console.group('[SeparateGlueDialog] Mở modal chiết');
-    console.log('chemical:', props.chemical);
-    console.log('actualWeight (weighedWeight):', targetWeight.value, targetWeightUnit.value);
-    console.log('weighedWeightLabel:', weighedWeightLabel.value);
-    console.log('orderDetails rows:', props.orderDetails?.length ?? 0);
-    console.groupEnd();
-  }
-);
-
 const handleConfirm = () => {
   const rows = props.orderDetails || [];
 
   if (rows.length === 0) {
     toast.add({
       severity: 'warn',
-      summary: 'Chưa hoàn thành',
-      detail: 'Vui lòng thêm ít nhất một dòng và chọn thùng chứa.',
+      summary: t('separateMixedGlue.toast.incomplete'),
+      detail: t('separateMixedGlue.toast.addRowMin'),
       life: 4000,
     });
     return;
@@ -141,8 +128,8 @@ const handleConfirm = () => {
   if (!targetWeight.value || Number(targetWeight.value) <= 0) {
     toast.add({
       severity: 'warn',
-      summary: 'Chưa cân',
-      detail: toastMsg`Keo ${props.chemical?.materialName || ''} chưa có trọng lượng cân. Vui lòng cân trước khi chiết.`,
+      summary: t('separateMixedGlue.toast.notWeighed'),
+      detail: t('separateMixedGlue.toast.notWeighedForChiet', { name: props.chemical?.materialName || '' }),
       life: 4000,
     });
     return;
@@ -152,8 +139,8 @@ const handleConfirm = () => {
   if (incompleteIndex !== -1) {
     toast.add({
       severity: 'warn',
-      summary: 'Chưa hoàn thành',
-      detail: toastMsg`Vui lòng chọn thùng chứa ở dòng ${incompleteIndex + 1}.`,
+      summary: t('separateMixedGlue.toast.incomplete'),
+      detail: t('separateMixedGlue.toast.selectBucketRowShort', { row: incompleteIndex + 1 }),
       life: 4000,
     });
     return;
@@ -163,7 +150,7 @@ const handleConfirm = () => {
   if (allocationError) {
     toast.add({
       severity: 'warn',
-      summary: 'Chưa hợp lệ',
+      summary: t('separateMixedGlue.toast.invalid'),
       detail: allocationError,
       life: 5000,
     });

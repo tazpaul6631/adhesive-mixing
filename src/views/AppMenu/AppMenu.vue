@@ -18,7 +18,8 @@
       <div class="menu-container">
         <div class="welcome-banner animate__animated animate__fadeInDown">
           <div class="welcome-text">
-            <h2>{{ t('mobile.appMenu.hello') }}</h2>
+            <h2 v-if="isTablet">{{ t('appMenu.tabletH2title') }}</h2>
+            <h2 v-else>{{ t('mobile.appMenu.hello') }}</h2>
             <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
           </div>
@@ -79,10 +80,14 @@ const authStore = useAuthStore();
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
 
-const { t } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
+const { t, syncLocaleForDevice } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
 
 const updateDeviceType = () => {
-  isTablet.value = window.innerWidth >= 768;
+  const nextTablet = window.innerWidth >= 768;
+  if (nextTablet !== isTablet.value) {
+    isTablet.value = nextTablet;
+    void syncLocaleForDevice();
+  }
 };
 
 onMounted(() => {

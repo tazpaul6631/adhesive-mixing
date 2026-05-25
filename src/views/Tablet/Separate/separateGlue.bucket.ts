@@ -1,4 +1,7 @@
-import { toastMsg } from '@/utils/toastFormat';
+import i18n from '@/i18n';
+
+const t = (key: string, params?: Record<string, unknown>) =>
+  String(i18n.global.t(key, params ?? {}));
 
 export const WEIGHT_EPSILON = 0.001;
 
@@ -99,7 +102,7 @@ export const formatChietCapacityBlockMessage = (
   targetWeightUnit = 'Kg'
 ) => {
   const label = formatTargetWeightLabel(targetWeight, targetWeightUnit);
-  return toastMsg`Tổng dung tích thùng đã đủ so với trọng lượng đã cân ${label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới.`;
+  return t('separateMixedGlue.validation.chietCapacityBlock', { label });
 };
 
 export const buildChietAddRowDebugInfo = (
@@ -222,14 +225,20 @@ export const validateBucketCapacityTotal = (
     return {
       ok: false,
       totalKg,
-      message: toastMsg`Tổng dung tích thùng (${formatWeightKg(totalKg)} Kg) vượt quá trọng lượng yêu cầu (${targetLabel}).`,
+      message: t('separateMixedGlue.validation.capacityExceedsRequired', {
+        total: formatWeightKg(totalKg),
+        target: targetLabel,
+      }),
     };
   }
 
   return {
     ok: false,
     totalKg,
-    message: toastMsg`Tổng dung tích thùng (${formatWeightKg(totalKg)} Kg) chưa đủ so với trọng lượng yêu cầu (${targetLabel}).`,
+    message: t('separateMixedGlue.validation.capacityBelowRequired', {
+      total: formatWeightKg(totalKg),
+      target: targetLabel,
+    }),
   };
 };
 
@@ -258,7 +267,10 @@ export const validateChietBucketCapacity = (
     return {
       ok: false,
       totalKg,
-      message: toastMsg`Tổng dung tích thùng (${formatWeightKg(totalKg)} Kg) vượt quá trọng lượng đã cân (${targetLabel}).`,
+      message: t('separateMixedGlue.validation.capacityExceedsWeighed', {
+        total: formatWeightKg(totalKg),
+        target: targetLabel,
+      }),
     };
   }
 
@@ -266,14 +278,20 @@ export const validateChietBucketCapacity = (
     return {
       ok: false,
       totalKg,
-      message: toastMsg`Tổng dung tích thùng (${formatWeightKg(totalKg)} Kg) còn thiếu từ 500g trở lên so với ${targetLabel}. Vui lòng chọn thùng lớn hơn (vd: 6 Kg).`,
+      message: t('separateMixedGlue.validation.capacityShortageWeighed', {
+        total: formatWeightKg(totalKg),
+        target: targetLabel,
+      }),
     };
   }
 
   return {
     ok: false,
     totalKg,
-    message: toastMsg`Tổng dung tích thùng (${formatWeightKg(totalKg)} Kg) chưa khớp trọng lượng đã cân (${targetLabel}).`,
+    message: t('separateMixedGlue.validation.capacityMismatchWeighedGeneric', {
+      total: formatWeightKg(totalKg),
+      target: targetLabel,
+    }),
   };
 };
 
@@ -304,7 +322,7 @@ export const validateSeparateGlueAllocation = (
         targetWeightUnit
       );
     if (!capacityResult.ok) {
-      return capacityResult.message || 'Tổng dung tích thùng không khớp trọng lượng yêu cầu.';
+      return capacityResult.message || t('separateMixedGlue.validation.capacityMismatch');
     }
   }
 

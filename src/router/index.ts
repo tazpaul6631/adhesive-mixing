@@ -3,6 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { Capacitor } from '@capacitor/core';
 import MainLayout from '../views/MainLayout.vue';
+import { startRouteLoading, stopRouteLoading } from './loading';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -103,6 +104,10 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!authStore.token;
   const isApp = Capacitor.isNativePlatform();
 
+  if (to.fullPath !== from.fullPath) {
+    startRouteLoading();
+  }
+
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
@@ -125,13 +130,21 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     // Web không được phép vào các route của App
-    if (to.path === '/app-menu' || to.path === '/formExit' || to.path === '/testCan') {
+    if (to.path === '/app-menu') {
       return next('/dashboard'); // Hoặc đẩy ra 404 tùy bạn
     }
   }
 
   // 4. Mọi thứ hợp lệ -> Cho đi tiếp
   next();
+});
+
+router.afterEach(() => {
+  stopRouteLoading();
+});
+
+router.onError(() => {
+  stopRouteLoading();
 });
 
 export default router;

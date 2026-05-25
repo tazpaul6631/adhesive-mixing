@@ -9,7 +9,7 @@
       <template #empty>
         <div style="text-align: center; height: 100px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-          <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+          <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
       </template>
 
@@ -19,14 +19,16 @@
         </div>
       </template>
 
-      <Column field="materialName" header="Keo" headerClass="dt-col-primary" bodyClass="dt-col-primary">
+      <Column field="materialName" :header="t('separateMixedGlue.table.columns.glue')" headerClass="dt-col-primary"
+        bodyClass="dt-col-primary">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
           <span v-else class="font-medium dt-cell-wrap">{{ data.materialName }}</span>
         </template>
       </Column>
 
-      <Column header="TL thực tế" headerClass="dt-col-weight" bodyClass="dt-col-weight">
+      <Column :header="t('separateMixedGlue.table.columns.actualWeight')" headerClass="dt-col-weight"
+        bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else
@@ -36,14 +38,15 @@
         </template>
       </Column>
 
-      <Column header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column :header="t('separateMixedGlue.table.columns.operator')" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else class="dt-cell-ellipsis">{{ data.operator }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian cân" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
+      <Column :header="t('separateMixedGlue.table.columns.weighingTime')" headerClass="dt-col-datetime"
+        bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="90%" height="1rem" />
           <span v-else class="text-500">
@@ -53,17 +56,18 @@
         </template>
       </Column>
 
-      <Column header="Thao tác" :exportable="false" headerClass="dt-col-action" bodyClass="dt-col-action">
+      <Column :header="t('separateMixedGlue.table.columns.action')" :exportable="false" headerClass="dt-col-action"
+        bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
-            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded aria-label="Add"
-              @click.stop="$emit('chiet-row', data)" />
+            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded
+              :aria-label="t('separateMixedGlue.table.addAriaLabel')" @click.stop="$emit('chiet-row', data)" />
 
-            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded aria-label="View"
-              @click.stop="$emit('view-row', data)" />
+            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded
+              :aria-label="t('separateMixedGlue.table.viewAriaLabel')" @click.stop="$emit('view-row', data)" />
 
-            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
-              @click.stop="$emit('delete-row', data)" />
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded
+              :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="$emit('delete-row', data)" />
           </div>
         </template>
       </Column>
@@ -75,6 +79,7 @@
 import { ref } from 'vue';
 import format from '@/mixins/format';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 const props = defineProps<{
   isLoading: boolean;
@@ -92,6 +97,7 @@ const emit = defineEmits([
   'view-row'
 ]);
 
+const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(5).fill({}));
 const tableWrapperRef = ref<HTMLElement | null>(null);
 
