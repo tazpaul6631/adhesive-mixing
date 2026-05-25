@@ -6,7 +6,7 @@
       <template #empty>
         <div style="text-align: center; height: 240px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-          <p style="margin: 0; color: #6b7280;">Hiện tại chưa có dữ liệu để hiển thị.</p>
+          <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
       </template>
 
@@ -33,21 +33,23 @@
       </Column>
       -->
 
-      <Column header="Thùng chứa" headerClass="dt-col-input" bodyClass="dt-col-input">
+      <Column :header="t('separateMixedGlue.table.columns.bucket')" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data, index }">
           <Select :key="`chiet-bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
-            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" placeholder="Chọn thùng"
-            class="w-full" appendTo="body" :disabled="isViewMode" @change="handleBucketChange(data, index)" />
+            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId"
+            :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
+            :disabled="isViewMode" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
-      <Column header="Người thao tác" headerClass="dt-col-text" bodyClass="dt-col-text">
+      <Column :header="t('separateMixedGlue.table.columns.operator')" headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <span class="dt-cell-ellipsis">{{ data.operator || '' }}</span>
         </template>
       </Column>
 
-      <Column header="Thời gian hoàn thành" headerClass="dt-col-datetime" bodyClass="dt-col-datetime">
+      <Column :header="t('separateMixedGlue.table.columns.completedTime')" headerClass="dt-col-datetime"
+        bodyClass="dt-col-datetime">
         <template #body="{ data }">
           <span class="text-500 dt-cell-ellipsis">
             <i v-if="data.confirmTime" class="pi pi-clock text-xs mr-1"></i>{{ data.confirmTime }}
@@ -55,12 +57,12 @@
         </template>
       </Column>
 
-      <Column v-if="!isViewMode" header="Thao tác" :exportable="false" headerClass="dt-col-action"
-        bodyClass="dt-col-action">
+      <Column v-if="!isViewMode" :header="t('separateMixedGlue.table.columns.action')" :exportable="false"
+        headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
-            <Button v-if="orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded aria-label="Delete"
-              @click.stop="handleDeleteRow(data)" />
+            <Button v-if="orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
+              :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="handleDeleteRow(data)" />
           </div>
         </template>
       </Column>
@@ -69,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
@@ -84,11 +86,10 @@ import {
   formatChietCapacityBlockMessage,
   getCapacityMatchToleranceKg,
   isChietCapacityComplete,
-  buildChietAddRowDebugInfo,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
-import { toastMsg } from '@/utils/toastFormat';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
+import { useAppLocale } from '@/composables/useAppLocale';
 
 const props = defineProps<{
   orderDetails: any[];
@@ -101,6 +102,7 @@ const props = defineProps<{
 const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
 
 const toast = useToast();
+const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
 const bucketSelectResetKeys = ref<Record<number, number>>({});
@@ -111,21 +113,6 @@ const { markPendingScrollToNewRow } = useScrollToNewTableRow(
   () => props.orderDetails.length,
   { focusSelector: '.p-select' }
 );
-
-const logChietDebug = (action: string, extra?: Record<string, unknown>) => {
-  const info = buildChietAddRowDebugInfo(
-    props.orderDetails,
-    bucketList.value,
-    props.weighedWeight,
-    props.weighedWeightUnit || 'Kg'
-  );
-
-  console.group(`[ChietGlueTable] ${action}`);
-  console.log('weighedWeight (raw):', props.weighedWeight, props.weighedWeightUnit);
-  console.log('check:', info);
-  if (extra) console.log('extra:', extra);
-  console.groupEnd();
-};
 
 const getWeighedWeightKg = () =>
   normalizeWeightToKg(props.weighedWeight ?? 0, props.weighedWeightUnit || 'Kg');
@@ -202,7 +189,7 @@ const getBucketOptionsForRow = (currentRow: any) => {
 
 const updateRowCompletionInfo = (rowData: any) => {
   if (hasBucketSelection(rowData)) {
-    rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || 'Chưa xác định';
+    rowData.operator = authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || t('mixGlueManagement.unknownOperator');
     rowData.operatorId = authStore.user?.employeeId || '';
     const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
     rowData.confirmTime = format.formatDate(now);
@@ -232,24 +219,13 @@ const handleAddRow = () => {
   const rows = props.orderDetails || [];
   const blocked = shouldBlockAddRow();
 
-  logChietDebug('handleAddRow', {
-    rowCount: rows.length,
-    allRowsComplete: rows.length > 0 && rows.every((row) => isRowComplete(row)),
-    shouldBlockAddRow: blocked,
-    reason: blocked
-      ? 'Tổng dung tích thùng đã đủ/gần khớp trọng lượng đã cân'
-      : getSelectedBucketTotalKg() < getWeighedWeightKg()
-        ? `Còn thiếu ${(getWeighedWeightKg() - getSelectedBucketTotalKg()).toFixed(3)} Kg — cho phép thêm dòng`
-        : 'Chưa đủ điều kiện chặn',
-  });
-
   if (rows.length > 0) {
     const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
     if (incompleteIndex !== -1) {
       toast.add({
         severity: 'warn',
-        summary: 'Chưa hoàn thành',
-        detail: toastMsg`Vui lòng chọn thùng chứa ở dòng ${incompleteIndex + 1} trước khi thêm dòng mới.`,
+        summary: t('separateMixedGlue.toast.incomplete'),
+        detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
         life: 4000,
       });
       return;
@@ -258,7 +234,7 @@ const handleAddRow = () => {
     if (blocked) {
       toast.add({
         severity: 'warn',
-        summary: 'Đã phân bổ đủ',
+        summary: t('separateMixedGlue.toast.allocationComplete'),
         detail: formatChietCapacityBlockMessage(props.weighedWeight, props.weighedWeightUnit || 'Kg'),
         life: 4000,
       });
@@ -280,18 +256,12 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
     const totalKg = getSelectedBucketTotalKg();
     const tolerance = getCapacityMatchToleranceKg(props.weighedWeight, props.weighedWeightUnit || 'Kg');
 
-    logChietDebug('handleBucketChange', {
-      selectedBucketId: rowData.selectedBucketId,
-      totalAfterSelect: totalKg,
-      willRejectOverflow: totalKg > targetKg + tolerance,
-    });
-
     if (totalKg > targetKg + tolerance) {
       await clearRowBucketSelection(rowData, rowIndex);
       toast.add({
         severity: 'warn',
-        summary: 'Vượt trọng lượng',
-        detail: toastMsg`Tổng dung tích thùng vượt quá ${getWeighedWeightLabel()}. Vui lòng chọn thùng có dung tích phù hợp hơn.`,
+        summary: t('separateMixedGlue.toast.weightExceeded'),
+        detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getWeighedWeightLabel() }),
         life: 4000,
       });
       return;
@@ -310,7 +280,6 @@ const loadBucketList = async () => {
         ...item,
         label: `${item.capacity} ${item.capacityUnit || 'Kg'}`,
       }));
-      logChietDebug('loadBucketList', { loaded: bucketList.value.length });
     }
   } catch (error) {
     console.error('[ChietGlueTable] Lỗi khi tải danh sách thùng chứa', error);
@@ -326,19 +295,11 @@ defineExpose({
       props.weighedWeight,
       props.weighedWeightUnit || 'Kg'
     );
-    return result.ok ? null : result.message || 'Tổng dung tích thùng không khớp trọng lượng đã cân.';
+    return result.ok ? null : result.message || t('separateMixedGlue.validation.capacityMismatchWeighed');
   },
 });
 
-watch(
-  () => [props.weighedWeight, props.weighedWeightUnit] as const,
-  () => {
-    logChietDebug('weighedWeight changed');
-  }
-);
-
 onMounted(() => {
-  logChietDebug('mounted');
   void loadBucketList();
 });
 </script>

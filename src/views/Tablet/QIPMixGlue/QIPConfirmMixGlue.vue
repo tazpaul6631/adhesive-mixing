@@ -7,7 +7,7 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>QIP Confirm Mix Glue</ion-title>
+        <ion-title class="no-padding">QIP Confirm Mix Glue</ion-title>
       </ion-toolbar>
     </ion-header>
 

@@ -7,7 +7,10 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>Separate Mixed Glue</ion-title>
+        <div class="flex align-items-center justify-content-between">
+          <ion-title class="no-padding">{{ t('separateMixedGlue.management.pageTitle') }}</ion-title>
+          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+        </div>
       </ion-toolbar>
     </ion-header>
 
@@ -16,25 +19,22 @@
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
         <div class="surface-card p-3 shadow-1 border-round-xl">
-          <div class="flex flex-wrap align-items-center justify-content-between">
-            <!-- <user-avatar /> -->
-            <div class="grid formgrid p-fluid flex">
-              <div class="col-12 sm:col-6 lg:col-4">
-                <label class="text-800 font-medium mb-1 block">Đơn điều công</label>
-                <InputText v-model="headerInfo.orderNo" readonly class="font-bold text-blue-600" />
-              </div>
-              <div class="col-12 sm:col-6 lg:col-4">
-                <label class="text-800 font-medium mb-1 block">Keo</label>
-                <InputText v-model="headerInfo.glue" readonly class="font-bold text-blue-600" />
-              </div>
-              <div class="col-12 sm:col-6 lg:col-4 sm:mt-2 lg:mt-0">
-                <label class="text-800 font-medium mb-1 block">Tổng trọng lượng (Kg)</label>
-                <InputText v-model="headerInfo.totalWeight" readonly class="font-bold text-blue-600" />
-              </div>
+          <div class="grid">
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.workOrder') }}</label>
+              <InputText v-model="headerInfo.orderNo" fluid readonly class="font-bold text-blue-600" />
             </div>
-            <div class="flex gap-2">
-              <!-- <Button icon="pi pi-save" outlined size="large" @click="handleSaveDraft" /> -->
-              <Button icon="pi pi-check-circle" severity="success" size="large" @click="handleComplete" />
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.glue') }}</label>
+              <InputText v-model="headerInfo.glue" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3">
+              <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeight') }}</label>
+              <InputText v-model="headerInfo.totalWeight" fluid readonly class="font-bold text-blue-600" />
+            </div>
+            <div class="col-12 sm:col-6 lg:col-3 text-right mt-4">
+              <Button :disabled="separateGlueComplete" icon="pi pi-check-circle" severity="success" size="large"
+                @click="handleComplete" />
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@
         <div v-if="mixChemicals.length > 0" class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-list mr-2"></i>Chi tiết đơn yêu cầu chiết thùng keo trộn
+              <i class="pi pi-list mr-2"></i>{{ t('separateMixedGlue.management.sections.mixedGlueBucket') }}
             </span>
           </div>
           <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails"
@@ -68,14 +68,14 @@
         <div v-if="noMixComponents.length > 0" class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
             <span class="font-bold text-700 text-lg">
-              <i class="pi pi-box mr-2"></i>Chi tiết đơn yêu cầu sử dụng keo không trộn
+              <i class="pi pi-box mr-2"></i>{{ t('separateMixedGlue.management.sections.noMixGlue') }}
             </span>
           </div>
 
           <div class="p-3 md:p-4 surface-50 border-bottom-1 surface-border">
             <div class="grid formgrid align-items-end">
               <div class="col-12 sm:col-6 lg:col-6 lg:mb-0">
-                <label class="text-800 font-medium mb-2 block">Keo</label>
+                <label class="text-800 font-medium mb-2 block">{{ t('separateMixedGlue.table.columns.glue') }}</label>
                 <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                   style="width: 280px;" fluid />
               </div>
@@ -127,6 +127,10 @@ import SeparateGlue from '@/views/Tablet/Separate/components/SeparateGlue.vue';
 import NoSeparateGlue from '@/views/Tablet/Separate/components/NoSeparateGlue.vue';
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useSeparateMixedGlueManagement } from './useSeparateMixedGlueManagement';
+import LocaleSelect from '@/components/LocaleSelect.vue';
+import { useAppLocale } from '@/composables/useAppLocale';
+
+const { t } = useAppLocale(() => 'tablet');
 
 const {
   headerInfo,
@@ -147,6 +151,7 @@ const {
   chietOrderDetails,
   currentChietChemical,
   isViewMode,
+  separateGlueComplete,
   onSegmentIonChange,
   saveDraftToStoreOnly,
   saveChietDraftToStoreOnly,

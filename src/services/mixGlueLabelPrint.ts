@@ -1,9 +1,31 @@
 import mixGlue from '@/api/mixGlue';
 
 export interface MixGluePrintItem {
+  id: string;
+  labelIndex: number;
   workOrderMasterId: string;
   mixGlueMasterId: string;
   workOrderMasterName?: string;
+}
+
+export type MixGluePrintFailureReason =
+  | 'bluetooth_disconnect'
+  | 'out_of_battery'
+  | 'out_of_paper'
+  | 'tspl_build'
+  | 'skipped_after_error';
+
+export interface MixGlueFailedPrintItem {
+  item: MixGluePrintItem;
+  reason: MixGluePrintFailureReason;
+  message?: string;
+}
+
+export interface MixGluePrintSequentialResult {
+  ok: boolean;
+  printedCount: number;
+  failedItems: MixGlueFailedPrintItem[];
+  stoppedReason?: MixGluePrintFailureReason;
 }
 
 export interface MixGluePrintBatchResult {
@@ -37,6 +59,21 @@ const TSPL_PASTE_QR_YMUL = 9;
 
 const tsplEscapeForQuote = (s: string) => String(s).replace(/"/g, "'");
 
+/** Tọa độ lần in thứ 2 — offset theo hướng baseline của rotation. */
+const tsplBoldSimCoords = (x: number, y: number, rotation: number, offset: number) => {
+  const r = ((rotation % 360) + 360) % 360;
+  switch (r) {
+    case 90:
+      return { x, y: y + offset };
+    case 180:
+      return { x: x - offset, y };
+    case 270:
+      return { x, y: y - offset };
+    default:
+      return { x: x + offset, y };
+  }
+};
+
 const tsplBoldText = (
   x: number,
   y: number,
@@ -48,12 +85,13 @@ const tsplBoldText = (
   const inner = tsplEscapeForQuote(text);
   const font = USE_TSPL_BOLD_FONT_FILE ? TSPL_FONT_BOLD : TSPL_FONT_REGULAR;
   const line = `TEXT ${x},${y},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`;
-  if (USE_TSPL_BOLD_FONT_FILE || rotation !== 0) {
+  if (USE_TSPL_BOLD_FONT_FILE) {
     return line;
   }
+  const { x: x2, y: y2 } = tsplBoldSimCoords(x, y, rotation, TSPL_BOLD_SIM_OFFSET_DOTS);
   return (
     line +
-    `TEXT ${x + TSPL_BOLD_SIM_OFFSET_DOTS},${y},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`
+    `TEXT ${x2},${y2},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`
   );
 };
 
@@ -68,12 +106,13 @@ const tsplBoldDate = (
   const inner = tsplEscapeForQuote(text);
   const font = USE_TSPL_BOLD_FONT_FILE ? TSPL_FONT_BOLD : TSPL_FONT_REGULAR;
   const line = `TEXT ${x},${y},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`;
-  if (USE_TSPL_BOLD_FONT_FILE || rotation !== 0) {
+  if (USE_TSPL_BOLD_FONT_FILE) {
     return line;
   }
+  const { x: x2, y: y2 } = tsplBoldSimCoords(x, y, rotation, TSPL_BOLD_SIM_OFFSET_DOTS);
   return (
     line +
-    `TEXT ${x + TSPL_BOLD_SIM_OFFSET_DOTS},${y},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`
+    `TEXT ${x2},${y2},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`
   );
 };
 
@@ -254,9 +293,9 @@ QRCODE 15,40,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMaster
 QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);
-  tspl += tsplBoldDate(230, 37, `${startDate}`);
+  tspl += tsplBoldDate(230, 36, `${startDate}`);
   tspl += tsplBoldText(180, 100, `Đến:`);
-  tspl += tsplBoldDate(250, 97, `${endDate}`);
+  tspl += tsplBoldDate(250, 96, `${endDate}`);
   tspl = appendPasteQrCodeTspl(tspl, pasteQrCode);
 
   const styleBlock = appendTsplLabeledBlock(
@@ -319,26 +358,34 @@ export function parsePrintQueueFromBe(
   const data = scanData?.data;
   const fromBe = data?.items ?? data?.printList ?? data?.mixGlues;
 
+  let rawItems: Array<{ workOrderMasterId: string; mixGlueMasterId: string; workOrderMasterName?: string }> = [];
+
   if (Array.isArray(fromBe) && fromBe.length > 0) {
-    return fromBe
+    rawItems = fromBe
       .map((item: any) => ({
         workOrderMasterId: String(item.workOrderMasterId || row.workOrderMasterId || ''),
         mixGlueMasterId: String(item.mixGlueMasterId || ''),
         workOrderMasterName: item.workOrderMasterName || row.workOrderMasterName,
       }))
       .filter((item) => item.workOrderMasterId && item.mixGlueMasterId);
+  } else {
+    const ids = new Set<string>();
+    if (respData?.mixGlueMasterId) ids.add(String(respData.mixGlueMasterId));
+    (respData?.mixGlues || []).forEach((item: any) => {
+      if (item.mixGlueMasterId) ids.add(String(item.mixGlueMasterId));
+    });
+
+    rawItems = [...ids].map((mixGlueMasterId) => ({
+      workOrderMasterId: String(row.workOrderMasterId || respData?.workOrderMasterId || ''),
+      mixGlueMasterId,
+      workOrderMasterName: row.workOrderMasterName || respData?.workOrderMasterName,
+    }));
   }
 
-  const ids = new Set<string>();
-  if (respData?.mixGlueMasterId) ids.add(String(respData.mixGlueMasterId));
-  (respData?.mixGlues || []).forEach((item: any) => {
-    if (item.mixGlueMasterId) ids.add(String(item.mixGlueMasterId));
-  });
-
-  return [...ids].map((mixGlueMasterId) => ({
-    workOrderMasterId: String(row.workOrderMasterId || respData?.workOrderMasterId || ''),
-    mixGlueMasterId,
-    workOrderMasterName: row.workOrderMasterName || respData?.workOrderMasterName,
+  return rawItems.map((item, index) => ({
+    ...item,
+    id: `${item.workOrderMasterId}-${item.mixGlueMasterId}`,
+    labelIndex: index + 1,
   }));
 }
 
@@ -399,4 +446,92 @@ export async function printMixGlueBatch(
   }
 
   return { ok: true, printedCount };
+}
+
+const mixGlueFailureMessage: Record<MixGluePrintFailureReason, string> = {
+  bluetooth_disconnect: 'Mất kết nối Bluetooth với máy in.',
+  out_of_battery: 'Máy in hết pin.',
+  out_of_paper: 'Máy in hết giấy hoặc không đủ giấy in tem còn lại.',
+  tspl_build: 'Không tạo được lệnh in tem.',
+  skipped_after_error: 'Chưa in do lỗi ở tem trước đó.',
+};
+
+function collectMixGlueRemainingFailures(
+  items: MixGluePrintItem[],
+  fromIndex: number,
+  primaryReason: MixGluePrintFailureReason,
+  primaryMessage?: string
+): MixGlueFailedPrintItem[] {
+  const failures: MixGlueFailedPrintItem[] = [];
+
+  for (let i = fromIndex; i < items.length; i++) {
+    const reason = i === fromIndex ? primaryReason : 'skipped_after_error';
+    failures.push({
+      item: items[i],
+      reason,
+      message: i === fromIndex
+        ? primaryMessage || mixGlueFailureMessage[primaryReason]
+        : mixGlueFailureMessage.skipped_after_error,
+    });
+  }
+
+  return failures;
+}
+
+export async function printMixGlueLabelsSequential(
+  writeFn: (tspl: string) => Promise<boolean>,
+  items: MixGluePrintItem[],
+  factoryId: string,
+  confirmBy: string,
+  onProgress?: (current: number, total: number) => void
+): Promise<MixGluePrintSequentialResult> {
+  if (!items.length) {
+    return { ok: false, printedCount: 0, failedItems: [] };
+  }
+
+  let printedCount = 0;
+  const total = items.length;
+
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index];
+    const tspl = await buildMixGlueLabelTspl(item, factoryId, confirmBy);
+
+    if (!tspl) {
+      const failedItems = collectMixGlueRemainingFailures(
+        items,
+        index,
+        'tspl_build',
+        mixGlueFailureMessage.tspl_build
+      );
+      onProgress?.(printedCount, total);
+      return {
+        ok: false,
+        printedCount,
+        failedItems,
+        stoppedReason: 'tspl_build',
+      };
+    }
+
+    const writeOk = await writeFn(tspl);
+    if (!writeOk) {
+      const failedItems = collectMixGlueRemainingFailures(
+        items,
+        index,
+        'bluetooth_disconnect',
+        mixGlueFailureMessage.bluetooth_disconnect
+      );
+      onProgress?.(printedCount, total);
+      return {
+        ok: false,
+        printedCount,
+        failedItems,
+        stoppedReason: 'bluetooth_disconnect',
+      };
+    }
+
+    printedCount += 1;
+    onProgress?.(printedCount, total);
+  }
+
+  return { ok: true, printedCount, failedItems: [] };
 }

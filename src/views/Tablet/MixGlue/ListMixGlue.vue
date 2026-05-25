@@ -8,7 +8,7 @@
           </ion-button>
         </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title>{{ t('appMenu.features.mixGlue.title') }}</ion-title>
+          <ion-title class="no-padding">{{ t('appMenu.features.mixGlue.title') }}</ion-title>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>
@@ -21,7 +21,21 @@
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>{{ t('listMixGlue.sectionTitle') }}
             </span>
-            <BluetoothPrinterStatus ref="bluetoothRef" />
+            <div class="flex align-items-center gap-2">
+              <Button
+                v-if="hasPendingPrint"
+                icon="pi pi-exclamation-triangle"
+                severity="warn"
+                outlined
+                size="large"
+                :badge="String(pendingCount)"
+                badgeSeverity="danger"
+                :title="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
+                :aria-label="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
+                @click="openPendingPrintDialog"
+              />
+              <BluetoothPrinterStatus ref="bluetoothRef" />
+            </div>
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
@@ -37,15 +51,16 @@
                 </div>
               </template>
 
-              <Column field="workOrderMasterName" :header="t('listMixGlue.columns.workOrder')" headerClass="dt-col-primary"
-                bodyClass="dt-col-primary">
+              <Column field="workOrderMasterName" :header="t('listMixGlue.columns.workOrder')"
+                headerClass="dt-col-primary" bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <span v-else class="dt-cell-wrap">{{ data.workOrderMasterName }}</span>
                 </template>
               </Column>
 
-              <Column field="chemicalMasterName" :header="t('listMixGlue.columns.glue')" headerClass="dt-col-primary" bodyClass="dt-col-primary">
+              <Column field="chemicalMasterName" :header="t('listMixGlue.columns.glue')" headerClass="dt-col-primary"
+                bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="60%" height="1rem" />
                   <span v-else class="dt-cell-wrap">{{ data.chemicalMasterName }}</span>
@@ -60,7 +75,8 @@
                 </template>
               </Column>
 
-              <Column field="createrId" :header="t('listMixGlue.columns.updater')" headerClass="dt-col-text" bodyClass="dt-col-text">
+              <Column field="createrId" :header="t('listMixGlue.columns.updater')" headerClass="dt-col-text"
+                bodyClass="dt-col-text">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="70%" height="1rem" />
                   <span v-else>{{ data.updaterId }}</span>
@@ -76,8 +92,8 @@
                 </template>
               </Column>
 
-              <Column v-if="showActionColumn" :header="t('listMixGlue.columns.confirm')" :exportable="false" headerClass="dt-col-action"
-                bodyClass="dt-col-action">
+              <Column v-if="showActionColumn" :header="t('listMixGlue.columns.confirm')" :exportable="false"
+                headerClass="dt-col-action" bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex gap-2">
@@ -117,9 +133,25 @@
           </p>
         </div>
 
-        <Button class="scan-cancel-btn" :label="t('login.cancelScan')" icon="pi pi-times" severity="secondary" @click="cancelScan" />
+        <Button class="scan-cancel-btn" :label="t('login.cancelScan')" icon="pi pi-times" severity="secondary"
+          @click="cancelScan" />
       </div>
     </div>
+
+    <BatchPrintProgressOverlay
+      locale-scope="listMixGlue"
+      :visible="isPrinting"
+      :current="progress.current"
+      :total="progress.total"
+    />
+
+    <BatchPrintRetryDialog
+      v-model:visible="showRetryDialog"
+      locale-scope="listMixGlue"
+      :failed-items="failedItems"
+      :loading="isPrinting"
+      @retry="handleRetryPrint"
+    />
   </ion-page>
 </template>
 
@@ -138,8 +170,11 @@ import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import mixGlueApi from '@/api/mixGlue';
 import employeeApi from '@/api/employee';
 import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
+import BatchPrintProgressOverlay from '@/components/BatchPrintProgressOverlay.vue';
+import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
-import { parsePrintQueueFromBe, printMixGlueBatch } from '@/services/mixGlueLabelPrint';
+import { parsePrintQueueFromBe } from '@/services/mixGlueLabelPrint';
+import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
@@ -152,13 +187,29 @@ const toast = useToast();
 const draftStore = useMixGlueDraftStore();
 const bluetoothRef = ref<any>(null);
 const printingWorkOrderId = ref<string | null>(null);
+const showRetryDialog = ref(false);
+const lastPrintTotal = ref(0);
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
+
+const {
+  isPrinting,
+  progress,
+  failedItems,
+  printJobContext,
+  hasPendingPrint,
+  pendingCount,
+  clearFailedItems,
+  restorePendingFromStorage,
+  startPrint,
+  retryFailed,
+} = useMixGlueLabelBatchPrint();
 
 const canPrintRow = (row: Partial<WorkOrderMaster>) =>
   row.mixGlueComplete === true && row.mixGlueConfirm === true;
 
 const isRowProcessing = (workOrderMasterId?: string) =>
   isScanning.value ||
+  isPrinting.value ||
   (workOrderMasterId != null && printingWorkOrderId.value === workOrderMasterId);
 
 useBackButton(10, (processNextHandler) => {
@@ -259,6 +310,36 @@ const handleConfirm = async (workOrderMasterId: string) => {
 const buildPrintQueue = (respData: any, row: Partial<WorkOrderMaster>) =>
   parsePrintQueueFromBe(null, respData, row);
 
+const createWriteFn = () =>
+  (tspl: string) => bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false);
+
+const showPrintResultToast = (printedCount: number, total: number, hasFailures: boolean) => {
+  if (!hasFailures) {
+    toast.add({
+      severity: 'success',
+      summary: t('listMixGlue.toast.success'),
+      detail: t('listMixGlue.toast.printSuccess', { count: printedCount }),
+      life: 3000,
+    });
+    return;
+  }
+
+  toast.add({
+    severity: printedCount > 0 ? 'warn' : 'error',
+    summary: t('listMixGlue.toast.warning'),
+    detail: printedCount > 0
+      ? t('listMixGlue.toast.printPartial', { printed: printedCount, total })
+      : t('listMixGlue.toast.printFailed'),
+    life: 4000,
+  });
+};
+
+const openPendingPrintDialog = () => {
+  if (hasPendingPrint.value) {
+    showRetryDialog.value = true;
+  }
+};
+
 const handlePrint = async (row: Partial<WorkOrderMaster>) => {
   if (!canPrintRow(row) || !row.workOrderMasterId) return;
   if (isRowProcessing(row.workOrderMasterId)) return;
@@ -300,7 +381,6 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
   }
 
   const employeeId = scannedEmployeeId.trim();
-  printingWorkOrderId.value = row.workOrderMasterId;
 
   try {
     const validateResponse = await employeeApi.postValidateQIP({
@@ -318,6 +398,23 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       });
       return;
     }
+
+    if (
+      hasPendingPrint.value &&
+      printJobContext.value?.workOrderMasterId &&
+      printJobContext.value.workOrderMasterId !== row.workOrderMasterId
+    ) {
+      toast.add({
+        severity: 'warn',
+        summary: t('listMixGlue.toast.warning'),
+        detail: t('listMixGlue.toast.pendingReplaced'),
+        life: 3500,
+      });
+    }
+
+    printingWorkOrderId.value = row.workOrderMasterId;
+    showRetryDialog.value = false;
+    await clearFailedItems();
 
     const { data: woResponse } = await workOrder.getWorkOrder(row.workOrderMasterId, 2);
     if (!woResponse?.success || !woResponse?.data) {
@@ -354,33 +451,21 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       return;
     }
 
-    const writeFn = (tspl: string) => bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false);
-    const printResult = await printMixGlueBatch(writeFn, queue, factoryId, employeeId);
+    lastPrintTotal.value = queue.length;
+    const result = await startPrint(queue, createWriteFn(), factoryId, {
+      workOrderMasterId: row.workOrderMasterId,
+      workOrderMasterName: row.workOrderMasterName,
+      confirmBy: employeeId,
+      lastPrintTotal: queue.length,
+    });
 
-    if (!printResult.ok) {
-      toast.add({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: printResult.errorMessage
-          || (printResult.printedCount > 0
-            ? t('listMixGlue.toast.printFailPartial', {
-              printed: printResult.printedCount,
-              total: queue.length,
-            })
-            : t('listMixGlue.toast.printFailStage', {
-              stage: printResult.errorStage || 'unknown',
-            })),
-        life: 5000,
-      });
+    showPrintResultToast(result.printedCount, queue.length, result.failedItems.length > 0);
+
+    if (result.failedItems.length > 0) {
+      showRetryDialog.value = true;
       return;
     }
 
-    toast.add({
-      severity: 'success',
-      summary: t('listMixGlue.toast.success'),
-      detail: t('listMixGlue.toast.printSuccess', { count: printResult.printedCount }),
-      life: 3000,
-    });
     await draftStore.clearDraft(row.workOrderMasterId);
     fetchWorkOrders(currentPage.value, rowsPerPage.value);
   } catch (error: any) {
@@ -394,6 +479,56 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
   } finally {
     printingWorkOrderId.value = null;
   }
+};
+
+const handleRetryPrint = async () => {
+  const factoryId = authStore.user?.factoryId;
+  if (!factoryId) return;
+
+  if (!bluetoothRef.value?.isConnected?.()) {
+    toast.add({
+      severity: 'warn',
+      summary: t('listMixGlue.toast.warning'),
+      detail: t('listMixGlue.toast.printerNotConnected'),
+      life: 3000,
+    });
+    return;
+  }
+
+  printingWorkOrderId.value = printJobContext.value?.workOrderMasterId ?? null;
+  const workOrderMasterId = printJobContext.value?.workOrderMasterId;
+
+  try {
+    const result = await retryFailed(createWriteFn(), factoryId);
+    const total = printJobContext.value?.lastPrintTotal ?? lastPrintTotal.value;
+    showPrintResultToast(result.printedCount, total, result.failedItems.length > 0);
+
+    if (result.failedItems.length === 0) {
+      showRetryDialog.value = false;
+      lastPrintTotal.value = 0;
+      if (workOrderMasterId) {
+        await draftStore.clearDraft(workOrderMasterId);
+        fetchWorkOrders(currentPage.value, rowsPerPage.value);
+      }
+    } else {
+      showRetryDialog.value = true;
+    }
+  } finally {
+    printingWorkOrderId.value = null;
+  }
+};
+
+const restorePendingPrintJob = async () => {
+  const restored = await restorePendingFromStorage();
+  if (!restored) return;
+
+  lastPrintTotal.value = restored.lastPrintTotal;
+  toast.add({
+    severity: 'info',
+    summary: t('listMixGlue.toast.warning'),
+    detail: t('listMixGlue.toast.pendingRestored', { count: restored.failedItems.length }),
+    life: 4000,
+  });
 };
 
 const fetchWorkOrders = async (page: number, pageSize: number) => {
@@ -436,7 +571,8 @@ const onPageLine = (event: any) => {
 
 const goBack = () => router.push('/app-menu');
 
-onIonViewWillEnter(() => {
+onIonViewWillEnter(async () => {
+  await restorePendingPrintJob();
   fetchWorkOrders(currentPage.value, rowsPerPage.value);
 });
 

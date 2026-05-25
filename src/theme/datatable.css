@@ -23,8 +23,8 @@
 }
 
 .auto-columns-table .dt-col-primary {
-  min-width: 11rem;
-  width: 22%;
+  min-width: auto;
+  width: auto;
 }
 
 .auto-columns-table .dt-col-text {
@@ -39,19 +39,19 @@
 }
 
 .auto-columns-table .dt-col-weight {
-  min-width: 7rem;
-  width: 10%;
+  min-width: auto;
+  width: auto;
   white-space: nowrap;
 }
 
 .auto-columns-table .dt-col-input {
-  min-width: 11rem;
-  width: 20%;
+  min-width: auto;
+  width: auto;
 }
 
 .auto-columns-table .dt-col-tag {
-  min-width: 8rem;
-  width: 12%;
+  min-width: auto;
+  width: auto;
   text-align: center;
 }
 

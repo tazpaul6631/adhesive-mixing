@@ -18,7 +18,8 @@
       <div class="menu-container">
         <div class="welcome-banner animate__animated animate__fadeInDown">
           <div class="welcome-text">
-            <h2>{{ t('mobile.appMenu.hello') }}</h2>
+            <h2 v-if="isTablet">{{ t('appMenu.tabletH2title') }}</h2>
+            <h2 v-else>{{ t('mobile.appMenu.hello') }}</h2>
             <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
           </div>
@@ -79,10 +80,14 @@ const authStore = useAuthStore();
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
 
-const { t } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
+const { t, syncLocaleForDevice } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
 
 const updateDeviceType = () => {
-  isTablet.value = window.innerWidth >= 768;
+  const nextTablet = window.innerWidth >= 768;
+  if (nextTablet !== isTablet.value) {
+    isTablet.value = nextTablet;
+    void syncLocaleForDevice();
+  }
 };
 
 onMounted(() => {
@@ -131,24 +136,20 @@ const tabletFeatures = computed(() => [
 ]);
 
 // --- DATA CHO MOBILE FEATURES ---
-const mobileFeatures = computed(() => [
-  {
-    path: '/mobile',
-    title: t('mobile.appMenu.glueConfirm'),
-    description: t('mobile.appMenu.description'),
-    icon: qrCodeOutline,
-    color: '#0ea5e9',
-    bgLight: '#e0f2fe'
-  },
-  // {
-  //   path: '/mobile/glue-returned',
-  //   title: 'Tra cứu thông tin thùng keo',
-  //   description: 'Kiểm tra thông tin thùng keo',
-  //   icon: qrCodeOutline,
-  //   color: '#2563eb',
-  //   bgLight: '#dbeafe'
-  // }
-]);
+const mobileFeatures = computed(() => {
+  if (isTablet.value) return [];
+
+  return [
+    {
+      path: '/mobile',
+      title: t('mobile.appMenu.glueConfirm'),
+      description: t('mobile.appMenu.description'),
+      icon: qrCodeOutline,
+      color: '#0ea5e9',
+      bgLight: '#e0f2fe'
+    },
+  ];
+});
 
 // Hàm điều hướng chung
 const navigate = (path: string) => {

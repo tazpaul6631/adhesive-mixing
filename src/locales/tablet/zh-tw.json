@@ -2,7 +2,8 @@
   "common": {
     "welcome": "歡迎",
     "save": "儲存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "loading": "載入中..."
   },
   "home": {
     "title": "首頁"
@@ -10,6 +11,7 @@
   "appMenu": {
     "title": "首頁",
     "logout": "登出",
+    "tabletH2title": "您好！",
     "tabletSubtitle": "平板管理系統",
     "features": {
       "mixGlue": {
@@ -36,6 +38,23 @@
     "scan": {
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
     },
+    "print": {
+      "overlayTitle": "正在列印標籤",
+      "overlayProgress": "正在列印 {current}/{total}",
+      "retryTitle": "標籤列印失敗",
+      "retryMessage": "有 {count} 張標籤未成功列印，是否重新列印？",
+      "retryConfirm": "重新列印",
+      "retryClose": "關閉",
+      "pendingButtonTitle": "查看 {count} 張待列印標籤",
+      "labelItem": "標籤 {index}",
+      "reasons": {
+        "bluetooth_disconnect": "藍牙連線中斷",
+        "out_of_battery": "印表機電量不足",
+        "out_of_paper": "印表機缺紙",
+        "tspl_build": "無法建立列印指令",
+        "skipped_after_error": "因先前錯誤尚未列印"
+      }
+    },
     "toast": {
       "warning": "警告",
       "success": "完成",
@@ -53,7 +72,153 @@
       "printSuccess": "已列印 {count} 張標籤。",
       "printFailPartial": "標籤列印失敗 ({printed}/{total})。",
       "printFailStage": "標籤列印失敗 ({stage})。",
-      "printFailed": "標籤列印失敗！"
+      "printFailed": "標籤列印失敗！",
+      "printPartial": "部分列印 ({printed}/{total})。",
+      "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
+      "pendingReplaced": "已以新訂單取代待列印清單。"
+    }
+  },
+  "listSeparateMixedGlue": {
+    "pageTitle": "混合膠分裝清單",
+    "sectionTitle": "混合膠分裝清單",
+    "scan": {
+      "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
+    },
+    "print": {
+      "overlayTitle": "正在列印標籤",
+      "overlayProgress": "正在列印 {current}/{total}",
+      "retryTitle": "標籤列印失敗",
+      "retryMessage": "有 {count} 張標籤未成功列印，是否重新列印？",
+      "retryConfirm": "重新列印",
+      "retryClose": "關閉",
+      "pendingButton": "待列印標籤",
+      "pendingButtonTitle": "查看 {count} 張待列印標籤",
+      "labelItem": "標籤 {index}",
+      "reasons": {
+        "bluetooth_disconnect": "藍牙連線中斷",
+        "out_of_battery": "印表機電量不足",
+        "out_of_paper": "印表機缺紙",
+        "tspl_build": "無法建立列印指令",
+        "skipped_after_error": "因先前錯誤尚未列印"
+      }
+    },
+    "toast": {
+      "warning": "警告",
+      "success": "完成",
+      "error": "錯誤",
+      "factoryNotFound": "找不到工廠資訊。",
+      "printerNotConnected": "印表機尚未連線。",
+      "scanFailed": "無法掃描員工卡或已取消掃描。",
+      "invalidEmployeeCard": "員工卡無效。",
+      "loadOrderFailed": "無法載入訂單詳情。",
+      "noLabels": "沒有可列印的標籤。",
+      "printSuccess": "已列印 {count} 張標籤。",
+      "printPartial": "部分列印 ({printed}/{total})。",
+      "printFailed": "標籤列印失敗！",
+      "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
+      "pendingReplaced": "已以新訂單取代待列印清單。"
+    }
+  },
+  "separateMixedGlue": {
+    "management": {
+      "pageTitle": "混合膠分裝",
+      "sections": {
+        "mixedGlueBucket": "混合膠分桶需求明細",
+        "noMixGlue": "非混合膠使用需求明細"
+      }
+    },
+    "table": {
+      "columns": {
+        "bucket": "容器",
+        "operator": "操作人員",
+        "completedTime": "完成時間",
+        "action": "操作",
+        "glue": "膠水",
+        "actualWeight": "實際重量",
+        "weighingTime": "稱重時間"
+      },
+      "placeholders": {
+        "selectBucket": "選擇容器"
+      },
+      "deleteAriaLabel": "刪除",
+      "addAriaLabel": "新增",
+      "viewAriaLabel": "檢視"
+    },
+    "addComponentDialog": {
+      "title": "新增成分",
+      "nameLabel": "成分名稱",
+      "namePlaceholder": "選擇成分",
+      "nameRequired": "成分名稱為必填。",
+      "weightLabel": "實際重量",
+      "weightRequired": "請輸入數值 ({unit})"
+    },
+    "chietDialog": {
+      "title": "依容器分裝膠水",
+      "currentGlue": "正在分裝的膠水",
+      "weighedWeight": "已稱重量",
+      "capacityMustMatch": "容器總容量須與已稱重量一致",
+      "viewOnly": "僅檢視"
+    },
+    "toast": {
+      "restore": "已還原",
+      "restoreDetail": "已重新載入已儲存的資料",
+      "loadFailed": "無法載入工單資料",
+      "incomplete": "尚未完成",
+      "locked": "無法編輯",
+      "completeFirst": "此工單已完成分裝，無法新增或刪除。",
+      "completeSuccess": "完成",
+      "completeSuccessDetail": "資料已成功送出",
+      "completeFailed": "無法確認完成",
+      "weighingComplete": "完成",
+      "weighingCompleteDetail": "所有成分已完成稱重。",
+      "addSuccess": "成功",
+      "addSuccessDetail": "已新增成分",
+      "deleteSuccess": "已刪除",
+      "deleteSuccessDetail": "成分刪除成功",
+      "loadMaterialsFailed": "無法載入成分",
+      "notWeighed": "尚未稱重",
+      "weighBeforeAdd": "請先稱量膠水 {name} 再新增成分。",
+      "weighBeforeChiet": "請先稱量膠水 {name} 再進行分桶。",
+      "chietSaved": "分裝已儲存",
+      "chietSavedDetail": "分桶資訊已暫存",
+      "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。",
+      "selectBucketRow": "請先在第 {row} 列選擇容器再新增列。",
+      "selectBucketRowShort": "請在第 {row} 列選擇容器。",
+      "allocationComplete": "已分配完成",
+      "allocationCompleteDetail": "容器總重量已達標，無需再新增。",
+      "weightExceeded": "超出重量",
+      "bucketCapacityExceeded": "容器總容量超出 {label}。請選擇更合適的容器。",
+      "addRowMin": "請至少新增一列並選擇容器。",
+      "notWeighedForChiet": "膠水 {name} 尚無稱重量。請先稱重再分桶。",
+      "invalid": "無效",
+      "mixedGlueSelectBucket": "混合膠第 {row} 列：請選擇容器。",
+      "mixedGluePrefix": "混合膠：{message}",
+      "noMixWeighFirst": "非混合膠 {name}：請先完成稱重。",
+      "pendingChietModal": "尚有分桶資訊未確認。請完成分桶視窗。",
+      "chietRequired": "膠水 {name} 已秤重但尚未確認分桶。請開啟視窗並確認。",
+      "chietSelectBucket": "膠水 {name} 分桶第 {row} 列：請選擇容器。",
+      "chietPrefix": "膠水 {name} 分桶：{message}"
+    },
+    "confirmDelete": {
+      "title": "確認刪除",
+      "componentLabel": "成分：{name}",
+      "message": "確定要刪除此成分嗎？"
+    },
+    "exitAlert": {
+      "header": "尚未儲存",
+      "message": "確定要離開嗎？",
+      "stay": "留下",
+      "exit": "離開"
+    },
+    "validation": {
+      "capacityMismatch": "容器總容量與需求重量不符。",
+      "capacityMismatchWeighed": "容器總容量與已稱重量不符。",
+      "capacityExceedsRequired": "容器總容量 ({total} Kg) 超出需求重量 ({target})。",
+      "capacityBelowRequired": "容器總容量 ({total} Kg) 低於需求重量 ({target})。",
+      "capacityExceedsWeighed": "容器總容量 ({total} Kg) 超出已稱重量 ({target})。",
+      "capacityShortageWeighed": "容器總容量 ({total} Kg) 比 {target} 少 500g 以上。請選擇更大容器（例如 6 Kg）。",
+      "capacityMismatchWeighedGeneric": "容器總容量 ({total} Kg) 與已稱重量 ({target}) 不符。",
+      "chietCapacityBlock": "容器總容量已足夠對應已稱重量 {label}（少於 500g 仍視為足夠）。無需再新增列。"
     }
   },
   "bluetoothPrinter": {
@@ -161,6 +326,16 @@
       "loadMaterialsFailed": "無法載入成分",
       "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。"
     }
+  },
+  "valid": {
+    "required": "請勿留空",
+    "min_reason": "請至少選擇 {n} 個原因",
+    "max_reason": "最多只能 {n} 個原因",
+    "rating_required": "請為此項目評分"
+  },
+  "messages": {
+    "notifi": "通知！",
+    "submitted": "已成功送出，謝謝！"
   },
   "login": {
     "hello": "您好！",

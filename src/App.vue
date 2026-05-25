@@ -1,6 +1,7 @@
 <template>
   <ion-app>
     <ion-router-outlet />
+    <RouteLoadingOverlay />
     <AppToast />
   </ion-app>
 </template>
@@ -14,6 +15,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { Device } from '@capacitor/device';
 import { Network } from '@capacitor/network';
 import { useAuthStore } from './store/auth';
+import RouteLoadingOverlay from '@/components/RouteLoadingOverlay.vue';
 
 const authStore = useAuthStore();
 const ionRouter = useIonRouter();

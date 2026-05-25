@@ -633,6 +633,7 @@ const processScannedData = async (scannedCode: string) => {
   flex: 1;
   text-align: center;
   min-height: 0;
+  border-right: inset;
 }
 
 .side-info--tablet {
@@ -665,7 +666,7 @@ const processScannedData = async (scannedCode: string) => {
 .form-logo {
   display: block;
   width: 100%;
-  height: 105px;
+  height: 150px;
   object-fit: cover;
 }
 
@@ -1085,6 +1086,10 @@ const processScannedData = async (scannedCode: string) => {
   .form-logo {
     object-fit: cover;
   }
+
+  .side-info {
+    border-right: none !important;
+  }
 }
 
 @media (min-width: 768px) and (orientation: portrait) {
@@ -1099,6 +1104,10 @@ const processScannedData = async (scannedCode: string) => {
 
   .login-header h3 {
     font-size: 2.3rem;
+  }
+
+  .side-info {
+    border-right: none !important;
   }
 }
 

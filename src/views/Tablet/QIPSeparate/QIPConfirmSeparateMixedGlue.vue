@@ -7,7 +7,7 @@
             <i class="pi pi-angle-left text-xl mr-1"></i>
           </ion-button>
         </ion-buttons>
-        <ion-title>
+        <ion-title class="no-padding">
           {{ isMixedMode ? 'QIP Confirm Separate Mixed Glue' : 'QIP Confirm Separate No Mix Glue' }}
         </ion-title>
       </ion-toolbar>
@@ -33,9 +33,10 @@
           <div class="overflow-x-auto border-round-bottom-xl" :key="isMixedMode ? 'mixed' : 'nomix'">
 
             <!-- BẢNG DÀNH CHO KEO TRỘN -->
-            <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows class="custom-bordered-table auto-columns-table"
-              tableStyle="width: 100%;" scrollable scrollHeight="500px" dataKey="separateGlueId"
-              selectionMode="single" v-model:selection="selectedTableRow" @row-click="onMixedRowClick">
+            <DataTable v-if="isMixedMode" :value="lineDetails" stripedRows
+              class="custom-bordered-table auto-columns-table" tableStyle="width: 100%;" scrollable scrollHeight="500px"
+              dataKey="separateGlueId" selectionMode="single" v-model:selection="selectedTableRow"
+              @row-click="onMixedRowClick">
               <template #empty>
                 <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
