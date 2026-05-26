@@ -22,25 +22,18 @@
               <i class="pi pi-list mr-2"></i>{{ t('listMixGlue.sectionTitle') }}
             </span>
             <div class="flex align-items-center gap-2">
-              <Button
-                v-if="hasPendingPrint"
-                icon="pi pi-exclamation-triangle"
-                severity="warn"
-                outlined
-                size="large"
-                :badge="String(pendingCount)"
-                badgeSeverity="danger"
+              <Button v-if="hasPendingPrint" icon="pi pi-exclamation-triangle" severity="warn" outlined size="large"
+                :badge="String(pendingCount)" badgeSeverity="danger"
                 :title="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
                 :aria-label="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
-                @click="openPendingPrintDialog"
-              />
+                @click="openPendingPrintDialog" />
               <BluetoothPrinterStatus ref="bluetoothRef" />
             </div>
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="550px" stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;"
+              scrollHeight="520px" stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;"
               @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]"
               selectionMode="single" v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
@@ -138,20 +131,11 @@
       </div>
     </div>
 
-    <BatchPrintProgressOverlay
-      locale-scope="listMixGlue"
-      :visible="isPrinting"
-      :current="progress.current"
-      :total="progress.total"
-    />
+    <BatchPrintProgressOverlay locale-scope="listMixGlue" :visible="isPrinting" :current="progress.current"
+      :total="progress.total" />
 
-    <BatchPrintRetryDialog
-      v-model:visible="showRetryDialog"
-      locale-scope="listMixGlue"
-      :failed-items="failedItems"
-      :loading="isPrinting"
-      @retry="handleRetryPrint"
-    />
+    <BatchPrintRetryDialog v-model:visible="showRetryDialog" locale-scope="listMixGlue" :failed-items="failedItems"
+      :loading="isPrinting" @retry="handleRetryPrint" />
   </ion-page>
 </template>
 
@@ -365,40 +349,66 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
-  const scannedEmployeeId = await scanOnce({
-    title: t('login.scanOverlayTitle'),
-    note: t('listMixGlue.scan.employeeNote'),
-  });
+  let employeeId: string;
 
-  if (!scannedEmployeeId?.trim()) {
-    toast.add({
-      severity: 'warn',
-      summary: t('listMixGlue.toast.warning'),
-      detail: t('listMixGlue.toast.scanFailed'),
-      life: 3000,
-    });
-    return;
-  }
-
-  const employeeId = scannedEmployeeId.trim();
-
-  try {
-    const validateResponse = await employeeApi.postValidateQIP({
-      factoryId,
-      employeeId,
-    });
-    const validateData = validateResponse.data;
-
-    if (validateData?.success !== true) {
+  if (authStore.user?.isQip) {
+    employeeId = authStore.user?.employeeId?.trim() || '';
+    if (!employeeId) {
       toast.add({
         severity: 'error',
         summary: t('listMixGlue.toast.error'),
-        detail: validateData?.message || t('listMixGlue.toast.invalidEmployeeCard'),
+        detail: t('listMixGlue.toast.invalidEmployeeCard'),
+        life: 3000,
+      });
+      return;
+    }
+  } else {
+    const scannedEmployeeId = await scanOnce({
+      title: t('login.scanOverlayTitle'),
+      note: t('listMixGlue.scan.employeeNote'),
+    });
+
+    if (!scannedEmployeeId?.trim()) {
+      toast.add({
+        severity: 'warn',
+        summary: t('listMixGlue.toast.warning'),
+        detail: t('listMixGlue.toast.scanFailed'),
         life: 3000,
       });
       return;
     }
 
+    employeeId = scannedEmployeeId.trim();
+
+    try {
+      const validateResponse = await employeeApi.postValidateQIP({
+        factoryId,
+        employeeId,
+      });
+      const validateData = validateResponse.data;
+
+      if (validateData?.success !== true) {
+        toast.add({
+          severity: 'error',
+          summary: t('listMixGlue.toast.error'),
+          detail: validateData?.message || t('listMixGlue.toast.invalidEmployeeCard'),
+          life: 3000,
+        });
+        return;
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.add({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: error?.response?.data?.message || t('listMixGlue.toast.invalidEmployeeCard'),
+        life: 3000,
+      });
+      return;
+    }
+  }
+
+  try {
     if (
       hasPendingPrint.value &&
       printJobContext.value?.workOrderMasterId &&

@@ -21,6 +21,10 @@
       "separateMixedGlue": {
         "title": "混合膠分裝管理",
         "description": "管理已調配膠水的重新包裝。"
+      },
+      "glueReturnLog": {
+        "title": "退膠紀錄管理",
+        "description": "管理退膠紀錄、檢查連線並從磅秤取得資料。"
       }
     }
   },
@@ -76,6 +80,34 @@
       "printPartial": "部分列印 ({printed}/{total})。",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
       "pendingReplaced": "已以新訂單取代待列印清單。"
+    }
+  },
+  "listGlueReturnLog": {
+    "pageTitle": "退膠紀錄",
+    "sectionTitle": "退膠紀錄清單",
+    "empty": "目前沒有可顯示的資料。",
+    "selectedRow": "目前選取列",
+    "selectRowHint": "請在表格中選取要秤重的列",
+    "weighed": "已確認秤重",
+    "columns": {
+      "seq": "序號",
+      "lineChemical": "膠水 / 產線",
+      "returnWeight": "退膠重量",
+      "operator": "操作人員",
+      "weighTime": "秤重時間",
+      "confirm": "確認",
+      "updater": "更新人員",
+      "updateDate": "更新日期"
+    },
+    "toast": {
+      "warning": "警告",
+      "success": "完成",
+      "error": "錯誤",
+      "selectRowFirst": "請先在表格中選取要秤重的列。",
+      "scaleSaved": "已記錄重量，請按最後一欄確認以提交。",
+      "missingConfirmIds": "API 缺少 returnGlueId 或 lineChemicalId，無法提交。",
+      "confirmSuccess": "已確認退膠重量。",
+      "confirmFailed": "確認秤重失敗。"
     }
   },
   "listSeparateMixedGlue": {
@@ -344,7 +376,7 @@
     "scanInstructionPrefix": "請掃描員工卡上的 ",
     "scanInstructionQr": "QR 或條碼",
     "scanInstructionSuffix": " 以進入系統。",
-    "employeeCode": "員工編號",
+    "employeeCode": "員工編號 無效！",
     "scanButton": "掃描",
     "loggingIn": "登入中...",
     "processing": "處理中...",

@@ -12,9 +12,9 @@ export type DeviceLocaleScope = 'mobile' | 'tablet';
 export const LOCALE_ORDER: AppLocale[] = ['vi', 'en', 'zh'];
 
 export const LOCALE_SHORT_LABELS: Record<AppLocale, string> = {
-  vi: 'VI',
-  en: 'EN',
-  zh: '中文',
+  vi: '',
+  en: '',
+  zh: '',
 };
 
 export const LOCALE_NAMES: Record<AppLocale, string> = {

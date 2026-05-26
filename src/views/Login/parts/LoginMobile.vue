@@ -33,13 +33,14 @@
                   {{ t('login.scanInstructionPrefix') }}<strong>{{ t('login.scanInstructionQr') }}</strong>{{
                     t('login.scanInstructionSuffix') }}
                 </p>
-                <p v-else class="text-danger">{{ errorMessage }}</p>
+                <p v-else class="login-error-message">{{ errorMessage }}</p>
 
-                <div v-if="code" class="animate__animated animate__fadeIn"
+                <!-- <div v-if="code" class="animate__animated animate__fadeIn scanned-result-box"
                   :class="errorLogin ? 'scanned-result-error' : 'scanned-result'">
-                  <i :class="errorLogin ? 'pi pi-times-circle' : 'pi pi-check-circle'"></i>
-                  <span>{{ t('login.employeeCode') }}: {{ code }}</span>
-                </div>
+                  <i class="scanned-result-box__icon"
+                    :class="errorLogin ? 'pi pi-times-circle' : 'pi pi-check-circle'"></i>
+                  <span class="scanned-result-box__text">{{ t('login.employeeCode') }}</span>
+                </div> -->
               </div>
 
               <Button class="login-btn scan-btn w-full"
@@ -89,7 +90,7 @@
                   </IconField>
                 </div>
 
-                <p v-if="errorLogin" class="text-danger">{{ errorMessage }}</p>
+                <p v-if="errorLogin" class="login-error-message">{{ errorMessage }}</p>
 
                 <div class="tablet-login-actions">
                   <Button class="tablet-login-btn flex-1"
@@ -602,7 +603,7 @@ const processScannedData = async (scannedCode: string) => {
   background: white;
   border-radius: 30px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
-  padding: 30px 20px;
+  padding: 18px;
   max-width: 450px;
   width: 100%;
   transition: all 0.3s ease;
@@ -611,12 +612,6 @@ const processScannedData = async (scannedCode: string) => {
 .mobile-lang-bar {
   display: flex;
   justify-content: end;
-  margin-bottom: 18px;
-}
-
-.mobile-lang-bar :deep(.locale-select) {
-  width: 100%;
-  max-width: 100px;
 }
 
 .form-inner {
@@ -624,6 +619,8 @@ const processScannedData = async (scannedCode: string) => {
   flex-direction: column;
   gap: 20px;
   align-items: stretch;
+  min-width: 0;
+  width: 100%;
 }
 
 .side-info {
@@ -633,7 +630,6 @@ const processScannedData = async (scannedCode: string) => {
   flex: 1;
   text-align: center;
   min-height: 0;
-  border-right: inset;
 }
 
 .side-info--tablet {
@@ -661,6 +657,9 @@ const processScannedData = async (scannedCode: string) => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .form-logo {
@@ -697,24 +696,27 @@ const processScannedData = async (scannedCode: string) => {
 .scan-instruction {
   background: #f8fafc;
   border-radius: 20px;
-  padding: 30px 20px;
+  padding: 18px;
   text-align: center;
   border: 2px dashed #cbd5e1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .scan-icon-wrapper {
   background: #c3f0dc73;
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 15px;
+  margin: 0 auto 10px;
 }
 
 .scan-icon {
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   color: #6ed3b3;
 }
 
@@ -751,38 +753,74 @@ const processScannedData = async (scannedCode: string) => {
   font-size: 0.95rem;
   margin: 0;
   line-height: 1.5;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.scanned-result,
+.scanned-result-error {
+  margin-top: 15px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 700;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
 }
 
 .scanned-result {
-  margin-top: 15px;
   background: #dcfce7;
   color: #166534;
-  padding: 10px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
+  border: 1px solid #bbf7d0;
 }
 
 .scanned-result-error {
-  margin-top: 15px;
   background: #fee2e2;
   color: #b84040;
-  padding: 10px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
+  border: 1px solid #fecaca;
 }
 
-.text-danger {
-  color: #b84040 !important;
-  font-weight: 700;
-  margin: 0 0 8px;
+.scanned-result-box__icon {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  font-size: 1rem;
+}
+
+.scanned-result-box__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.login-error-message {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  color: #b84040;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .login-btn.scan-btn {
@@ -814,6 +852,9 @@ const processScannedData = async (scannedCode: string) => {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .field-group {
@@ -1086,10 +1127,6 @@ const processScannedData = async (scannedCode: string) => {
   .form-logo {
     object-fit: cover;
   }
-
-  .side-info {
-    border-right: none !important;
-  }
 }
 
 @media (min-width: 768px) and (orientation: portrait) {
@@ -1104,10 +1141,6 @@ const processScannedData = async (scannedCode: string) => {
 
   .login-header h3 {
     font-size: 2.3rem;
-  }
-
-  .side-info {
-    border-right: none !important;
   }
 }
 
@@ -1141,6 +1174,10 @@ const processScannedData = async (scannedCode: string) => {
     width: 100%;
     height: 120px;
     object-fit: cover;
+  }
+
+  .side-info {
+    border-right: inset;
   }
 }
 </style>

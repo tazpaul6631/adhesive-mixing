@@ -33,7 +33,7 @@
 
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="550px" stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;"
+              scrollHeight="520px" stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;"
               @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]"
               selectionMode="single" v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
@@ -354,41 +354,68 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
-  const scannedEmployeeId = await scanOnce({
-    title: t('login.scanOverlayTitle'),
-    note: t('listSeparateMixedGlue.scan.employeeNote'),
-  });
+  let employeeId: string;
 
-  if (!scannedEmployeeId?.trim()) {
-    toast.add({
-      severity: 'warn',
-      summary: t('listSeparateMixedGlue.toast.warning'),
-      detail: t('listSeparateMixedGlue.toast.scanFailed'),
-      life: 3000,
-    });
-    return;
-  }
-
-  const employeeId = scannedEmployeeId.trim();
-  const isSeparateGlue = row.isSeparateGlue === true;
-
-  try {
-    const validateResponse = await employeeApi.postValidateQIP({
-      factoryId,
-      employeeId,
-    });
-    const validateData = validateResponse.data;
-
-    if (validateData?.success !== true) {
+  if (authStore.user?.isQip) {
+    employeeId = authStore.user?.employeeId?.trim() || '';
+    if (!employeeId) {
       toast.add({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
-        detail: validateData?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        life: 3000,
+      });
+      return;
+    }
+  } else {
+    const scannedEmployeeId = await scanOnce({
+      title: t('login.scanOverlayTitle'),
+      note: t('listSeparateMixedGlue.scan.employeeNote'),
+    });
+
+    if (!scannedEmployeeId?.trim()) {
+      toast.add({
+        severity: 'warn',
+        summary: t('listSeparateMixedGlue.toast.warning'),
+        detail: t('listSeparateMixedGlue.toast.scanFailed'),
         life: 3000,
       });
       return;
     }
 
+    employeeId = scannedEmployeeId.trim();
+
+    try {
+      const validateResponse = await employeeApi.postValidateQIP({
+        factoryId,
+        employeeId,
+      });
+      const validateData = validateResponse.data;
+
+      if (validateData?.success !== true) {
+        toast.add({
+          severity: 'error',
+          summary: t('listSeparateMixedGlue.toast.error'),
+          detail: validateData?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+          life: 3000,
+        });
+        return;
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.add({
+        severity: 'error',
+        summary: t('listSeparateMixedGlue.toast.error'),
+        detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        life: 3000,
+      });
+      return;
+    }
+  }
+
+  const isSeparateGlue = row.isSeparateGlue === true;
+
+  try {
     if (
       hasPendingPrint.value &&
       printJobContext.value?.workOrderMasterId &&

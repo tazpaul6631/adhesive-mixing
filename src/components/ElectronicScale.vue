@@ -1,11 +1,10 @@
 <template>
   <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
-    <label class="text-800 font-medium mb-2 block flex align-items-center flex-wrap gap-2">
+    <label class="text-800 font-medium block flex align-items-center flex-wrap gap-2">
       <span>{{ t('electronicScale.label') }}</span>
       <Button icon="pi pi-refresh" severity="secondary" text rounded size="small" class="scale-refresh-btn"
-        :title="t('electronicScale.refreshTitle')"
-        :loading="isRefreshing" :disabled="isRefreshing" :aria-label="t('electronicScale.refreshAriaLabel')"
-        @click="handleRefreshConnection" />
+        :title="t('electronicScale.refreshTitle')" :loading="isRefreshing" :disabled="isRefreshing"
+        :aria-label="t('electronicScale.refreshAriaLabel')" @click="handleRefreshConnection" />
       <span v-if="isConnected" class="text-green-500 font-normal text-sm">
         <i class="pi pi-check-circle"></i> {{ t('electronicScale.connected') }}
       </span>
@@ -36,7 +35,8 @@
 
       <Button
         :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm || !hasTargetWeight || hasLockedWeight"
-        :label="t('electronicScale.confirm')" icon="pi pi-check" size="large" severity="success" @click="confirmWeight" />
+        :label="t('electronicScale.confirm')" icon="pi pi-check" size="large" severity="success"
+        @click="confirmWeight" />
     </div>
   </div>
 </template>

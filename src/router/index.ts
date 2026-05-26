@@ -76,6 +76,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/glue-return-log',
+    component: () => import('@/views/Tablet/GlueReturnLog/ListGlueReturnLog.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/mobile',
     component: () => import('@/views/Mobile/GlueConfirm.vue'),
     meta: { requiresAuth: true }

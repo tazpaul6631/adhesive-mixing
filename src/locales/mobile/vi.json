@@ -29,7 +29,7 @@
     "scanInstructionPrefix": "Vui lòng quét mã ",
     "scanInstructionQr": "QR hoặc Mã vạch/Barcode",
     "scanInstructionSuffix": " trên thẻ nhân viên của bạn để vào hệ thống.",
-    "employeeCode": "Mã NV",
+    "employeeCode": "Mã NV không hợp lệ!",
     "scanButton": "QUÉT MÃ",
     "loggingIn": "ĐANG ĐĂNG NHẬP...",
     "processing": "ĐANG XỬ LÝ...",

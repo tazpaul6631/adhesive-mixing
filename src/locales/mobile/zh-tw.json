@@ -19,7 +19,7 @@
     "scanInstructionPrefix": "請掃描員工卡上的 ",
     "scanInstructionQr": "QR 或條碼",
     "scanInstructionSuffix": " 以進入系統。",
-    "employeeCode": "員工編號",
+    "employeeCode": "員工編號 無效！",
     "scanButton": "掃描",
     "loggingIn": "登入中...",
     "processing": "處理中...",
