@@ -210,10 +210,11 @@ function getRequestDetailName(info: any) {
 
 function getGlueInfoFields(info: any, qrType: GlueQrType | null) {
   const fields = [
+    { label: t('mobile.glueInfoCheck.fields.sequence'), value: normalizeCompareValue(info?.seq) },
     // { label: t('mobile.glueInfoCheck.fields.type'), value: getGlueTypeLabel(qrType) },
     { label: t('mobile.glueInfoCheck.fields.factory'), value: normalizeCompareValue(info?.factoryName) },
     // { label: t('mobile.glueInfoCheck.fields.bucketId'), value: getGlueBucketId(info, qrType) },
-    { label: t('mobile.glueInfoCheck.fields.requestDetail'), value: getRequestDetailName(info) },
+    // { label: t('mobile.glueInfoCheck.fields.requestDetail'), value: getRequestDetailName(info) },
     { label: t('mobile.glueInfoCheck.fields.productLine'), value: normalizeCompareValue(info?.productLineName) },
     { label: t('mobile.glueInfoCheck.fields.glue'), value: normalizeCompareValue(info?.glueName) },
     // { label: qrType === 'noSeparateGlue' ? t('mobile.glueInfoCheck.fields.materialCode') : t('mobile.glueInfoCheck.fields.glueId'), value: getGlueCodeValue(info, qrType) },
@@ -500,14 +501,14 @@ async function handleGlueInfoScanResult(value: string) {
 
   &__label {
     color: #64748b;
-    font-size: 14px !important;
+    font-size: 16px !important;
     font-weight: 600;
     line-height: 1.35;
   }
 
   &__value {
     color: #081a36;
-    font-size: 16px !important;
+    font-size: 18px !important;
     font-weight: 600;
     line-height: 1.45;
     word-break: break-word;

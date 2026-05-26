@@ -118,7 +118,8 @@
         "productLine": "Chuyền:",
         "glue": "Keo:",
         "glueId": "Mã keo:",
-        "materialCode": "Mã liệu:"
+        "materialCode": "Mã liệu:",
+        "sequence": "Số thứ tự:"
       },
       "messages": {
         "invalidQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo.",

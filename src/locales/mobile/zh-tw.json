@@ -108,7 +108,8 @@
         "productLine": "產線：",
         "glue": "膠水：",
         "glueId": "膠水 ID：",
-        "materialCode": "材料代碼："
+        "materialCode": "材料代碼：",
+        "sequence": "序號:"
       },
       "messages": {
         "invalidQr": "QR Code 無效，請重新掃描膠桶 QR Code。",
