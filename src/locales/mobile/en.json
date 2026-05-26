@@ -19,7 +19,7 @@
     "scanInstructionPrefix": "Please scan the ",
     "scanInstructionQr": "QR or Barcode",
     "scanInstructionSuffix": " on your employee card to enter the system.",
-    "employeeCode": "Employee ID",
+    "employeeCode": "Employee ID is invalid!",
     "scanButton": "SCAN CODE",
     "loggingIn": "SIGNING IN...",
     "processing": "PROCESSING...",

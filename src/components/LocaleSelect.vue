@@ -1,25 +1,48 @@
 <template>
-  <Select
-    v-model="selectedLocaleOption"
-    :options="localeOptions"
-    option-label="name"
-    :placeholder="t('login.changeLanguage')"
-    class="locale-select"
-    :class="selectClass"
-    :aria-label="t('login.changeLanguage')"
-    :append-to="appendTo"
-  />
+  <Select v-model="selectedLocaleOption" :options="localeOptions" option-label="label"
+    :placeholder="t('login.changeLanguage')" class="locale-select" :class="selectClass"
+    :aria-label="t('login.changeLanguage')" :append-to="appendTo">
+    <template #value="{ value, placeholder }">
+      <div v-if="value" class="locale-option">
+        <img :src="value.flag" :alt="value.label" class="locale-option__flag" />
+        <!-- <span class="locale-option__label">{{ value.label }}</span> -->
+      </div>
+      <span v-else>{{ placeholder }}</span>
+    </template>
+
+    <template #option="{ option }">
+      <div class="locale-option">
+        <img :src="option.flag" :alt="option.label" class="locale-option__flag" />
+        <!-- <span class="locale-option__label">{{ option.label }}</span> -->
+      </div>
+    </template>
+  </Select>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import Select from 'primevue/select';
 import { useAppLocale } from '@/composables/useAppLocale';
-import { LOCALE_ORDER, LOCALE_NAMES, type AppLocale, type DeviceLocaleScope } from '@/i18n';
+import {
+  LOCALE_ORDER,
+  LOCALE_SHORT_LABELS,
+  type AppLocale,
+  type DeviceLocaleScope,
+} from '@/i18n';
+import flagVi from '@/assets/locale/vi.png';
+import flagEn from '@/assets/locale/en.png';
+import flagZh from '@/assets/locale/zh-tw.png';
 
 type LocaleOption = {
   value: AppLocale;
-  name: string;
+  label: string;
+  flag: string;
+};
+
+const LOCALE_FLAGS: Record<AppLocale, string> = {
+  vi: flagVi,
+  en: flagEn,
+  zh: flagZh,
 };
 
 const props = withDefaults(
@@ -44,7 +67,8 @@ const { t, locale, applyLocale } = useAppLocale(() => resolvedDeviceScope.value)
 
 const localeOptions: LocaleOption[] = LOCALE_ORDER.map((value) => ({
   value,
-  name: LOCALE_NAMES[value],
+  label: LOCALE_SHORT_LABELS[value],
+  flag: LOCALE_FLAGS[value],
 }));
 
 const selectedLocaleOption = computed({
@@ -65,10 +89,6 @@ onUnmounted(() => window.removeEventListener('resize', onResize));
 </script>
 
 <style scoped>
-.locale-select {
-  min-width: 9rem;
-}
-
 .locale-select :deep(.p-select-label) {
   display: flex;
   align-items: center;
@@ -78,5 +98,24 @@ onUnmounted(() => window.removeEventListener('resize', onResize));
 
 .locale-select :deep(.p-select-dropdown) {
   width: 2rem;
+}
+
+.locale-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.locale-option__flag {
+  width: 1.5rem;
+  height: 1rem;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.locale-option__label {
+  font-weight: 600;
+  line-height: 1;
 }
 </style>

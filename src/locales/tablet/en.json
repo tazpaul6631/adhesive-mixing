@@ -21,6 +21,10 @@
       "separateMixedGlue": {
         "title": "Separate Mixed Glue Management",
         "description": "Manage repackaging of mixed glue."
+      },
+      "glueReturnLog": {
+        "title": "Glue Return Log Management",
+        "description": "Manage glue return log, check connections, and retrieve data from the scale."
       }
     }
   },
@@ -76,6 +80,34 @@
       "printPartial": "Partial print ({printed}/{total}).",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
       "pendingReplaced": "Replaced the pending label queue with the new order."
+    }
+  },
+  "listGlueReturnLog": {
+    "pageTitle": "Glue return log",
+    "sectionTitle": "Glue return log list",
+    "empty": "No data to display at the moment.",
+    "selectedRow": "Selected row",
+    "selectRowHint": "Select a row in the table to weigh",
+    "weighed": "Weight confirmed",
+    "columns": {
+      "seq": "#",
+      "lineChemical": "Glue / line",
+      "returnWeight": "Return weight",
+      "operator": "Operator",
+      "weighTime": "Weigh time",
+      "confirm": "Confirm",
+      "updater": "Updated by",
+      "updateDate": "Update date"
+    },
+    "toast": {
+      "warning": "Warning",
+      "success": "Completed",
+      "error": "Error",
+      "selectRowFirst": "Please select a row in the table to weigh.",
+      "scaleSaved": "Weight recorded. Press confirm in the last column to submit.",
+      "missingConfirmIds": "Missing returnGlueId or lineChemicalId from API. Cannot submit.",
+      "confirmSuccess": "Return glue weight confirmed.",
+      "confirmFailed": "Failed to confirm weight."
     }
   },
   "listSeparateMixedGlue": {
@@ -344,7 +376,7 @@
     "scanInstructionPrefix": "Please scan the ",
     "scanInstructionQr": "QR or Barcode",
     "scanInstructionSuffix": " on your employee card to enter the system.",
-    "employeeCode": "Employee ID",
+    "employeeCode": "Employee ID is invalid!",
     "scanButton": "SCAN CODE",
     "loggingIn": "SIGNING IN...",
     "processing": "PROCESSING...",

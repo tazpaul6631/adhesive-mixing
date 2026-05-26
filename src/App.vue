@@ -28,7 +28,6 @@ useBackButton(-1, () => {
 });
 
 Network.addListener('networkStatusChange', status => {
-  console.log('Mạng thay đổi:', status.connected);
   // Cập nhật vào Pinia/Vuex store tại đây
   authStore.setNetworkStatus(status.connected);
 });

@@ -21,6 +21,10 @@
       "separateMixedGlue": {
         "title": "Quản lý chiết keo trộn",
         "description": "Quản lý việc đóng gói lại keo đã trộn."
+      },
+      "glueReturnLog": {
+        "title": "Quản lý lịch sử trả keo",
+        "description": "Quản lý lịch sử trả keo, kiểm tra kết nối và lấy dữ liệu từ cân."
       }
     }
   },
@@ -76,6 +80,34 @@
       "printPartial": "In một phần ({printed}/{total}).",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
       "pendingReplaced": "Đã thay thế danh sách tem chưa in bằng đơn mới."
+    }
+  },
+  "listGlueReturnLog": {
+    "pageTitle": "Lịch sử trả keo",
+    "sectionTitle": "Danh sách lịch sử trả keo",
+    "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
+    "selectedRow": "Dòng đang chọn",
+    "selectRowHint": "Chọn một dòng trong bảng để cân",
+    "weighed": "Đã xác nhận cân",
+    "columns": {
+      "seq": "#",
+      "lineChemical": "Keo / chuyền",
+      "returnWeight": "TL trả về",
+      "operator": "Người thao tác",
+      "weighTime": "Thời gian cân",
+      "confirm": "Xác nhận",
+      "updater": "Người cập nhật",
+      "updateDate": "Ngày cập nhật"
+    },
+    "toast": {
+      "warning": "Cảnh báo",
+      "success": "Hoàn thành",
+      "error": "Lỗi",
+      "selectRowFirst": "Vui lòng chọn dòng cần cân trong bảng.",
+      "scaleSaved": "Đã ghi trọng lượng. Vui lòng bấm xác nhận ở cột cuối để gửi.",
+      "missingConfirmIds": "Thiếu returnGlueId hoặc lineChemicalId từ API. Không thể gửi xác nhận.",
+      "confirmSuccess": "Đã xác nhận trọng lượng trả keo.",
+      "confirmFailed": "Xác nhận cân thất bại."
     }
   },
   "listSeparateMixedGlue": {
@@ -344,7 +376,7 @@
     "scanInstructionPrefix": "Vui lòng quét mã ",
     "scanInstructionQr": "QR hoặc Mã vạch/Barcode",
     "scanInstructionSuffix": " trên thẻ nhân viên của bạn để vào hệ thống.",
-    "employeeCode": "Mã NV",
+    "employeeCode": "Mã NV không hợp lệ!",
     "scanButton": "QUÉT MÃ",
     "loggingIn": "ĐANG ĐĂNG NHẬP...",
     "processing": "ĐANG XỬ LÝ...",

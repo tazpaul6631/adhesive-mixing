@@ -8,7 +8,7 @@
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
           <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
-            <span class="logout-text">{{ t('appMenu.logout') }}</span>
+            <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
           </ion-button>
         </div>
       </ion-toolbar>
@@ -64,9 +64,9 @@ import {
   IonIcon, IonButton
 } from '@ionic/vue';
 import {
-  scaleOutline, logOutOutline, qrCodeOutline,
+  scaleOutline, logOutOutline, qrCodeOutline, readerOutline,
   colorPaletteOutline, checkmarkDoneOutline,
-  cubeOutline, documentTextOutline
+  cubeOutline, documentTextOutline, gitMergeOutline
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
@@ -113,9 +113,17 @@ const tabletFeatures = computed(() => [
     path: '/list-separate-mixed-glue-management',
     title: t('appMenu.features.separateMixedGlue.title'),
     description: t('appMenu.features.separateMixedGlue.description'),
-    icon: cubeOutline,
+    icon: gitMergeOutline,
     color: '#f59e0b',
     bgLight: '#fef3c7'
+  },
+  {
+    path: '/glue-return-log',
+    title: t('appMenu.features.glueReturnLog.title'),
+    description: t('appMenu.features.glueReturnLog.description'),
+    icon: readerOutline,
+    color: '#8b5cf6',
+    bgLight: '#ede9fe'
   },
   // {
   //   path: '/list-qip-confirm-mix-glue',
@@ -197,8 +205,9 @@ const handleLogout = async () => {
   --padding-end: 12px;
   margin: 0;
   font-weight: 600;
-  font-size: 0.95rem;
-  height: 40px;
+  font-size: 1.5rem;
+  height: 50px;
+  margin-left: 20px;
 }
 
 .logout-btn ion-icon {
