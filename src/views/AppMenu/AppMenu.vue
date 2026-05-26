@@ -66,7 +66,7 @@ import {
 import {
   scaleOutline, logOutOutline, qrCodeOutline, readerOutline,
   colorPaletteOutline, checkmarkDoneOutline,
-  cubeOutline, documentTextOutline, searchOutline, gitCompareOutline, gitMergeOutline
+  cubeOutline, documentTextOutline, searchOutline, gitCompareOutline, gitMergeOutline, search
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
@@ -150,16 +150,16 @@ const mobileFeatures = computed(() => [
     title: t('mobile.appMenu.glueConfirm'),
     description: t('mobile.appMenu.description'),
     icon: gitCompareOutline,
-    color: '#0ea5e9',
-    bgLight: '#e0f2fe'
+    color: '#f59e0b',
+    bgLight: '#fef3c7'
   },
   {
     path: '/mobile/glue-info-check',
     title: t('mobile.appMenu.glueInfoCheck'),
     description: t('mobile.appMenu.glueInfoCheckDescription'),
-    icon: searchOutline,
-    color: '#2563eb',
-    bgLight: '#dbeafe'
+    icon: search,
+    color: '#0ea5e9',
+    bgLight: '#e0f2fe'
   }
 ]);
 

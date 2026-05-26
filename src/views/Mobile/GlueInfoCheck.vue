@@ -501,14 +501,14 @@ async function handleGlueInfoScanResult(value: string) {
 
   &__label {
     color: #64748b;
-    font-size: 14px !important;
+    font-size: 16px !important;
     font-weight: 600;
     line-height: 1.35;
   }
 
   &__value {
     color: #081a36;
-    font-size: 16px !important;
+    font-size: 18px !important;
     font-weight: 600;
     line-height: 1.45;
     word-break: break-word;
