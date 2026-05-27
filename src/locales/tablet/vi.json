@@ -277,6 +277,8 @@
       "connectFailedDetail": "Vui lòng kiểm tra hub/cáp USB và thử lại.",
       "noTargetWeight": "Chưa có TL yêu cầu",
       "noTargetWeightDetail": "Dòng này chưa có trọng lượng yêu cầu. Vui lòng cân thành phần gốc trước hoặc chọn dòng khác.",
+      "zeroWeight": "Trọng lượng chưa hợp lệ",
+      "zeroWeightDetail": "Trọng lượng cân phải lớn hơn 0 mới được xác nhận.",
       "belowMin": "Không đạt yêu cầu",
       "belowMinDetail": "Trọng lượng không được thấp hơn {weight} {unit}.",
       "aboveMax": "Vượt giới hạn",

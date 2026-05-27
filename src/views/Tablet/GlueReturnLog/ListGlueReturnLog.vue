@@ -44,7 +44,7 @@
               :rowsPerPageOptions="[5, 10, 20, 50]" dataKey="glueReturnLogId" @page="onPageLine"
               @row-click="onRowClick">
               <template #empty>
-                <div style="text-align: center; height: 430px; align-content: center;">
+                <div style="text-align: center; height: 340px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">{{ t('listGlueReturnLog.empty') }}</p>
                 </div>

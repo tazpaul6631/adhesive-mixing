@@ -12,7 +12,7 @@
 
       <template #footer>
         <div v-if="!isViewMode" class="flex justify-start">
-          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" :disabled="isLoading"
+          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" :disabled="disabled"
             @click="handleAddRow" />
         </div>
       </template>
@@ -69,7 +69,8 @@
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
-              :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="handleDeleteRow(data)" />
+              :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')"
+              @click.stop="handleDeleteRow(data)" />
           </div>
         </template>
       </Column>
@@ -104,6 +105,7 @@ const props = defineProps<{
   targetWeightUnit?: string;
   requireAllRequestDetails?: boolean;
   isViewMode?: boolean;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);

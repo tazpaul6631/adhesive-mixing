@@ -36,7 +36,8 @@
               <strong>{{ weighedWeightLabel }}</strong>
             </h3>
           </div>
-          <Tag v-if="isViewMode" severity="info" :value="t('separateMixedGlue.chietDialog.viewOnly')" icon="pi pi-eye" />
+          <Tag v-if="isViewMode" class="chiet-view-only-tag" severity="info"
+            :value="t('separateMixedGlue.chietDialog.viewOnly')" icon="pi pi-eye" />
         </div>
 
         <div class="chiet-table-panel__content">
@@ -276,6 +277,18 @@ const handleConfirm = () => {
 .chiet-table-panel__title strong {
   color: #15803d;
   font-weight: 700;
+}
+
+.chiet-view-only-tag {
+  width: fit-content;
+}
+
+.chiet-view-only-tag :deep(.p-tag-icon) {
+  font-size: 1.2rem;
+  margin: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chiet-table-panel__content {

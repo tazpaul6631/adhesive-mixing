@@ -23,6 +23,10 @@ export interface PrintJobContext {
   lastPrintTotal: number;
 }
 
+export interface SeparateBatchPrintRuntimeOptions {
+  isConnected?: () => boolean;
+}
+
 export function useSeparateLabelBatchPrint() {
   const isPrinting = ref(false);
   const progress = ref({ current: 0, total: 0 });
@@ -103,7 +107,8 @@ export function useSeparateLabelBatchPrint() {
     queue: SeparatePrintItem[],
     writeFn: (tspl: string) => Promise<boolean>,
     factoryId: string,
-    jobContext: PrintJobContext
+    jobContext: PrintJobContext,
+    runtimeOptions?: SeparateBatchPrintRuntimeOptions
   ): Promise<SeparatePrintBatchResult> => {
     if (isPrinting.value) {
       return { ok: false, printedCount: 0, failedItems: failedItems.value };
@@ -122,6 +127,7 @@ export function useSeparateLabelBatchPrint() {
         items: queue,
         factoryId,
         shouldAbort: () => abortRequested.value,
+        isConnected: runtimeOptions?.isConnected,
         onProgress: (current, total) => {
           progress.value = { current, total };
         },
@@ -135,7 +141,8 @@ export function useSeparateLabelBatchPrint() {
 
   const retryFailed = async (
     writeFn: (tspl: string) => Promise<boolean>,
-    factoryId: string
+    factoryId: string,
+    runtimeOptions?: SeparateBatchPrintRuntimeOptions
   ): Promise<SeparatePrintBatchResult> => {
     if (!failedItems.value.length || isPrinting.value) {
       return { ok: false, printedCount: 0, failedItems: failedItems.value };
@@ -153,6 +160,7 @@ export function useSeparateLabelBatchPrint() {
         items: retryQueue,
         factoryId,
         shouldAbort: () => abortRequested.value,
+        isConnected: runtimeOptions?.isConnected,
         onProgress: (current, total) => {
           progress.value = { current, total };
         },

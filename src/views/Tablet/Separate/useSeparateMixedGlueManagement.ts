@@ -530,7 +530,7 @@ export function useSeparateMixedGlueManagement() {
     await saveDraftToStoreOnly();
   };
 
-  const handleConnectionStatus = (_status: boolean) => {};
+  const handleConnectionStatus = (_status: boolean) => { };
 
   const calcToleranceGrams = (weight: number, weightUnit: string) => {
     const unit = weightUnit.toLowerCase();
@@ -824,8 +824,8 @@ export function useSeparateMixedGlueManagement() {
                 void (async () => {
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
-                    // await separateGlue.postSeparateGlueCommand(payload);
-                    await draftStore.clearDraft(currentWorkOrderId.value);
+                    await separateGlue.postSeparateGlueCommand(payload);
+                    // await draftStore.clearDraft(currentWorkOrderId.value);
                     isDirty.value = false;
                     resolve(true);
                   } catch (error) {

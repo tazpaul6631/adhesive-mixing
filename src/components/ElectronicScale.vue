@@ -34,7 +34,7 @@
       </div>
 
       <Button
-        :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm || !hasTargetWeight || hasLockedWeight"
+        :disabled="!isConnected || !isStable || isExceedingLimit || disableConfirm || !hasTargetWeight || hasLockedWeight || !hasPositiveWeight"
         :label="t('electronicScale.confirm')" icon="pi pi-check" size="large" severity="success"
         @click="confirmWeight" />
     </div>
@@ -201,6 +201,9 @@ const hasTargetWeight = computed(() => {
   return !Number.isNaN(num) && num > 0;
 });
 
+/** Trọng lượng live từ cân phải > 0 mới được xác nhận. */
+const hasPositiveWeight = computed(() => weightGrams.value > 0);
+
 const resetDisplayedWeight = () => {
   weightGrams.value = 0;
   emit('update:weight', formatGramsForDisplay(0));
@@ -274,6 +277,16 @@ const confirmWeight = () => {
   }
 
   const currentGrams = getCurrentWeightInGrams();
+  if (currentGrams <= 0) {
+    toast.add({
+      severity: 'warn',
+      summary: t('electronicScale.toast.zeroWeight'),
+      detail: t('electronicScale.toast.zeroWeightDetail'),
+      life: 4000,
+    });
+    return;
+  }
+
   const weightForRow = fromGrams(currentGrams).toFixed(3);
 
   if (props.enforceTolerance) {

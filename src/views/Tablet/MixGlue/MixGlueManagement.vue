@@ -86,7 +86,8 @@
               <div ref="table2Ref" class="table-wrapper">
                 <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
                   :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                  @row-click="onRowClick" @open-new="productDialog = true" @delete-row="handleDeleteComponent" />
+                  :disabled="mixGlueConfirm" @row-click="onRowClick" @open-new="productDialog = true"
+                  @delete-row="handleDeleteComponent" />
               </div>
 
               <!-- MODAL THÊM THÀNH PHẦN -->

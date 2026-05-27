@@ -277,6 +277,8 @@
       "connectFailedDetail": "Please check the hub/USB cable and try again.",
       "noTargetWeight": "No required weight",
       "noTargetWeightDetail": "This row has no required weight. Please weigh the base component first or select another row.",
+      "zeroWeight": "Invalid weight",
+      "zeroWeightDetail": "Scale weight must be greater than 0 to confirm.",
       "belowMin": "Below requirement",
       "belowMinDetail": "Weight must not be lower than {weight} {unit}.",
       "aboveMax": "Over limit",

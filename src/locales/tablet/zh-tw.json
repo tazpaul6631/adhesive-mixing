@@ -277,6 +277,8 @@
       "connectFailedDetail": "請檢查 hub/USB 線後再試。",
       "noTargetWeight": "尚無需求重量",
       "noTargetWeightDetail": "此列尚無需求重量。請先稱量基礎成分或選擇其他列。",
+      "zeroWeight": "重量無效",
+      "zeroWeightDetail": "秤重必須大於 0 才能確認。",
       "belowMin": "未達要求",
       "belowMinDetail": "重量不可低於 {weight} {unit}。",
       "aboveMax": "超出上限",

@@ -1,8 +1,8 @@
 <template>
   <div ref="tableWrapperRef" class="border-round-bottom-xl">
     <DataTable :value="isLoading ? skeletons : components" scrollable scrollHeight="290px" stripedRows
-      class="modern-table auto-columns-table" tableStyle="width: 100%;"
-      @row-click="(e) => $emit('row-click', e)" selectionMode="single" dataKey="materialCode" :selection="selectedItem"
+      class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
+      selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
 
       <template #empty>
@@ -14,7 +14,8 @@
 
       <template #footer>
         <div class="flex justify-start">
-          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="handleOpenNew" />
+          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="handleOpenNew"
+            :disabled="disabled" />
         </div>
       </template>
 
@@ -74,8 +75,8 @@
       <Column :header="t('mixGlueManagement.componentsTable.columns.action')" :exportable="false"
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="slotProps">
-          <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
-            text rounded :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')"
+          <Button icon="pi pi-trash" severity="danger" text rounded
+            :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')" :disabled="disabled"
             @click.stop="$emit('delete-row', slotProps.data)" />
         </template>
       </Column>
@@ -94,6 +95,7 @@ const props = defineProps<{
   components: any[];
   headerTotalWeight: string | number;
   selectedItem: any;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits(['row-click', 'open-new', 'delete-row', 'update:selectedItem']);

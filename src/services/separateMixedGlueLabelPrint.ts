@@ -52,7 +52,19 @@ export interface PrintSeparateLabelsOptions {
   factoryId: string;
   onProgress?: (current: number, total: number) => void;
   shouldAbort?: () => boolean;
+  isConnected?: () => boolean;
 }
+
+const LABEL_PRINT_SETTLE_MS = 1200;
+const LABEL_PRINT_SETTLE_LARGE_BATCH_MS = 1500;
+const LARGE_LABEL_BATCH_THRESHOLD = 15;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const getLabelPrintSettleMs = (batchSize: number) =>
+  batchSize >= LARGE_LABEL_BATCH_THRESHOLD
+    ? LABEL_PRINT_SETTLE_LARGE_BATCH_MS
+    : LABEL_PRINT_SETTLE_MS;
 
 export interface FetchSeparatePrintBatchOptions {
   workOrderMasterId: string;
@@ -460,7 +472,18 @@ export async function fetchSeparatePrintBatchFromWorkOrder(
     return [];
   }
 
-  return mapConfirmResponseToPrintQueue(options, glueEntries, labelRows);
+  const normalizedLabelRows =
+    labelRows.length === 1 && glueEntries.length > 1
+      ? glueEntries.map(() => labelRows[0])
+      : labelRows;
+
+  if (normalizedLabelRows.length !== glueEntries.length) {
+    throw new Error(
+      `API xác nhận trả ${normalizedLabelRows.length} tem, cần in ${glueEntries.length} tem.`
+    );
+  }
+
+  return mapConfirmResponseToPrintQueue(options, glueEntries, normalizedLabelRows);
 }
 
 export function buildSeparateLabelTspl(item: SeparatePrintItem): string | null {
@@ -548,7 +571,7 @@ function collectRemainingFailures(
 export async function printSeparateLabelsSequential(
   options: PrintSeparateLabelsOptions
 ): Promise<SeparatePrintBatchResult> {
-  const { writeFn, items, onProgress, shouldAbort } = options;
+  const { writeFn, items, onProgress, shouldAbort, isConnected } = options;
 
   if (!items.length) {
     return { ok: false, printedCount: 0, failedItems: [] };
@@ -556,6 +579,7 @@ export async function printSeparateLabelsSequential(
 
   let printedCount = 0;
   const total = items.length;
+  const settleMs = getLabelPrintSettleMs(total);
 
   for (let index = 0; index < items.length; index++) {
     if (shouldAbort?.()) {
@@ -564,6 +588,22 @@ export async function printSeparateLabelsSequential(
         printedCount,
         failedItems: collectRemainingFailures(items, index, 'skipped_after_error'),
         stoppedReason: 'skipped_after_error',
+      };
+    }
+
+    if (isConnected && !isConnected()) {
+      const failedItems = collectRemainingFailures(
+        items,
+        index,
+        'bluetooth_disconnect',
+        defaultFailureMessage.bluetooth_disconnect
+      );
+      onProgress?.(printedCount, total);
+      return {
+        ok: false,
+        printedCount,
+        failedItems,
+        stoppedReason: 'bluetooth_disconnect',
       };
     }
 
@@ -605,6 +645,10 @@ export async function printSeparateLabelsSequential(
 
     printedCount += 1;
     onProgress?.(printedCount, total);
+
+    if (index < items.length - 1) {
+      await sleep(settleMs);
+    }
   }
 
   return { ok: true, printedCount, failedItems: [] };

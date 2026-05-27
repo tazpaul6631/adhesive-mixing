@@ -58,8 +58,8 @@
             </span>
           </div>
           <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails"
-            :request-details="requestDetails" :target-weight="headerInfo.totalWeight" target-weight-unit="Kg"
-            @update-bucket="saveDraftToStoreOnly" @add-row="handleAddSeparateGlueRow"
+            :disabled="separateGlueComplete" :request-details="requestDetails" :target-weight="headerInfo.totalWeight"
+            target-weight-unit="Kg" @update-bucket="saveDraftToStoreOnly" @add-row="handleAddSeparateGlueRow"
             @delete-row="handleDeleteSeparateGlueRow" />
         </div>
         <!-- </div> -->
@@ -94,9 +94,9 @@
           <div class="overflow-x-auto border-round-bottom-xl">
             <div class="table-wrapper">
               <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
-                :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                @row-click="onRowClick" @open-new="openNewComponentDialog" @delete-row="handleDeleteComponent"
-                @chiet-row="handleChietRow" @view-row="handleViewRow" />
+                :header-total-weight="headerInfo.totalWeight" :disabled="separateGlueComplete"
+                v-model:selectedItem="selectedItem" @row-click="onRowClick" @open-new="openNewComponentDialog"
+                @delete-row="handleDeleteComponent" @chiet-row="handleChietRow" @view-row="handleViewRow" />
             </div>
 
             <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"

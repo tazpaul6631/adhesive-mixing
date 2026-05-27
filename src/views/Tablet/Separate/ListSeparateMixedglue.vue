@@ -85,8 +85,8 @@
                 </template>
               </Column>
 
-              <Column :header="t('listMixGlue.columns.confirm')" :exportable="false" headerClass="dt-col-action"
-                bodyClass="dt-col-action">
+              <Column v-if="showActionColumn" :header="t('listMixGlue.columns.confirm')" :exportable="false"
+                headerClass="dt-col-action" bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex gap-2">
@@ -139,7 +139,7 @@ import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
   onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave, useBackButton
 } from '@ionic/vue';
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
@@ -229,6 +229,10 @@ const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(5);
 
+const showActionColumn = computed(() =>
+  lineDetails.value.some((row) => row.separateGlueComplete)
+);
+
 useBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
     void cancelScan();
@@ -302,6 +306,15 @@ const isRowProcessing = (workOrderMasterId?: string) =>
 
 const createWriteFn = () =>
   (tspl: string) => bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false);
+
+const createPrintRuntimeOptions = () => ({
+  isConnected: () => bluetoothRef.value?.isConnected?.() ?? false,
+});
+
+const hasPrintFailures = (
+  result: { ok: boolean; printedCount: number; failedItems: unknown[] },
+  total: number
+) => !result.ok || result.failedItems.length > 0 || result.printedCount < total;
 
 const showPrintResultToast = (printedCount: number, total: number, hasFailures: boolean) => {
   if (!hasFailures) {
@@ -459,11 +472,12 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       confirmBy: employeeId,
       isSeparateGlue,
       lastPrintTotal: queue.length,
-    });
+    }, createPrintRuntimeOptions());
 
-    showPrintResultToast(result.printedCount, queue.length, result.failedItems.length > 0);
+    const printFailed = hasPrintFailures(result, queue.length);
+    showPrintResultToast(result.printedCount, queue.length, printFailed);
 
-    if (result.failedItems.length > 0) {
+    if (printFailed) {
       showRetryDialog.value = true;
       return;
     }
@@ -501,11 +515,12 @@ const handleRetryPrint = async () => {
   const workOrderMasterId = printJobContext.value?.workOrderMasterId;
 
   try {
-    const result = await retryFailed(createWriteFn(), factoryId);
+    const result = await retryFailed(createWriteFn(), factoryId, createPrintRuntimeOptions());
     const total = printJobContext.value?.lastPrintTotal ?? lastPrintTotal.value;
-    showPrintResultToast(result.printedCount, total, result.failedItems.length > 0);
+    const printFailed = hasPrintFailures(result, total);
+    showPrintResultToast(result.printedCount, total, printFailed);
 
-    if (result.failedItems.length === 0) {
+    if (!printFailed) {
       showRetryDialog.value = false;
       lastPrintTotal.value = 0;
       if (workOrderMasterId) {

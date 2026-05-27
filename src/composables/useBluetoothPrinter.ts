@@ -13,8 +13,12 @@ const DISCOVER_UNPAIRED_TIMEOUT_MS = 4000;
 const SAVED_MAC_CONNECT_TIMEOUT_MS = 6000;
 const INIT_RETRY_DELAYS_MS = [0, 400, 900, 1500];
 const PRINTER_NAME_PATTERNS = [/b300/i, /tsc/i, /printer/i, /label/i, /barcode/i, /spp/i];
+const BT_WRITE_CHUNK_SIZE = 512;
+const BT_WRITE_CHUNK_DELAY_MS = 20;
 
 const getBluetooth = () => (window as any).bluetoothSerial;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const isLikelyPrinter = (name?: string) => {
   if (!name) return false;
@@ -515,24 +519,47 @@ export function useBluetoothPrinter(options: UseBluetoothPrinterOptions = {}) {
 
   const isConnected = () => status.value === 'connected';
 
-  const writeTspl = (tspl: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const bt = getBluetooth();
-      if (!bt || status.value !== 'connected') {
-        resolve(false);
-        return;
+  const writeBufferChunked = async (buffer: ArrayBufferLike): Promise<boolean> => {
+    const bt = getBluetooth();
+    if (!bt || status.value !== 'connected') {
+      return false;
+    }
+
+    const bytes = new Uint8Array(buffer);
+
+    for (let offset = 0; offset < bytes.length; offset += BT_WRITE_CHUNK_SIZE) {
+      const chunkEnd = Math.min(offset + BT_WRITE_CHUNK_SIZE, bytes.length);
+      const chunk = bytes.slice(offset, chunkEnd);
+      const chunkOk = await new Promise<boolean>((resolve) => {
+        bt.write(
+          chunk.buffer,
+          () => resolve(true),
+          () => {
+            status.value = 'disconnected';
+            resolve(false);
+          }
+        );
+      });
+
+      if (!chunkOk) {
+        return false;
       }
 
-      const dataArray = new TextEncoder().encode(tspl);
-      bt.write(
-        dataArray.buffer,
-        () => resolve(true),
-        () => {
-          status.value = 'disconnected';
-          resolve(false);
-        }
-      );
-    });
+      if (chunkEnd < bytes.length) {
+        await sleep(BT_WRITE_CHUNK_DELAY_MS);
+      }
+    }
+
+    return true;
+  };
+
+  const writeTspl = async (tspl: string): Promise<boolean> => {
+    if (!getBluetooth() || status.value !== 'connected') {
+      return false;
+    }
+
+    const dataArray = new TextEncoder().encode(tspl);
+    return writeBufferChunked(dataArray.buffer);
   };
 
   return {

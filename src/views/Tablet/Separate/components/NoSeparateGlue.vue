@@ -15,7 +15,8 @@
 
       <template #footer>
         <div class="flex justify-start">
-          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" @click="handleOpenNew" />
+          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" :disabled="disabled"
+            @click="handleOpenNew" />
         </div>
       </template>
 
@@ -60,13 +61,13 @@
         bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex gap-2">
-            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded
+            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded :disabled="disabled"
               :aria-label="t('separateMixedGlue.table.addAriaLabel')" @click.stop="$emit('chiet-row', data)" />
 
             <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded
               :aria-label="t('separateMixedGlue.table.viewAriaLabel')" @click.stop="$emit('view-row', data)" />
 
-            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded :disabled="disabled"
               :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="$emit('delete-row', data)" />
           </div>
         </template>
@@ -86,6 +87,7 @@ const props = defineProps<{
   noMixChemicals: any[];
   headerTotalWeight: string | number;
   selectedItem: any;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits([
