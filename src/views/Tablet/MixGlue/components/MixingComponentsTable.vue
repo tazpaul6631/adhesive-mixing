@@ -75,8 +75,8 @@
       <Column :header="t('mixGlueManagement.componentsTable.columns.action')" :exportable="false"
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="slotProps">
-          <Button icon="pi pi-trash" severity="danger" text rounded
-            :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')" :disabled="disabled"
+          <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
+            text rounded :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')" :disabled="disabled"
             @click.stop="$emit('delete-row', slotProps.data)" />
         </template>
       </Column>
