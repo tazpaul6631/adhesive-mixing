@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.thuan.adhesive.mixing',
+  appId: 'adhesive.mixing',
   appName: 'adhesive-mixing',
   webDir: 'dist',
   plugins: {
