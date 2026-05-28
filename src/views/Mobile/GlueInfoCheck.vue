@@ -208,6 +208,11 @@ function getRequestDetailName(info: any) {
   return normalizeCompareValue(info?.requestDetailName);
 }
 
+
+function isUnconfirmedGlueBucket(info: any) {
+  return normalizeCompareValue(info?.seq) === '0';
+}
+
 function getGlueInfoFields(info: any, qrType: GlueQrType | null) {
   const fields = [
     { label: t('mobile.glueInfoCheck.fields.sequence'), value: normalizeCompareValue(info?.seq) },
@@ -361,6 +366,12 @@ async function handleGlueInfoScanResult(value: string) {
     if (!qrType) {
       resetGlueInfo();
       await showWarningAlert(t('mobile.glueInfoCheck.messages.invalidQr'));
+      return;
+    }
+
+    if (isUnconfirmedGlueBucket(result.data)) {
+      resetGlueInfo();
+      await showWarningAlert(t('mobile.glueInfoCheck.messages.unconfirmedGlue'));
       return;
     }
 

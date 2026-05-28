@@ -158,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import {
   IonBackButton,
   IonButton,
@@ -681,19 +681,32 @@ async function confirmReturnQr() {
 
   isReturnSubmitLocked = true;
   isSubmittingReturn.value = true;
+  let submitError: unknown = null;
 
   try {
     await submitReturnQr();
+  } catch (error) {
+    submitError = error;
+    console.error("Không thể xác nhận trả về thùng keo:", error);
+  } finally {
     isReturnConfirmDialogOpen.value = false;
     resetReturnField();
-    showToast(t("mobile.glueConfirm.messages.returnSuccess"));
-  } catch (error) {
-    console.error("Không thể xác nhận trả về thùng keo:", error);
-    alert(t("mobile.glueConfirm.messages.returnConfirmError"));
-  } finally {
     isSubmittingReturn.value = false;
     isReturnSubmitLocked = false;
   }
+
+  await nextTick();
+
+  if (submitError) {
+    const errorMessage = submitError instanceof Error && submitError.message
+      ? submitError.message
+      : t("mobile.glueConfirm.messages.returnConfirmError");
+
+    alert(errorMessage);
+    return;
+  }
+
+  showToast(t("mobile.glueConfirm.messages.returnSuccess"));
 }
 
 async function submitReturnQr() {

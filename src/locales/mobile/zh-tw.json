@@ -116,7 +116,8 @@
         "noGlueData": "找不到膠桶資料。",
         "cameraPermission": "需要授予相機權限才能掃描 QR Code！",
         "loadingInfo": "正在載入資訊...",
-        "loadError": "無法取得膠桶 QR 資訊，請檢查 API 連線！"
+        "loadError": "無法取得膠桶 QR 資訊，請檢查 API 連線！",
+        "unconfirmedGlue": "膠桶尚未確認，請重新掃描。"
       }
     }
   }

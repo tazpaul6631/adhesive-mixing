@@ -116,7 +116,8 @@
         "noGlueData": "No glue bucket data found.",
         "cameraPermission": "Camera permission is required to scan QR codes!",
         "loadingInfo": "Loading information...",
-        "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!"
+        "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!",
+        "unconfirmedGlue": "The glue bucket has not been confirmed. Please scan again."
       }
     }
   }
