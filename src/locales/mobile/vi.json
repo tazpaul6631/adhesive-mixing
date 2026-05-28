@@ -126,7 +126,8 @@
         "noGlueData": "Không có dữ liệu thùng keo.",
         "cameraPermission": "Cần cấp quyền camera để quét mã QR!",
         "loadingInfo": "Đang tải thông tin...",
-        "loadError": "Không thể lấy thông tin mã QR thùng keo. Vui lòng kiểm tra kết nối API!"
+        "loadError": "Không thể lấy thông tin mã QR thùng keo. Vui lòng kiểm tra kết nối API!",
+        "unconfirmedGlue": "Thùng keo chưa được xác nhận, vui lòng quét lại."
       }
     }
   }
