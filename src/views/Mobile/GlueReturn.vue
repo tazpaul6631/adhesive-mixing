@@ -32,8 +32,8 @@
                   </span>
                   <div v-else-if="pendingReturnGlueInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.factoryLabel") }}</span>
-                      <span class="qr-scan-field__info-value">{{ pendingReturnGlueInfo.factoryName || pendingReturnGlueInfo.factoryId }}</span>
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.lineLabel") }}</span>
+                      <span class="qr-scan-field__info-value">{{ pendingReturnGlueInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.glueLabel") }}</span>

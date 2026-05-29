@@ -660,7 +660,7 @@ async function handleConfirmReturn() {
       const responseData = response.data as any;
 
       if (!responseData.success || responseData.data !== true) {
-        throw new Error(responseData.message || "Confirm glue return failed");
+        throw new Error(responseData.message || "");
       }
 
       lineChemicalStore.setLineChemicalSession({
@@ -679,7 +679,12 @@ async function handleConfirmReturn() {
     }
   } catch (error) {
     console.error("Không thể xác nhận:", error);
-    alert(t("mobile.glueConfirm.messages.confirmError"));
+
+    const errorMessage = error instanceof Error && error.message
+      ? error.message
+      : t("mobile.glueConfirm.messages.confirmError");
+
+    alert(errorMessage);
   } finally {
     isConfirmingReturn.value = false;
   }

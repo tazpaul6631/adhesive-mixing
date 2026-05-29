@@ -101,12 +101,12 @@
       "scanPlaceholder": "點擊掃描退回膠桶 QR Code",
       "confirmButton": "確認退回",
       "confirmDialogTitle": "確認退回膠桶",
-      "confirmDialogMessage": "確認建立已掃描膠桶的退回紀錄？",
+      "confirmDialogMessage": "確認退回已掃描的膠桶？",
       "cancelButton": "取消",
       "okButton": "OK",
       "submittingButton": "送出中...",
       "fields": {
-        "factoryLabel": "廠別：",
+        "lineLabel": "產線：",
         "glueLabel": "膠水："
       },
       "messages": {

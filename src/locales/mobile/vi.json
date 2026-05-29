@@ -111,12 +111,12 @@
       "scanPlaceholder": "Quét mã QR thùng keo trả về",
       "confirmButton": "Xác nhận trả keo",
       "confirmDialogTitle": "Xác nhận thùng keo trả về",
-      "confirmDialogMessage": "Xác nhận tạo log trả về thùng keo đã quét?",
+      "confirmDialogMessage": "Xác nhận trả về thùng keo đã quét?",
       "cancelButton": "HỦY",
       "okButton": "OK",
       "submittingButton": "Đang gửi...",
       "fields": {
-        "factoryLabel": "Xưởng:",
+        "lineLabel": "Chuyền:",
         "glueLabel": "Keo:"
       },
       "messages": {

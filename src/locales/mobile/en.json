@@ -101,12 +101,12 @@
       "scanPlaceholder": "Scan the returned glue bucket QR code",
       "confirmButton": "Confirm return",
       "confirmDialogTitle": "Confirm returned glue bucket",
-      "confirmDialogMessage": "Confirm creating the returned glue log for the scanned bucket?",
+      "confirmDialogMessage": "Confirm return the scanned bucket?",
       "cancelButton": "CANCEL",
       "okButton": "OK",
       "submittingButton": "Submitting...",
       "fields": {
-        "factoryLabel": "Factory:",
+        "lineLabel": "Line:",
         "glueLabel": "Glue:"
       },
       "messages": {
