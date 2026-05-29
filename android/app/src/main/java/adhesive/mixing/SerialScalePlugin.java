@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package adhesive.mixing;
 
 import android.app.PendingIntent;
 import android.content.Context;

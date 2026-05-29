@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-    namespace = "io.ionic.starter"
+    namespace = "adhesive.mixing"
     compileSdk = rootProject.ext.compileSdkVersion
 
     compileOptions {
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "io.ionic.starter"
+        applicationId "adhesive.mixing"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
