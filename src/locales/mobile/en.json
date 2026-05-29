@@ -98,7 +98,7 @@
     "glueReturn": {
       "title": "Return glue scan",
       "qrTitle": "Returned glue bucket QR code",
-      "scanPlaceholder": "Scan the returned glue bucket QR code",
+      "scanPlaceholder": "Scan the returned glue QR code",
       "confirmButton": "Confirm return",
       "confirmDialogTitle": "Confirm returned glue bucket",
       "confirmDialogMessage": "Confirm return the scanned bucket?",

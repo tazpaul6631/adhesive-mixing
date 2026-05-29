@@ -146,7 +146,6 @@ import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
-import employeeApi from "@/api/employee";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
 
@@ -572,42 +571,6 @@ async function handleAllocatedQrScanResult(qrText: string) {
 }
 
 
-async function scanReceiverEmployeeId() {
-  const { camera } = await BarcodeScanner.requestPermissions();
-
-  if (camera !== "granted" && camera !== "limited") {
-    alert(t("mobile.glueConfirm.messages.receiverCameraPermission"));
-    return "";
-  }
-
-  const { barcodes } = await BarcodeScanner.scan();
-
-  if (!barcodes?.length) {
-    return "";
-  }
-
-  return normalizeQrText(getBarcodeValue(barcodes[0]));
-}
-
-async function validateReceiverEmployeeId(employeeId: string) {
-  try {
-    const response = await employeeApi.employeeLogin({
-      loginMode: "Scan",
-      employeeId,
-    });
-
-    if (response.data?.success) {
-      return true;
-    }
-
-    alert(response.data?.message || t("mobile.glueConfirm.messages.invalidReceiverEmployee"));
-    return false;
-  } catch (error) {
-    console.error("Không thể xác nhận người nhận keo:", error);
-    alert(t("mobile.glueConfirm.messages.receiverValidateError"));
-    return false;
-  }
-}
 
 async function handleConfirmReturn() {
   if (isConfirmButtonDisabled.value || !lineChemicalInfo.value || !allocatedGlueInfo.value) {
@@ -617,22 +580,11 @@ async function handleConfirmReturn() {
   isConfirmingReturn.value = true;
 
   try {
-    // TODO: Temporary test path. Backend does not support receivedBy in confirmgr yet.
-    // Keep the receiver barcode scan available for manual testing, but do not validate it
-    // or block confirmgr because the current API contract does not accept this field.
-    const receiverEmployeeId = await scanReceiverEmployeeId();
-
-    // TODO: Enable receivedBy payload after backend supports this field.
     const payload: Record<string, any> = {
       factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
       updaterId: getCurrentUserId(),
       productLineId: normalizeCompareValue(lineChemicalInfo.value?.productLineId),
-      // receivedBy: normalizeCompareValue(receiverEmployeeId),
     };
-
-    if (receiverEmployeeId) {
-      console.info("[GlueConfirm] Receiver barcode scanned for test-only flow:", receiverEmployeeId);
-    }
 
     const mixGlueMasterId = allocatedGlueInfo.value.mixGlueMasterId;
     const separateGlueId = allocatedGlueInfo.value.separateGlueId;

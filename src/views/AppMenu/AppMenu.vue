@@ -157,7 +157,7 @@ const mobileFeatures = computed(() => [
     path: '/mobile/glue-return',
     title: t('mobile.appMenu.glueReturn'),
     description: t('mobile.appMenu.glueReturnDescription'),
-    icon: readerOutline,
+    icon: qrCodeOutline,
     color: '#8b5cf6',
     bgLight: '#ede9fe'
   },
