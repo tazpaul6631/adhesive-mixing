@@ -58,12 +58,12 @@
   },
   "mobile": {
     "glueConfirm": {
-      "title": "Chuyền xác nhận keo & trả keo",
-      "lineQrTitle": "Mã QR thùng keo chuyền",
+      "title": "Chuyền xác nhận nhận keo",
+      "lineQrTitle": "Mã QR keo chuyền",
       "allocatedQrTitle": "Mã QR thùng keo phát",
       "scanPlaceholder": "Chạm để quét mã QR",
       "statusLabel": "Trạng thái:",
-      "confirmReturnButton": "Xác nhận trả về",
+      "confirmReturnButton": "Xác nhận nhận keo",
       "scanReturnQrButton": "Quét Mã QR thùng keo trả về",
       "returnDialogTitle": "Xác nhận thùng keo trả về",
       "returnDialogMessage": "Xác nhận trả về thùng keo đã quét?",
@@ -88,16 +88,46 @@
         "confirmError": "Không thể xác nhận. Vui lòng thử lại!",
         "confirmSuccess": "Xác nhận thành công",
         "statusMismatch": "Mã QR thùng keo chuyền không khớp với mã QR thùng keo phát.",
-        "statusMatched": "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát."
+        "statusMatched": "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát.",
+        "allocatedExpired": "Mã thùng keo đã hết hiệu lực.",
+        "invalidReceiverEmployee": "Không tìm thấy người nhận keo. Vui lòng quét lại.",
+        "receiverValidateError": "Không thể xác nhận người nhận keo. Vui lòng thử lại!",
+        "receiverCameraPermission": "Cần cấp quyền camera để quét thẻ người nhận keo!"
       }
     },
     "appMenu": {
       "hello": "Xin chào!",
       "system": "Hệ thống quản lý trên Mobile",
-      "glueConfirm": "Chuyền xác nhận keo & trả keo",
+      "glueConfirm": "Chuyền xác nhận nhận keo",
       "description": "Sử dụng camera điện thoại để quét mã vạch",
+      "glueReturn": "Quét keo trả về",
+      "glueReturnDescription": "Quét thùng keo trả về sau khi xác nhận chuyền",
       "glueInfoCheck": "Tra cứu thông tin thùng keo",
       "glueInfoCheckDescription": "Kiểm tra thông tin thùng keo phát"
+    },
+    "glueReturn": {
+      "title": "Quét keo trả về",
+      "qrTitle": "Mã QR thùng keo trả về",
+      "scanPlaceholder": "Quét mã QR thùng keo trả về",
+      "confirmButton": "Xác nhận trả keo",
+      "confirmDialogTitle": "Xác nhận thùng keo trả về",
+      "confirmDialogMessage": "Xác nhận trả về thùng keo đã quét?",
+      "cancelButton": "HỦY",
+      "okButton": "OK",
+      "submittingButton": "Đang gửi...",
+      "fields": {
+        "lineLabel": "Chuyền:",
+        "glueLabel": "Keo:"
+      },
+      "messages": {
+        "requireConfirmedLine": "Vui lòng xác nhận keo chuyền trước khi quét thùng keo trả về.",
+        "cameraPermission": "Cần cấp quyền camera để quét mã QR!",
+        "invalidQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo trả về.",
+        "noGlueData": "Không có dữ liệu thùng keo trả về.",
+        "loadError": "Không thể lấy thông tin mã QR thùng keo trả về. Vui lòng kiểm tra kết nối API!",
+        "returnSuccess": "Trả về thành công",
+        "returnConfirmError": "Không thể tạo log trả về thùng keo. Vui lòng thử lại!"
+      }
     },
     "glueInfoCheck": {
       "title": "Tra cứu thông tin thùng keo",

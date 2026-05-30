@@ -48,12 +48,12 @@
   },
   "mobile": {
     "glueConfirm": {
-      "title": "產線膠水確認與退膠",
-      "lineQrTitle": "產線膠桶 QR 碼",
-      "allocatedQrTitle": "發放膠桶 QR 碼",
+      "title": "產線確認領膠水",
+      "lineQrTitle": "產線膠水 QR 碼",
+      "allocatedQrTitle": "膠水桶 QR 碼",
       "scanPlaceholder": "點擊掃描 QR 碼",
       "statusLabel": "狀態：",
-      "confirmReturnButton": "確認退回",
+      "confirmReturnButton": "產線主管確認領膠",
       "scanReturnQrButton": "掃描退回膠桶 QR 碼",
       "returnDialogTitle": "確認退回膠桶",
       "returnDialogMessage": "確認退回已掃描的膠桶？",
@@ -78,16 +78,46 @@
         "confirmError": "無法確認。請再試一次！",
         "confirmSuccess": "確認成功",
         "statusMismatch": "產線膠桶 QR 碼與發放膠桶 QR 碼不相符。",
-        "statusMatched": "產線膠桶 QR 碼與發放膠桶 QR 碼相符。"
+        "statusMatched": "產線膠桶 QR 碼與發放膠桶 QR 碼相符。",
+        "allocatedExpired": "膠桶 QR Code 已失效。",
+        "invalidReceiverEmployee": "找不到領膠人員，請重新掃描。",
+        "receiverValidateError": "無法確認領膠人員，請再試一次！",
+        "receiverCameraPermission": "需要授予相機權限才能掃描領膠人員卡片！"
       }
     },
     "appMenu": {
       "hello": "您好！",
       "system": "行動端管理系統",
-      "glueConfirm": "生產線用膠確認與退膠",
+      "glueConfirm": "產線確認領膠水",
       "description": "使用手機相機掃描 QR Code",
+      "glueReturn": "掃描退回膠水",
+      "glueReturnDescription": "在確認產線後掃描退回膠桶",
       "glueInfoCheck": "膠桶資訊查詢",
       "glueInfoCheckDescription": "查看發放膠桶資訊"
+    },
+    "glueReturn": {
+      "title": "掃描退回膠水",
+      "qrTitle": "退回膠桶 QR Code",
+      "scanPlaceholder": "點擊掃描退回膠桶 QR Code",
+      "confirmButton": "確認退回",
+      "confirmDialogTitle": "確認退回膠桶",
+      "confirmDialogMessage": "確認退回已掃描的膠桶？",
+      "cancelButton": "取消",
+      "okButton": "OK",
+      "submittingButton": "送出中...",
+      "fields": {
+        "lineLabel": "產線：",
+        "glueLabel": "膠水："
+      },
+      "messages": {
+        "requireConfirmedLine": "請先完成產線確認領膠，之後再掃描退回膠桶。",
+        "cameraPermission": "需要授權相機才能掃描 QR Code！",
+        "invalidQr": "QR Code 無效，請重新掃描退回膠桶 QR Code。",
+        "noGlueData": "找不到退回膠桶資料。",
+        "loadError": "無法取得退回膠桶 QR 資訊，請檢查 API 連線！",
+        "returnSuccess": "退回成功",
+        "returnConfirmError": "無法建立退回膠桶紀錄，請再試一次！"
+      }
     },
     "glueInfoCheck": {
       "title": "膠桶資訊查詢",
