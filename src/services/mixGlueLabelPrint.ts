@@ -280,17 +280,17 @@ export async function buildMixGlueLabelTspl(
     return null;
   }
 
-  const { glueName, startDate, endDate, domainApi, action, productLineName, pasteQrCode } = response.data.data;
+  const { glueName, startDate, endDate, action, productLineName, pasteQrCode } = response.data.data;
 
   let tspl = `
 SIZE 69 mm, 49 mm
-GAP 0 mm, 0 mm
+GAP 3 mm, 0 mm
 REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
-QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
+QRCODE 15,40,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
+QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);
   tspl += tsplBoldDate(230, 36, `${startDate}`);

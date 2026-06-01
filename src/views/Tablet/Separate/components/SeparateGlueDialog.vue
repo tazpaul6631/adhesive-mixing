@@ -121,7 +121,7 @@ const handleConfirm = () => {
       severity: 'warn',
       summary: t('separateMixedGlue.toast.incomplete'),
       detail: t('separateMixedGlue.toast.addRowMin'),
-      life: 4000,
+      life: 6000,
     });
     return;
   }
@@ -131,7 +131,7 @@ const handleConfirm = () => {
       severity: 'warn',
       summary: t('separateMixedGlue.toast.notWeighed'),
       detail: t('separateMixedGlue.toast.notWeighedForChiet', { name: props.chemical?.materialName || '' }),
-      life: 4000,
+      life: 6000,
     });
     return;
   }
@@ -142,7 +142,7 @@ const handleConfirm = () => {
       severity: 'warn',
       summary: t('separateMixedGlue.toast.incomplete'),
       detail: t('separateMixedGlue.toast.selectBucketRowShort', { row: incompleteIndex + 1 }),
-      life: 4000,
+      life: 6000,
     });
     return;
   }
@@ -153,7 +153,7 @@ const handleConfirm = () => {
       severity: 'warn',
       summary: t('separateMixedGlue.toast.invalid'),
       detail: allocationError,
-      life: 5000,
+      life: 6000,
     });
     return;
   }

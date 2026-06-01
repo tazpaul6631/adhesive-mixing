@@ -36,9 +36,9 @@
 
       <Column :header="t('mixGlueManagement.componentsTable.columns.requiredWeight')" headerClass="dt-col-weight"
         bodyClass="dt-col-weight">
-        <template #body="{ data, index }">
+        <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <span v-else>{{ index === 0 ? headerTotalWeight : data.requiredWeight }}</span>
+          <span v-else>{{ data.glueWeight || data.requiredWeight || '' }}</span>
         </template>
       </Column>
 

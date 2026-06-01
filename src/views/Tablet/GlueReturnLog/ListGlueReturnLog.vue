@@ -356,7 +356,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.selectRowFirst'),
-      life: 4000,
+      life: 6000,
     });
     return;
   }
@@ -388,7 +388,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
     severity: 'info',
     summary: t('listGlueReturnLog.toast.success'),
     detail: t('listGlueReturnLog.toast.scaleSaved'),
-    life: 3000,
+    life: 6000,
   });
 };
 
@@ -402,7 +402,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.missingConfirmIds'),
-      life: 4000,
+      life: 6000,
     });
     return;
   }
@@ -437,7 +437,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       severity: 'success',
       summary: t('listGlueReturnLog.toast.success'),
       detail: t('listGlueReturnLog.toast.confirmSuccess'),
-      life: 3000,
+      life: 6000,
     });
   } catch (error) {
     console.error('Lỗi xác nhận cân trả keo:', error);
@@ -445,7 +445,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       severity: 'error',
       summary: t('listGlueReturnLog.toast.error'),
       detail: t('listGlueReturnLog.toast.confirmFailed'),
-      life: 4000,
+      life: 6000,
     });
   } finally {
     isConfirming.value = false;

@@ -85,13 +85,13 @@
                 </template>
               </Column>
 
-              <Column v-if="showActionColumn" :header="t('listMixGlue.columns.confirm')" :exportable="false"
-                headerClass="dt-col-action" bodyClass="dt-col-action">
+              <Column :header="t('listMixGlue.columns.confirm')" :exportable="false" headerClass="dt-col-action"
+                bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex gap-2">
-                    <Button v-show="data.separateGlueComplete" icon="pi pi-print" severity="success" size="large"
-                      :disabled="isRowProcessing(data.workOrderMasterId)"
+                    <Button icon="pi pi-print" severity="success" size="large"
+                      :disabled="isRowProcessing(data.workOrderMasterId) || !data.separateGlueComplete && !data.isNoMixGlue"
                       :loading="isRowPrinting(data.workOrderMasterId)" @click.stop="handlePrint(data)" />
                   </div>
                 </template>
@@ -229,10 +229,6 @@ const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(5);
 
-const showActionColumn = computed(() =>
-  lineDetails.value.some((row) => row.separateGlueComplete)
-);
-
 useBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
     void cancelScan();
@@ -247,7 +243,7 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
     router.push({
       path: '/separate-mixed-glue-management',
       query: {
-        workOrderMasterId,
+        workOrderMasterId: String(workOrderMasterId),
         ...(event.data.separateGlueComplete ? { separateGlueComplete: 'true' } : {}),
       },
     });
@@ -322,7 +318,7 @@ const showPrintResultToast = (printedCount: number, total: number, hasFailures: 
       severity: 'success',
       summary: t('listSeparateMixedGlue.toast.success'),
       detail: t('listSeparateMixedGlue.toast.printSuccess', { count: printedCount }),
-      life: 3000,
+      life: 6000,
     });
     return;
   }
@@ -333,7 +329,7 @@ const showPrintResultToast = (printedCount: number, total: number, hasFailures: 
     detail: printedCount > 0
       ? t('listSeparateMixedGlue.toast.printPartial', { printed: printedCount, total })
       : t('listSeparateMixedGlue.toast.printFailed'),
-    life: 4000,
+    life: 6000,
   });
 };
 
@@ -352,7 +348,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       severity: 'error',
       summary: t('listSeparateMixedGlue.toast.error'),
       detail: t('listSeparateMixedGlue.toast.factoryNotFound'),
-      life: 3000,
+      life: 6000,
     });
     return;
   }
@@ -362,7 +358,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       severity: 'warn',
       summary: t('listSeparateMixedGlue.toast.warning'),
       detail: t('listSeparateMixedGlue.toast.printerNotConnected'),
-      life: 3000,
+      life: 6000,
     });
     return;
   }
@@ -376,7 +372,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
         detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
-        life: 3000,
+        life: 6000,
       });
       return;
     }
@@ -391,7 +387,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         severity: 'warn',
         summary: t('listSeparateMixedGlue.toast.warning'),
         detail: t('listSeparateMixedGlue.toast.scanFailed'),
-        life: 3000,
+        life: 6000,
       });
       return;
     }
@@ -410,7 +406,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
           severity: 'error',
           summary: t('listSeparateMixedGlue.toast.error'),
           detail: validateData?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
-          life: 3000,
+          life: 6000,
         });
         return;
       }
@@ -420,7 +416,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
         detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
-        life: 3000,
+        life: 6000,
       });
       return;
     }
@@ -438,7 +434,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         severity: 'warn',
         summary: t('listSeparateMixedGlue.toast.warning'),
         detail: t('listSeparateMixedGlue.toast.pendingReplaced'),
-        life: 3500,
+        life: 6000,
       });
     }
 
@@ -460,7 +456,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         severity: 'warn',
         summary: t('listSeparateMixedGlue.toast.warning'),
         detail: t('listSeparateMixedGlue.toast.noLabels'),
-        life: 3000,
+        life: 6000,
       });
       return;
     }
@@ -490,7 +486,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       severity: 'error',
       summary: t('listSeparateMixedGlue.toast.error'),
       detail: error?.response?.data?.message || error?.message || t('listSeparateMixedGlue.toast.printFailed'),
-      life: 4000,
+      life: 6000,
     });
   } finally {
     printingWorkOrderId.value = null;
@@ -506,7 +502,7 @@ const handleRetryPrint = async () => {
       severity: 'warn',
       summary: t('listSeparateMixedGlue.toast.warning'),
       detail: t('listSeparateMixedGlue.toast.printerNotConnected'),
-      life: 3000,
+      life: 6000,
     });
     return;
   }
@@ -544,7 +540,7 @@ const restorePendingPrintJob = async () => {
     severity: 'info',
     summary: t('listSeparateMixedGlue.toast.warning'),
     detail: t('listSeparateMixedGlue.toast.pendingRestored', { count: restored.failedItems.length }),
-    life: 4000,
+    life: 6000,
   });
 };
 
