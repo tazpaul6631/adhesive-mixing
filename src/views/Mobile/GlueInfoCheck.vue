@@ -74,6 +74,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
+import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
 type ResolveGlueQrResult = {
@@ -83,11 +84,6 @@ type ResolveGlueQrResult = {
 
 const { t } = useI18n();
 const authStore = useAuthStore();
-
-const systemQrUrlHosts = [
-  '10.0.111.118:7152',
-  '10.0.111.127:7152',
-];
 
 const returnQrText = ref('');
 const returnQrInfo = ref<any | null>(null);
@@ -124,28 +120,7 @@ function getCurrentUserId() {
 }
 
 function getSystemQrUrl(qrText: string) {
-  const normalizedText = normalizeQrText(qrText);
-
-  if (!normalizedText) {
-    return null;
-  }
-
-  try {
-    const url = new URL(normalizedText);
-    const protocol = url.protocol.toLowerCase();
-
-    if (protocol !== 'http:' && protocol !== 'https:') {
-      return null;
-    }
-
-    if (!systemQrUrlHosts.includes(url.host)) {
-      return null;
-    }
-
-    return url;
-  } catch {
-    return null;
-  }
+  return buildSystemQrUrl(qrText);
 }
 
 function getAllocatedGlueQrType(data: any): GlueQrType | null {
