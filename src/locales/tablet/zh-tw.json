@@ -167,7 +167,8 @@
         "action": "操作",
         "glue": "膠水",
         "actualWeight": "實際重量",
-        "weighingTime": "秤重時間"
+        "weighingTime": "秤重時間",
+        "glueWeight": "需求重量"
       },
       "placeholders": {
         "selectBucket": "選擇容器"
@@ -231,7 +232,8 @@
       "pendingChietModal": "尚有分裝資訊未確認。請完成分裝視窗。",
       "chietRequired": "膠水 {name} 已秤重但尚未確認分裝。請開啟視窗並確認。",
       "chietSelectBucket": "膠水 {name} 分裝第 {row} 列：請選擇容器。",
-      "chietPrefix": "膠水 {name} 分裝：{message}"
+      "chietPrefix": "膠水 {name} 分裝：{message}",
+      "noMixAlreadySubmitted": "非混合膠已提交確認，無法再編輯。"
     },
     "confirmDelete": {
       "title": "確認刪除",
