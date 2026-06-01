@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import type { PayloadBuildContext } from './separateMixedGlue.types';
+import { isRecordStatusCancelled } from './noSeparateGlueSync';
 
 /** Giữ precision cho snowflake ID (> MAX_SAFE_INTEGER) — gửi string, còn lại gửi number. */
 export const toApiId = (value: unknown, fallback: string | number = 0): string | number => {
@@ -75,6 +76,164 @@ const NO_CHIET_RECORD_STATUS = '1';
 const CHIET_MAIN_RECORD_STATUS = 'C';
 const CHIET_EXTRA_RECORD_STATUS = '1';
 
+const normalizeApiNoSeparateGlueItem = (
+  item: any,
+  defaultTime?: string
+): Record<string, unknown> => {
+  const normalized: Record<string, unknown> = {
+    materialCode: toApiId(item.materialCode),
+    glueWeight: Number(item.glueWeight) || 0,
+    glueWeightUnit: item.glueWeightUnit || 'Kg',
+    bucketId: toApiId(item.bucketId ?? 0, 0),
+    glueExtra: !!item.glueExtra,
+    recordStatus: item.recordStatus,
+    confirmDate: item.confirmDate || defaultTime,
+    requestDetailIds: toApiRequestDetailIds(item.requestDetailIds),
+  };
+
+  if (item.noSeparateGlueId != null) {
+    normalized.noSeparateGlueId = toApiId(item.noSeparateGlueId);
+  }
+
+  return normalized;
+};
+
+const buildNoMixSeparateTableGlues = (
+  ctx: PayloadBuildContext,
+  defaultTime: string
+): Array<Record<string, unknown>> => {
+  const noMixChemical = ctx.noMixChemicals[0];
+  if (!noMixChemical) return [];
+
+  const materialCode = noMixChemical.materialCode;
+  const glueWeight = Number(
+    ctx.totalNoMixGlueWeight
+    ?? noMixChemical.glueWeight
+    ?? noMixChemical.actualWeight
+    ?? 0
+  );
+  const glueWeightUnit = noMixChemical.weightUnit || 'Kg';
+
+  return (ctx.noMixSeparateGlueDetails || [])
+    .filter(isSeparateGlueRowReady)
+    .map((item) => {
+      const payload: Record<string, unknown> = {
+        materialCode: toApiId(materialCode),
+        glueWeight,
+        glueWeightUnit,
+        bucketId: toApiId(item.selectedBucketId ?? item.bucketId),
+        glueExtra: !!noMixChemical.glueExtra,
+        recordStatus: item.recordStatus || NO_CHIET_RECORD_STATUS,
+        confirmDate: item.confirmDate || defaultTime,
+        requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
+      };
+      if (item.noSeparateGlueId != null && String(item.noSeparateGlueId) !== '') {
+        payload.noSeparateGlueId = toApiId(item.noSeparateGlueId);
+      }
+      return payload;
+    });
+};
+
+const mergeCancelledApiNoSeparateGlues = (
+  items: Array<Record<string, unknown>>,
+  ctx: PayloadBuildContext,
+  defaultTime: string
+): Array<Record<string, unknown>> => {
+  const merged = [...items];
+  const existingIds = new Set(
+    merged
+      .map((item) => item.noSeparateGlueId)
+      .filter((id) => id != null && id !== '')
+      .map(String)
+  );
+
+  (ctx.apiNoSeparateGlues || [])
+    .filter((item) => isRecordStatusCancelled(item?.recordStatus))
+    .forEach((item) => {
+      const normalized = normalizeApiNoSeparateGlueItem(item, defaultTime);
+      normalized.recordStatus = CHIET_MAIN_RECORD_STATUS;
+      const id = normalized.noSeparateGlueId != null ? String(normalized.noSeparateGlueId) : '';
+      if (id && existingIds.has(id)) return;
+      if (id) existingIds.add(id);
+      merged.push(normalized);
+    });
+
+  return merged;
+};
+
+const isRecordStatus = (value: unknown, status: string) =>
+  String(value ?? '').toUpperCase() === status.toUpperCase();
+
+const withRecordStatus = (
+  item: any,
+  recordStatus: string,
+  defaultTime: string
+): Record<string, unknown> => ({
+  ...normalizeApiNoSeparateGlueItem(item, defaultTime),
+  recordStatus,
+  confirmDate: defaultTime,
+});
+
+const buildIsNoMixGlueCompleteNoSeparateGlues = (
+  ctx: PayloadBuildContext,
+  defaultTime: string
+): Array<Record<string, unknown>> => {
+  const apiItems = ctx.apiNoSeparateGlues || [];
+  const hasAddRow = (ctx.noMixSeparateGlueDetails || []).length > 0;
+  const tableRows = buildNoMixSeparateTableGlues(ctx, defaultTime);
+  const first = apiItems[0];
+  const rest = apiItems.slice(1).map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime));
+
+  if (!first) {
+    return mergeCancelledApiNoSeparateGlues(hasAddRow ? tableRows : [], ctx, defaultTime);
+  }
+
+  const firstIsC = isRecordStatus(first.recordStatus, CHIET_MAIN_RECORD_STATUS);
+  const firstIs1 = isRecordStatus(first.recordStatus, NO_CHIET_RECORD_STATUS);
+
+  // Trường hợp 1: object đầu tiên recordStatus = C
+  if (firstIsC) {
+    if (!hasAddRow) {
+      return mergeCancelledApiNoSeparateGlues(
+        [withRecordStatus(first, NO_CHIET_RECORD_STATUS, defaultTime), ...rest],
+        ctx,
+        defaultTime
+      );
+    }
+    return mergeCancelledApiNoSeparateGlues(tableRows, ctx, defaultTime);
+  }
+
+  // Trường hợp 2: object đầu tiên recordStatus = 1
+  if (firstIs1) {
+    if (!hasAddRow) {
+      return mergeCancelledApiNoSeparateGlues(
+        apiItems.map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime)),
+        ctx,
+        defaultTime
+      );
+    }
+    return mergeCancelledApiNoSeparateGlues(
+      [withRecordStatus(first, CHIET_MAIN_RECORD_STATUS, defaultTime), ...rest, ...tableRows],
+      ctx,
+      defaultTime
+    );
+  }
+
+  if (!hasAddRow) {
+    return mergeCancelledApiNoSeparateGlues(
+      apiItems.map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime)),
+      ctx,
+      defaultTime
+    );
+  }
+
+  return mergeCancelledApiNoSeparateGlues(
+    [...apiItems.map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime)), ...tableRows],
+    ctx,
+    defaultTime
+  );
+};
+
 const buildNoSeparateGlues = (
   ctx: PayloadBuildContext,
   defaultTime: string,
@@ -144,21 +303,38 @@ export const buildSeparateGlueCommandPayload = (
 ) => {
   const defaultTime = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
   const forceRecordStatus = options?.forceAllRecordStatus;
+  const isNoMixGlueComplete = Boolean(ctx.isNoMixGlue && options?.forComplete && !forceRecordStatus);
 
-  const separateGlueDetailsForPayload =
-    options?.forComplete && ctx.mixChemicals.length === 0 ? [] : ctx.separateGlueDetails;
+  const mixSeparateRows = ctx.mixChemicals.length > 0 ? ctx.separateGlueDetails : [];
+  const includeNoMixInSeparateGlues = ctx.noMixChemicals.length > 0 && !ctx.isNoMixGlue;
+  const noMixSeparateRows = includeNoMixInSeparateGlues ? (ctx.noMixSeparateGlueDetails || []) : [];
+  const defaultNoMixGlueId = String(ctx.noMixChemicals[0]?.materialCode ?? '');
 
-  const baseSeparateGlues = separateGlueDetailsForPayload
-    .filter(isSeparateGlueRowReady)
-    .map((item) => buildMixSeparateGluePayloadItem(
-      item,
-      ctx.mixGlueMasterId,
-      recordStatus,
-      defaultTime,
-      forceRecordStatus
-    ));
+  const baseSeparateGlues = [
+    ...mixSeparateRows
+      .filter(isSeparateGlueRowReady)
+      .map((item) => buildMixSeparateGluePayloadItem(
+        item,
+        ctx.mixGlueMasterId,
+        recordStatus,
+        defaultTime,
+        forceRecordStatus
+      )),
+    ...noMixSeparateRows
+      .filter(isSeparateGlueRowReady)
+      .map((item) => buildSeparateGluePayloadItem(
+        item,
+        item.glueId || defaultNoMixGlueId,
+        recordStatus,
+        defaultTime,
+        forceRecordStatus
+      )),
+  ];
 
   const finalSeparateGlues = baseSeparateGlues;
+  const noSeparateGlues = isNoMixGlueComplete
+    ? buildIsNoMixGlueCompleteNoSeparateGlues(ctx, defaultTime)
+    : buildNoSeparateGlues(ctx, defaultTime, forceRecordStatus);
 
   return {
     factoryId: ctx.factoryId,
@@ -168,7 +344,7 @@ export const buildSeparateGlueCommandPayload = (
     createrId: ctx.employeeId,
     updaterId: ctx.employeeId,
     separateGlues: finalSeparateGlues,
-    noSeparateGlues: buildNoSeparateGlues(ctx, defaultTime, forceRecordStatus),
+    noSeparateGlues,
   };
 };
 

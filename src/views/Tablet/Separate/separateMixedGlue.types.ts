@@ -2,6 +2,9 @@ export type HeaderInfo = {
   orderNo: string;
   glue: string;
   totalWeight: string;
+  totalMixGlueWeight: string;
+  totalNoMixGlueWeight: string;
+  isNoMixGlue: boolean;
 };
 
 export type MixingProcess = {
@@ -46,7 +49,12 @@ export type PayloadBuildContext = {
   endDate: string;
   mixGlueMasterId: string;
   mixChemicals: any[];
+  noMixChemicals: any[];
   separateGlueDetails: any[];
+  noMixSeparateGlueDetails: any[];
   extraChietList: any[];
   noMixComponents: any[];
+  isNoMixGlue?: boolean;
+  apiNoSeparateGlues?: any[];
+  totalNoMixGlueWeight?: string;
 };

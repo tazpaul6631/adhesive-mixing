@@ -225,6 +225,8 @@
       "invalid": "無效",
       "mixedGlueSelectBucket": "混合膠第 {row} 列：請選擇容器。",
       "mixedGluePrefix": "混合膠：{message}",
+      "noMixSelectBucket": "非混合膠第 {row} 列：請選擇容器。",
+      "noMixPrefix": "非混合膠：{message}",
       "noMixWeighFirst": "非混合膠 {name}：請先完成稱重。",
       "pendingChietModal": "尚有分桶資訊未確認。請完成分桶視窗。",
       "chietRequired": "膠水 {name} 已秤重但尚未確認分桶。請開啟視窗並確認。",
@@ -294,11 +296,13 @@
       "workOrder": "工單",
       "glue": "膠水",
       "totalWeight": "總重量 (Kg)",
-      "componentCode": "成分代碼"
+      "componentCode": "成分代碼",
+      "totalWeightActual": ""
     },
     "sections": {
       "lineDetails": "產線明細",
-      "mixingComponents": "調膠成分"
+      "mixingComponents": "調膠成分",
+      "noMixComponents": "非調膠成分"
     },
     "lineDetailsTable": {
       "columns": {
@@ -327,7 +331,9 @@
       "namePlaceholder": "選擇成分",
       "nameRequired": "成分名稱為必填。",
       "percentageLabel": "百分比 (%)",
-      "percentageRequired": "請輸入百分比。"
+      "percentageRequired": "請輸入百分比。",
+      "weightLabel": "重量",
+      "weightRequired": "請輸入重量 ({unit})"
     },
     "unknownOperator": "未指定",
     "confirmDelete": {
@@ -346,6 +352,7 @@
       "restoreDetail": "已重新載入已儲存的資料",
       "loadFailed": "無法載入工單資料",
       "incompleteWeighing": "請完成所有成分的稱重...",
+      "incompleteNoMixWeighing": "請先完成所有非調膠成分的稱重再完成。",
       "saveSuccess": "儲存成功",
       "saveSuccessDetail": "資料已儲存。請返回清單進行確認！",
       "saveFailed": "無法儲存資料",

@@ -167,7 +167,8 @@
         "action": "Thao tác",
         "glue": "Keo",
         "actualWeight": "TL thực tế",
-        "weighingTime": "Thời gian cân"
+        "weighingTime": "Thời gian cân",
+        "glueWeight": "TL yêu cầu"
       },
       "placeholders": {
         "selectBucket": "Chọn thùng"
@@ -188,7 +189,7 @@
       "title": "Chiết keo theo thùng",
       "currentGlue": "Keo đang chiết",
       "weighedWeight": "Trọng lượng đã cân",
-      "capacityMustMatch": "Tổng dung tích thùng phải khớp trọng lượng đã cân",
+      "capacityMustMatch": "Tổng trọng lượng thùng phải khớp trọng lượng đã cân",
       "viewOnly": "Chỉ xem"
     },
     "toast": {
@@ -198,6 +199,7 @@
       "incomplete": "Chưa hoàn thành",
       "locked": "Không thể chỉnh sửa",
       "completeFirst": "Đơn đã hoàn thành chiết keo, không thể thêm hoặc xóa.",
+      "noMixAlreadySubmitted": "Đơn noMix đã gửi xác nhận, không thể chỉnh sửa thêm.",
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
       "completeFailed": "Không thể xác nhận hoàn thành",
@@ -219,12 +221,14 @@
       "allocationComplete": "Đã phân bổ đủ",
       "allocationCompleteDetail": "Tổng trọng lượng thùng chứa đã đạt, không cần thêm mới.",
       "weightExceeded": "Vượt trọng lượng",
-      "bucketCapacityExceeded": "Tổng dung tích thùng vượt quá {label}. Vui lòng chọn thùng có dung tích phù hợp hơn.",
+      "bucketCapacityExceeded": "Tổng trọng lượng thùng vượt quá {label}. Vui lòng chọn thùng có trọng lượng phù hợp hơn.",
       "addRowMin": "Vui lòng thêm ít nhất một dòng và chọn thùng chứa.",
       "notWeighedForChiet": "Keo {name} chưa có trọng lượng cân. Vui lòng cân trước khi chiết.",
       "invalid": "Chưa hợp lệ",
       "mixedGlueSelectBucket": "Keo trộn ở dòng {row}: vui lòng chọn thùng chứa.",
       "mixedGluePrefix": "Keo trộn: {message}",
+      "noMixSelectBucket": "Keo không trộn ở dòng {row}: vui lòng chọn thùng chứa.",
+      "noMixPrefix": "Keo không trộn: {message}",
       "noMixWeighFirst": "Keo không trộn {name}: vui lòng cân trước khi hoàn thành.",
       "pendingChietModal": "Còn thông tin chiết thùng chưa xác nhận. Vui lòng hoàn tất modal chiết.",
       "chietRequired": "Keo {name} đã cân nhưng chưa xác nhận chiết thùng. Vui lòng mở modal và bấm xác nhận.",
@@ -243,14 +247,14 @@
       "exit": "Thoát"
     },
     "validation": {
-      "capacityMismatch": "Tổng dung tích thùng không khớp trọng lượng yêu cầu.",
-      "capacityMismatchWeighed": "Tổng dung tích thùng không khớp trọng lượng đã cân.",
-      "capacityExceedsRequired": "Tổng dung tích thùng ({total} Kg) vượt quá trọng lượng yêu cầu ({target}).",
-      "capacityBelowRequired": "Tổng dung tích thùng ({total} Kg) chưa đủ so với trọng lượng yêu cầu ({target}).",
-      "capacityExceedsWeighed": "Tổng dung tích thùng ({total} Kg) vượt quá trọng lượng đã cân ({target}).",
-      "capacityShortageWeighed": "Tổng dung tích thùng ({total} Kg) còn thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn (vd: 6 Kg).",
-      "capacityMismatchWeighedGeneric": "Tổng dung tích thùng ({total} Kg) chưa khớp trọng lượng đã cân ({target}).",
-      "chietCapacityBlock": "Tổng dung tích thùng đã đủ so với trọng lượng đã cân {label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới."
+      "capacityMismatch": "Tổng trọng lượng thùng không khớp trọng lượng yêu cầu.",
+      "capacityMismatchWeighed": "Tổng trọng lượng thùng không khớp trọng lượng đã cân.",
+      "capacityExceedsRequired": "Tổng trọng lượng thùng ({total} Kg) vượt quá trọng lượng yêu cầu ({target}).",
+      "capacityBelowRequired": "Tổng trọng lượng thùng ({total} Kg) chưa đủ so với trọng lượng yêu cầu ({target}).",
+      "capacityExceedsWeighed": "Tổng trọng lượng thùng ({total} Kg) vượt quá trọng lượng đã cân ({target}).",
+      "capacityShortageWeighed": "Tổng trọng lượng thùng ({total} Kg) còn thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn (vd: 6 Kg).",
+      "capacityMismatchWeighedGeneric": "Tổng trọng lượng thùng ({total} Kg) chưa khớp trọng lượng đã cân ({target}).",
+      "chietCapacityBlock": "Tổng trọng lượng thùng đã đủ so với trọng lượng đã cân {label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới."
     }
   },
   "bluetoothPrinter": {
@@ -293,12 +297,14 @@
     "fields": {
       "workOrder": "Đơn điều công",
       "glue": "Keo",
-      "totalWeight": "Tổng trọng lượng (Kg)",
-      "componentCode": "Mã thành phần"
+      "totalWeight": "TL yêu cầu (Kg)",
+      "componentCode": "Mã thành phần",
+      "totalWeightActual": "TL thực tế (Kg)"
     },
     "sections": {
       "lineDetails": "Chi tiết dây chuyền",
-      "mixingComponents": "Thành phần trộn keo"
+      "mixingComponents": "Thành phần trộn keo",
+      "noMixComponents": "Thành phần keo không trộn"
     },
     "lineDetailsTable": {
       "columns": {
@@ -327,7 +333,9 @@
       "namePlaceholder": "Chọn thành phần",
       "nameRequired": "Tên thành phần là bắt buộc.",
       "percentageLabel": "Phần trăm (%)",
-      "percentageRequired": "Vui lòng nhập phần trăm."
+      "percentageRequired": "Vui lòng nhập phần trăm.",
+      "weightLabel": "Trọng lượng",
+      "weightRequired": "Vui lòng nhập trọng lượng ({unit})"
     },
     "unknownOperator": "Chưa xác định",
     "confirmDelete": {
@@ -346,6 +354,7 @@
       "restoreDetail": "Đã tải lại dữ liệu đã lưu",
       "loadFailed": "Không thể tải dữ liệu đơn hàng",
       "incompleteWeighing": "Vui lòng cân đầy đủ...",
+      "incompleteNoMixWeighing": "Vui lòng cân đầy đủ keo không trộn trước khi hoàn thành.",
       "saveSuccess": "Lưu thành công",
       "saveSuccessDetail": "Dữ liệu đã được lưu. Vui lòng ra danh sách để Xác nhận!",
       "saveFailed": "Không thể lưu dữ liệu",

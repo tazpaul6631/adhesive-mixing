@@ -10,11 +10,10 @@
         </div>
       </template>
 
-      <Column field="productLineName" :header="t('mixGlueManagement.lineDetailsTable.columns.workshop')"
-        headerClass="dt-col-text" bodyClass="dt-col-text">
-        <template #body="{ data }">
+      <Column header="#" headerClass="dt-col-text" bodyClass="dt-col-text">
+        <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else class="dt-cell-ellipsis">{{ data.productLineName }}</span>
+          <span v-else class="dt-cell-ellipsis">{{ index + 1 }}</span>
         </template>
       </Column>
 
@@ -26,8 +25,8 @@
         </template>
       </Column>
 
-      <Column field="styleName" :header="t('mixGlueManagement.lineDetailsTable.columns.style')" headerClass="dt-col-text"
-        bodyClass="dt-col-text">
+      <Column field="styleName" :header="t('mixGlueManagement.lineDetailsTable.columns.style')"
+        headerClass="dt-col-text" bodyClass="dt-col-text">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="70%" height="1rem" />
           <span v-else class="dt-cell-ellipsis">{{ data.styleName }}</span>
@@ -39,7 +38,7 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
           <span v-else class="bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm dt-cell-wrap">
-            {{ data.requestDetailName }}
+            {{ data.productLineName }}
           </span>
         </template>
       </Column>

@@ -1,5 +1,5 @@
 <template>
-  <Toast position="top-right">
+  <Toast position="top-center">
     <template #message="slotProps">
       <div class="app-toast-body">
         <span v-if="getToastIcon(slotProps.message)" class="p-toast-message-icon">

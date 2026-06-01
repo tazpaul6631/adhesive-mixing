@@ -17,11 +17,11 @@
       </div>
 
       <div class="flex flex-column gap-2">
-        <label for="percentage" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.percentageLabel') }}</label>
-        <InputNumber id="percentage" v-model="percentage" suffix=" %" :invalid="submitted && percentage === null"
-          class="w-full" />
-        <small v-if="submitted && percentage === null" class="text-red-500">
-          {{ t('mixGlueManagement.addComponentDialog.percentageRequired') }}
+        <label for="weight" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.weightLabel') }}</label>
+        <InputNumber id="weight" v-model="weight" :suffix="weightUnitSuffix"
+          :invalid="submitted && weight === null" class="w-full" />
+        <small v-if="submitted && weight === null" class="text-red-500">
+          {{ t('mixGlueManagement.addComponentDialog.weightRequired', { unit: selectedWeightUnit }) }}
         </small>
       </div>
     </div>
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const props = defineProps<{
@@ -48,13 +48,16 @@ const emit = defineEmits(['update:visible', 'save', 'fetch-materials']);
 const { t } = useAppLocale(() => 'tablet');
 
 const selectedMaterial = ref<any>(null);
-const percentage = ref<number | null>(null);
+const weight = ref<number | null>(null);
 const submitted = ref(false);
+
+const selectedWeightUnit = computed(() => selectedMaterial.value?.weightUnit || 'Kg');
+const weightUnitSuffix = computed(() => ` ${selectedWeightUnit.value}`);
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     selectedMaterial.value = null;
-    percentage.value = null;
+    weight.value = null;
     submitted.value = false;
   }
 });
@@ -66,12 +69,12 @@ const hideDialog = () => {
 const saveForm = () => {
   submitted.value = true;
 
-  if (selectedMaterial.value && percentage.value != null) {
+  if (selectedMaterial.value && weight.value != null) {
     emit('save', {
       name: selectedMaterial.value.materialName,
-      percentage: percentage.value,
+      percentage: weight.value,
       materialCode: selectedMaterial.value.materialCode,
-      weightUnit: selectedMaterial.value.weightUnit || 'Kg'
+      weightUnit: selectedWeightUnit.value,
     });
     hideDialog();
   }

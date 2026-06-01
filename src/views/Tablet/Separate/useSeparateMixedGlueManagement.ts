@@ -8,12 +8,12 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import UI from '@/mixins/present';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
-import { useMixGlueDraftStore, isSeparateDraftRestorable } from '@/store/mixGlueDraft';
+import { useMixGlueDraftStore, isSeparateDraftRestorable, hasDraftSeparateTableData, normalizeDraftWorkOrderId } from '@/store/mixGlueDraft';
 import workOrder from '@/api/workOrder';
 import materialApi from '@/api/material';
 import separateGlue from '@/api/separate';
 import bucketApi from '@/api/bucket';
-import { validateSeparateGlueAllocation, type BucketOption } from './separateGlue.bucket';
+import { validateSeparateGlueAllocation, validateChietBucketCapacity, type BucketOption } from './separateGlue.bucket';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 import type { HeaderInfo, MixingProcess, NewComponentFormData, PayloadBuildContext } from './separateMixedGlue.types';
@@ -21,11 +21,19 @@ import {
   applyMixGlueMasterId,
   createDefaultSeparateGlueRow,
   mapNoMixChemicalsFull,
+  mapSeparateHeaderInfo,
   normalizeRequestDetails,
-  resolveSeparateGlueDetails,
+  resolveNoMixSeparateGlueDetails,
+  resolveSplitSeparateGlueDetails,
+  resolveNoMixGlueWeightFromApi,
   syncSeparateGlueRowGlueIds,
 } from './separateMixedGlue.mappers';
 import { buildSeparateGlueCommandPayload, buildSeparateGlueExitPayload } from './separateMixedGlue.payload';
+import {
+  markApiNoSeparateGlueCancelledByRow,
+  normalizeNewNoMixSeparateAddRow,
+  syncNoMixSeparateGlueState,
+} from './noSeparateGlueSync';
 import { useScaleManager } from '@/composables/useScaleManager';
 
 dayjs.extend(customParseFormat);
@@ -49,7 +57,17 @@ export function useSeparateMixedGlueManagement() {
   const mixGlueMasterId = ref('');
   const selectedTab = ref('table1');
   const separateGlueComplete = ref(false);
-  const headerInfo = ref<HeaderInfo>({ orderNo: '', glue: '', totalWeight: '' });
+  const separateGlueConfirm = ref(false);
+  /** isNoMixGlue: đã bấm ✓ submit 1 lần → khóa nút ✓ và bảng noMix. */
+  const noMixGlueSubmitLocked = ref(false);
+  const headerInfo = ref<HeaderInfo>({
+    orderNo: '',
+    glue: '',
+    totalWeight: '',
+    totalMixGlueWeight: '0.000',
+    totalNoMixGlueWeight: '0.000',
+    isNoMixGlue: false,
+  });
   const isLoadingLine = ref(true);
   const isLoadingComponent = ref(true);
 
@@ -57,11 +75,83 @@ export function useSeparateMixedGlueManagement() {
   const orderDetails = ref<any[]>([]);
   const requestDetails = ref<any[]>([]);
   const separateGlueDetails = ref<any[]>([]);
+  const noMixSeparateGlueDetails = ref<any[]>([]);
+  const apiNoSeparateGlues = ref<any[]>([]);
   const mixChemicals = ref<any[]>([]);
+  const noMixChemicals = ref<any[]>([]);
+
+  const hasMixChemicals = computed(() => mixChemicals.value.length > 0);
+  const hasNoMixChemicals = computed(() => noMixChemicals.value.length > 0);
+  const isNoMixGlue = computed(() => headerInfo.value.isNoMixGlue);
+
+  const isNoMixGlueOperationLocked = computed(() =>
+    headerInfo.value.isNoMixGlue
+    && (noMixGlueSubmitLocked.value || separateGlueConfirm.value)
+  );
 
   const mixedGlueTableDetails = computed(() => (
-    mixChemicals.value.length > 0 ? separateGlueDetails.value : []
+    hasMixChemicals.value ? separateGlueDetails.value : []
   ));
+
+  const noMixGlueTableDetails = computed(() => (
+    hasNoMixChemicals.value ? noMixSeparateGlueDetails.value : []
+  ));
+
+  const resolveNoMixGlueWeightDisplay = (): string =>
+    resolveNoMixGlueWeightFromApi({
+      noSeparateGlues: apiNoSeparateGlues.value,
+      totalNoMixGlueWeight: headerInfo.value.totalNoMixGlueWeight,
+    });
+
+  const totalWeightActualDisplay = computed(() => (
+    headerInfo.value.isNoMixGlue
+      ? resolveNoMixGlueWeightDisplay()
+      : headerInfo.value.totalMixGlueWeight
+  ));
+
+  const mixSeparateTargetWeight = computed(() => headerInfo.value.totalMixGlueWeight || '0');
+  const noMixSeparateTargetWeight = computed(() => resolveNoMixGlueWeightDisplay());
+
+  const getNoMixGlueId = () => String(noMixChemicals.value[0]?.materialCode ?? '');
+
+  const applySplitSeparateGlueDetails = (existingDraft: any, respData: any) => {
+    const hasMix = (respData?.mixChemicals || []).length > 0;
+    const hasNoMix = (respData?.noMixChemicals || []).length > 0;
+    const isNoMixGlue = Boolean(
+      existingDraft?.headerInfo?.isNoMixGlue ?? respData?.isNoMixGlue
+    );
+    const { mixRows, noMixRows } = resolveSplitSeparateGlueDetails(
+      existingDraft,
+      respData,
+      mixGlueMasterId.value,
+      hasMix,
+      hasNoMix,
+      getNoMixGlueId(),
+      isNoMixGlue
+    );
+
+    separateGlueDetails.value = syncSeparateGlueRowGlueIds(mixRows, mixGlueMasterId.value);
+    noMixSeparateGlueDetails.value = noMixRows.map((row) => ({
+      ...row,
+      glueId: getNoMixGlueId() || row.glueId,
+    }));
+
+    if (isNoMixGlue) {
+      applyNoMixGlueApiSync();
+    }
+  };
+
+  const applyNoMixGlueApiSync = () => {
+    if (!headerInfo.value.isNoMixGlue) return;
+
+    const synced = syncNoMixSeparateGlueState(
+      noMixSeparateGlueDetails.value,
+      apiNoSeparateGlues.value,
+      getNoMixGlueId()
+    );
+    noMixSeparateGlueDetails.value = synced.tableRows;
+    apiNoSeparateGlues.value = synced.apiItems;
+  };
 
   // --- Tab keo không trộn (bảng 2) ---
   const noMixChemicalsFull = ref<any[]>([]);
@@ -86,6 +176,10 @@ export function useSeparateMixedGlueManagement() {
     if (!isLoadingLine.value) isDirty.value = true;
   }, { deep: true });
 
+  watch(noMixSeparateGlueDetails, () => {
+    if (!isLoadingLine.value) isDirty.value = true;
+  }, { deep: true });
+
   watch(noMixChemicalsFull, () => {
     if (!isLoadingComponent.value) isDirty.value = true;
   }, { deep: true });
@@ -98,13 +192,25 @@ export function useSeparateMixedGlueManagement() {
     isDirty.value = false;
     isNavigatingAway.value = false;
     separateGlueComplete.value = false;
+    separateGlueConfirm.value = false;
+    noMixGlueSubmitLocked.value = false;
     startDate.value = '';
     endDate.value = '';
-    headerInfo.value = { orderNo: '', glue: '', totalWeight: '' };
+    headerInfo.value = {
+      orderNo: '',
+      glue: '',
+      totalWeight: '',
+      totalMixGlueWeight: '0.000',
+      totalNoMixGlueWeight: '0.000',
+      isNoMixGlue: false,
+    };
     orderDetails.value = [];
     requestDetails.value = [];
     separateGlueDetails.value = [];
+    noMixSeparateGlueDetails.value = [];
+    apiNoSeparateGlues.value = [];
     mixChemicals.value = [];
+    noMixChemicals.value = [];
     noMixChemicalsFull.value = [];
     noMixComponents.value = [];
     selectedItem.value = null;
@@ -124,15 +230,43 @@ export function useSeparateMixedGlueManagement() {
     noMixChemicalsFull: noMixChemicalsFull.value,
     noMixComponents: noMixComponents.value,
     separateGlueDetails: separateGlueDetails.value,
+    noMixSeparateGlueDetails: noMixSeparateGlueDetails.value,
+    apiNoSeparateGlues: apiNoSeparateGlues.value,
     requestDetails: requestDetails.value,
     extraChietList: extraChietList.value,
     chietPendingByMaterial: chietPendingByMaterial.value,
     mixGlueMasterId: mixGlueMasterId.value,
+    noMixGlueSubmitLocked: noMixGlueSubmitLocked.value,
   });
 
   const saveDraftToStoreOnly = async () => {
     if (isNavigatingAway.value) return;
-    await draftStore.saveDraft(currentWorkOrderId.value, buildDraftSnapshot());
+
+    const draftKey = normalizeDraftWorkOrderId(currentWorkOrderId.value);
+    if (!draftKey) return;
+
+    await draftStore.saveDraft(draftKey, buildDraftSnapshot());
+  };
+
+  const hasLocalSeparateTableData = () =>
+    separateGlueDetails.value.length > 0
+    || noMixSeparateGlueDetails.value.length > 0
+    || (headerInfo.value.isNoMixGlue && apiNoSeparateGlues.value.length > 0);
+
+  const persistDraftOnLeave = async () => {
+    if (isNavigatingAway.value || !hasLocalSeparateTableData()) return;
+    await saveDraftToStoreOnly();
+  };
+
+  const syncApiNoSeparateGlues = (respData: any, draft?: any) => {
+    if (Array.isArray(draft?.apiNoSeparateGlues) && draft.apiNoSeparateGlues.length > 0) {
+      apiNoSeparateGlues.value = draft.apiNoSeparateGlues.map((item: any) => ({ ...item }));
+      return;
+    }
+
+    apiNoSeparateGlues.value = Array.isArray(respData?.noSeparateGlues)
+      ? respData.noSeparateGlues.map((item: any) => ({ ...item }))
+      : [];
   };
 
   const getPayloadContext = (): PayloadBuildContext => ({
@@ -143,9 +277,14 @@ export function useSeparateMixedGlueManagement() {
     endDate: endDate.value,
     mixGlueMasterId: mixGlueMasterId.value,
     mixChemicals: mixChemicals.value,
+    noMixChemicals: noMixChemicals.value,
     separateGlueDetails: separateGlueDetails.value,
+    noMixSeparateGlueDetails: noMixSeparateGlueDetails.value,
     extraChietList: extraChietList.value,
     noMixComponents: noMixComponents.value,
+    isNoMixGlue: headerInfo.value.isNoMixGlue,
+    apiNoSeparateGlues: apiNoSeparateGlues.value,
+    totalNoMixGlueWeight: resolveNoMixGlueWeightDisplay(),
   });
 
   const getOperatorInfo = () => ({
@@ -165,10 +304,34 @@ export function useSeparateMixedGlueManagement() {
     }));
   };
 
+  const restoreNoMixSubmitLockFromDraft = (draft?: any) => {
+    if (draft?.noMixGlueSubmitLocked === true) {
+      noMixGlueSubmitLocked.value = true;
+    }
+  };
+
   const applySeparateGlueStatusFromWorkOrder = (respData: any) => {
-    const fromApi = Boolean(respData?.separateGlueComplete || respData?.separateGlueConfirm);
+    separateGlueComplete.value = Boolean(respData?.separateGlueComplete);
+    separateGlueConfirm.value = Boolean(respData?.separateGlueConfirm);
+    if (Boolean(respData?.isNoMixGlue) && separateGlueConfirm.value) {
+      noMixGlueSubmitLocked.value = true;
+    }
     const fromQuery = route.query.separateGlueComplete === 'true' || route.query.separateGlueComplete === '1';
-    separateGlueComplete.value = fromApi || fromQuery;
+    if (fromQuery) {
+      separateGlueComplete.value = true;
+    }
+  };
+
+  const blockIfNoMixOperationLocked = (): boolean => {
+    if (!isNoMixGlueOperationLocked.value) return false;
+
+    toast.add({
+      severity: 'warn',
+      summary: t('separateMixedGlue.toast.locked'),
+      detail: t('separateMixedGlue.toast.noMixAlreadySubmitted'),
+      life: 6000,
+    });
+    return true;
   };
 
   const blockIfOrderComplete = (): boolean => {
@@ -178,13 +341,13 @@ export function useSeparateMixedGlueManagement() {
       severity: 'warn',
       summary: t('separateMixedGlue.toast.locked'),
       detail: t('separateMixedGlue.toast.completeFirst'),
-      life: 3000,
+      life: 6000,
     });
     return true;
   };
 
   const restoreDraftBranch = async (id: string, existingDraft: any) => {
-    headerInfo.value = existingDraft.headerInfo as HeaderInfo;
+    restoreNoMixSubmitLockFromDraft(existingDraft);
     noMixChemicalsFull.value = existingDraft.noMixChemicalsFull as any[];
     noMixComponents.value = (existingDraft.noMixComponents as any[]) || [];
     extraChietList.value = (existingDraft.extraChietList as any[]) || [];
@@ -207,21 +370,31 @@ export function useSeparateMixedGlueManagement() {
     }
 
     const { data } = await workOrder.getWorkOrder(id, 3);
-    if (!data?.success) return;
+    if (!data?.success) {
+      syncApiNoSeparateGlues({}, existingDraft);
+      applySplitSeparateGlueDetails(existingDraft, {
+        mixChemicals: existingDraft?.separateGlueDetails?.length ? [{}] : [],
+        noMixChemicals: existingDraft?.noMixSeparateGlueDetails?.length ? [{}] : [],
+        isNoMixGlue: existingDraft?.headerInfo?.isNoMixGlue,
+      });
+      return;
+    }
 
     const respData = data.data;
     applySeparateGlueStatusFromWorkOrder(respData);
+    headerInfo.value = mapSeparateHeaderInfo(respData);
+    syncApiNoSeparateGlues(respData, existingDraft);
     startDate.value = respData.startDate || new Date().toISOString();
     endDate.value = respData.endDate || new Date().toISOString();
     hourlyValidity.value = respData.hourlyValidity || '0';
     applyMixGlueMasterId(respData, existingDraft.mixGlueMasterId, (v) => { mixGlueMasterId.value = v; });
     mixChemicals.value = respData.mixChemicals || [];
+    noMixChemicals.value = respData.noMixChemicals || [];
     orderDetails.value = respData.orderDetails || [];
     requestDetails.value = existingDraft.requestDetails?.length
       ? existingDraft.requestDetails
       : normalizeRequestDetails(respData);
-    separateGlueDetails.value = resolveSeparateGlueDetails(existingDraft, respData, mixGlueMasterId.value);
-    separateGlueDetails.value = syncSeparateGlueRowGlueIds(separateGlueDetails.value, mixGlueMasterId.value);
+    applySplitSeparateGlueDetails(existingDraft, respData);
 
     noMixComponents.value = normalizeNoMixGlueExtraFlags(
       noMixComponents.value,
@@ -240,10 +413,11 @@ export function useSeparateMixedGlueManagement() {
       }
     }
 
-    toast.add({ severity: 'info', summary: t('separateMixedGlue.toast.restore'), detail: t('separateMixedGlue.toast.restoreDetail'), life: 3000 });
+    toast.add({ severity: 'info', summary: t('separateMixedGlue.toast.restore'), detail: t('separateMixedGlue.toast.restoreDetail'), life: 6000 });
   };
 
-  const loadFreshBranch = async (id: string) => {
+  const loadFreshBranch = async (id: string, existingDraft?: any) => {
+    restoreNoMixSubmitLockFromDraft(existingDraft);
     const { data } = await workOrder.getWorkOrder(id, 3);
     if (!data?.success) return;
 
@@ -252,19 +426,21 @@ export function useSeparateMixedGlueManagement() {
     startDate.value = respData.startDate || new Date().toISOString();
     endDate.value = respData.endDate || new Date().toISOString();
     hourlyValidity.value = respData.hourlyValidity || '0';
-    applyMixGlueMasterId(respData, undefined, (v) => { mixGlueMasterId.value = v; });
+    applyMixGlueMasterId(respData, existingDraft?.mixGlueMasterId, (v) => { mixGlueMasterId.value = v; });
 
-    headerInfo.value = {
-      orderNo: respData.workOrderMasterName || '',
-      glue: respData.chemicalMasterName || '',
-      totalWeight: respData.workOrderWeight?.toString() || '',
-    };
+    headerInfo.value = mapSeparateHeaderInfo(respData);
+    syncApiNoSeparateGlues(respData, existingDraft);
 
     mixChemicals.value = respData.mixChemicals || [];
+    noMixChemicals.value = respData.noMixChemicals || [];
     orderDetails.value = respData.orderDetails || [];
-    requestDetails.value = normalizeRequestDetails(respData);
-    separateGlueDetails.value = resolveSeparateGlueDetails(null, respData, mixGlueMasterId.value);
-    separateGlueDetails.value = syncSeparateGlueRowGlueIds(separateGlueDetails.value, mixGlueMasterId.value);
+    requestDetails.value = existingDraft?.requestDetails?.length
+      ? existingDraft.requestDetails
+      : normalizeRequestDetails(respData);
+    applySplitSeparateGlueDetails(
+      hasDraftSeparateTableData(existingDraft) ? existingDraft : null,
+      respData
+    );
 
     noMixChemicalsFull.value = mapNoMixChemicalsFull(respData.mixChemicals || []);
     noMixComponents.value = normalizeNoMixGlueExtraFlags(
@@ -282,23 +458,30 @@ export function useSeparateMixedGlueManagement() {
   };
 
   const fetchWorkOrderDetail = async (id: string) => {
+    const normalizedId = normalizeDraftWorkOrderId(id);
+    if (!normalizedId) return;
+
     resetState();
     isLoadingLine.value = true;
     isLoadingComponent.value = true;
-    currentWorkOrderId.value = id;
+    currentWorkOrderId.value = normalizedId;
 
     try {
       await draftStore.ensureHydrated();
-      const existingDraft = draftStore.getDraft(id);
+      const existingDraft = draftStore.getDraft(normalizedId);
+      const shouldRestoreDraft = Boolean(
+        existingDraft
+        && (isSeparateDraftRestorable(existingDraft) || hasDraftSeparateTableData(existingDraft))
+      );
 
-      if (isSeparateDraftRestorable(existingDraft)) {
-        await restoreDraftBranch(id, existingDraft);
+      if (shouldRestoreDraft) {
+        await restoreDraftBranch(normalizedId, existingDraft);
       } else {
-        await loadFreshBranch(id);
+        await loadFreshBranch(normalizedId, existingDraft);
       }
     } catch (error) {
       console.error('Lỗi khi tải dữ liệu chi tiết:', error);
-      toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.loadFailed'), life: 3000 });
+      toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.loadFailed'), life: 6000 });
     } finally {
       isLoadingLine.value = false;
       isLoadingComponent.value = false;
@@ -316,6 +499,17 @@ export function useSeparateMixedGlueManagement() {
     //   || (Array.isArray(row.requestDetailIds) && row.requestDetailIds.length > 0);
     const hasBucket = !!row.selectedBucketId || !!row.bucketId;
     return hasBucket;
+  };
+
+  /** isNoMixGlue: không chọn thùng → submit luôn; đã add-row và chọn thùng → validate đủ. */
+  const shouldValidateNoMixSeparateRows = () => {
+    if (!hasNoMixChemicals.value) return false;
+    if (!headerInfo.value.isNoMixGlue) return true;
+
+    const rows = noMixSeparateGlueDetails.value;
+    if (rows.length === 0) return false;
+
+    return rows.some(isSeparateGlueRowFilled);
   };
 
   const bucketListForValidation = ref<BucketOption[]>([]);
@@ -340,55 +534,77 @@ export function useSeparateMixedGlueManagement() {
   const validateBeforeComplete = async (): Promise<string | null> => {
     const bucketList = await ensureBucketListForValidation();
 
-    if (mixChemicals.value.length > 0) {
+    if (hasMixChemicals.value) {
       for (let i = 0; i < separateGlueDetails.value.length; i++) {
         if (!isSeparateGlueRowFilled(separateGlueDetails.value[i])) {
           return t('separateMixedGlue.toast.mixedGlueSelectBucket', { row: i + 1 });
         }
       }
 
-      const tab1AllocationError = validateSeparateGlueAllocation(
+      const mixCapacityResult = validateChietBucketCapacity(
         separateGlueDetails.value,
-        requestDetails.value,
         bucketList,
-        headerInfo.value.totalWeight,
-        'Kg',
-        { requireAllRequestDetails: false }
+        mixSeparateTargetWeight.value,
+        'Kg'
       );
-      if (tab1AllocationError) {
-        return t('separateMixedGlue.toast.mixedGluePrefix', { message: tab1AllocationError });
+      if (!mixCapacityResult.ok) {
+        return t('separateMixedGlue.toast.mixedGluePrefix', {
+          message: mixCapacityResult.message || t('separateMixedGlue.validation.capacityMismatchWeighed'),
+        });
       }
     }
 
-    const unweighed = noMixComponents.value.find((item) => !isRowWeighed(item));
-    if (unweighed) {
-      return t('separateMixedGlue.toast.noMixWeighFirst', { name: unweighed.materialName });
-    }
-
-    for (const row of noMixComponents.value) {
-      if (!row.isChietCompleted) continue;
-
-      const extras = extraChietList.value.filter(
-        (item) => String(item.glueId) === String(row.materialCode)
-      );
-      if (extras.length === 0) continue;
-
-      for (let i = 0; i < extras.length; i++) {
-        if (!isSeparateGlueRowFilled(extras[i])) {
-          return t('separateMixedGlue.toast.chietSelectBucket', { name: row.materialName, row: i + 1 });
+    if (shouldValidateNoMixSeparateRows()) {
+      for (let i = 0; i < noMixSeparateGlueDetails.value.length; i++) {
+        if (!isSeparateGlueRowFilled(noMixSeparateGlueDetails.value[i])) {
+          return t('separateMixedGlue.toast.noMixSelectBucket', { row: i + 1 });
         }
       }
 
-      const chietAllocationError = validateSeparateGlueAllocation(
-        extras,
-        requestDetails.value,
+      const noMixCapacityResult = validateChietBucketCapacity(
+        noMixSeparateGlueDetails.value,
         bucketList,
-        row.actualWeight,
-        row.weightUnit || 'Kg',
-        { requireAllRequestDetails: false }
+        noMixSeparateTargetWeight.value,
+        'Kg'
       );
-      if (chietAllocationError) {
-        return t('separateMixedGlue.toast.chietPrefix', { name: row.materialName, message: chietAllocationError || '' });
+      if (!noMixCapacityResult.ok) {
+        return t('separateMixedGlue.toast.noMixPrefix', {
+          message: noMixCapacityResult.message || t('separateMixedGlue.validation.capacityMismatchWeighed'),
+        });
+      }
+    }
+
+    if (!hasNoMixChemicals.value && noMixComponents.value.length > 0) {
+      const unweighed = noMixComponents.value.find((item) => !isRowWeighed(item));
+      if (unweighed) {
+        return t('separateMixedGlue.toast.noMixWeighFirst', { name: unweighed.materialName });
+      }
+
+      for (const row of noMixComponents.value) {
+        if (!row.isChietCompleted) continue;
+
+        const extras = extraChietList.value.filter(
+          (item) => String(item.glueId) === String(row.materialCode)
+        );
+        if (extras.length === 0) continue;
+
+        for (let i = 0; i < extras.length; i++) {
+          if (!isSeparateGlueRowFilled(extras[i])) {
+            return t('separateMixedGlue.toast.chietSelectBucket', { name: row.materialName, row: i + 1 });
+          }
+        }
+
+        const chietAllocationError = validateSeparateGlueAllocation(
+          extras,
+          requestDetails.value,
+          bucketList,
+          row.actualWeight,
+          row.weightUnit || 'Kg',
+          { requireAllRequestDetails: false }
+        );
+        if (chietAllocationError) {
+          return t('separateMixedGlue.toast.chietPrefix', { name: row.materialName, message: chietAllocationError || '' });
+        }
       }
     }
 
@@ -396,6 +612,11 @@ export function useSeparateMixedGlueManagement() {
   };
 
   const handleComplete = async () => {
+    if (isNoMixGlueOperationLocked.value) {
+      blockIfNoMixOperationLocked();
+      return;
+    }
+
     const validationError = await validateBeforeComplete();
     if (validationError) {
       toast.add({
@@ -411,6 +632,15 @@ export function useSeparateMixedGlueManagement() {
       const payload = buildSeparateGlueCommandPayload(getPayloadContext(), '1', { forComplete: true });
       await separateGlue.postSeparateGlueCommand(payload);
 
+      if (headerInfo.value.isNoMixGlue) {
+        noMixGlueSubmitLocked.value = true;
+        separateGlueConfirm.value = true;
+        const draftKey = normalizeDraftWorkOrderId(currentWorkOrderId.value);
+        if (draftKey) {
+          await draftStore.saveDraft(draftKey, buildDraftSnapshot());
+        }
+      }
+
       isNavigatingAway.value = true;
       isDirty.value = false;
       toast.add({ severity: 'success', summary: t('separateMixedGlue.toast.completeSuccess'), detail: t('separateMixedGlue.toast.completeSuccessDetail'), life: 3000 });
@@ -418,11 +648,6 @@ export function useSeparateMixedGlueManagement() {
     } catch {
       toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.completeFailed'), life: 3000 });
     }
-  };
-
-  const onSegmentIonChange = (event: CustomEvent) => {
-    const v = (event.detail as { value?: string })?.value;
-    if (v) selectedTab.value = v;
   };
 
   const onRowClick = (event: { data: any }) => {
@@ -515,7 +740,7 @@ export function useSeparateMixedGlueManagement() {
       scrollToActiveRow();
     } else {
       activeComponent.value = { ...noMixComponents.value[index] };
-      toast.add({ severity: 'success', summary: t('separateMixedGlue.toast.weighingComplete'), detail: t('separateMixedGlue.toast.weighingCompleteDetail'), life: 4000 });
+      // toast.add({ severity: 'success', summary: t('separateMixedGlue.toast.weighingComplete'), detail: t('separateMixedGlue.toast.weighingCompleteDetail'), life: 4000 });
     }
 
     const fullIndex = noMixChemicalsFull.value.findIndex(item => item.materialName === weighedMaterialName);
@@ -629,7 +854,7 @@ export function useSeparateMixedGlueManagement() {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.notWeighed'),
         detail: t('separateMixedGlue.toast.weighBeforeAdd', { name: unweighed.materialName }),
-        life: 4000,
+        life: 6000,
       });
       return;
     }
@@ -650,6 +875,46 @@ export function useSeparateMixedGlueManagement() {
     if (blockIfOrderComplete()) return;
 
     separateGlueDetails.value = separateGlueDetails.value.filter(item => item !== rowToDelete);
+    await saveDraftToStoreOnly();
+  };
+
+  const handleAddNoMixSeparateGlueRow = async () => {
+    if (blockIfNoMixOperationLocked()) return;
+    if (!headerInfo.value.isNoMixGlue && blockIfOrderComplete()) return;
+
+    noMixSeparateGlueDetails.value.push(
+      normalizeNewNoMixSeparateAddRow(
+        {
+          ...createDefaultSeparateGlueRow(getNoMixGlueId()),
+          glueId: getNoMixGlueId(),
+        },
+        getNoMixGlueId()
+      )
+    );
+    await saveDraftToStoreOnly();
+  };
+
+  const handleNoMixSeparateBucketUpdate = async () => {
+    if (blockIfNoMixOperationLocked()) return;
+
+    if (headerInfo.value.isNoMixGlue) {
+      applyNoMixGlueApiSync();
+    }
+    await saveDraftToStoreOnly();
+  };
+
+  const handleDeleteNoMixSeparateGlueRow = async (rowToDelete: any) => {
+    if (blockIfNoMixOperationLocked()) return;
+    if (!headerInfo.value.isNoMixGlue && blockIfOrderComplete()) return;
+
+    if (headerInfo.value.isNoMixGlue) {
+      apiNoSeparateGlues.value = markApiNoSeparateGlueCancelledByRow(
+        apiNoSeparateGlues.value,
+        rowToDelete
+      );
+    }
+
+    noMixSeparateGlueDetails.value = noMixSeparateGlueDetails.value.filter(item => item !== rowToDelete);
     await saveDraftToStoreOnly();
   };
 
@@ -730,7 +995,7 @@ export function useSeparateMixedGlueManagement() {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.notWeighed'),
         detail: t('separateMixedGlue.toast.weighBeforeChiet', { name: rowData.materialName || '' }),
-        life: 4000,
+        life: 6000,
       });
       return;
     }
@@ -825,7 +1090,7 @@ export function useSeparateMixedGlueManagement() {
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
                     await separateGlue.postSeparateGlueCommand(payload);
-                    // await draftStore.clearDraft(currentWorkOrderId.value);
+                    await draftStore.clearAll();
                     isDirty.value = false;
                     resolve(true);
                   } catch (error) {
@@ -834,7 +1099,7 @@ export function useSeparateMixedGlueManagement() {
                       severity: 'error',
                       summary: t('listMixGlue.toast.error'),
                       detail: t('separateMixedGlue.toast.progressSaveFailed'),
-                      life: 3500,
+                      life: 6000,
                     });
                     resolve(false);
                   }
@@ -847,22 +1112,28 @@ export function useSeparateMixedGlueManagement() {
       })();
     });
 
-  const goBack = async () => {
-    if (isDirty.value) {
-      const canLeave = await alertExitPage();
-      if (canLeave) router.back();
-      return;
-    }
-    router.back();
+  const navigateToSeparateList = () => {
+    router.replace('/list-separate-mixed-glue-management');
   };
 
-  useBackButton(10, processNextHandler => {
+  const goBack = async () => {
+    await persistDraftOnLeave();
+
+    if (isDirty.value) {
+      const canLeave = await alertExitPage();
+      if (canLeave) navigateToSeparateList();
+      return;
+    }
+    navigateToSeparateList();
+  };
+
+  useBackButton(10, () => {
     if (!isDirty.value) {
-      processNextHandler();
+      navigateToSeparateList();
       return;
     }
     void alertExitPage().then(ok => {
-      if (ok) processNextHandler();
+      if (ok) navigateToSeparateList();
     });
   });
 
@@ -877,11 +1148,12 @@ export function useSeparateMixedGlueManagement() {
 
   onIonViewWillLeave(() => {
     releaseScaleConnection();
+    void persistDraftOnLeave();
   });
 
   onIonViewWillEnter(() => {
     selectedTab.value = 'table1';
-    const workOrderMasterId = route.query.workOrderMasterId as string;
+    const workOrderMasterId = normalizeDraftWorkOrderId(route.query.workOrderMasterId as string);
     if (workOrderMasterId) {
       void fetchWorkOrderDetail(workOrderMasterId);
       return;
@@ -892,29 +1164,30 @@ export function useSeparateMixedGlueManagement() {
 
   return {
     headerInfo,
+    totalWeightActualDisplay,
+    mixSeparateTargetWeight,
+    noMixSeparateTargetWeight,
     selectedTab,
     isLoadingLine,
     isLoadingComponent,
-    mixedGlueTableDetails,
-    requestDetails,
-    mixingProcess,
-    activeComponent,
-    noMixComponents,
-    selectedItem,
-    productDialog,
-    materialsList,
-    isLoadingMaterials,
-    chietDialog,
-    chietOrderDetails,
-    currentChietChemical,
-    isViewMode,
     mixChemicals,
+    noMixChemicals,
+    hasMixChemicals,
+    hasNoMixChemicals,
+    mixedGlueTableDetails,
+    noMixGlueTableDetails,
+    requestDetails,
     separateGlueComplete,
-    onSegmentIonChange,
+    separateGlueConfirm,
+    isNoMixGlue,
+    isNoMixGlueOperationLocked,
     saveDraftToStoreOnly,
     saveChietDraftToStoreOnly,
     handleAddSeparateGlueRow,
     handleDeleteSeparateGlueRow,
+    handleAddNoMixSeparateGlueRow,
+    handleNoMixSeparateBucketUpdate,
+    handleDeleteNoMixSeparateGlueRow,
     handleComplete,
     onRowClick,
     handleWeightChange,
