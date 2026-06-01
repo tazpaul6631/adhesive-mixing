@@ -69,7 +69,7 @@
       "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "尚未連接印表機。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
-      "invalidEmployeeCard": "員工卡無效。",
+      "invalidEmployeeCard": "驗證失敗，您不是 QIP，請聯絡管理員確認。",
       "loadOrderFailed": "無法載入派工單明細。",
       "mixGlueIdNotFound": "找不到調膠編號。",
       "noLabels": "沒有可列印的標籤。",
@@ -141,7 +141,7 @@
       "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "印表機尚未連線。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
-      "invalidEmployeeCard": "員工卡無效。",
+      "invalidEmployeeCard": "驗證失敗，您不是 QIP，請聯絡管理員確認。",
       "loadOrderFailed": "無法載入訂單明細。",
       "noLabels": "沒有可列印的標籤。",
       "printSuccess": "已列印 {count} 張標籤。",
@@ -297,7 +297,7 @@
       "glue": "膠水",
       "totalWeight": "總重量 (KG)",
       "componentCode": "成分編號",
-      "totalWeightActual": ""
+      "totalWeightActual": "實際重量 (KG)"
     },
     "sections": {
       "lineDetails": "生產線明細",

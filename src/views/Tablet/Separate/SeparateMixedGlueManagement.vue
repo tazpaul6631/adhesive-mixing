@@ -46,7 +46,7 @@
           </div>
         </div>
 
-        <div v-if="hasMixChemicals" class="surface-card p-0 shadow-1 border-round-xl mt-3">
+        <div v-if="hasMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>{{ t('separateMixedGlue.management.sections.mixedGlueBucket') }}
@@ -59,7 +59,7 @@
             @delete-row="handleDeleteSeparateGlueRow" />
         </div>
 
-        <div v-if="hasNoMixChemicals" class="surface-card p-0 shadow-1 border-round-xl mt-3">
+        <div v-if="hasNoMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
           <div class="surface-100 p-3 border-round-top-xl">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-box mr-2"></i>{{ t('separateMixedGlue.management.sections.noMixGlue') }}

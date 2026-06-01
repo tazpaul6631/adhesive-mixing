@@ -125,7 +125,7 @@ const appendPasteQrCodeTspl = (baseTspl: string, pasteQrCode?: string): string =
   // Góc phải trên — chữ dọc (rotation 90°)
   tspl += tsplBoldText(
     TSPL_LABEL_WIDTH - 30,
-    40,
+    20,
     code,
     TSPL_PASTE_QR_XMUL,
     TSPL_PASTE_QR_YMUL,
@@ -289,7 +289,7 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
+QRCODE 15,20,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);
