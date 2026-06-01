@@ -8,11 +8,11 @@ export type PrintFailureReason =
   | 'skipped_after_error';
 
 export interface SeparateLabelDto {
+  glueName?: string;
   styleName?: string;
   productLineName?: string;
   startDate?: string;
   endDate?: string;
-  domainApi?: string;
   action?: string;
   pasteQrCode?: string;
   separateGlueId?: string | number;
@@ -488,21 +488,21 @@ export async function fetchSeparatePrintBatchFromWorkOrder(
 
 export function buildSeparateLabelTspl(item: SeparatePrintItem): string | null {
   const dto = item.labelDto;
-  if (!dto?.domainApi || !dto?.action || !item.qrPath) return null;
+  if (!dto?.action || !item.qrPath) return null;
 
   const formattedStart = dto.startDate || '';
   const formattedEnd = dto.endDate || '';
-  const qrPayload = `${dto.domainApi}${dto.action}/${item.qrPath}`;
+  const qrPayload = `${dto.action}/${item.qrPath}`;
 
   let tspl = `
 SIZE 69 mm, 49 mm
-GAP 0 mm, 0 mm
+GAP 3 mm, 0 mm
 REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,4,A,0,"${tsplEscape(qrPayload)}"
-QRCODE 380,240,H,4,A,0,"${tsplEscape(qrPayload)}"
+QRCODE 15,40,H,5,A,0,"${tsplEscape(qrPayload)}"
+QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);
   tspl += tsplBoldDate(230, 36, `${formattedStart}`);
@@ -515,7 +515,7 @@ QRCODE 380,240,H,4,A,0,"${tsplEscape(qrPayload)}"
     TSPL_LEFT_X,
     200,
     'Keo:',
-    dto.styleName || '',
+    dto.glueName || '',
     TSPL_MAX_CHARS_FIRST_LINE,
     TSPL_MAX_CHARS_CONTINUATION,
     3

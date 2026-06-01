@@ -14,7 +14,7 @@
       </template>
 
       <template #footer>
-        <div class="flex justify-start">
+        <div v-if="!isNoMixGlue" class="flex justify-start">
           <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" :disabled="disabled"
             @click="handleOpenNew" />
         </div>
@@ -25,6 +25,14 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="80%" height="1rem" />
           <span v-else class="font-medium dt-cell-wrap">{{ data.materialName }}</span>
+        </template>
+      </Column>
+
+      <Column :header="t('separateMixedGlue.table.columns.glueWeight')" headerClass="dt-col-weight"
+        bodyClass="dt-col-weight">
+        <template #body="{ data }">
+          <Skeleton v-if="isLoading" width="60%" height="1rem" />
+          <span v-else>{{ data.glueWeight || '' }}</span>
         </template>
       </Column>
 
@@ -88,6 +96,7 @@ const props = defineProps<{
   headerTotalWeight: string | number;
   selectedItem: any;
   disabled?: boolean;
+  isNoMixGlue?: boolean;
 }>();
 
 const emit = defineEmits([

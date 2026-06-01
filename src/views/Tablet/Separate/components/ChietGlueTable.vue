@@ -226,7 +226,7 @@ const handleAddRow = () => {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
-        life: 4000,
+        life: 6000,
       });
       return;
     }
@@ -236,7 +236,7 @@ const handleAddRow = () => {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.allocationComplete'),
         detail: formatChietCapacityBlockMessage(props.weighedWeight, props.weighedWeightUnit || 'Kg'),
-        life: 4000,
+        life: 6000,
       });
       return;
     }
@@ -262,7 +262,7 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.weightExceeded'),
         detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getWeighedWeightLabel() }),
-        life: 4000,
+        life: 6000,
       });
       return;
     }

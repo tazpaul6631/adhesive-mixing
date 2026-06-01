@@ -153,6 +153,14 @@ const mobileFeatures = computed(() => [
     color: '#f59e0b',
     bgLight: '#fef3c7'
   },
+  // {
+  //   path: '/mobile/glue-return',
+  //   title: t('mobile.appMenu.glueReturn'),
+  //   description: t('mobile.appMenu.glueReturnDescription'),
+  //   icon: qrCodeOutline,
+  //   color: '#8b5cf6',
+  //   bgLight: '#ede9fe'
+  // },
   {
     path: '/mobile/glue-info-check',
     title: t('mobile.appMenu.glueInfoCheck'),

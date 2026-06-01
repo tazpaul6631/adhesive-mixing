@@ -795,7 +795,7 @@ const printLabel = async () => {
       const response = await mixGlue.postMGMQIPConfirm(payload);
 
       if (response.data?.success) {
-        const { styleName, startDate, endDate, domainApi, action, productLineName } = response.data.data;
+        const { styleName, startDate, endDate, action, productLineName } = response.data.data;
 
         const formattedStart = format.formatDate(startDate);
         const formattedEnd = format.formatDate(endDate);
@@ -808,8 +808,8 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
-QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMasterId}"
+QRCODE 15,40,H,4,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
+QRCODE 380,240,H,4,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
         tspl += tsplBoldText(180, 40, 'Từ ngày:');
         tspl += tsplBoldText(180, 80, formattedStart);
@@ -881,7 +881,7 @@ QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${payload.factoryId}/${mixGlueMast
 
       // 2. Xử lý kết quả trả về từ API (Chung cho cả 2 loại)
       if (response && response.data?.success) {
-        const { styleName, startDate, endDate, domainApi, action, productLineName } = response.data.data;
+        const { styleName, startDate, endDate, action, productLineName } = response.data.data;
 
         const formattedStart = format.formatDate(startDate);
         const formattedEnd = format.formatDate(endDate);
@@ -894,8 +894,8 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
-QRCODE 15,40,H,4,A,0,"${domainApi}${action}/${qrCodeParams}"
-QRCODE 380,240,H,4,A,0,"${domainApi}${action}/${qrCodeParams}"
+QRCODE 15,40,H,4,A,0,"${action}/${qrCodeParams}"
+QRCODE 380,240,H,4,A,0,"${action}/${qrCodeParams}"
 `;
         tspl += tsplBoldText(180, 40, 'Từ ngày:');
         tspl += tsplBoldText(180, 80, formattedStart);

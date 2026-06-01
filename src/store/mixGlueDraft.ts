@@ -6,17 +6,68 @@ const STORAGE_KEY = 'mix_glue_drafts_storage';
 
 export type MixGlueDraftPayload = Record<string, unknown>;
 
-/** Draft còn tiến độ chưa gửi chính thức (Mix Glue). */
-export const isMixGlueDraftRestorable = (draft: MixGlueDraftPayload | undefined | null): boolean => {
+export const normalizeDraftWorkOrderId = (
+  workOrderMasterId: string | number | undefined | null
+): string => {
+  if (workOrderMasterId === undefined || workOrderMasterId === null) return '';
+  return String(workOrderMasterId).trim();
+};
+
+const hasSeparateGlueTableProgress = (items: unknown): boolean =>
+  Array.isArray(items) &&
+  items.some((row: any) => !!row?.selectedBucketId || !!row?.bucketId);
+
+/** Draft có dòng bảng chiết keo trộn / không trộn. */
+export const hasDraftSeparateTableData = (draft: MixGlueDraftPayload | undefined | null): boolean => {
   if (!draft) return false;
-  const components = draft.componentDetailsFull;
-  if (!Array.isArray(components) || components.length === 0) return false;
-  return components.some(
+  if (Array.isArray(draft.separateGlueDetails) && draft.separateGlueDetails.length > 0) return true;
+  if (Array.isArray(draft.noMixSeparateGlueDetails) && draft.noMixSeparateGlueDetails.length > 0) return true;
+  if (Array.isArray(draft.apiNoSeparateGlues) && draft.apiNoSeparateGlues.length > 0) return true;
+  return (
+    hasSeparateGlueTableProgress(draft.separateGlueDetails)
+    || hasSeparateGlueTableProgress(draft.noMixSeparateGlueDetails)
+  );
+};
+
+const hasMixTableProgress = (items: unknown): boolean =>
+  Array.isArray(items) &&
+  items.some(
     (item: any) =>
       item.weighingTime ||
       (item.actualWeight && Number(item.actualWeight) > 0) ||
       item.glueExtra
   );
+
+const hasNoMixDraftProgress = (draft: MixGlueDraftPayload): boolean => {
+  if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
+    return true;
+  }
+
+  const pendingByMaterial = draft.chietPendingByMaterial;
+  if (pendingByMaterial && typeof pendingByMaterial === 'object') {
+    const hasPendingChiet = Object.values(pendingByMaterial as Record<string, unknown>).some(
+      (rows) => Array.isArray(rows) && rows.length > 0
+    );
+    if (hasPendingChiet) return true;
+  }
+
+  const weighed = (items: unknown) =>
+    Array.isArray(items) &&
+    items.some(
+      (item: any) =>
+        item.weighingTime ||
+        (item.actualWeight && Number(item.actualWeight) > 0) ||
+        item.isChietCompleted ||
+        (item.glueExtra && item.requiredWeight && Number(item.requiredWeight) > 0)
+    );
+
+  return weighed(draft.noMixComponents) || weighed(draft.noMixChemicalsFull);
+};
+
+/** Draft còn tiến độ chưa gửi chính thức (Mix Glue). */
+export const isMixGlueDraftRestorable = (draft: MixGlueDraftPayload | undefined | null): boolean => {
+  if (!draft) return false;
+  return hasMixTableProgress(draft.componentDetailsFull) || hasNoMixDraftProgress(draft);
 };
 
 /** Draft còn tiến độ chưa gửi chính thức (Separate). */
@@ -24,6 +75,9 @@ export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined
   if (!draft) return false;
 
   if (Array.isArray(draft.separateGlueDetails) && draft.separateGlueDetails.length > 0) {
+    return true;
+  }
+  if (Array.isArray(draft.noMixSeparateGlueDetails) && draft.noMixSeparateGlueDetails.length > 0) {
     return true;
   }
   if (Array.isArray(draft.orderDetails) && draft.orderDetails.some((o: any) =>
@@ -43,17 +97,7 @@ export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined
     if (hasPendingChiet) return true;
   }
 
-  const weighed = (items: any[]) =>
-    Array.isArray(items) &&
-    items.some(
-      (item: any) =>
-        item.weighingTime ||
-        (item.actualWeight && Number(item.actualWeight) > 0) ||
-        item.isChietCompleted ||
-        (item.glueExtra && item.requiredWeight && Number(item.requiredWeight) > 0)
-    );
-
-  return weighed(draft.noMixComponents as any[]) || weighed(draft.noMixChemicalsFull as any[]);
+  return hasNoMixDraftProgress(draft);
 };
 
 export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
@@ -87,24 +131,40 @@ export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
     },
 
     async saveDraft(workOrderMasterId: string, data: MixGlueDraftPayload) {
+      const key = normalizeDraftWorkOrderId(workOrderMasterId);
+      if (!key) return;
+
       await this.ensureHydrated();
-      this.drafts[workOrderMasterId] = data;
+      this.drafts[key] = data;
       await this.persistToDisk();
     },
 
     async clearDraft(workOrderMasterId: string) {
+      const key = normalizeDraftWorkOrderId(workOrderMasterId);
+      if (!key) return;
+
       await this.ensureHydrated();
-      delete this.drafts[workOrderMasterId];
+      delete this.drafts[key];
+      await this.persistToDisk();
+    },
+
+    async clearAll() {
+      await this.ensureHydrated();
+      this.drafts = {};
       await this.persistToDisk();
     },
 
     getDraft(workOrderMasterId: string) {
-      return this.drafts[workOrderMasterId];
+      const key = normalizeDraftWorkOrderId(workOrderMasterId);
+      if (!key) return undefined;
+      return this.drafts[key];
     },
 
     async getDraftAsync(workOrderMasterId: string) {
       await this.ensureHydrated();
-      return this.drafts[workOrderMasterId];
+      const key = normalizeDraftWorkOrderId(workOrderMasterId);
+      if (!key) return undefined;
+      return this.drafts[key];
     },
   },
 });

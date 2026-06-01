@@ -88,6 +88,13 @@
               </div>
             </div>
 
+            <div v-if="allocatedExpiredMessage" class="status-box status-box--danger status-box--compact">
+              <ion-icon class="status-box__icon" :icon="alertCircle"></ion-icon>
+              <div class="status-box__content">
+                <p>{{ allocatedExpiredMessage }}</p>
+              </div>
+            </div>
+
             <ion-button
               expand="block"
               class="confirm-button"
@@ -98,52 +105,9 @@
               {{ t("mobile.glueConfirm.confirmReturnButton") }}
             </ion-button>
 
-            <ion-button
-              v-if="shouldShowReturnScanButton"
-              expand="block"
-              :class="['confirm-button', { 'confirm-button--disabled': isReturnScanButtonDisabled }]"
-              :disabled="isReturnScanButtonDisabled"
-              @click="openScanner('return')"
-            >
-              <ion-icon slot="start" :icon="qrCodeOutline"></ion-icon>
-              {{ t("mobile.glueConfirm.scanReturnQrButton") }}
-            </ion-button>
           </div>
         </section>
       </div>
-
-      <ion-modal
-        :is-open="isReturnConfirmDialogOpen"
-        class="return-confirm-modal"
-        :backdrop-dismiss="false"
-        @didDismiss="handleReturnDialogDismiss"
-      >
-        <div class="return-confirm-dialog">
-          <div class="return-confirm-dialog__icon">
-            <ion-icon :icon="alertCircle"></ion-icon>
-          </div>
-
-          <h2 class="return-confirm-dialog__title">{{ t("mobile.glueConfirm.returnDialogTitle") }}</h2>
-
-          <div class="return-confirm-dialog__message">
-            <span>{{ t("mobile.glueConfirm.returnDialogMessage") }}</span>
-          </div>
-
-          <div class="return-confirm-dialog__actions">
-            <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="cancelReturnConfirm">
-              {{ t("mobile.glueConfirm.cancelButton") }}
-            </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click.stop="confirmReturnQr">
-              <ion-spinner
-                v-if="isSubmittingReturn"
-                name="crescent"
-                class="return-confirm-dialog__button-spinner"
-              ></ion-spinner>
-              <span>{{ isSubmittingReturn ? t("mobile.glueConfirm.submittingButton") : t("mobile.glueConfirm.okButton") }}</span>
-            </ion-button>
-          </div>
-        </div>
-      </ion-modal>
 
       <ion-toast
         :is-open="showSuccessToast"
@@ -158,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import {
   IonBackButton,
   IonButton,
@@ -177,16 +141,16 @@ import {
   IonToast,
   IonToolbar,
 } from "@ionic/vue";
-import { alertCircle, barcodeOutline, checkmarkCircle, qrCodeOutline, shieldCheckmarkOutline } from "ionicons/icons";
+import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
+import { useLineChemicalStore } from "@/services/lineChemical.store";
+import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type ConfirmScanTarget = "line" | "allocated";
-type ScanTarget = ConfirmScanTarget | "return";
-type ReturnScanButtonDisplayMode = "disabled" | "hidden";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
 type GlueQrType = "lineChemical" | "mixGlue" | "separateGlue" | "noSeparateGlue";
 type ResolveGlueQrResult = {
@@ -195,47 +159,23 @@ type ResolveGlueQrResult = {
 };
 
 const authStore = useAuthStore();
+const lineChemicalStore = useLineChemicalStore();
 const { t } = useI18n();
-
-const returnScanButtonDisplayMode = "disabled" as ReturnScanButtonDisplayMode;
-const systemQrUrlHosts = [
-  "10.0.111.118:7152",
-  "10.0.111.127:7152",
-];
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
 const lineQrRawText = ref("");
 const allocatedQrRawText = ref("");
-const returnQrText = ref("");
-const pendingReturnQrText = ref("");
-const pendingReturnGlueInfo = ref<any>(null);
-
 const lineChemicalInfo = ref<any>(null);
 const allocatedGlueInfo = ref<any>(null);
 const allocatedDisplayRows = ref<Array<{ label: string; value: string }>>([]);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref("");
-const isReturnConfirmDialogOpen = ref(false);
-const isSubmittingReturn = ref(false);
-let isReturnSubmitLocked = false;
-const isReturnScanReady = ref(false);
 const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
 const isLoadingAllocatedQr = ref(false);
-
-const shouldShowReturnScanButton = computed(() => {
-  if (returnScanButtonDisplayMode === "hidden") {
-    return isReturnScanReady.value;
-  }
-
-  return true;
-});
-
-const isReturnScanButtonDisabled = computed(() => {
-  return !isReturnScanReady.value;
-});
+const isConfirmingReturn = ref(false);
 
 const isFirstTwoQrReady = computed(() => {
   return !!lineChemicalInfo.value && !!allocatedGlueInfo.value;
@@ -257,8 +197,23 @@ const isFirstTwoQrMatched = computed(() => {
   return isProductLineMatched && isGlueMatched;
 });
 
+const isAllocatedGlueExpired = computed(() => {
+  const expiredValue = allocatedGlueInfo.value?.isExpired;
+
+  if (typeof expiredValue === "boolean") {
+    return expiredValue;
+  }
+
+  const normalizedValue = normalizeCompareValue(expiredValue).toLowerCase();
+  return normalizedValue === "true" || normalizedValue === "1";
+});
+
+const allocatedExpiredMessage = computed(() => {
+  return isAllocatedGlueExpired.value ? t("mobile.glueConfirm.messages.allocatedExpired") : "";
+});
+
 const isConfirmButtonDisabled = computed(() => {
-  return isConfirmReturnCompleted.value || !isFirstTwoQrMatched.value || isLoadingLineQr.value || isLoadingAllocatedQr.value;
+  return isConfirmReturnCompleted.value || !isFirstTwoQrMatched.value || isAllocatedGlueExpired.value || isLoadingLineQr.value || isLoadingAllocatedQr.value || isConfirmingReturn.value;
 });
 
 const statusMessage = computed(() => {
@@ -334,6 +289,10 @@ function getCurrentUserId() {
   return authStore.user?.employeeId || authStore.token || localStorage.getItem("web_token_backup") || "";
 }
 
+function getBarcodeValue(barcode: { rawValue?: string; displayValue?: string }) {
+  return barcode.rawValue || barcode.displayValue || "";
+}
+
 function getReturnGlueIdValue(info: any) {
   if (hasPayloadValue(info?.mixGlueMasterId)) {
     return normalizeCompareValue(info.mixGlueMasterId);
@@ -386,28 +345,7 @@ function getAllocatedGlueCompareValue(info: any) {
 }
 
 function getSystemQrUrl(qrText: string) {
-  const normalizedText = normalizeQrText(qrText);
-
-  if (!normalizedText) {
-    return null;
-  }
-
-  try {
-    const url = new URL(normalizedText);
-    const protocol = url.protocol.toLowerCase();
-
-    if (protocol !== "http:" && protocol !== "https:") {
-      return null;
-    }
-
-    if (!systemQrUrlHosts.includes(url.host)) {
-      return null;
-    }
-
-    return url;
-  } catch {
-    return null;
-  }
+  return buildSystemQrUrl(qrText);
 }
 
 function getGlueQrType(data: any): GlueQrType | null {
@@ -482,11 +420,7 @@ async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQr
   return { data: responseData.data, status: "success" };
 }
 
-async function openScanner(target: ScanTarget) {
-  if (target === "return" && isReturnScanButtonDisabled.value) {
-    return;
-  }
-
+async function openScanner(target: ConfirmScanTarget) {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
@@ -501,11 +435,7 @@ async function openScanner(target: ScanTarget) {
       const scannedValue = barcodes[0].rawValue;
 
       if (scannedValue) {
-        if (target === "return") {
-          await handleReturnScanResult(scannedValue);
-        } else {
-          await handleConfirmScanResult(target, scannedValue);
-        }
+        await handleConfirmScanResult(target, scannedValue);
       } else {
         await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
       }
@@ -616,166 +546,75 @@ async function handleAllocatedQrScanResult(qrText: string) {
   }
 }
 
-async function handleReturnScanResult(value: string) {
-  const normalizedValue = normalizeQrText(value);
 
-  if (!normalizedValue) {
-    return;
-  }
-
-  try {
-    const result = await resolveGlueQrFromSystemUrl(normalizedValue);
-
-    if (result.status === "invalid") {
-      resetReturnField();
-      await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
-      return;
-    }
-
-    if (result.status === "noData" || !result.data) {
-      resetReturnField();
-      await showWarningAlert(t("mobile.glueConfirm.messages.noGlueData"));
-      return;
-    }
-
-    const qrType = getGlueQrType(result.data);
-
-    if (!isAllocatedGlueQrType(qrType)) {
-      resetReturnField();
-      await showWarningAlert(t("mobile.glueConfirm.messages.invalidAllocatedQr"));
-      return;
-    }
-
-    returnQrText.value = formatAllocatedGlueDisplay(result.data);
-    pendingReturnQrText.value = normalizedValue;
-    pendingReturnGlueInfo.value = result.data;
-    isReturnConfirmDialogOpen.value = true;
-  } catch (error) {
-    console.error("Không thể lấy thông tin QR thùng keo trả về:", error);
-    resetReturnField();
-    alert(t("mobile.glueConfirm.messages.loadReturnError"));
-  }
-}
-
-function handleReturnDialogDismiss() {
-  if (!isReturnConfirmDialogOpen.value) {
-    return;
-  }
-
-  cancelReturnConfirm();
-}
-
-function cancelReturnConfirm() {
-  if (isSubmittingReturn.value) {
-    return;
-  }
-
-  isReturnConfirmDialogOpen.value = false;
-  resetReturnField();
-}
-
-async function confirmReturnQr() {
-  if (!pendingReturnQrText.value || isSubmittingReturn.value || isReturnSubmitLocked) {
-    return;
-  }
-
-  isReturnSubmitLocked = true;
-  isSubmittingReturn.value = true;
-
-  try {
-    await submitReturnQr();
-    isReturnConfirmDialogOpen.value = false;
-    resetReturnField();
-    showToast(t("mobile.glueConfirm.messages.returnSuccess"));
-  } catch (error) {
-    console.error("Không thể xác nhận trả về thùng keo:", error);
-    alert(t("mobile.glueConfirm.messages.returnConfirmError"));
-  } finally {
-    isSubmittingReturn.value = false;
-    isReturnSubmitLocked = false;
-  }
-}
-
-async function submitReturnQr() {
-  if (!pendingReturnGlueInfo.value || !lineChemicalInfo.value) {
-    throw new Error("Missing return glue or line chemical data");
-  }
-
-  const userId = getCurrentUserId();
-  const payload = {
-    factoryId: normalizeCompareValue(pendingReturnGlueInfo.value.factoryId),
-    returnGlueId: getReturnGlueIdValue(pendingReturnGlueInfo.value),
-    lineChemicalId: lineChemicalInfo.value.lineChemicalId || 0,
-    recordStatus: "1",
-    createrId: userId,
-    updaterId: userId,
-  };
-
-  console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/create");
-  console.info("Request payload:", payload);
-
-  try {
-    const response = await glueReturnApi.glueReturn(payload);
-    console.info("Response:", response?.data ?? response);
-
-    const responseData = response.data as any;
-
-    if (!responseData.success || responseData.data !== true) {
-      throw new Error(responseData.message || "Create glue return log failed");
-    }
-  } finally {
-    console.groupEnd();
-  }
-}
 
 async function handleConfirmReturn() {
   if (isConfirmButtonDisabled.value || !lineChemicalInfo.value || !allocatedGlueInfo.value) {
     return;
   }
 
-  const payload: Record<string, any> = {
-    factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
-    updaterId: getCurrentUserId(),
-    productLineId: normalizeCompareValue(lineChemicalInfo.value?.productLineId)
-  };
-
-  const mixGlueMasterId = allocatedGlueInfo.value.mixGlueMasterId;
-  const separateGlueId = allocatedGlueInfo.value.separateGlueId;
-  const noSeparateGlueId = allocatedGlueInfo.value.noSeparateGlueId;
-
-  if (hasPayloadValue(mixGlueMasterId)) {
-    payload.mixGlueMasterId = mixGlueMasterId;
-  }
-
-  if (hasPayloadValue(separateGlueId)) {
-    payload.separateGlueId = separateGlueId;
-  }
-
-  if (hasPayloadValue(noSeparateGlueId)) {
-    payload.noSeparateGlueId = noSeparateGlueId;
-  }
-
-  console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");
-  console.info("Request payload:", payload);
+  isConfirmingReturn.value = true;
 
   try {
-    const response = await glueReturnApi.glueReturnConfirm(payload);
-    console.info("Response:", response?.data ?? response);
+    const payload: Record<string, any> = {
+      factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
+      updaterId: getCurrentUserId(),
+      productLineId: normalizeCompareValue(lineChemicalInfo.value?.productLineId),
+    };
 
-    const responseData = response.data as any;
+    const mixGlueMasterId = allocatedGlueInfo.value.mixGlueMasterId;
+    const separateGlueId = allocatedGlueInfo.value.separateGlueId;
+    const noSeparateGlueId = allocatedGlueInfo.value.noSeparateGlueId;
 
-    if (!responseData.success || responseData.data !== true) {
-      throw new Error(responseData.message || "Confirm glue return failed");
+    if (hasPayloadValue(mixGlueMasterId)) {
+      payload.mixGlueMasterId = mixGlueMasterId;
     }
 
-    isReturnScanReady.value = true;
-    isConfirmReturnCompleted.value = true;
-    showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
+    if (hasPayloadValue(separateGlueId)) {
+      payload.separateGlueId = separateGlueId;
+    }
+
+    if (hasPayloadValue(noSeparateGlueId)) {
+      payload.noSeparateGlueId = noSeparateGlueId;
+    }
+
+    console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");
+    console.info("Request payload:", payload);
+
+    try {
+      const response = await glueReturnApi.glueReturnConfirm(payload);
+      console.info("Response:", response?.data ?? response);
+
+      const responseData = response.data as any;
+
+      if (!responseData.success || responseData.data !== true) {
+        throw new Error(responseData.message || "");
+      }
+
+      lineChemicalStore.setLineChemicalSession({
+        lineChemicalId: lineChemicalInfo.value?.lineChemicalId ?? null,
+        productLineId: lineChemicalInfo.value?.productLineId ?? null,
+        factoryId: allocatedGlueInfo.value?.factoryId ?? null,
+        productLineName: lineChemicalInfo.value?.productLineName ?? null,
+        glueName: lineChemicalInfo.value?.glueName ?? null,
+        confirmedAt: new Date().toISOString(),
+      });
+
+      isConfirmReturnCompleted.value = true;
+      showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
+    } finally {
+      console.groupEnd();
+    }
   } catch (error) {
     console.error("Không thể xác nhận:", error);
-    alert(t("mobile.glueConfirm.messages.confirmError"));
+
+    const errorMessage = error instanceof Error && error.message
+      ? error.message
+      : t("mobile.glueConfirm.messages.confirmError");
+
+    alert(errorMessage);
   } finally {
-    console.groupEnd();
+    isConfirmingReturn.value = false;
   }
 }
 
@@ -794,16 +633,8 @@ function resetAllocatedQrField() {
   resetConfirmReturnStatus();
 }
 
-function resetReturnField() {
-  returnQrText.value = "";
-  pendingReturnQrText.value = "";
-  pendingReturnGlueInfo.value = null;
-}
-
 function resetConfirmReturnStatus() {
-  isReturnScanReady.value = false;
   isConfirmReturnCompleted.value = false;
-  resetReturnField();
 }
 
 function showToast(message: string) {
@@ -1040,6 +871,10 @@ function getAllocatedDisplayRows(info: any) {
     border: 1px solid #fecaca;
     color: #dc1f2e;
     background: #fff7f7;
+  }
+
+  &--compact {
+    padding: 14px 18px;
   }
 }
 

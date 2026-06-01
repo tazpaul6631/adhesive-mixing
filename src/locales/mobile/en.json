@@ -48,12 +48,12 @@
   },
   "mobile": {
     "glueConfirm": {
-      "title": "Line glue confirmation & return",
-      "lineQrTitle": "Line glue bucket QR code",
-      "allocatedQrTitle": "Allocated glue bucket QR code",
+      "title": "Production Line Glue Receipt Confirmation",
+      "lineQrTitle": "Line Glue QR Code",
+      "allocatedQrTitle": "Glue Bucket QR Code",
       "scanPlaceholder": "Tap to scan QR code",
       "statusLabel": "Status:",
-      "confirmReturnButton": "Confirm return",
+      "confirmReturnButton": "Confirm Glue Receipt",
       "scanReturnQrButton": "Scan return glue bucket QR code",
       "returnDialogTitle": "Confirm return glue bucket",
       "returnDialogMessage": "Confirm return of the scanned glue bucket?",
@@ -78,16 +78,46 @@
         "confirmError": "Unable to confirm. Please try again!",
         "confirmSuccess": "Confirmed successfully",
         "statusMismatch": "The line glue bucket QR code does not match the allocated glue bucket QR code.",
-        "statusMatched": "The line glue bucket QR code matches the allocated glue bucket QR code."
+        "statusMatched": "The line glue bucket QR code matches the allocated glue bucket QR code.",
+        "allocatedExpired": "The glue bucket QR code has expired.",
+        "invalidReceiverEmployee": "Receiver not found. Please scan again.",
+        "receiverValidateError": "Unable to verify the glue receiver. Please try again!",
+        "receiverCameraPermission": "Camera permission is required to scan the glue receiver card!"
       }
     },
     "appMenu": {
       "hello": "Hello!",
       "system": "Mobile Management System",
-      "glueConfirm": "Line Glue Confirmation & Glue Return",
+      "glueConfirm": "Production Line Glue Receipt Confirmation",
       "description": "Use the phone camera to scan QR codes",
+      "glueReturn": "Return glue scan",
+      "glueReturnDescription": "Scan returned glue buckets after confirming the production line",
       "glueInfoCheck": "Glue Bucket Information Lookup",
       "glueInfoCheckDescription": "Check allocated glue bucket information"
+    },
+    "glueReturn": {
+      "title": "Return glue scan",
+      "qrTitle": "Returned glue bucket QR code",
+      "scanPlaceholder": "Scan the returned glue QR code",
+      "confirmButton": "Confirm return",
+      "confirmDialogTitle": "Confirm returned glue bucket",
+      "confirmDialogMessage": "Confirm return the scanned bucket?",
+      "cancelButton": "CANCEL",
+      "okButton": "OK",
+      "submittingButton": "Submitting...",
+      "fields": {
+        "lineLabel": "Line:",
+        "glueLabel": "Glue:"
+      },
+      "messages": {
+        "requireConfirmedLine": "Please confirm the production line glue first before scanning the returned glue bucket.",
+        "cameraPermission": "Camera permission is required to scan the QR code!",
+        "invalidQr": "Invalid QR code. Please scan the returned glue bucket QR code again.",
+        "noGlueData": "No returned glue bucket data found.",
+        "loadError": "Unable to retrieve the returned glue bucket QR information. Please check the API connection!",
+        "returnSuccess": "Return completed successfully",
+        "returnConfirmError": "Unable to create the glue return log. Please try again!"
+      }
     },
     "glueInfoCheck": {
       "title": "Glue Bucket Information Lookup",
@@ -116,7 +146,8 @@
         "noGlueData": "No glue bucket data found.",
         "cameraPermission": "Camera permission is required to scan QR codes!",
         "loadingInfo": "Loading information...",
-        "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!"
+        "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!",
+        "unconfirmedGlue": "The glue bucket has not been confirmed. Please scan again."
       }
     }
   }

@@ -1,6 +1,6 @@
 <template>
   <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
-    <label class="text-800 font-medium block flex align-items-center flex-wrap gap-2">
+    <label class="text-800 font-medium block" style="width: fit-content;">
       <span>{{ t('electronicScale.label') }}</span>
       <Button icon="pi pi-refresh" severity="secondary" text rounded size="small" class="scale-refresh-btn"
         :title="t('electronicScale.refreshTitle')" :loading="isRefreshing" :disabled="isRefreshing"
@@ -170,7 +170,7 @@ const handleRefreshConnection = async () => {
       severity: 'info',
       summary: t('electronicScale.toast.reconnecting'),
       detail: t('electronicScale.toast.reconnectingDetail'),
-      life: 4000,
+      life: 6000,
     });
   } catch (error) {
     console.error('[ElectronicScale] refresh connection failed:', error);
@@ -178,7 +178,7 @@ const handleRefreshConnection = async () => {
       severity: 'warn',
       summary: t('electronicScale.toast.connectFailed'),
       detail: t('electronicScale.toast.connectFailedDetail'),
-      life: 4000,
+      life: 6000,
     });
   } finally {
     isRefreshing.value = false;
@@ -282,7 +282,7 @@ const confirmWeight = () => {
       severity: 'warn',
       summary: t('electronicScale.toast.zeroWeight'),
       detail: t('electronicScale.toast.zeroWeightDetail'),
-      life: 4000,
+      life: 6000,
     });
     return;
   }
@@ -303,7 +303,7 @@ const confirmWeight = () => {
           weight: minDisplay.toFixed(3),
           unit,
         }),
-        life: 5000
+        life: 6000
       });
       return;
     }
@@ -316,7 +316,7 @@ const confirmWeight = () => {
           weight: maxDisplay.toFixed(3),
           unit,
         }),
-        life: 5000
+        life: 6000
       });
       return;
     }
@@ -329,7 +329,7 @@ const confirmWeight = () => {
     detail: props.enforceTolerance
       ? t('electronicScale.toast.successWithinTolerance')
       : t('electronicScale.toast.successConfirmed'),
-    life: 3000
+    life: 6000
   });
 };
 
