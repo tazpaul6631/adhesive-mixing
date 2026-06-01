@@ -12,19 +12,19 @@
     "title": "首頁",
     "logout": "登出",
     "tabletH2title": "您好！",
-    "tabletSubtitle": "平板管理系統",
+    "tabletSubtitle": "調膠管理系統",
     "features": {
       "mixGlue": {
         "title": "調膠清單管理",
-        "description": "管理調膠、檢查連線並從磅秤取得資料。"
+        "description": "管理調膠、檢查連線並使用電子秤秤重。"
       },
       "separateMixedGlue": {
-        "title": "混合膠分裝管理",
-        "description": "管理已調配膠水的重新包裝。"
+        "title": "混合膠水分裝管理",
+        "description": "管理已調配膠水的分裝。"
       },
       "glueReturnLog": {
-        "title": "退膠紀錄管理",
-        "description": "管理退膠紀錄、檢查連線並從磅秤取得資料。"
+        "title": "報廢紀錄管理",
+        "description": "管理報廢紀錄、檢查連線並使用電子秤秤重。"
       }
     }
   },
@@ -32,15 +32,15 @@
     "sectionTitle": "調膠清單",
     "empty": "目前沒有可顯示的資料。",
     "columns": {
-      "workOrder": "工單",
-      "glue": "膠水",
-      "totalWeight": "總重量 (kg)",
-      "updater": "更新人員",
-      "updateDate": "更新日期",
-      "confirm": "確認"
+      "workOrder": "派工單",
+      "glue": "調膠品",
+      "totalWeight": "需求總重量 (KG)",
+      "updater": "調膠人員",
+      "updateDate": "調膠日期",
+      "confirm": "QIP確認"
     },
     "scan": {
-      "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
+      "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準於框內"
     },
     "print": {
       "overlayTitle": "正在列印標籤",
@@ -63,14 +63,14 @@
       "warning": "警告",
       "success": "完成",
       "error": "錯誤",
-      "draftNotFound": "找不到工單草稿。",
-      "confirmSuccess": "已確認工單！",
+      "draftNotFound": "找不到派工單草稿。",
+      "confirmSuccess": "已確認派工單！",
       "confirmFailed": "確認失敗！",
-      "factoryNotFound": "找不到工廠資訊。",
+      "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "尚未連接印表機。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
       "invalidEmployeeCard": "員工卡無效。",
-      "loadOrderFailed": "無法載入工單詳情。",
+      "loadOrderFailed": "無法載入派工單明細。",
       "mixGlueIdNotFound": "找不到調膠編號。",
       "noLabels": "沒有可列印的標籤。",
       "printSuccess": "已列印 {count} 張標籤。",
@@ -83,36 +83,36 @@
     }
   },
   "listGlueReturnLog": {
-    "pageTitle": "退膠紀錄",
-    "sectionTitle": "退膠紀錄清單",
+    "pageTitle": "報廢紀錄",
+    "sectionTitle": "報廢紀錄清單",
     "empty": "目前沒有可顯示的資料。",
-    "selectedRow": "目前選取列",
-    "selectRowHint": "請在表格中選取要秤重的列",
-    "weighed": "已確認秤重",
+    "selectedRow": "目前選取膠水",
+    "selectRowHint": "請在表格中選取要秤重的膠水",
+    "weighed": "實際秤重",
     "columns": {
       "seq": "序號",
-      "lineChemical": "膠水 / 產線",
-      "returnWeight": "退膠重量",
+      "lineChemical": "膠水 / 生產線",
+      "returnWeight": "報廢重量",
       "operator": "操作人員",
       "weighTime": "秤重時間",
-      "confirm": "確認",
-      "updater": "更新人員",
-      "updateDate": "更新日期"
+      "confirm": "秤重人員確認",
+      "updater": "秤重人員",
+      "updateDate": "秤重日期"
     },
     "toast": {
       "warning": "警告",
       "success": "完成",
       "error": "錯誤",
-      "selectRowFirst": "請先在表格中選取要秤重的列。",
-      "scaleSaved": "已記錄重量，請按最後一欄確認以提交。",
-      "missingConfirmIds": "API 缺少 returnGlueId 或 lineChemicalId，無法提交。",
-      "confirmSuccess": "已確認退膠重量。",
+      "selectRowFirst": "請先在表格中選取要秤重的膠水。",
+      "scaleSaved": "已記錄重量，請點選秤重人員確認按鈕以送出。",
+      "missingConfirmIds": "API 缺少 returnGlueId 或 lineChemicalId，無法送出。",
+      "confirmSuccess": "已確認報廢重量。",
       "confirmFailed": "確認秤重失敗。"
     }
   },
   "listSeparateMixedGlue": {
-    "pageTitle": "混合膠分裝清單",
-    "sectionTitle": "混合膠分裝清單",
+    "pageTitle": "混合膠水分裝清單",
+    "sectionTitle": "混合膠水分裝清單",
     "scan": {
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
     },
@@ -138,25 +138,25 @@
       "warning": "警告",
       "success": "完成",
       "error": "錯誤",
-      "factoryNotFound": "找不到工廠資訊。",
+      "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "印表機尚未連線。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
       "invalidEmployeeCard": "員工卡無效。",
-      "loadOrderFailed": "無法載入訂單詳情。",
+      "loadOrderFailed": "無法載入訂單明細。",
       "noLabels": "沒有可列印的標籤。",
       "printSuccess": "已列印 {count} 張標籤。",
       "printPartial": "部分列印 ({printed}/{total})。",
       "printFailed": "標籤列印失敗！",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
-      "pendingReplaced": "已以新訂單取代待列印清單。"
+      "pendingReplaced": "已使用新訂單取代待列印清單。"
     }
   },
   "separateMixedGlue": {
     "management": {
-      "pageTitle": "混合膠分裝",
+      "pageTitle": "混合膠水分裝",
       "sections": {
-        "mixedGlueBucket": "混合膠分桶需求明細",
-        "noMixGlue": "非混合膠使用需求明細"
+        "mixedGlueBucket": "混合膠水分裝桶需求明細",
+        "noMixGlue": "非混合膠水使用需求明細"
       }
     },
     "table": {
@@ -167,7 +167,7 @@
         "action": "操作",
         "glue": "膠水",
         "actualWeight": "實際重量",
-        "weighingTime": "稱重時間"
+        "weighingTime": "秤重時間"
       },
       "placeholders": {
         "selectBucket": "選擇容器"
@@ -187,51 +187,51 @@
     "chietDialog": {
       "title": "依容器分裝膠水",
       "currentGlue": "正在分裝的膠水",
-      "weighedWeight": "已稱重量",
-      "capacityMustMatch": "容器總容量須與已稱重量一致",
+      "weighedWeight": "已秤重重量",
+      "capacityMustMatch": "容器總重量須與已秤重重量一致",
       "viewOnly": "僅檢視"
     },
     "toast": {
       "restore": "已還原",
-      "restoreDetail": "已重新載入已儲存的資料",
-      "loadFailed": "無法載入工單資料",
+      "restoreDetail": "已載入儲存的資料",
+      "loadFailed": "無法載入派工單資料",
       "incomplete": "尚未完成",
       "locked": "無法編輯",
-      "completeFirst": "此工單已完成分裝，無法新增或刪除。",
+      "completeFirst": "此派工單已完成分裝，無法新增或刪除。",
       "completeSuccess": "完成",
       "completeSuccessDetail": "資料已成功送出",
       "completeFailed": "無法確認完成",
       "weighingComplete": "完成",
-      "weighingCompleteDetail": "所有成分已完成稱重。",
+      "weighingCompleteDetail": "所有成分已完成秤重。",
       "addSuccess": "成功",
       "addSuccessDetail": "已新增成分",
       "deleteSuccess": "已刪除",
       "deleteSuccessDetail": "成分刪除成功",
       "loadMaterialsFailed": "無法載入成分",
-      "notWeighed": "尚未稱重",
-      "weighBeforeAdd": "請先稱量膠水 {name} 再新增成分。",
-      "weighBeforeChiet": "請先稱量膠水 {name} 再進行分桶。",
+      "notWeighed": "尚未秤重",
+      "weighBeforeAdd": "請先秤量膠水 {name} 再新增成分。",
+      "weighBeforeChiet": "請先秤量膠水 {name} 再進行分裝。",
       "chietSaved": "分裝已儲存",
-      "chietSavedDetail": "分桶資訊已暫存",
+      "chietSavedDetail": "分裝資訊已暫存",
       "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。",
       "selectBucketRow": "請先在第 {row} 列選擇容器再新增列。",
       "selectBucketRowShort": "請在第 {row} 列選擇容器。",
-      "allocationComplete": "已分配完成",
+      "allocationComplete": "已分裝完成",
       "allocationCompleteDetail": "容器總重量已達標，無需再新增。",
       "weightExceeded": "超出重量",
-      "bucketCapacityExceeded": "容器總容量超出 {label}。請選擇更合適的容器。",
+      "bucketCapacityExceeded": "容器總重量超出 {label}。請選擇更合適的容器。",
       "addRowMin": "請至少新增一列並選擇容器。",
-      "notWeighedForChiet": "膠水 {name} 尚無稱重量。請先稱重再分桶。",
+      "notWeighedForChiet": "膠水 {name} 尚無秤重量。請先秤重再分裝。",
       "invalid": "無效",
-      "mixedGlueSelectBucket": "混合膠第 {row} 列：請選擇容器。",
-      "mixedGluePrefix": "混合膠：{message}",
+      "mixedGlueSelectBucket": "混合膠水第 {row} 列：請選擇容器。",
+      "mixedGluePrefix": "混合膠水：{message}",
       "noMixSelectBucket": "非混合膠第 {row} 列：請選擇容器。",
       "noMixPrefix": "非混合膠：{message}",
-      "noMixWeighFirst": "非混合膠 {name}：請先完成稱重。",
-      "pendingChietModal": "尚有分桶資訊未確認。請完成分桶視窗。",
-      "chietRequired": "膠水 {name} 已秤重但尚未確認分桶。請開啟視窗並確認。",
-      "chietSelectBucket": "膠水 {name} 分桶第 {row} 列：請選擇容器。",
-      "chietPrefix": "膠水 {name} 分桶：{message}"
+      "noMixWeighFirst": "非混合膠水 {name}：請先完成秤重。",
+      "pendingChietModal": "尚有分裝資訊未確認。請完成分裝視窗。",
+      "chietRequired": "膠水 {name} 已秤重但尚未確認分裝。請開啟視窗並確認。",
+      "chietSelectBucket": "膠水 {name} 分裝第 {row} 列：請選擇容器。",
+      "chietPrefix": "膠水 {name} 分裝：{message}"
     },
     "confirmDelete": {
       "title": "確認刪除",
@@ -241,18 +241,18 @@
     "exitAlert": {
       "header": "尚未儲存",
       "message": "確定要離開嗎？",
-      "stay": "留下",
+      "stay": "取消",
       "exit": "離開"
     },
     "validation": {
-      "capacityMismatch": "容器總容量與需求重量不符。",
-      "capacityMismatchWeighed": "容器總容量與已稱重量不符。",
-      "capacityExceedsRequired": "容器總容量 ({total} Kg) 超出需求重量 ({target})。",
-      "capacityBelowRequired": "容器總容量 ({total} Kg) 低於需求重量 ({target})。",
-      "capacityExceedsWeighed": "容器總容量 ({total} Kg) 超出已稱重量 ({target})。",
-      "capacityShortageWeighed": "容器總容量 ({total} Kg) 比 {target} 少 500g 以上。請選擇更大容器（例如 6 Kg）。",
-      "capacityMismatchWeighedGeneric": "容器總容量 ({total} Kg) 與已稱重量 ({target}) 不符。",
-      "chietCapacityBlock": "容器總容量已足夠對應已稱重量 {label}（少於 500g 仍視為足夠）。無需再新增列。"
+      "capacityMismatch": "容器總重量與需求重量不符。",
+      "capacityMismatchWeighed": "容器總重量與已秤重重量不符。",
+      "capacityExceedsRequired": "容器總重量 ({total} KG) 超出需求重量 ({target})。",
+      "capacityBelowRequired": "容器總重量 ({total} KG) 低於需求重量 ({target})。",
+      "capacityExceedsWeighed": "容器總重量 ({total} KG) 超出已秤重重量 ({target})。",
+      "capacityShortageWeighed": "容器總重量 ({total} KG) 比 {target} 少 500g 以上。請選擇更大的容器（例如 6 KG）。",
+      "capacityMismatchWeighedGeneric": "容器總重量 ({total} KG) 與已秤重重量 ({target}) 不符。",
+      "chietCapacityBlock": "容器總重量已符合已秤重重量 {label}（少於 500g 仍視為足夠）。無需再新增列。"
     }
   },
   "bluetoothPrinter": {
@@ -266,19 +266,19 @@
   },
   "electronicScale": {
     "label": "實際秤重",
-    "refreshTitle": "重新連接磅秤（更換 hub 上的磅秤或磅秤無回應時使用）",
-    "refreshAriaLabel": "重新連接磅秤",
-    "connected": "已連接磅秤",
-    "connecting": "正在連接磅秤埠...",
+    "refreshTitle": "重新連接電子秤（更換 hub 上的電子秤或電子秤無回應時使用）",
+    "refreshAriaLabel": "重新連接電子秤",
+    "connected": "已連接電子秤",
+    "connecting": "正在連接電子秤...",
     "searching": "正在搜尋連線...",
     "confirm": "確認",
     "toast": {
       "reconnecting": "重新連接中",
-      "reconnectingDetail": "已重置磅秤連線。若 hub 上有多台磅秤，請在提示時選擇正確埠口。",
+      "reconnectingDetail": "已重置電子秤連線。若 hub 上有多台電子秤，請在提示時選擇正確連接口。",
       "connectFailed": "無法連接",
       "connectFailedDetail": "請檢查 hub/USB 線後再試。",
       "noTargetWeight": "尚無需求重量",
-      "noTargetWeightDetail": "此列尚無需求重量。請先稱量基礎成分或選擇其他列。",
+      "noTargetWeightDetail": "此列尚無需求重量。請先秤量基礎成分或選擇其他列。",
       "zeroWeight": "重量無效",
       "zeroWeightDetail": "秤重必須大於 0 才能確認。",
       "belowMin": "未達要求",
@@ -293,14 +293,14 @@
   "mixGlueManagement": {
     "pageTitle": "調膠管理",
     "fields": {
-      "workOrder": "工單",
+      "workOrder": "派工單",
       "glue": "膠水",
-      "totalWeight": "總重量 (Kg)",
-      "componentCode": "成分代碼",
+      "totalWeight": "總重量 (KG)",
+      "componentCode": "成分編號",
       "totalWeightActual": ""
     },
     "sections": {
-      "lineDetails": "產線明細",
+      "lineDetails": "生產線明細",
       "mixingComponents": "調膠成分",
       "noMixComponents": "非調膠成分"
     },
@@ -309,7 +309,7 @@
         "workshop": "車間",
         "requestOrder": "需求單",
         "style": "型體",
-        "line": "產線",
+        "line": "生產線",
         "weight": "重量",
         "requestTime": "領料時間"
       }
@@ -318,9 +318,9 @@
       "columns": {
         "name": "成分名稱",
         "requiredWeight": "需求重量",
-        "actualWeight": "實際重量 (Kg)",
+        "actualWeight": "實際重量 (KG)",
         "operator": "操作人員",
-        "weighingTime": "稱重時間",
+        "weighingTime": "秤重時間",
         "action": "操作"
       },
       "deleteAriaLabel": "刪除"
@@ -350,16 +350,16 @@
     "toast": {
       "restore": "已還原",
       "restoreDetail": "已重新載入已儲存的資料",
-      "loadFailed": "無法載入工單資料",
-      "incompleteWeighing": "請完成所有成分的稱重...",
+      "loadFailed": "無法載入派工單資料",
+      "incompleteWeighing": "請完成所有成分的秤重...",
       "incompleteNoMixWeighing": "請先完成所有非調膠成分的稱重再完成。",
       "saveSuccess": "儲存成功",
       "saveSuccessDetail": "資料已儲存。請返回清單進行確認！",
       "saveFailed": "無法儲存資料",
       "weighingComplete": "完成",
-      "weighingCompleteDetail": "所有成分已完成稱重。",
-      "baseNotFound": "找不到基礎化學品",
-      "weighBaseFirst": "請先稱量基礎成分再新增成分",
+      "weighingCompleteDetail": "所有成分已完成秤重。",
+      "baseNotFound": "找不到基礎調膠品",
+      "weighBaseFirst": "請先秤量基礎成分再新增成分",
       "addSuccess": "成功",
       "addSuccessDetail": "已新增成分",
       "deleteSuccess": "已刪除",
@@ -380,7 +380,7 @@
   },
   "login": {
     "hello": "您好！",
-    "subtitle": "膠水調配室系統",
+    "subtitle": "調膠管理系統",
     "scanTitle": "使用員工卡登入",
     "scanInstructionPrefix": "請掃描員工卡上的 ",
     "scanInstructionQr": "QR 或條碼",
@@ -390,23 +390,23 @@
     "loggingIn": "登入中...",
     "processing": "處理中...",
     "company": "公司",
-    "factory": "工廠",
+    "factory": "事業部",
     "account": "帳號",
     "password": "密碼",
     "selectCompany": "選擇公司",
-    "selectFactory": "選擇工廠",
+    "selectFactory": "選擇事業部",
     "employeeIdPlaceholder": "員工編號",
     "loginButton": "登入",
     "loadingTitle": "登入中...",
     "loadingNote": "請稍候",
-    "scanOverlayTitle": "掃描員工卡",
-    "scanOverlayNotePrefix": "將卡片上的 ",
+    "scanOverlayTitle": "掃描員工編號",
+    "scanOverlayNotePrefix": "將卡片上的條碼 ",
     "scanOverlayNoteSuffix": " 對準下方框內",
     "cameraFrontOn": "前鏡頭已開啟",
     "cancelScan": "取消掃描",
     "footer": "© 2026 IT Jia Hsin",
     "loginFailed": "登入失敗。",
-    "serverMaintenance": "伺服器維護中，請稍後再試。（若問題持續請聯絡 IT）",
+    "serverMaintenance": "伺服器維護中，請稍後再試。（若持續發生此問題請聯絡 IT）",
     "cameraPermission": "需要相機權限才能掃描員工卡！",
     "invalidBarcode": "卡片條碼無效或沒有資料！",
     "enterEmployeeId": "請輸入員工編號！",
