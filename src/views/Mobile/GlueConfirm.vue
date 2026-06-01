@@ -148,6 +148,7 @@ import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
+import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -160,10 +161,6 @@ type ResolveGlueQrResult = {
 const authStore = useAuthStore();
 const lineChemicalStore = useLineChemicalStore();
 const { t } = useI18n();
-const systemQrUrlHosts = [
-  "10.0.111.118:7152",
-  "10.0.111.127:7152",
-];
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -348,28 +345,7 @@ function getAllocatedGlueCompareValue(info: any) {
 }
 
 function getSystemQrUrl(qrText: string) {
-  const normalizedText = normalizeQrText(qrText);
-
-  if (!normalizedText) {
-    return null;
-  }
-
-  try {
-    const url = new URL(normalizedText);
-    const protocol = url.protocol.toLowerCase();
-
-    if (protocol !== "http:" && protocol !== "https:") {
-      return null;
-    }
-
-    if (!systemQrUrlHosts.includes(url.host)) {
-      return null;
-    }
-
-    return url;
-  } catch {
-    return null;
-  }
+  return buildSystemQrUrl(qrText);
 }
 
 function getGlueQrType(data: any): GlueQrType | null {
