@@ -1,6 +1,6 @@
 <template>
   <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="360px" tableStyle="width: 100%;"
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="380px" tableStyle="width: 100%;"
       stripedRows class="modern-table auto-columns-table">
 
       <template #empty>
@@ -40,7 +40,7 @@
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
-            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="200px"
+            :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
             :disabled="isViewMode || disabled" @change="handleBucketChange(data, index)" />
         </template>

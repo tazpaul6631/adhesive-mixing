@@ -15,8 +15,8 @@
     "tabletSubtitle": "調膠管理系統",
     "features": {
       "mixGlue": {
-        "title": "調膠清單管理",
-        "description": "管理調膠、檢查連線並使用電子秤秤重。"
+        "title": "混合膠水調膠清單管理",
+        "description": "管理調膠與非調膠膠水、檢查連線並使用電子秤秤重。"
       },
       "separateMixedGlue": {
         "title": "混合膠水分裝管理",
@@ -334,8 +334,10 @@
       "nameRequired": "成分名稱為必填。",
       "percentageLabel": "百分比 (%)",
       "percentageRequired": "請輸入百分比。",
-      "weightLabel": "重量",
-      "weightRequired": "請輸入重量 ({unit})"
+      "weightLabel": "重量 (KG)",
+      "weightRequired": "請輸入重量 (KG)",
+      "toleranceGramsLabel": "允許誤差 (g)",
+      "toleranceGramsRequired": "請輸入大於 0 的誤差克數"
     },
     "unknownOperator": "未指定",
     "confirmDelete": {

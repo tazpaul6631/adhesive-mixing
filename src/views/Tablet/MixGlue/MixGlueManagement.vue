@@ -316,9 +316,11 @@ const mixTargetWeight = computed(() => {
   return Number(weight) || 0;
 });
 
+/** Dùng cho dòng API chưa có sai số (noMix). Keo thêm từ modal dùng gram nhập tay. */
 const calcToleranceGrams = (weight: number, weightUnit: string) => {
   const unit = (weightUnit || 'Kg').toLowerCase();
   const weightInGrams = unit === 'kg' ? weight * 1000 : weight;
+  // Cũ: sai số = 5% trọng lượng (gram)
   return Number((weightInGrams * 0.05).toFixed(3));
 };
 
@@ -890,13 +892,21 @@ const openMixComponentDialog = () => {
 };
 
 const buildExtraComponent = (
-  newComponentData: { name: string; percentage: number | string; materialCode: string; weightUnit: string },
+  newComponentData: {
+    name: string;
+    percentage: number | string;
+    materialCode: string;
+    weightUnit: string;
+    toleranceGrams: number;
+  },
   flags: { mixGlue: boolean; noMixGlue: boolean }
 ): ComponentDetail => {
   const enteredWeight = Number(newComponentData.percentage ?? 0);
   const weightUnit = newComponentData.weightUnit || 'Kg';
-  const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
   const weightStr = enteredWeight.toFixed(3);
+  // Cũ: sai số = 5% trọng lượng — const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
+  const deviationGrams = Number(newComponentData.toleranceGrams);
+  const toleranceStr = String(deviationGrams);
 
   return {
     materialName: newComponentData.name,
@@ -908,8 +918,8 @@ const buildExtraComponent = (
     operator: '',
     operatorId: '',
     weighingTime: '',
-    lowerTolerance: String(toleranceGrams),
-    upperTolerance: String(toleranceGrams),
+    lowerTolerance: toleranceStr,
+    upperTolerance: toleranceStr,
     mixingRatio: '',
     glueExtra: true,
     mixGlue: flags.mixGlue,
@@ -923,6 +933,7 @@ const handleSaveNewComponent = async (newComponentData: {
   percentage: number | string;
   materialCode: string;
   weightUnit: string;
+  toleranceGrams: number;
 }) => {
   if (!componentDetailsFull.value.length) {
     toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 3000 });

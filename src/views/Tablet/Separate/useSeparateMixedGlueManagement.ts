@@ -1090,7 +1090,7 @@ export function useSeparateMixedGlueManagement() {
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
                     await separateGlue.postSeparateGlueCommand(payload);
-                    await draftStore.clearAll();
+                    // await draftStore.clearAll();
                     isDirty.value = false;
                     resolve(true);
                   } catch (error) {

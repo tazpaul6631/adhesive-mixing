@@ -15,8 +15,8 @@
     "tabletSubtitle": "Mix glue management system",
     "features": {
       "mixGlue": {
-        "title": "Mix glue list management",
-        "description": "Manage glue mixing, check connections, and use the electronic scale."
+        "title": "Mixed glue list management",
+        "description": "Manage mixed and non-mixed glue, check connections, and use the electronic scale."
       },
       "separateMixedGlue": {
         "title": "Mixed glue repackaging management",
@@ -334,8 +334,10 @@
       "nameRequired": "Component name is required.",
       "percentageLabel": "Percentage (%)",
       "percentageRequired": "Please enter a percentage.",
-      "weightLabel": "Weight",
-      "weightRequired": "Please enter weight ({unit})"
+      "weightLabel": "Weight (KG)",
+      "weightRequired": "Please enter weight (KG)",
+      "toleranceGramsLabel": "Tolerance (g)",
+      "toleranceGramsRequired": "Please enter a tolerance greater than 0 g"
     },
     "unknownOperator": "Unassigned",
     "confirmDelete": {

@@ -15,8 +15,8 @@
     "tabletSubtitle": "Hệ thống quản lý trộn keo",
     "features": {
       "mixGlue": {
-        "title": "Quản lý danh sách trộn keo",
-        "description": "Quản lý trộn keo, kiểm tra kết nối và cân điện tử."
+        "title": "Quản lý danh sách keo trộn hỗn hợp",
+        "description": "Quản lý keo trộn và keo không trộn, kiểm tra kết nối và cân điện tử."
       },
       "separateMixedGlue": {
         "title": "Quản lý chiết keo trộn hỗn hợp",
@@ -334,8 +334,10 @@
       "nameRequired": "Tên thành phần là bắt buộc.",
       "percentageLabel": "Phần trăm (%)",
       "percentageRequired": "Vui lòng nhập phần trăm.",
-      "weightLabel": "Trọng lượng",
-      "weightRequired": "Vui lòng nhập trọng lượng ({unit})"
+      "weightLabel": "Trọng lượng (KG)",
+      "weightRequired": "Vui lòng nhập trọng lượng (KG)",
+      "toleranceGramsLabel": "Độ chênh lệch (g)",
+      "toleranceGramsRequired": "Vui lòng nhập gram chênh lệch lớn hơn 0"
     },
     "unknownOperator": "Chưa chỉ định",
     "confirmDelete": {
