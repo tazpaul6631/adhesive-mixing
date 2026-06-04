@@ -93,7 +93,9 @@
       "glueReturn": "掃描退回膠水",
       "glueReturnDescription": "在確認產線後掃描退回膠桶",
       "glueInfoCheck": "膠桶資訊查詢",
-      "glueInfoCheckDescription": "查看發放膠桶資訊"
+      "glueInfoCheckDescription": "查看發放膠桶資訊",
+      "glueCheckList": "膠水檢查清單",
+      "glueCheckListDescription": "掃描檢查碼並記錄檢查結果"
     },
     "glueReturn": {
       "title": "掃描退回膠水",
@@ -116,8 +118,14 @@
         "noGlueData": "找不到退回膠桶資料。",
         "loadError": "無法取得退回膠桶 QR 資訊，請檢查 API 連線！",
         "returnSuccess": "退回成功",
-        "returnConfirmError": "無法建立退回膠桶紀錄，請再試一次！"
-      }
+        "returnConfirmError": "無法建立退回膠桶紀錄，請再試一次！",
+        "loadingInfo": "正在載入資訊...",
+        "invalidLineQr": "QR Code 無效，請重新掃描產線膠桶 QR Code。",
+        "noLineData": "找不到產線膠桶資料。",
+        "loadLineError": "無法取得產線膠桶 QR 資訊，請檢查 API 連線！"
+      },
+      "lineQrTitle": "產線膠桶 QR Code（選填）",
+      "lineScanPlaceholder": "掃描產線膠桶 QR Code"
     },
     "glueInfoCheck": {
       "title": "膠桶資訊查詢",
@@ -148,6 +156,26 @@
         "loadingInfo": "正在載入資訊...",
         "loadError": "無法取得膠桶 QR 資訊，請檢查 API 連線！",
         "unconfirmedGlue": "膠桶尚未確認，請重新掃描。"
+      }
+    },
+    "glueCheckList": {
+      "title": "膠水檢查清單",
+      "scanTitle": "掃描檢查碼",
+      "scanButton": "掃描檢查碼",
+      "dialogTitle": "檢查表單",
+      "scannedCodeLabel": "已掃描代碼",
+      "resultLabel": "檢查結果",
+      "okResult": "OK",
+      "notOkResult": "Not OK",
+      "noteLabel": "備註",
+      "notePlaceholder": "如有需要，請輸入備註",
+      "cancelButton": "取消",
+      "submitButton": "送出",
+      "messages": {
+        "cameraPermission": "需要授予相機權限才能掃描檢查碼！",
+        "invalidQr": "檢查碼無效或沒有資料！",
+        "scanError": "無法掃描檢查碼，請再試一次！",
+        "submitSuccess": "檢查資訊已暫時記錄。"
       }
     }
   }

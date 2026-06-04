@@ -93,7 +93,9 @@
       "glueReturn": "Return glue scan",
       "glueReturnDescription": "Scan returned glue buckets after confirming the production line",
       "glueInfoCheck": "Glue Bucket Information Lookup",
-      "glueInfoCheckDescription": "Check allocated glue bucket information"
+      "glueInfoCheckDescription": "Check allocated glue bucket information",
+      "glueCheckList": "Glue Check List",
+      "glueCheckListDescription": "Scan inspection codes and record check results"
     },
     "glueReturn": {
       "title": "Return glue scan",
@@ -116,8 +118,14 @@
         "noGlueData": "No returned glue bucket data found.",
         "loadError": "Unable to retrieve the returned glue bucket QR information. Please check the API connection!",
         "returnSuccess": "Return completed successfully",
-        "returnConfirmError": "Unable to create the glue return log. Please try again!"
-      }
+        "returnConfirmError": "Unable to create the glue return log. Please try again!",
+        "loadingInfo": "Loading information...",
+        "invalidLineQr": "Invalid QR code. Please scan the line glue bucket QR code again.",
+        "noLineData": "No line glue bucket data found.",
+        "loadLineError": "Unable to retrieve the line glue bucket QR information. Please check the API connection!"
+      },
+      "lineQrTitle": "Line glue bucket QR code (optional)",
+      "lineScanPlaceholder": "Scan the line glue bucket QR code"
     },
     "glueInfoCheck": {
       "title": "Glue Bucket Information Lookup",
@@ -148,6 +156,26 @@
         "loadingInfo": "Loading information...",
         "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!",
         "unconfirmedGlue": "The glue bucket has not been confirmed. Please scan again."
+      }
+    },
+    "glueCheckList": {
+      "title": "Glue Check List",
+      "scanTitle": "Inspection Code Scan",
+      "scanButton": "Scan inspection code",
+      "dialogTitle": "Inspection Form",
+      "scannedCodeLabel": "Scanned code",
+      "resultLabel": "Check result",
+      "okResult": "OK",
+      "notOkResult": "Not OK",
+      "noteLabel": "Note",
+      "notePlaceholder": "Enter notes if any",
+      "cancelButton": "CANCEL",
+      "submitButton": "Submit",
+      "messages": {
+        "cameraPermission": "Camera permission is required to scan the inspection code!",
+        "invalidQr": "Invalid inspection code or no data found!",
+        "scanError": "Unable to scan the inspection code. Please try again!",
+        "submitSuccess": "Inspection information has been temporarily recorded."
       }
     }
   }
