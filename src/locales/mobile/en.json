@@ -44,7 +44,12 @@
     "cameraPermission": "Camera permission is required to scan the card!",
     "invalidBarcode": "Invalid card code or no data found!",
     "enterEmployeeId": "Please enter employee ID!",
-    "changeLanguage": "Change language"
+    "changeLanguage": "Change language",
+    "offlineDownloadTitle": "Downloading data",
+    "offlineDownloadNote": "Please wait. QR data is being saved for offline use.",
+    "offlineLoginBlocked": "The device is offline. Please connect to the network before logging in.",
+    "offlineFactoryMissing": "Unable to find the user factory ID. Please contact IT.",
+    "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again."
   },
   "mobile": {
     "glueConfirm": {
@@ -182,6 +187,21 @@
         "noCheckListData": "No inspection data found.",
         "cancelSuccess": "Inspection form cancelled"
       }
+    },
+    "common": {
+      "offlineLocalData": "No network — using local data"
+    },
+    "offlineQueue": {
+      "pendingData": "Pending sync data",
+      "title": "Pending sync data",
+      "description": "These records are saved locally and will be synced when the network is available.",
+      "close": "Close",
+      "noData": "No pending sync data.",
+      "createdAt": "Saved at",
+      "receiveGlue": "Production Line Glue Receipt Confirmation",
+      "returnGlue": "Return glue scan",
+      "glueCheckList": "Glue Check List",
+      "saved": "Data has been saved locally and will be synced when the network is available."
     }
   }
 }

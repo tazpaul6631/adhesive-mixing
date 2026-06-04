@@ -112,15 +112,13 @@
       </div>
     </div>
 
-    <Teleport to="body">
-      <div v-if="isLoggingIn && isLoginRoute" class="login-loading-overlay">
-        <div class="login-loading-panel">
-          <i class="pi pi-spinner login-loading-spinner"></i>
-          <p class="login-loading-title">{{ t('login.loadingTitle') }}</p>
-          <p class="login-loading-note">{{ t('login.loadingNote') }}</p>
-        </div>
-      </div>
-    </Teleport>
+    <OfflineDataLoading
+      :is-open="isLoggingIn && isLoginRoute"
+      :title="loginLoadingTitle"
+      :note="loginLoadingNote"
+      :current="offlineStore.downloadCurrent"
+      :total="offlineStore.downloadTotal"
+    />
 
     <Teleport to="body">
       <div v-if="isScanning" class="scan-camera-overlay">
@@ -165,9 +163,12 @@ import factoryApi from '@/api/factory';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, useRoute } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
+import { Network } from '@capacitor/network';
 import { useAppLocale } from '@/composables/useAppLocale';
 import type { DeviceLocaleScope } from '@/i18n';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import OfflineDataLoading from '@/views/Mobile/components/OfflineDataLoading.vue';
+import { useOfflineStore } from '@/store/offline';
 
 type SelectOption = { label: string; value: string };
 
@@ -180,6 +181,7 @@ const selectedFactory = ref('');
 const companyOptions = ref<SelectOption[]>([]);
 const factoryOptions = ref<SelectOption[]>([]);
 const authStore = useAuthStore();
+const offlineStore = useOfflineStore();
 const router = useRouter();
 const route = useRoute();
 const isNative = Capacitor.isNativePlatform();
@@ -211,6 +213,13 @@ const isLoginButtonEnabled = computed(() => {
 });
 
 const isLoginRoute = computed(() => route.path === '/login');
+const isOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData || offlineStore.downloadTotal > 0);
+const loginLoadingTitle = computed(() => (
+  isOfflineDownloadStep.value ? t('login.offlineDownloadTitle') : t('login.loadingTitle')
+));
+const loginLoadingNote = computed(() => (
+  isOfflineDownloadStep.value ? t('login.offlineDownloadNote') : t('login.loadingNote')
+));
 
 const togglePasswordVisibility = () => {
   if (!isCredentialFieldsEnabled.value || isLoading.value || isLoggingIn.value) return;
@@ -418,6 +427,73 @@ const buildTabletLoginPayload = () => ({
   password: String(password.value)
 });
 
+const normalizeLoginValue = (value: any) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+};
+
+const getNestedValue = (source: any, path: string[]) => {
+  return path.reduce((current, key) => current?.[key], source);
+};
+
+const resolveLoginFactoryId = (userData: any, fallbackFactoryId = '') => {
+  const candidates = [
+    userData?.factoryId,
+    userData?.factoryID,
+    userData?.factoryCode,
+    userData?.factory,
+    getNestedValue(userData, ['factory', 'factoryId']),
+    getNestedValue(userData, ['employee', 'factoryId']),
+    getNestedValue(userData, ['user', 'factoryId']),
+    fallbackFactoryId,
+  ];
+
+  return candidates.map(normalizeLoginValue).find(Boolean) || '';
+};
+
+const ensureLoginOnline = async () => {
+  try {
+    const status = await Network.getStatus();
+    authStore.setNetworkStatus(status.connected);
+
+    if (!status.connected) {
+      errorLogin.value = true;
+      errorMessage.value = t('login.offlineLoginBlocked');
+      resetLoginLoading();
+      return false;
+    }
+  } catch (error) {
+    console.warn('Không thể kiểm tra trạng thái mạng trước khi đăng nhập:', error);
+
+    if (!authStore.isOnline) {
+      errorLogin.value = true;
+      errorMessage.value = t('login.offlineLoginBlocked');
+      resetLoginLoading();
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const downloadOfflineDataAfterLogin = async (userData: any, fallbackFactoryId = '') => {
+  const factoryId = resolveLoginFactoryId(userData, fallbackFactoryId);
+
+  if (!factoryId) {
+    throw new Error(t('login.offlineFactoryMissing'));
+  }
+
+  offlineStore.resetDownloadState();
+  await offlineStore.downloadOfflineQrData(factoryId);
+};
+
+const getLoginErrorMessage = (error: any, fallback: string) => {
+  return error?.response?.data?.message || error?.message || fallback;
+};
+
 const navigateAfterLogin = async () => {
   if (isNative) {
     await router.push('/app-menu');
@@ -426,16 +502,26 @@ const navigateAfterLogin = async () => {
   }
 };
 
-const handleLoginResponse = async (response: any, loginCode: string): Promise<boolean> => {
+const handleLoginResponse = async (response: any, loginCode: string, fallbackFactoryId = ''): Promise<boolean> => {
   if (response.data?.success) {
-    authStore.setAuthData(response.data.data);
+    const userData = response.data.data;
+    authStore.setAuthData(userData);
     isLoggingIn.value = true;
     isLoading.value = true;
 
     try {
+      await downloadOfflineDataAfterLogin(userData, fallbackFactoryId);
       await navigateAfterLogin();
+    } catch (error: any) {
+      console.error('Lỗi tải dữ liệu offline sau đăng nhập:', error);
+      code.value = loginCode;
+      errorLogin.value = true;
+      errorMessage.value = getLoginErrorMessage(error, t('login.offlineDownloadFailed'));
+      await authStore.logout();
+      return false;
     } finally {
       resetLoginLoading();
+      offlineStore.resetDownloadState();
     }
 
     return true;
@@ -452,6 +538,7 @@ const handleLoginError = (loginCode: string) => {
   code.value = loginCode;
   errorLogin.value = true;
   errorMessage.value = t('login.serverMaintenance');
+  offlineStore.resetDownloadState();
   resetLoginLoading();
 };
 
@@ -468,6 +555,11 @@ const handleTabletLogin = async () => {
   isLoading.value = true;
   errorLogin.value = false;
   errorMessage.value = '';
+  offlineStore.resetDownloadState();
+
+  if (!(await ensureLoginOnline())) {
+    return;
+  }
 
   try {
     const response = await employee.employeeLogin({
@@ -477,7 +569,7 @@ const handleTabletLogin = async () => {
       employeeId: payload.employeeId,
       password: payload.password
     });
-    await handleLoginResponse(response, payload.employeeId);
+    await handleLoginResponse(response, payload.employeeId, payload.factoryId);
   } catch (error: any) {
     console.error('Lỗi đăng nhập tablet:', error);
     handleLoginError(payload.employeeId);
@@ -527,11 +619,16 @@ const processScannedData = async (scannedCode: string) => {
   isLoggingIn.value = true;
   isLoading.value = true;
   code.value = scannedCode;
+  offlineStore.resetDownloadState();
 
   if (!scannedCode) {
     alert(t('login.enterEmployeeId'));
     isLoggingIn.value = false;
     isLoading.value = false;
+    return;
+  }
+
+  if (!(await ensureLoginOnline())) {
     return;
   }
 

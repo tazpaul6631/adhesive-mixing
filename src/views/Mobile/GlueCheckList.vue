@@ -7,6 +7,7 @@
         </ion-buttons>
         <ion-title>{{ t('mobile.glueCheckList.title') }}</ion-title>
       </ion-toolbar>
+      <MobileOfflineNotice />
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -116,6 +117,7 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import checkListApi from '@/api/checkList';
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();

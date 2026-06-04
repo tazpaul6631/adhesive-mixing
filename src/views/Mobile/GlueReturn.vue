@@ -7,6 +7,8 @@
         </ion-buttons>
         <ion-title>{{ t("mobile.glueReturn.title") }}</ion-title>
       </ion-toolbar>
+      <MobileOfflineNotice />
+      <PendingQueueButton queue-type="ReturnGlue" />
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -165,10 +167,16 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import glueReturnApi from '@/api/glueReturn';
 import { useAuthStore } from '@/store/auth';
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
+import { addOfflineQueueItem } from '@/services/offlineQueue.service';
+import { useOfflineStore } from '@/store/offline';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const offlineStore = useOfflineStore();
 
 const returnQrText = ref('');
 const lineQrText = ref('');
@@ -283,6 +291,15 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
   }
 }
 
+
+async function resolveGlueQr(qrText: string) {
+  if (!authStore.isOnline) {
+    return findGlueOfflineQrData(qrText);
+  }
+
+  return resolveGlueQrFromSystemUrl(qrText);
+}
+
 async function triggerMismatchFeedback() {
   try {
     await Haptics.notification({ type: NotificationType.Warning });
@@ -328,7 +345,7 @@ async function openScanner() {
       return;
     }
 
-    const result = await resolveGlueQrFromSystemUrl(scannedValue);
+    const result = await resolveGlueQr(scannedValue);
 
     if (result.status === 'invalid') {
       resetReturnField();
@@ -388,7 +405,7 @@ async function openLineScanner() {
 
     lineQrText.value = t('mobile.glueReturn.messages.loadingInfo');
 
-    const result = await resolveGlueQrFromSystemUrl(scannedValue);
+    const result = await resolveGlueQr(scannedValue);
 
     if (result.status === 'invalid') {
       resetLineChemicalField();
@@ -449,6 +466,13 @@ async function confirmReturnQr() {
   isSubmittingReturn.value = true;
 
   try {
+    if (!authStore.isOnline) {
+      await addOfflineQueueItem('ReturnGlue', 'api/mobile/gluereturnlog/create', 'POST', payload);
+      await offlineStore.refreshQueueCounts();
+      showToast(t('mobile.offlineQueue.saved'));
+      return;
+    }
+
     const response = await glueReturnApi.glueReturn(payload);
     const responseData = response.data as any;
 

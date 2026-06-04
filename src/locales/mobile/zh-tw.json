@@ -44,7 +44,12 @@
     "cameraPermission": "需要相機權限才能掃描員工卡！",
     "invalidBarcode": "卡片條碼無效或沒有資料！",
     "enterEmployeeId": "請輸入員工編號！",
-    "changeLanguage": "切換語言"
+    "changeLanguage": "切換語言",
+    "offlineDownloadTitle": "正在下載資料",
+    "offlineDownloadNote": "請稍候，QR 資料正在儲存以供離線使用。",
+    "offlineLoginBlocked": "裝置目前離線。請先連線後再登入。",
+    "offlineFactoryMissing": "找不到使用者的工廠代碼，請聯絡 IT。",
+    "offlineDownloadFailed": "無法下載離線資料，請檢查網路連線後再試。"
   },
   "mobile": {
     "glueConfirm": {
@@ -182,6 +187,21 @@
         "noCheckListData": "找不到檢查資料。",
         "cancelSuccess": "已取消檢查表"
       }
+    },
+    "common": {
+      "offlineLocalData": "無網路連線 — 正在使用本機資料"
+    },
+    "offlineQueue": {
+      "pendingData": "待同步資料",
+      "title": "待同步資料",
+      "description": "這些資料已暫存在本機，網路恢復後會進行同步。",
+      "close": "關閉",
+      "noData": "沒有待同步資料。",
+      "createdAt": "儲存時間",
+      "receiveGlue": "產線確認領膠水",
+      "returnGlue": "掃描退回膠水",
+      "glueCheckList": "膠水檢查清單",
+      "saved": "資料已暫存在本機，網路恢復後會同步。"
     }
   }
 }

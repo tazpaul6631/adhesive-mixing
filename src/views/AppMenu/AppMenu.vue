@@ -12,6 +12,8 @@
           </ion-button>
         </div>
       </ion-toolbar>
+      <MobileOfflineNotice v-if="!isTablet" />
+      <PendingQueueButton v-if="!isTablet" />
     </ion-header>
 
     <ion-content class="ion-padding custom-content">
@@ -72,6 +74,8 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();

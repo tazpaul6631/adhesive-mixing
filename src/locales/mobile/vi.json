@@ -54,7 +54,12 @@
     "cameraPermission": "Cần cấp quyền camera để quét thẻ!",
     "invalidBarcode": "Mã thẻ không hợp lệ hoặc không có dữ liệu!",
     "enterEmployeeId": "Vui lòng nhập mã nhân viên!",
-    "changeLanguage": "Đổi ngôn ngữ"
+    "changeLanguage": "Đổi ngôn ngữ",
+    "offlineDownloadTitle": "Đang tải dữ liệu",
+    "offlineDownloadNote": "Vui lòng đợi trong giây lát. Dữ liệu QR đang được lưu để sử dụng offline.",
+    "offlineLoginBlocked": "Thiết bị đang mất mạng. Vui lòng kết nối mạng để đăng nhập.",
+    "offlineFactoryMissing": "Không tìm thấy mã nhà máy của người dùng. Vui lòng liên hệ IT.",
+    "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại."
   },
   "mobile": {
     "glueConfirm": {
@@ -192,6 +197,21 @@
         "noCheckListData": "Không tìm thấy dữ liệu kiểm tra.",
         "cancelSuccess": "Đã hủy phiếu kiểm tra"
       }
+    },
+    "common": {
+      "offlineLocalData": "Không có mạng — đang dùng dữ liệu cục bộ"
+    },
+    "offlineQueue": {
+      "pendingData": "Dữ liệu chờ đồng bộ",
+      "title": "Dữ liệu chờ đồng bộ",
+      "description": "Các dữ liệu này đã được lưu tạm trên máy và sẽ đồng bộ khi có mạng.",
+      "close": "Đóng",
+      "noData": "Không có dữ liệu chờ đồng bộ.",
+      "createdAt": "Thời gian lưu",
+      "receiveGlue": "Chuyền xác nhận nhận keo",
+      "returnGlue": "Quét keo trả về",
+      "glueCheckList": "Tuần tra kiểm phòng pha keo",
+      "saved": "Đã lưu dữ liệu tạm. Dữ liệu sẽ được đồng bộ khi có mạng."
     }
   }
 }
