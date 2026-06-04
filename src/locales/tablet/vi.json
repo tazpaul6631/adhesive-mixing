@@ -3,7 +3,9 @@
     "welcome": "Chào mừng",
     "save": "Lưu",
     "cancel": "Hủy",
-    "loading": "Đang tải..."
+    "loading": "Đang tải...",
+    "networkOffline": "Không có mạng",
+    "checkNetwork": "Vui lòng kiểm tra kết nối mạng và thử lại."
   },
   "home": {
     "title": "Trang chủ"
@@ -252,7 +254,7 @@
       "capacityExceedsRequired": "Tổng TL thùng chứa ({total} KG) vượt quá TL yêu cầu ({target}).",
       "capacityBelowRequired": "Tổng TL thùng chứa ({total} KG) thấp hơn TL yêu cầu ({target}).",
       "capacityExceedsWeighed": "Tổng TL thùng chứa ({total} KG) vượt quá TL đã cân ({target}).",
-      "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn (vd: 6 KG).",
+      "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn.",
       "capacityMismatchWeighedGeneric": "Tổng TL thùng chứa ({total} KG) không khớp TL đã cân ({target}).",
       "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL đã cân {label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới."
     }

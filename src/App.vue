@@ -27,12 +27,27 @@ useBackButton(-1, () => {
   }
 });
 
-Network.addListener('networkStatusChange', status => {
-  // Cập nhật vào Pinia/Vuex store tại đây
-  authStore.setNetworkStatus(status.connected);
+const applyNetworkStatus = (connected: boolean) => {
+  authStore.setNetworkStatus(connected);
+};
+
+Network.addListener('networkStatusChange', (status) => {
+  applyNetworkStatus(status.connected);
 });
 
 onMounted(async () => {
+  try {
+    const status = await Network.getStatus();
+    applyNetworkStatus(status.connected);
+  } catch {
+    applyNetworkStatus(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => applyNetworkStatus(true));
+    window.addEventListener('offline', () => applyNetworkStatus(false));
+  }
+
   // Tự động ẩn Splash Screen sau khi app đã load xong
   await SplashScreen.hide();
 

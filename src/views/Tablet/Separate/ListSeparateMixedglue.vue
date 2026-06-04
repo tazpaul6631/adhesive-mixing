@@ -154,9 +154,11 @@ import { useAppLocale } from '@/composables/useAppLocale';
 import { useSeparateLabelBatchPrint } from '@/composables/useSeparateLabelBatchPrint';
 import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 const toast = useToast();
 const draftStore = useMixGlueDraftStore();
 const { t } = useAppLocale(() => 'tablet');
@@ -362,6 +364,8 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     });
     return;
   }
+
+  if (!(await requireOnline())) return;
 
   let employeeId: string;
 

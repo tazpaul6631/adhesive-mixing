@@ -15,6 +15,7 @@ import separateGlue from '@/api/separate';
 import bucketApi from '@/api/bucket';
 import { validateSeparateGlueAllocation, validateChietBucketCapacity, type BucketOption } from './separateGlue.bucket';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 import type { HeaderInfo, MixingProcess, NewComponentFormData, PayloadBuildContext } from './separateMixedGlue.types';
 import {
@@ -41,6 +42,7 @@ dayjs.extend(customParseFormat);
 export function useSeparateMixedGlueManagement() {
   const toast = useToast();
   const { t } = useAppLocale(() => 'tablet');
+  const { requireOnline, notifyOfflineFromError } = useRequireOnline();
   const authStore = useAuthStore();
   const draftStore = useMixGlueDraftStore();
   const { releaseScaleConnection } = useScaleManager();
@@ -617,6 +619,8 @@ export function useSeparateMixedGlueManagement() {
       return;
     }
 
+    if (!(await requireOnline())) return;
+
     const validationError = await validateBeforeComplete();
     if (validationError) {
       toast.add({
@@ -645,7 +649,8 @@ export function useSeparateMixedGlueManagement() {
       isDirty.value = false;
       toast.add({ severity: 'success', summary: t('separateMixedGlue.toast.completeSuccess'), detail: t('separateMixedGlue.toast.completeSuccessDetail'), life: 3000 });
       router.push('/list-separate-mixed-glue-management');
-    } catch {
+    } catch (error) {
+      if (notifyOfflineFromError(error)) return;
       toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.completeFailed'), life: 3000 });
     }
   };
@@ -1087,6 +1092,10 @@ export function useSeparateMixedGlueManagement() {
               cssClass: 'text-red-500',
               handler: () => {
                 void (async () => {
+                  if (!(await requireOnline())) {
+                    resolve(false);
+                    return;
+                  }
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
                     await separateGlue.postSeparateGlueCommand(payload);
@@ -1095,6 +1104,10 @@ export function useSeparateMixedGlueManagement() {
                     resolve(true);
                   } catch (error) {
                     console.error(error);
+                    if (notifyOfflineFromError(error)) {
+                      resolve(false);
+                      return;
+                    }
                     toast.add({
                       severity: 'error',
                       summary: t('listMixGlue.toast.error'),

@@ -3,7 +3,9 @@
     "welcome": "歡迎",
     "save": "儲存",
     "cancel": "取消",
-    "loading": "載入中..."
+    "loading": "載入中...",
+    "networkOffline": "無網路",
+    "checkNetwork": "請檢查網路連線後再試。"
   },
   "home": {
     "title": "首頁"
@@ -252,7 +254,7 @@
       "capacityExceedsRequired": "容器總重量 ({total} KG) 超出需求重量 ({target})。",
       "capacityBelowRequired": "容器總重量 ({total} KG) 低於需求重量 ({target})。",
       "capacityExceedsWeighed": "容器總重量 ({total} KG) 超出已秤重重量 ({target})。",
-      "capacityShortageWeighed": "容器總重量 ({total} KG) 比 {target} 少 500g 以上。請選擇更大的容器（例如 6 KG）。",
+      "capacityShortageWeighed": "容器總重量 ({total} KG) 比 {target} 少 500g 以上。請選擇更大的容器。",
       "capacityMismatchWeighedGeneric": "容器總重量 ({total} KG) 與已秤重重量 ({target}) 不符。",
       "chietCapacityBlock": "容器總重量已符合已秤重重量 {label}（少於 500g 仍視為足夠）。無需再新增列。"
     }

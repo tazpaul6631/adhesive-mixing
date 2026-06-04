@@ -189,10 +189,12 @@ import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChie
 import { useScaleManager } from '@/composables/useScaleManager';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 dayjs.extend(customParseFormat);
 const { releaseScaleConnection } = useScaleManager();
 const { t } = useAppLocale(() => 'tablet');
+const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 // ============================================================================
 // 1. INTERFACES & TYPES (Updated to match the new JSON structure)
 // ============================================================================
@@ -674,6 +676,8 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 };
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
+  if (!(await requireOnline())) return;
+
   const validationError = await validateBeforeNoMixComplete();
   if (validationError) {
     toast.add({
@@ -711,6 +715,7 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       router.push('/list-mix-glue');
     }
   } catch (error) {
+    if (notifyOfflineFromError(error)) return;
     console.error(error);
     toast.add({
       severity: 'error',
@@ -737,6 +742,8 @@ const handleCompleteMixGlue = async () => {
     return;
   }
 
+  if (!(await requireOnline())) return;
+
   try {
     const payloadToSubmit = buildPayload('1');
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
@@ -752,6 +759,7 @@ const handleCompleteMixGlue = async () => {
 
     router.push('/list-mix-glue');
   } catch (error) {
+    if (notifyOfflineFromError(error)) return;
     console.error(error);
     toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 6000 });
   }
@@ -1036,6 +1044,10 @@ const alertExitPage = (): Promise<boolean> =>
             cssClass: 'text-red-500',
             handler: () => {
               void (async () => {
+                if (!(await requireOnline())) {
+                  resolve(false);
+                  return;
+                }
                 try {
                   const payload = buildPayload('C', { onlyProgressLines: true });
                   await mixGlueApi.postMixGlueCommand(payload);
@@ -1044,6 +1056,10 @@ const alertExitPage = (): Promise<boolean> =>
                   resolve(true);
                 } catch (error) {
                   console.error(error);
+                  if (notifyOfflineFromError(error)) {
+                    resolve(false);
+                    return;
+                  }
                   toast.add({
                     severity: 'error',
                     summary: t('listMixGlue.toast.error'),
