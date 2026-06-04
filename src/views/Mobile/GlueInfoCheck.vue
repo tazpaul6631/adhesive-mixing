@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 8px !important;">
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
