@@ -179,7 +179,8 @@
         "submitSuccess": "檢查資訊已成功送出。",
         "resultRequired": "請選擇檢查結果",
         "submitError": "無法送出檢查資訊，請再試一次！",
-        "noCheckListData": "找不到檢查資料。"
+        "noCheckListData": "找不到檢查資料。",
+        "cancelSuccess": "已取消檢查表"
       }
     }
   }

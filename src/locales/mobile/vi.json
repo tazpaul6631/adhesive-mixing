@@ -189,7 +189,8 @@
         "submitSuccess": "Đã gửi thông tin kiểm tra thành công.",
         "resultRequired": "Vui lòng chọn kết quả kiểm tra",
         "submitError": "Không thể gửi thông tin kiểm tra. Vui lòng thử lại!",
-        "noCheckListData": "Không tìm thấy dữ liệu kiểm tra."
+        "noCheckListData": "Không tìm thấy dữ liệu kiểm tra.",
+        "cancelSuccess": "Đã hủy phiếu kiểm tra"
       }
     }
   }

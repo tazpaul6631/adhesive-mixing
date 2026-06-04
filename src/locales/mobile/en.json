@@ -179,7 +179,8 @@
         "submitSuccess": "Inspection information submitted successfully.",
         "resultRequired": "Please select the inspection result",
         "submitError": "Unable to submit inspection information. Please try again!",
-        "noCheckListData": "No inspection data found."
+        "noCheckListData": "No inspection data found.",
+        "cancelSuccess": "Inspection form cancelled"
       }
     }
   }
