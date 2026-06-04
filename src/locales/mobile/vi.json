@@ -173,10 +173,11 @@
       "scanTitle": "Quét mã kiểm tra",
       "scanButton": "Quét mã kiểm tra",
       "dialogTitle": "Phiếu kiểm tra",
-      "scannedCodeLabel": "Mã đã quét",
+      "issueLabel": "Vấn đề",
       "resultLabel": "Kết quả kiểm tra",
-      "okResult": "OK",
-      "notOkResult": "Not OK",
+      "hasIssueLabel": "Có vấn đề",
+      "okResult": "Không vấn đề",
+      "notOkResult": "Có vấn đề",
       "noteLabel": "Ghi chú",
       "notePlaceholder": "Nhập ghi chú nếu có",
       "cancelButton": "HỦY",
@@ -185,7 +186,11 @@
         "cameraPermission": "Cần cấp quyền camera để quét mã kiểm tra!",
         "invalidQr": "Mã kiểm tra không hợp lệ hoặc không có dữ liệu!",
         "scanError": "Không thể quét mã kiểm tra. Vui lòng thử lại!",
-        "submitSuccess": "Đã ghi nhận thông tin kiểm tra tạm thời."
+        "submitSuccess": "Đã gửi thông tin kiểm tra thành công.",
+        "resultRequired": "Vui lòng chọn kết quả kiểm tra",
+        "submitError": "Không thể gửi thông tin kiểm tra. Vui lòng thử lại!",
+        "noCheckListData": "Không tìm thấy dữ liệu kiểm tra.",
+        "cancelSuccess": "Đã hủy phiếu kiểm tra"
       }
     }
   }

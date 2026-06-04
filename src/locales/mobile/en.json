@@ -163,8 +163,9 @@
       "scanTitle": "Inspection Code Scan",
       "scanButton": "Scan inspection code",
       "dialogTitle": "Inspection Form",
-      "scannedCodeLabel": "Scanned code",
+      "issueLabel": "Issue",
       "resultLabel": "Check result",
+      "hasIssueLabel": "Has issue",
       "okResult": "OK",
       "notOkResult": "Not OK",
       "noteLabel": "Note",
@@ -175,7 +176,11 @@
         "cameraPermission": "Camera permission is required to scan the inspection code!",
         "invalidQr": "Invalid inspection code or no data found!",
         "scanError": "Unable to scan the inspection code. Please try again!",
-        "submitSuccess": "Inspection information has been temporarily recorded."
+        "submitSuccess": "Inspection information submitted successfully.",
+        "resultRequired": "Please select the inspection result",
+        "submitError": "Unable to submit inspection information. Please try again!",
+        "noCheckListData": "No inspection data found.",
+        "cancelSuccess": "Inspection form cancelled"
       }
     }
   }
