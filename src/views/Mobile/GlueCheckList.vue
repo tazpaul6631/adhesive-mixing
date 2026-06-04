@@ -12,8 +12,9 @@
     <ion-content class="mobile-content">
       <div class="menu-container">
         <section class="check-panel">
-          <ion-button expand="block" class="confirm-button" @click="openScanner">
-            {{ t('mobile.glueCheckList.scanButton') }}
+          <ion-button expand="block" class="confirm-button" :disabled="isLoadingScan" @click="openScanner">
+            <ion-spinner v-if="isLoadingScan" name="crescent"></ion-spinner>
+            <span v-else>{{ t('mobile.glueCheckList.scanButton') }}</span>
           </ion-button>
         </section>
       </div>
@@ -32,31 +33,27 @@
           <h2 class="check-form-dialog__title">{{ t('mobile.glueCheckList.dialogTitle') }}</h2>
 
           <div class="check-form-dialog__content">
-            <div class="check-form-dialog__field">
-              <label class="check-form-dialog__label">{{ t('mobile.glueCheckList.issueLabel') }}</label>
-              <div class="check-form-dialog__issue-value">{{ scannedCheckCode }}</div>
+            <div class="check-form-dialog__issue-row">
+              <span class="check-form-dialog__issue-label">{{ t('mobile.glueCheckList.issueLabel') }}:</span>
+              <span class="check-form-dialog__issue-value">{{ checkIssueName }}</span>
             </div>
 
             <div class="check-form-dialog__field">
               <label class="check-form-dialog__label">{{ t('mobile.glueCheckList.resultLabel') }}</label>
-              <div class="check-result-options">
-                <button
-                  type="button"
-                  class="check-result-option"
-                  :class="{ 'check-result-option--ok-active': checkResult === 'ok' }"
-                  @click="checkResult = 'ok'"
+              <button type="button" class="check-result-switch" @click="toggleCheckResult">
+                <span
+                  class="check-result-switch__option"
+                  :class="{ 'check-result-switch__option--ok-active': checkResult }"
                 >
                   {{ t('mobile.glueCheckList.okResult') }}
-                </button>
-                <button
-                  type="button"
-                  class="check-result-option"
-                  :class="{ 'check-result-option--not-ok-active': checkResult === 'notOk' }"
-                  @click="checkResult = 'notOk'"
+                </span>
+                <span
+                  class="check-result-switch__option"
+                  :class="{ 'check-result-switch__option--not-ok-active': !checkResult }"
                 >
                   {{ t('mobile.glueCheckList.notOkResult') }}
-                </button>
-              </div>
+                </span>
+              </button>
             </div>
 
             <div class="check-form-dialog__field">
@@ -74,11 +71,12 @@
           </div>
 
           <div class="check-form-dialog__actions">
-            <ion-button fill="clear" color="medium" @click="closeCheckDialog">
+            <ion-button fill="clear" color="medium" :disabled="isSubmittingForm" @click="cancelCheckForm">
               {{ t('mobile.glueCheckList.cancelButton') }}
             </ion-button>
-            <ion-button fill="clear" color="primary" @click="submitCheckForm">
-              {{ t('mobile.glueCheckList.submitButton') }}
+            <ion-button fill="clear" color="primary" :disabled="isSubmittingForm" @click="submitCheckForm">
+              <ion-spinner v-if="isSubmittingForm" name="crescent"></ion-spinner>
+              <span v-else>{{ t('mobile.glueCheckList.submitButton') }}</span>
             </ion-button>
           </div>
         </div>
@@ -97,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   IonBackButton,
   IonButton,
@@ -107,6 +105,7 @@ import {
   IonIcon,
   IonModal,
   IonPage,
+  IonSpinner,
   IonTitle,
   IonToast,
   IonToolbar,
@@ -116,18 +115,31 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
+import checkListApi from '@/api/checkList';
+import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
 
-const scannedCheckCode = ref('');
-type CheckResult = '' | 'ok' | 'notOk';
-
-const checkResult = ref<CheckResult>('');
+const scannedCheckQr = ref<{ factoryId: string; cliId: string } | null>(null);
+const scannedCheckItem = ref<any>(null);
+const checkResult = ref(true);
 const checkNote = ref('');
 const isCheckDialogOpen = ref(false);
+const isLoadingScan = ref(false);
+const isSubmittingForm = ref(false);
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
+
+const checkIssueName = computed(() => normalizeValue(scannedCheckItem.value?.checkListName));
+
+function normalizeValue(value: any) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+}
 
 function getBarcodeValue(barcode: { rawValue?: string; displayValue?: string }) {
   return barcode.rawValue || barcode.displayValue || '';
@@ -135,6 +147,27 @@ function getBarcodeValue(barcode: { rawValue?: string; displayValue?: string }) 
 
 function getCurrentUserId() {
   return authStore.user?.employeeId || authStore.token || localStorage.getItem('web_token_backup') || '';
+}
+
+function parseCheckListQrText(qrText: string) {
+  const normalizedText = normalizeValue(qrText).replace(/^\/+|\/+$/g, '');
+  const parts = normalizedText.split('/').map(part => part.trim()).filter(Boolean);
+
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const [factoryId, cliId] = parts;
+
+  if (!factoryId || !cliId) {
+    return null;
+  }
+
+  return { factoryId, cliId };
+}
+
+function toggleCheckResult() {
+  checkResult.value = !checkResult.value;
 }
 
 async function triggerWarningFeedback() {
@@ -151,12 +184,17 @@ async function showWarningAlert(message: string) {
 }
 
 function resetCheckForm() {
-  scannedCheckCode.value = '';
-  checkResult.value = '';
+  scannedCheckQr.value = null;
+  scannedCheckItem.value = null;
+  checkResult.value = true;
   checkNote.value = '';
 }
 
 async function openScanner() {
+  if (isLoadingScan.value) {
+    return;
+  }
+
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
@@ -178,34 +216,105 @@ async function openScanner() {
       return;
     }
 
-    scannedCheckCode.value = scannedValue;
-    checkResult.value = '';
+    const qrParams = parseCheckListQrText(scannedValue);
+
+    if (!qrParams) {
+      await showWarningAlert(t('mobile.glueCheckList.messages.invalidQr'));
+      return;
+    }
+
+    isLoadingScan.value = true;
+    const response = await checkListApi.getCheckListItem(qrParams.factoryId, qrParams.cliId);
+    const responseData = response.data as any;
+
+    if (!responseData?.success || !responseData?.data) {
+      await showWarningAlert(responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'));
+      return;
+    }
+
+    scannedCheckQr.value = qrParams;
+    scannedCheckItem.value = responseData.data;
+    checkResult.value = true;
     checkNote.value = '';
     isCheckDialogOpen.value = true;
   } catch (error) {
     console.error('Lỗi khi quét mã kiểm tra:', error);
     alert(t('mobile.glueCheckList.messages.scanError'));
+  } finally {
+    isLoadingScan.value = false;
   }
 }
 
-function closeCheckDialog() {
+function resetAndCloseCheckDialog() {
   isCheckDialogOpen.value = false;
   resetCheckForm();
 }
 
-function submitCheckForm() {
-  const payloadPreview = {
-    scannedCode: scannedCheckCode.value,
+function closeCheckDialog() {
+  if (isSubmittingForm.value) {
+    return;
+  }
+
+  resetAndCloseCheckDialog();
+}
+
+async function sendCheckForm(recordStatus: '1' | 'C') {
+  if (!scannedCheckQr.value || !scannedCheckItem.value) {
+    alert(t('mobile.glueCheckList.messages.noCheckListData'));
+    return;
+  }
+
+  const userId = getCurrentUserId();
+
+  const payload = {
+    factoryId: scannedCheckQr.value.factoryId,
+    checkListItemId: String(scannedCheckItem.value.checkListItemId ?? '').trim(),
+    checkTime: dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'),
     result: checkResult.value,
     note: checkNote.value.trim(),
-    checkerId: getCurrentUserId(),
-    checkedAt: new Date().toISOString(),
+    recordStatus,
+    createrId: userId,
+    updaterId: userId,
   };
 
-  console.info('[GlueCheckList] Submit preview:', payloadPreview);
-  toastMessage.value = t('mobile.glueCheckList.messages.submitSuccess');
-  showSuccessToast.value = true;
-  closeCheckDialog();
+  console.group(`[GlueCheckList] POST /api/mobile/checklist/create`);
+  console.info('Request payload:', payload);
+
+  try {
+    const response = await checkListApi.createCheckList(payload);
+    console.info('Response:', response?.data ?? response);
+
+    const responseData = response.data as any;
+
+    if (!responseData.success || responseData.data !== true) {
+      throw new Error(responseData.message || t('mobile.glueCheckList.messages.submitError'));
+    }
+
+    toastMessage.value = recordStatus === 'C'
+      ? t('mobile.glueCheckList.messages.cancelSuccess')
+      : t('mobile.glueCheckList.messages.submitSuccess');
+
+    showSuccessToast.value = true;
+    closeCheckDialog();
+  } catch (error) {
+    console.error('Không thể gửi thông tin kiểm tra:', error);
+
+    const errorMessage = error instanceof Error && error.message
+      ? error.message
+      : t('mobile.glueCheckList.messages.submitError');
+
+    alert(errorMessage);
+  } finally {
+    console.groupEnd();
+  }
+}
+
+async function submitCheckForm() {
+  await sendCheckForm('1');
+}
+
+async function cancelCheckForm() {
+  await sendCheckForm('C');
 }
 </script>
 
@@ -308,11 +417,30 @@ function submitCheckForm() {
     font-weight: 700;
   }
 
+  &__issue-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  &__issue-label {
+    flex: 0 0 70px;
+    color: #475569;
+    font-size: 14px !important;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
   &__issue-value {
+    flex: 1 1 auto;
+    min-width: 0;
     color: #081a36;
     font-size: 15px !important;
     font-weight: 700;
     line-height: 1.45;
+    text-align: left;
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -345,20 +473,30 @@ function submitCheckForm() {
   }
 }
 
-.check-result-options {
+.check-result-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px;
+  border: 1px solid #d5dbe6a8;
+  border-radius: 16px;
+  background: #f1f5f9;
 }
 
-.check-result-option {
-  min-height: 42px;
-  border: 1px solid #d5dbe6a8;
+.check-result-switch__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid transparent;
   border-radius: 12px;
-  color: #475569;
+  color: #94a3b8;
   font-size: 14px !important;
-  font-weight: 700;
-  background: #ffffff;
+  font-weight: 800;
+  background: transparent;
+  transition: all 0.16s ease;
 
   &--ok-active {
     border-color: #16a34a;

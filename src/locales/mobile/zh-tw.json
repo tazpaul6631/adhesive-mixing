@@ -165,6 +165,7 @@
       "dialogTitle": "檢查表單",
       "issueLabel": "問題",
       "resultLabel": "檢查結果",
+      "hasIssueLabel": "有問題",
       "okResult": "OK",
       "notOkResult": "Not OK",
       "noteLabel": "備註",
@@ -175,7 +176,10 @@
         "cameraPermission": "需要授予相機權限才能掃描檢查碼！",
         "invalidQr": "檢查碼無效或沒有資料！",
         "scanError": "無法掃描檢查碼，請再試一次！",
-        "submitSuccess": "檢查資訊已暫時記錄。"
+        "submitSuccess": "檢查資訊已成功送出。",
+        "resultRequired": "請選擇檢查結果",
+        "submitError": "無法送出檢查資訊，請再試一次！",
+        "noCheckListData": "找不到檢查資料。"
       }
     }
   }
