@@ -4,6 +4,7 @@ import { useSQLite } from '@/composables/useSQLite';
 type GlueOfflineDbConnection = {
   execute: (statements: string, transaction?: boolean, isSQL92?: boolean) => Promise<any>;
   run: (statement: string, values?: any[], transaction?: boolean, returnMode?: string) => Promise<any>;
+  query: (statement: string, values?: any[], isSQL92?: boolean) => Promise<any>;
 };
 
 export type GlueOfflineDataType =
@@ -12,6 +13,12 @@ export type GlueOfflineDataType =
   | 'separateGlue'
   | 'noSeparateGlue'
   | 'checkList';
+
+export type GlueOfflineQrResult = {
+  data: any | null;
+  status: 'success' | 'invalid' | 'noData';
+  type?: GlueOfflineDataType;
+};
 
 export type GlueOfflineDownloadProgress = {
   current: number;
@@ -164,6 +171,103 @@ const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
     ],
   },
 };
+
+type OfflineQrLookupConfig = {
+  type: GlueOfflineDataType;
+  tableName: string;
+  idColumn: string;
+};
+
+const qrLookupConfigs: Record<string, OfflineQrLookupConfig> = {
+  lc: {
+    type: 'lineChemical',
+    tableName: 'offline_line_chemical',
+    idColumn: 'line_chemical_id',
+  },
+  mgm: {
+    type: 'mixGlue',
+    tableName: 'offline_mix_glue',
+    idColumn: 'mix_glue_master_id',
+  },
+  sg: {
+    type: 'separateGlue',
+    tableName: 'offline_separate_glue',
+    idColumn: 'separate_glue_id',
+  },
+  nsg: {
+    type: 'noSeparateGlue',
+    tableName: 'offline_no_separate_glue',
+    idColumn: 'no_separate_glue_id',
+  },
+  ngs: {
+    type: 'noSeparateGlue',
+    tableName: 'offline_no_separate_glue',
+    idColumn: 'no_separate_glue_id',
+  },
+};
+
+type ParsedGlueQr = {
+  qrCode: string;
+  factoryId: string;
+  itemId: string;
+};
+
+function parseGlueQrText(qrText: string): ParsedGlueQr | null {
+  const normalizedQrText = normalizeValue(qrText);
+
+  if (!normalizedQrText) {
+    return null;
+  }
+
+  let pathText = normalizedQrText;
+
+  try {
+    pathText = new URL(normalizedQrText).pathname;
+  } catch {
+    pathText = normalizedQrText;
+  }
+
+  const parts = pathText
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const startIndex = parts[0]?.toLowerCase() === 's' ? 1 : 0;
+  const qrCode = normalizeValue(parts[startIndex]).toLowerCase();
+  const factoryId = normalizeValue(parts[startIndex + 1]);
+  const itemId = normalizeValue(parts[startIndex + 2]);
+
+  if (!qrCode || !factoryId || !itemId) {
+    return null;
+  }
+
+  return { qrCode, factoryId, itemId };
+}
+
+async function findRawJsonByQrConfig(
+  db: GlueOfflineDbConnection,
+  config: OfflineQrLookupConfig,
+  factoryId: string,
+  itemId: string
+) {
+  const result = await db.query(
+    `SELECT raw_json FROM ${config.tableName} WHERE factory_id = ? AND ${config.idColumn} = ? LIMIT 1`,
+    [factoryId, itemId]
+  );
+
+  const rawJson = result?.values?.[0]?.raw_json;
+
+  if (!rawJson) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawJson);
+  } catch (error) {
+    console.error('Không thể đọc dữ liệu QR offline:', error);
+    return null;
+  }
+}
 
 async function getReadyDatabase(): Promise<GlueOfflineDbConnection> {
   const sqlite = useSQLite();
@@ -318,7 +422,33 @@ export async function ensureGlueOfflineTables() {
   await createOfflineTables(db);
 }
 
+export async function findGlueOfflineQrData(qrText: string): Promise<GlueOfflineQrResult> {
+  const parsedQr = parseGlueQrText(qrText);
+
+  if (!parsedQr) {
+    return { data: null, status: 'invalid' };
+  }
+
+  const config = qrLookupConfigs[parsedQr.qrCode];
+
+  if (!config) {
+    return { data: null, status: 'invalid' };
+  }
+
+  const db = await getReadyDatabase();
+  await createOfflineTables(db);
+
+  const data = await findRawJsonByQrConfig(db, config, parsedQr.factoryId, parsedQr.itemId);
+
+  if (!data) {
+    return { data: null, status: 'noData', type: config.type };
+  }
+
+  return { data, status: 'success', type: config.type };
+}
+
 export default {
   downloadAndSaveGlueOfflineData,
   ensureGlueOfflineTables,
+  findGlueOfflineQrData,
 };

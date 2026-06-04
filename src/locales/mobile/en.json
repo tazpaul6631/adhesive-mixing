@@ -190,6 +190,18 @@
     },
     "common": {
       "offlineLocalData": "No network — using local data"
+    },
+    "offlineQueue": {
+      "pendingData": "Pending sync data",
+      "title": "Pending sync data",
+      "description": "These records are saved locally and will be synced when the network is available.",
+      "close": "Close",
+      "noData": "No pending sync data.",
+      "createdAt": "Saved at",
+      "receiveGlue": "Production Line Glue Receipt Confirmation",
+      "returnGlue": "Return glue scan",
+      "glueCheckList": "Glue Check List",
+      "saved": "Data has been saved locally and will be synced when the network is available."
     }
   }
 }

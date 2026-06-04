@@ -8,6 +8,7 @@
         <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
       </ion-toolbar>
       <MobileOfflineNotice />
+      <PendingQueueButton queue-type="ReceiveGlue" />
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -150,7 +151,11 @@ import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
+import { addOfflineQueueItem } from '@/services/offlineQueue.service';
+import { useOfflineStore } from '@/store/offline';
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -162,6 +167,7 @@ type ResolveGlueQrResult = {
 
 const authStore = useAuthStore();
 const lineChemicalStore = useLineChemicalStore();
+const offlineStore = useOfflineStore();
 const { t } = useI18n();
 
 const lineQrText = ref("");
@@ -422,6 +428,15 @@ async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQr
   return { data: responseData.data, status: "success" };
 }
 
+
+async function resolveGlueQr(qrText: string): Promise<ResolveGlueQrResult> {
+  if (!authStore.isOnline) {
+    return findGlueOfflineQrData(qrText);
+  }
+
+  return resolveGlueQrFromSystemUrl(qrText);
+}
+
 async function openScanner(target: ConfirmScanTarget) {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
@@ -470,7 +485,7 @@ async function handleLineQrScanResult(qrText: string) {
   isLoadingLineQr.value = true;
 
   try {
-    const result = await resolveGlueQrFromSystemUrl(qrText);
+    const result = await resolveGlueQr(qrText);
 
     if (result.status === "invalid") {
       resetLineQrField();
@@ -511,7 +526,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
   isLoadingAllocatedQr.value = true;
 
   try {
-    const result = await resolveGlueQrFromSystemUrl(qrText);
+    const result = await resolveGlueQr(qrText);
 
     if (result.status === "invalid") {
       resetAllocatedQrField();
@@ -578,6 +593,24 @@ async function handleConfirmReturn() {
 
     if (hasPayloadValue(noSeparateGlueId)) {
       payload.noSeparateGlueId = noSeparateGlueId;
+    }
+
+    if (!authStore.isOnline) {
+      await addOfflineQueueItem('ReceiveGlue', 'api/mobile/gluereturnlog/confirmgr', 'POST', payload);
+      await offlineStore.refreshQueueCounts();
+
+      lineChemicalStore.setLineChemicalSession({
+        lineChemicalId: lineChemicalInfo.value?.lineChemicalId ?? null,
+        productLineId: lineChemicalInfo.value?.productLineId ?? null,
+        factoryId: allocatedGlueInfo.value?.factoryId ?? null,
+        productLineName: lineChemicalInfo.value?.productLineName ?? null,
+        glueName: lineChemicalInfo.value?.glueName ?? null,
+        confirmedAt: new Date().toISOString(),
+      });
+
+      isConfirmReturnCompleted.value = true;
+      showToast(t('mobile.offlineQueue.saved'));
+      return;
     }
 
     console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");

@@ -190,6 +190,18 @@
     },
     "common": {
       "offlineLocalData": "無網路連線 — 正在使用本機資料"
+    },
+    "offlineQueue": {
+      "pendingData": "待同步資料",
+      "title": "待同步資料",
+      "description": "這些資料已暫存在本機，網路恢復後會進行同步。",
+      "close": "關閉",
+      "noData": "沒有待同步資料。",
+      "createdAt": "儲存時間",
+      "receiveGlue": "產線確認領膠水",
+      "returnGlue": "掃描退回膠水",
+      "glueCheckList": "膠水檢查清單",
+      "saved": "資料已暫存在本機，網路恢復後會同步。"
     }
   }
 }

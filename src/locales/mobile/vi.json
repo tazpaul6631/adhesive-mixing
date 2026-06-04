@@ -200,6 +200,18 @@
     },
     "common": {
       "offlineLocalData": "Không có mạng — đang dùng dữ liệu cục bộ"
+    },
+    "offlineQueue": {
+      "pendingData": "Dữ liệu chờ đồng bộ",
+      "title": "Dữ liệu chờ đồng bộ",
+      "description": "Các dữ liệu này đã được lưu tạm trên máy và sẽ đồng bộ khi có mạng.",
+      "close": "Đóng",
+      "noData": "Không có dữ liệu chờ đồng bộ.",
+      "createdAt": "Thời gian lưu",
+      "receiveGlue": "Chuyền xác nhận nhận keo",
+      "returnGlue": "Quét keo trả về",
+      "glueCheckList": "Tuần tra kiểm phòng pha keo",
+      "saved": "Đã lưu dữ liệu tạm. Dữ liệu sẽ được đồng bộ khi có mạng."
     }
   }
 }
