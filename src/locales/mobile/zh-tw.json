@@ -44,7 +44,12 @@
     "cameraPermission": "需要相機權限才能掃描員工卡！",
     "invalidBarcode": "卡片條碼無效或沒有資料！",
     "enterEmployeeId": "請輸入員工編號！",
-    "changeLanguage": "切換語言"
+    "changeLanguage": "切換語言",
+    "offlineDownloadTitle": "正在下載資料",
+    "offlineDownloadNote": "請稍候，QR 資料正在儲存以供離線使用。",
+    "offlineLoginBlocked": "裝置目前離線。請先連線後再登入。",
+    "offlineFactoryMissing": "找不到使用者的工廠代碼，請聯絡 IT。",
+    "offlineDownloadFailed": "無法下載離線資料，請檢查網路連線後再試。"
   },
   "mobile": {
     "glueConfirm": {

@@ -6,6 +6,7 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
+        <NetworkStatusIcon slot="end" />
       </ion-toolbar>
     </ion-header>
 
@@ -74,6 +75,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';

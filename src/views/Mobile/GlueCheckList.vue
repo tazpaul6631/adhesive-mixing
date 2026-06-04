@@ -6,6 +6,7 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueCheckList.title') }}</ion-title>
+        <NetworkStatusIcon slot="end" />
       </ion-toolbar>
     </ion-header>
 
@@ -116,6 +117,7 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import checkListApi from '@/api/checkList';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
