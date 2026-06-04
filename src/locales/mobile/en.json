@@ -187,6 +187,9 @@
         "noCheckListData": "No inspection data found.",
         "cancelSuccess": "Inspection form cancelled"
       }
+    },
+    "common": {
+      "offlineLocalData": "No network — using local data"
     }
   }
 }

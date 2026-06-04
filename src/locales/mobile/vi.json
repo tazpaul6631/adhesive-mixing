@@ -197,6 +197,9 @@
         "noCheckListData": "Không tìm thấy dữ liệu kiểm tra.",
         "cancelSuccess": "Đã hủy phiếu kiểm tra"
       }
+    },
+    "common": {
+      "offlineLocalData": "Không có mạng — đang dùng dữ liệu cục bộ"
     }
   }
 }

@@ -187,6 +187,9 @@
         "noCheckListData": "找不到檢查資料。",
         "cancelSuccess": "已取消檢查表"
       }
+    },
+    "common": {
+      "offlineLocalData": "無網路連線 — 正在使用本機資料"
     }
   }
 }

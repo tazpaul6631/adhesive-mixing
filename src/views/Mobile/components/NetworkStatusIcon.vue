@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue';
 import { IonIcon } from '@ionic/vue';
-import { cloudOfflineOutline, wifiOutline } from 'ionicons/icons';
+import { cloudOfflineOutline, wifiOutline, wifi } from 'ionicons/icons';
 import { Network } from '@capacitor/network';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { useAuthStore } from '@/store/auth';
@@ -16,7 +16,7 @@ const authStore = useAuthStore();
 let networkListener: PluginListenerHandle | null = null;
 
 const isOnline = computed(() => authStore.isOnline);
-const statusIcon = computed(() => (isOnline.value ? wifiOutline : wifiOutline));
+const statusIcon = computed(() => (isOnline.value ? wifi : wifi));
 const statusClass = computed(() => (isOnline.value ? 'network-status-icon--online' : 'network-status-icon--offline'));
 const statusLabel = computed(() => (isOnline.value ? 'Online' : 'Offline'));
 

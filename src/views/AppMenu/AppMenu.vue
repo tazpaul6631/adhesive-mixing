@@ -6,13 +6,13 @@
 
         <div slot="end" class="app-menu-toolbar__actions">
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
-          <NetworkStatusIcon v-if="!isTablet" />
           <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
             <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
           </ion-button>
         </div>
       </ion-toolbar>
+      <MobileOfflineNotice v-if="!isTablet" />
     </ion-header>
 
     <ion-content class="ion-padding custom-content">
@@ -73,7 +73,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
-import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
