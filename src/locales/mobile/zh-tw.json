@@ -163,7 +163,7 @@
       "scanTitle": "掃描檢查碼",
       "scanButton": "掃描檢查碼",
       "dialogTitle": "檢查表單",
-      "scannedCodeLabel": "已掃描代碼",
+      "issueLabel": "問題",
       "resultLabel": "檢查結果",
       "okResult": "OK",
       "notOkResult": "Not OK",

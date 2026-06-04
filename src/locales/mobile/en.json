@@ -163,7 +163,7 @@
       "scanTitle": "Inspection Code Scan",
       "scanButton": "Scan inspection code",
       "dialogTitle": "Inspection Form",
-      "scannedCodeLabel": "Scanned code",
+      "issueLabel": "Issue",
       "resultLabel": "Check result",
       "okResult": "OK",
       "notOkResult": "Not OK",

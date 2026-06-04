@@ -173,7 +173,7 @@
       "scanTitle": "Quét mã kiểm tra",
       "scanButton": "Quét mã kiểm tra",
       "dialogTitle": "Phiếu kiểm tra",
-      "scannedCodeLabel": "Mã đã quét",
+      "issueLabel": "Vấn đề",
       "resultLabel": "Kết quả kiểm tra",
       "okResult": "OK",
       "notOkResult": "Not OK",

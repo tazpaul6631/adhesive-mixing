@@ -33,8 +33,8 @@
 
           <div class="check-form-dialog__content">
             <div class="check-form-dialog__field">
-              <label class="check-form-dialog__label">{{ t('mobile.glueCheckList.scannedCodeLabel') }}</label>
-              <div class="check-form-dialog__readonly-value">{{ scannedCheckCode }}</div>
+              <label class="check-form-dialog__label">{{ t('mobile.glueCheckList.issueLabel') }}</label>
+              <div class="check-form-dialog__issue-value">{{ scannedCheckCode }}</div>
             </div>
 
             <div class="check-form-dialog__field">
@@ -43,7 +43,7 @@
                 <button
                   type="button"
                   class="check-result-option"
-                  :class="{ 'check-result-option--active': checkResult === 'ok' }"
+                  :class="{ 'check-result-option--ok-active': checkResult === 'ok' }"
                   @click="checkResult = 'ok'"
                 >
                   {{ t('mobile.glueCheckList.okResult') }}
@@ -51,7 +51,7 @@
                 <button
                   type="button"
                   class="check-result-option"
-                  :class="{ 'check-result-option--active': checkResult === 'notOk' }"
+                  :class="{ 'check-result-option--not-ok-active': checkResult === 'notOk' }"
                   @click="checkResult = 'notOk'"
                 >
                   {{ t('mobile.glueCheckList.notOkResult') }}
@@ -121,7 +121,9 @@ const { t } = useI18n();
 const authStore = useAuthStore();
 
 const scannedCheckCode = ref('');
-const checkResult = ref<'ok' | 'notOk'>('ok');
+type CheckResult = '' | 'ok' | 'notOk';
+
+const checkResult = ref<CheckResult>('');
 const checkNote = ref('');
 const isCheckDialogOpen = ref(false);
 const showSuccessToast = ref(false);
@@ -150,7 +152,7 @@ async function showWarningAlert(message: string) {
 
 function resetCheckForm() {
   scannedCheckCode.value = '';
-  checkResult.value = 'ok';
+  checkResult.value = '';
   checkNote.value = '';
 }
 
@@ -177,7 +179,7 @@ async function openScanner() {
     }
 
     scannedCheckCode.value = scannedValue;
-    checkResult.value = 'ok';
+    checkResult.value = '';
     checkNote.value = '';
     isCheckDialogOpen.value = true;
   } catch (error) {
@@ -246,7 +248,6 @@ function submitCheckForm() {
   --background-focused: #0b72ed;
   --background-hover: #0b72ed;
   --color: #ffffff;
-  --box-shadow: 0 10px 22px rgba(11, 114, 237, 0.28);
   font-size: 16px !important;
   font-weight: 700;
   text-transform: none;
@@ -307,19 +308,14 @@ function submitCheckForm() {
     font-weight: 700;
   }
 
-  &__readonly-value {
-    min-height: 42px;
-    display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
+  &__issue-value {
     color: #081a36;
-    font-size: 14px !important;
-    font-weight: 600;
-    line-height: 1.35;
-    word-break: break-all;
-    background: #f8fafc;
+    font-size: 15px !important;
+    font-weight: 700;
+    line-height: 1.45;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   &__textarea {
@@ -364,10 +360,16 @@ function submitCheckForm() {
   font-weight: 700;
   background: #ffffff;
 
-  &--active {
-    border-color: #0b72ed;
-    color: #0b56d9;
-    background: #eaf2ff;
+  &--ok-active {
+    border-color: #16a34a;
+    color: #ffffff;
+    background: #16a34a;
+  }
+
+  &--not-ok-active {
+    border-color: #dc2626;
+    color: #ffffff;
+    background: #dc2626;
   }
 }
 
