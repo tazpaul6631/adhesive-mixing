@@ -154,9 +154,11 @@ import { useAppLocale } from '@/composables/useAppLocale';
 import { useSeparateLabelBatchPrint } from '@/composables/useSeparateLabelBatchPrint';
 import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 const toast = useToast();
 const draftStore = useMixGlueDraftStore();
 const { t } = useAppLocale(() => 'tablet');
@@ -363,6 +365,8 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
+  if (!(await requireOnline())) return;
+
   let employeeId: string;
 
   if (authStore.user?.isQip) {
@@ -405,7 +409,11 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         toast.add({
           severity: 'error',
           summary: t('listSeparateMixedGlue.toast.error'),
+<<<<<<< HEAD
           detail: validateData?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+=======
+          detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
           life: 6000,
         });
         return;
@@ -415,7 +423,11 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       toast.add({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
+<<<<<<< HEAD
         detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+=======
+        detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
         life: 6000,
       });
       return;

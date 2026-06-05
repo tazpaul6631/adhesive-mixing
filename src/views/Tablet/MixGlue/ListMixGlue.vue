@@ -160,10 +160,12 @@ import { parsePrintQueueFromBe } from '@/services/mixGlueLabelPrint';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { t } = useAppLocale(() => 'tablet');
+const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 
 const selectedItem = ref<any>(null);
 const toast = useToast();
@@ -280,6 +282,8 @@ const handleConfirm = async (workOrderMasterId: string) => {
     return;
   }
 
+  if (!(await requireOnline())) return;
+
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
@@ -291,6 +295,7 @@ const handleConfirm = async (workOrderMasterId: string) => {
     toast.add({ severity: 'success', summary: t('listMixGlue.toast.success'), detail: t('listMixGlue.toast.confirmSuccess'), life: 3000 });
     fetchWorkOrders(currentPage.value, rowsPerPage.value);
   } catch (error) {
+    if (notifyOfflineFromError(error)) return;
     console.error(error);
     toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.confirmFailed'), life: 3000 });
   }
@@ -354,6 +359,8 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
+  if (!(await requireOnline())) return;
+
   let employeeId: string;
 
   if (authStore.user?.isQip) {
@@ -396,7 +403,11 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         toast.add({
           severity: 'error',
           summary: t('listMixGlue.toast.error'),
+<<<<<<< HEAD
           detail: validateData?.message || t('listMixGlue.toast.invalidEmployeeCard'),
+=======
+          detail: t('listMixGlue.toast.invalidEmployeeCard'),
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
           life: 6000,
         });
         return;
@@ -406,7 +417,11 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       toast.add({
         severity: 'error',
         summary: t('listMixGlue.toast.error'),
+<<<<<<< HEAD
         detail: error?.response?.data?.message || t('listMixGlue.toast.invalidEmployeeCard'),
+=======
+        detail: t('listMixGlue.toast.invalidEmployeeCard'),
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
         life: 6000,
       });
       return;
@@ -431,7 +446,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     showRetryDialog.value = false;
     await clearFailedItems();
 
-    const { data: woResponse } = await workOrder.getWorkOrder(row.workOrderMasterId, 2);
+    const { data: woResponse } = await workOrder.getWorkOrder(factoryId, row.workOrderMasterId, 2);
     if (!woResponse?.success || !woResponse?.data) {
       toast.add({
         severity: 'error',

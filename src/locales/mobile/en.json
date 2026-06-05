@@ -44,7 +44,15 @@
     "cameraPermission": "Camera permission is required to scan the card!",
     "invalidBarcode": "Invalid card code or no data found!",
     "enterEmployeeId": "Please enter employee ID!",
-    "changeLanguage": "Change language"
+    "changeLanguage": "Change language",
+    "offlineDownloadTitle": "Downloading data",
+    "offlineDownloadNote": "Please wait. QR data is being saved for offline use.",
+    "offlineLoginBlocked": "The device is offline. Please connect to the network before logging in.",
+    "offlineFactoryMissing": "Unable to find the user factory ID. Please contact IT.",
+    "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again.",
+    "offlineSyncTitle": "Syncing data",
+    "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
+    "offlineSyncFailed": "Unable to sync offline data. Please check the network connection and try again."
   },
   "mobile": {
     "glueConfirm": {
@@ -93,7 +101,39 @@
       "glueReturn": "Return glue scan",
       "glueReturnDescription": "Scan returned glue buckets after confirming the production line",
       "glueInfoCheck": "Glue Bucket Information Lookup",
-      "glueInfoCheckDescription": "Check allocated glue bucket information"
+      "glueInfoCheckDescription": "Check allocated glue bucket information",
+      "glueCheckList": "Glue Check List",
+      "glueCheckListDescription": "Scan inspection codes and record check results"
+    },
+    "glueReturn": {
+      "title": "Return glue scan",
+      "qrTitle": "Returned glue bucket QR code",
+      "scanPlaceholder": "Scan the returned glue QR code",
+      "confirmButton": "Confirm return",
+      "confirmDialogTitle": "Confirm returned glue bucket",
+      "confirmDialogMessage": "Confirm return the scanned bucket?",
+      "cancelButton": "CANCEL",
+      "okButton": "OK",
+      "submittingButton": "Submitting...",
+      "fields": {
+        "lineLabel": "Line:",
+        "glueLabel": "Glue:"
+      },
+      "messages": {
+        "requireConfirmedLine": "Please confirm the production line glue first before scanning the returned glue bucket.",
+        "cameraPermission": "Camera permission is required to scan the QR code!",
+        "invalidQr": "Invalid QR code. Please scan the returned glue bucket QR code again.",
+        "noGlueData": "No returned glue bucket data found.",
+        "loadError": "Unable to retrieve the returned glue bucket QR information. Please check the API connection!",
+        "returnSuccess": "Return completed successfully",
+        "returnConfirmError": "Unable to create the glue return log. Please try again!",
+        "loadingInfo": "Loading information...",
+        "invalidLineQr": "Invalid QR code. Please scan the line glue bucket QR code again.",
+        "noLineData": "No line glue bucket data found.",
+        "loadLineError": "Unable to retrieve the line glue bucket QR information. Please check the API connection!"
+      },
+      "lineQrTitle": "Line glue bucket QR code (optional)",
+      "lineScanPlaceholder": "Scan the line glue bucket QR code"
     },
     "glueReturn": {
       "title": "Return glue scan",
@@ -149,6 +189,50 @@
         "loadError": "Unable to retrieve the glue bucket QR information. Please check the API connection!",
         "unconfirmedGlue": "The glue bucket has not been confirmed. Please scan again."
       }
+    },
+    "glueCheckList": {
+      "title": "Glue Check List",
+      "scanTitle": "Inspection Code Scan",
+      "scanButton": "Scan inspection code",
+      "dialogTitle": "Inspection Form",
+      "issueLabel": "Issue",
+      "resultLabel": "Check result",
+      "hasIssueLabel": "Has issue",
+      "okResult": "OK",
+      "notOkResult": "Not OK",
+      "noteLabel": "Note",
+      "notePlaceholder": "Enter notes if any",
+      "cancelButton": "CANCEL",
+      "submitButton": "Submit",
+      "messages": {
+        "cameraPermission": "Camera permission is required to scan the inspection code!",
+        "invalidQr": "Invalid inspection code or no data found!",
+        "scanError": "Unable to scan the inspection code. Please try again!",
+        "submitSuccess": "Inspection information submitted successfully.",
+        "resultRequired": "Please select the inspection result",
+        "submitError": "Unable to submit inspection information. Please try again!",
+        "noCheckListData": "No inspection data found.",
+        "cancelSuccess": "Inspection form cancelled"
+      }
+    },
+    "common": {
+      "offlineLocalData": "No network — using local data"
+    },
+    "offlineQueue": {
+      "pendingData": "Pending sync data",
+      "title": "Pending sync data",
+      "description": "These records are saved locally and will be synced when the network is available.",
+      "close": "Close",
+      "noData": "No pending sync data.",
+      "createdAt": "Saved at",
+      "receiveGlue": "Production Line Glue Receipt Confirmation",
+      "returnGlue": "Return glue scan",
+      "glueCheckList": "Glue Check List",
+      "saved": "Data has been saved locally and will be synced when the network is available."
+    },
+    "offlineSync": {
+      "title": "Syncing data",
+      "note": "Please wait. Offline data is being uploaded to the system."
     }
   }
 }

@@ -12,6 +12,7 @@
           </ion-button>
         </div>
       </ion-toolbar>
+      <MobileOfflineNotice v-if="!isTablet" />
     </ion-header>
 
     <ion-content class="ion-padding custom-content">
@@ -24,6 +25,8 @@
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
           </div>
         </div>
+
+        <PendingQueueButton v-if="!isTablet" />
 
         <div class="feature-grid animate__animated animate__fadeInUp">
 
@@ -72,6 +75,8 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
@@ -161,6 +166,22 @@ const mobileFeatures = computed(() => [
   //   color: '#8b5cf6',
   //   bgLight: '#ede9fe'
   // },
+  {
+    path: '/mobile/glue-return',
+    title: t('mobile.appMenu.glueReturn'),
+    description: t('mobile.appMenu.glueReturnDescription'),
+    icon: qrCodeOutline,
+    color: '#8b5cf6',
+    bgLight: '#ede9fe'
+  },
+  {
+    path: '/mobile/glue-check-list',
+    title: t('mobile.appMenu.glueCheckList'),
+    description: t('mobile.appMenu.glueCheckListDescription'),
+    icon: checkmarkDoneOutline,
+    color: '#10b981',
+    bgLight: '#d1fae5'
+  },
   {
     path: '/mobile/glue-info-check',
     title: t('mobile.appMenu.glueInfoCheck'),

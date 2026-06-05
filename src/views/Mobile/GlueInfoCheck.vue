@@ -1,12 +1,13 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 8px !important;">
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
       </ion-toolbar>
+      <MobileOfflineNotice />
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -74,6 +75,10 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
+<<<<<<< HEAD
+=======
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';

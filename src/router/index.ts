@@ -96,6 +96,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/mobile/glue-check-list',
+    component: () => import('@/views/Mobile/GlueCheckList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:catchAll(.*)',
     redirect: '/404'
   }

@@ -150,7 +150,7 @@ const appendPasteQrCodeTspl = (baseTspl: string, pasteQrCode?: string): string =
 
   tspl += tsplBoldText(
     TSPL_LABEL_WIDTH - 30,
-    40,
+    20,
     code,
     TSPL_PASTE_QR_XMUL,
     TSPL_PASTE_QR_YMUL,
@@ -501,7 +501,11 @@ REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8
 CLS
+<<<<<<< HEAD
 QRCODE 15,40,H,5,A,0,"${tsplEscape(qrPayload)}"
+=======
+QRCODE 15,20,H,5,A,0,"${tsplEscape(qrPayload)}"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);

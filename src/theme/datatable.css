@@ -20,6 +20,7 @@
   width: auto;
   min-width: auto;
   text-align: center;
+  white-space: nowrap;
 }
 
 .auto-columns-table .dt-col-primary {
@@ -29,7 +30,7 @@
 
 .auto-columns-table .dt-col-text {
   min-width: auto;
-  width: auto;
+  width: 140px;
 }
 
 .auto-columns-table .dt-col-datetime {
@@ -40,8 +41,7 @@
 
 .auto-columns-table .dt-col-weight {
   min-width: auto;
-  width: auto;
-  white-space: nowrap;
+  width: 200px;
 }
 
 .auto-columns-table .dt-col-input {

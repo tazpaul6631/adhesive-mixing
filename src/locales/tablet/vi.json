@@ -3,28 +3,30 @@
     "welcome": "Chào mừng",
     "save": "Lưu",
     "cancel": "Hủy",
-    "loading": "Đang tải..."
+    "loading": "Đang tải...",
+    "networkOffline": "Không có mạng",
+    "checkNetwork": "Vui lòng kiểm tra kết nối mạng và thử lại."
   },
   "home": {
     "title": "Trang chủ"
   },
   "appMenu": {
-    "title": "Trang Chủ",
+    "title": "Trang chủ",
     "logout": "Đăng xuất",
     "tabletH2title": "Xin chào!",
-    "tabletSubtitle": "Hệ thống quản lý trên Tablet",
+    "tabletSubtitle": "Hệ thống quản lý trộn keo",
     "features": {
       "mixGlue": {
-        "title": "Quản lý danh sách trộn keo",
-        "description": "Quản lý trộn keo, kiểm tra kết nối và lấy dữ liệu từ cân."
+        "title": "Quản lý danh sách keo trộn hỗn hợp",
+        "description": "Quản lý keo trộn và keo không trộn, kiểm tra kết nối và cân điện tử."
       },
       "separateMixedGlue": {
-        "title": "Quản lý chiết keo trộn",
-        "description": "Quản lý việc đóng gói lại keo đã trộn."
+        "title": "Quản lý chiết keo trộn hỗn hợp",
+        "description": "Quản lý việc đóng gói keo đã pha trộn."
       },
       "glueReturnLog": {
-        "title": "Quản lý lịch sử trả keo",
-        "description": "Quản lý lịch sử trả keo, kiểm tra kết nối và lấy dữ liệu từ cân."
+        "title": "Quản lý hồ sơ hủy keo",
+        "description": "Quản lý hồ sơ hủy keo, kiểm tra kết nối và cân điện tử."
       }
     }
   },
@@ -33,14 +35,14 @@
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
     "columns": {
       "workOrder": "Đơn điều công",
-      "glue": "Keo",
-      "totalWeight": "Tổng TL (kg)",
-      "updater": "Người cập nhật",
-      "updateDate": "Ngày cập nhật",
-      "confirm": "Xác nhận"
+      "glue": "Keo trộn",
+      "totalWeight": "Tổng TL yêu cầu (KG)",
+      "updater": "Người trộn keo",
+      "updateDate": "Ngày trộn keo",
+      "confirm": "Xác nhận QIP"
     },
     "scan": {
-      "employeeNote": "Đưa <strong>barcode</strong> trên thẻ nhân viên vào khung hình"
+      "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
     },
     "print": {
       "overlayTitle": "Đang in tem",
@@ -49,13 +51,13 @@
       "retryMessage": "Có {count} tem chưa in thành công. Bạn có muốn in lại không?",
       "retryConfirm": "In lại",
       "retryClose": "Đóng",
-      "pendingButtonTitle": "Xem {count} tem chưa in",
+      "pendingButtonTitle": "Xem {count} tem chờ in",
       "labelItem": "Tem {index}",
       "reasons": {
         "bluetooth_disconnect": "Mất kết nối Bluetooth",
         "out_of_battery": "Máy in hết pin",
         "out_of_paper": "Máy in hết giấy",
-        "tspl_build": "Lỗi tạo lệnh in",
+        "tspl_build": "Không thể tạo lệnh in",
         "skipped_after_error": "Chưa in do lỗi trước đó"
       }
     },
@@ -63,14 +65,14 @@
       "warning": "Cảnh báo",
       "success": "Hoàn thành",
       "error": "Lỗi",
-      "draftNotFound": "Không tìm thấy bản nháp đơn hàng.",
-      "confirmSuccess": "Đã xác nhận đơn hàng!",
+      "draftNotFound": "Không tìm thấy bản nháp đơn điều công.",
+      "confirmSuccess": "Đã xác nhận đơn điều công!",
       "confirmFailed": "Xác nhận thất bại!",
-      "factoryNotFound": "Không tìm thấy thông tin nhà máy.",
+      "factoryNotFound": "Không tìm thấy thông tin bộ phận SX.",
       "printerNotConnected": "Chưa kết nối máy in.",
       "scanFailed": "Không quét được thẻ nhân viên hoặc đã hủy quét.",
-      "invalidEmployeeCard": "Thẻ nhân viên không hợp lệ.",
-      "loadOrderFailed": "Không tải được chi tiết đơn hàng.",
+      "invalidEmployeeCard": "Xác nhận thất bại, bạn không phải QIP, vui lòng liên hệ Admin để kiểm tra.",
+      "loadOrderFailed": "Không tải được chi tiết đơn điều công.",
       "mixGlueIdNotFound": "Không tìm thấy mã trộn keo.",
       "noLabels": "Không có tem để in.",
       "printSuccess": "Đã in {count} tem.",
@@ -79,42 +81,42 @@
       "printFailed": "In tem thất bại!",
       "printPartial": "In một phần ({printed}/{total}).",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chưa in bằng đơn mới."
+      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới."
     }
   },
   "listGlueReturnLog": {
-    "pageTitle": "Lịch sử trả keo",
-    "sectionTitle": "Danh sách lịch sử trả keo",
+    "pageTitle": "Hồ sơ hủy keo",
+    "sectionTitle": "Danh sách hồ sơ hủy keo",
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
-    "selectedRow": "Dòng đang chọn",
-    "selectRowHint": "Chọn một dòng trong bảng để cân",
-    "weighed": "Đã xác nhận cân",
+    "selectedRow": "Keo đang chọn",
+    "selectRowHint": "Chọn keo cần cân trong bảng",
+    "weighed": "Cân thực tế",
     "columns": {
-      "seq": "#",
-      "lineChemical": "Keo / chuyền",
-      "returnWeight": "TL trả về",
+      "seq": "STT",
+      "lineChemical": "Keo / chuyền SX",
+      "returnWeight": "TL hủy",
       "operator": "Người thao tác",
       "weighTime": "Thời gian cân",
-      "confirm": "Xác nhận",
-      "updater": "Người cập nhật",
-      "updateDate": "Ngày cập nhật"
+      "confirm": "Xác nhận người cân",
+      "updater": "Người cân",
+      "updateDate": "Ngày cân"
     },
     "toast": {
       "warning": "Cảnh báo",
       "success": "Hoàn thành",
       "error": "Lỗi",
-      "selectRowFirst": "Vui lòng chọn dòng cần cân trong bảng.",
-      "scaleSaved": "Đã ghi trọng lượng. Vui lòng bấm xác nhận ở cột cuối để gửi.",
-      "missingConfirmIds": "Thiếu returnGlueId hoặc lineChemicalId từ API. Không thể gửi xác nhận.",
-      "confirmSuccess": "Đã xác nhận trọng lượng trả keo.",
+      "selectRowFirst": "Vui lòng chọn keo cần cân trong bảng trước.",
+      "scaleSaved": "Đã ghi trọng lượng. Vui lòng bấm nút xác nhận người cân để gửi.",
+      "missingConfirmIds": "API thiếu returnGlueId hoặc lineChemicalId, không thể gửi.",
+      "confirmSuccess": "Đã xác nhận TL hủy.",
       "confirmFailed": "Xác nhận cân thất bại."
     }
   },
   "listSeparateMixedGlue": {
-    "pageTitle": "Danh sách chiết keo trộn",
-    "sectionTitle": "Danh sách chiết keo trộn",
+    "pageTitle": "Danh sách chiết keo trộn hỗn hợp",
+    "sectionTitle": "Danh sách chiết keo trộn hỗn hợp",
     "scan": {
-      "employeeNote": "Đưa <strong>barcode</strong> trên thẻ nhân viên vào khung hình"
+      "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
     },
     "print": {
       "overlayTitle": "Đang in tem",
@@ -123,14 +125,14 @@
       "retryMessage": "Có {count} tem chưa in thành công. Bạn có muốn in lại không?",
       "retryConfirm": "In lại",
       "retryClose": "Đóng",
-      "pendingButton": "Tem chưa in",
-      "pendingButtonTitle": "Xem {count} tem chưa in",
+      "pendingButton": "Tem chờ in",
+      "pendingButtonTitle": "Xem {count} tem chờ in",
       "labelItem": "Tem {index}",
       "reasons": {
         "bluetooth_disconnect": "Mất kết nối Bluetooth",
         "out_of_battery": "Máy in hết pin",
         "out_of_paper": "Máy in hết giấy",
-        "tspl_build": "Lỗi tạo lệnh in",
+        "tspl_build": "Không thể tạo lệnh in",
         "skipped_after_error": "Chưa in do lỗi trước đó"
       }
     },
@@ -138,25 +140,25 @@
       "warning": "Cảnh báo",
       "success": "Hoàn thành",
       "error": "Lỗi",
-      "factoryNotFound": "Không tìm thấy thông tin nhà máy.",
-      "printerNotConnected": "Chưa kết nối máy in.",
+      "factoryNotFound": "Không tìm thấy thông tin bộ phận SX.",
+      "printerNotConnected": "Máy in chưa kết nối.",
       "scanFailed": "Không quét được thẻ nhân viên hoặc đã hủy quét.",
-      "invalidEmployeeCard": "Thẻ nhân viên không hợp lệ.",
+      "invalidEmployeeCard": "Xác nhận thất bại, bạn không phải QIP, vui lòng liên hệ Admin để kiểm tra.",
       "loadOrderFailed": "Không tải được chi tiết đơn hàng.",
       "noLabels": "Không có tem để in.",
       "printSuccess": "Đã in {count} tem.",
       "printPartial": "In một phần ({printed}/{total}).",
       "printFailed": "In tem thất bại!",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chưa in bằng đơn mới."
+      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới."
     }
   },
   "separateMixedGlue": {
     "management": {
-      "pageTitle": "Chiết keo trộn",
+      "pageTitle": "Chiết keo trộn hỗn hợp",
       "sections": {
-        "mixedGlueBucket": "Chi tiết đơn yêu cầu chiết thùng keo trộn",
-        "noMixGlue": "Chi tiết đơn yêu cầu sử dụng keo không trộn"
+        "mixedGlueBucket": "Chi tiết yêu cầu thùng chiết keo trộn hỗn hợp",
+        "noMixGlue": "Chi tiết yêu cầu sử dụng keo không trộn"
       }
     },
     "table": {
@@ -171,7 +173,7 @@
         "glueWeight": "TL yêu cầu"
       },
       "placeholders": {
-        "selectBucket": "Chọn thùng"
+        "selectBucket": "Chọn thùng chứa"
       },
       "deleteAriaLabel": "Xóa",
       "addAriaLabel": "Thêm",
@@ -182,45 +184,56 @@
       "nameLabel": "Tên thành phần",
       "namePlaceholder": "Chọn thành phần",
       "nameRequired": "Tên thành phần là bắt buộc.",
-      "weightLabel": "Trọng lượng thực tế",
+      "weightLabel": "TL thực tế",
       "weightRequired": "Vui lòng nhập số ({unit})"
     },
     "chietDialog": {
-      "title": "Chiết keo theo thùng",
+      "title": "Chiết keo theo thùng chứa",
       "currentGlue": "Keo đang chiết",
+<<<<<<< HEAD
       "weighedWeight": "Trọng lượng đã cân",
       "capacityMustMatch": "Tổng trọng lượng thùng phải khớp trọng lượng đã cân",
+=======
+      "weighedWeight": "TL đã cân",
+      "capacityMustMatch": "Tổng TL thùng chứa phải khớp TL đã cân",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "viewOnly": "Chỉ xem"
     },
     "toast": {
-      "restore": "Khôi phục",
-      "restoreDetail": "Đã tải lại dữ liệu đã lưu",
-      "loadFailed": "Không thể tải dữ liệu đơn hàng",
+      "restore": "Đã khôi phục",
+      "restoreDetail": "Đã tải dữ liệu đã lưu",
+      "loadFailed": "Không thể tải dữ liệu đơn điều công",
       "incomplete": "Chưa hoàn thành",
       "locked": "Không thể chỉnh sửa",
+<<<<<<< HEAD
       "completeFirst": "Đơn đã hoàn thành chiết keo, không thể thêm hoặc xóa.",
       "noMixAlreadySubmitted": "Đơn noMix đã gửi xác nhận, không thể chỉnh sửa thêm.",
+=======
+      "completeFirst": "Đơn điều công này đã hoàn thành chiết, không thể thêm hoặc xóa.",
+      "noMixAlreadySubmitted": "Keo không trộn đã gửi xác nhận, không thể chỉnh sửa thêm.",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
       "completeFailed": "Không thể xác nhận hoàn thành",
-      "weighingComplete": "Hoàn tất",
+      "weighingComplete": "Hoàn thành",
       "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
       "addSuccess": "Thành công",
-      "addSuccessDetail": "Đã thêm thành phần mới",
+      "addSuccessDetail": "Đã thêm thành phần",
       "deleteSuccess": "Đã xóa",
       "deleteSuccessDetail": "Xóa thành phần thành công",
       "loadMaterialsFailed": "Không thể tải thành phần",
       "notWeighed": "Chưa cân",
-      "weighBeforeAdd": "Vui lòng cân keo {name} trước khi thêm thành phần mới.",
-      "weighBeforeChiet": "Vui lòng cân keo {name} trước khi chiết thùng.",
+      "weighBeforeAdd": "Vui lòng cân keo {name} trước khi thêm thành phần.",
+      "weighBeforeChiet": "Vui lòng cân keo {name} trước khi chiết.",
       "chietSaved": "Đã lưu chiết",
-      "chietSavedDetail": "Thông tin chiết thùng được tạm lưu",
+      "chietSavedDetail": "Thông tin chiết đã được tạm lưu",
       "progressSaveFailed": "Không thể gửi lưu tiến độ (C) lên server.",
       "selectBucketRow": "Vui lòng chọn thùng chứa ở dòng {row} trước khi thêm dòng mới.",
       "selectBucketRowShort": "Vui lòng chọn thùng chứa ở dòng {row}.",
-      "allocationComplete": "Đã phân bổ đủ",
-      "allocationCompleteDetail": "Tổng trọng lượng thùng chứa đã đạt, không cần thêm mới.",
+      "allocationComplete": "Đã chiết xong",
+      "allocationCompleteDetail": "Tổng TL thùng chứa đã đạt, không cần thêm mới.",
       "weightExceeded": "Vượt trọng lượng",
+<<<<<<< HEAD
       "bucketCapacityExceeded": "Tổng trọng lượng thùng vượt quá {label}. Vui lòng chọn thùng có trọng lượng phù hợp hơn.",
       "addRowMin": "Vui lòng thêm ít nhất một dòng và chọn thùng chứa.",
       "notWeighedForChiet": "Keo {name} chưa có trọng lượng cân. Vui lòng cân trước khi chiết.",
@@ -234,19 +247,35 @@
       "chietRequired": "Keo {name} đã cân nhưng chưa xác nhận chiết thùng. Vui lòng mở modal và bấm xác nhận.",
       "chietSelectBucket": "Keo {name} ở dòng chiết thùng {row}: vui lòng chọn thùng chứa.",
       "chietPrefix": "Keo {name} chiết thùng: {message}"
+=======
+      "bucketCapacityExceeded": "Tổng TL thùng chứa vượt quá {label}. Vui lòng chọn thùng phù hợp hơn.",
+      "addRowMin": "Vui lòng thêm ít nhất một dòng và chọn thùng chứa.",
+      "notWeighedForChiet": "Keo {name} chưa có TL cân. Vui lòng cân trước khi chiết.",
+      "invalid": "Không hợp lệ",
+      "mixedGlueSelectBucket": "Keo trộn hỗn hợp dòng {row}: vui lòng chọn thùng chứa.",
+      "mixedGluePrefix": "Keo trộn hỗn hợp: {message}",
+      "noMixSelectBucket": "Keo không trộn dòng {row}: vui lòng chọn thùng chứa.",
+      "noMixPrefix": "Keo không trộn: {message}",
+      "noMixWeighFirst": "Keo không trộn {name}: vui lòng hoàn thành cân trước.",
+      "pendingChietModal": "Còn thông tin chiết chưa xác nhận. Vui lòng hoàn tất cửa sổ chiết.",
+      "chietRequired": "Keo {name} đã cân nhưng chưa xác nhận chiết. Vui lòng mở cửa sổ và xác nhận.",
+      "chietSelectBucket": "Keo {name} chiết dòng {row}: vui lòng chọn thùng chứa.",
+      "chietPrefix": "Keo {name} chiết: {message}"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "confirmDelete": {
       "title": "Xác nhận xóa",
       "componentLabel": "Thành phần: {name}",
-      "message": "Bạn có chắc chắn muốn xóa thành phần này?"
+      "message": "Bạn có chắc muốn xóa thành phần này?"
     },
     "exitAlert": {
-      "header": "Cảnh báo chưa lưu",
-      "message": "Bạn có chắc chắn thoát không?",
-      "stay": "Ở lại",
+      "header": "Chưa lưu",
+      "message": "Bạn có chắc muốn thoát?",
+      "stay": "Hủy",
       "exit": "Thoát"
     },
     "validation": {
+<<<<<<< HEAD
       "capacityMismatch": "Tổng trọng lượng thùng không khớp trọng lượng yêu cầu.",
       "capacityMismatchWeighed": "Tổng trọng lượng thùng không khớp trọng lượng đã cân.",
       "capacityExceedsRequired": "Tổng trọng lượng thùng ({total} Kg) vượt quá trọng lượng yêu cầu ({target}).",
@@ -255,6 +284,16 @@
       "capacityShortageWeighed": "Tổng trọng lượng thùng ({total} Kg) còn thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn (vd: 6 Kg).",
       "capacityMismatchWeighedGeneric": "Tổng trọng lượng thùng ({total} Kg) chưa khớp trọng lượng đã cân ({target}).",
       "chietCapacityBlock": "Tổng trọng lượng thùng đã đủ so với trọng lượng đã cân {label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới."
+=======
+      "capacityMismatch": "Tổng TL thùng chứa không khớp TL yêu cầu.",
+      "capacityMismatchWeighed": "Tổng TL thùng chứa không khớp TL đã cân.",
+      "capacityExceedsRequired": "Tổng TL thùng chứa ({total} KG) vượt quá TL yêu cầu ({target}).",
+      "capacityBelowRequired": "Tổng TL thùng chứa ({total} KG) thấp hơn TL yêu cầu ({target}).",
+      "capacityExceedsWeighed": "Tổng TL thùng chứa ({total} KG) vượt quá TL đã cân ({target}).",
+      "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn.",
+      "capacityMismatchWeighedGeneric": "Tổng TL thùng chứa ({total} KG) không khớp TL đã cân ({target}).",
+      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL đã cân {label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới."
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     }
   },
   "bluetoothPrinter": {
@@ -267,11 +306,11 @@
     "reconnectAriaLabel": "Tìm lại máy in"
   },
   "electronicScale": {
-    "label": "Trọng lượng cân thực tế",
+    "label": "Cân thực tế",
     "refreshTitle": "Kết nối lại cân (dùng khi đổi cân trên hub hoặc cân không phản hồi)",
     "refreshAriaLabel": "Kết nối lại cân",
-    "connected": "Đã kết nối với cân",
-    "connecting": "Đang kết nối cổng cân...",
+    "connected": "Đã kết nối cân điện tử",
+    "connecting": "Đang kết nối cân điện tử...",
     "searching": "Đang tìm kết nối...",
     "confirm": "Xác nhận",
     "toast": {
@@ -280,16 +319,16 @@
       "connectFailed": "Không kết nối được",
       "connectFailedDetail": "Vui lòng kiểm tra hub/cáp USB và thử lại.",
       "noTargetWeight": "Chưa có TL yêu cầu",
-      "noTargetWeightDetail": "Dòng này chưa có trọng lượng yêu cầu. Vui lòng cân thành phần gốc trước hoặc chọn dòng khác.",
-      "zeroWeight": "Trọng lượng chưa hợp lệ",
-      "zeroWeightDetail": "Trọng lượng cân phải lớn hơn 0 mới được xác nhận.",
-      "belowMin": "Không đạt yêu cầu",
-      "belowMinDetail": "Trọng lượng không được thấp hơn {weight} {unit}.",
+      "noTargetWeightDetail": "Dòng này chưa có TL yêu cầu. Vui lòng cân thành phần cơ bản trước hoặc chọn dòng khác.",
+      "zeroWeight": "TL không hợp lệ",
+      "zeroWeightDetail": "TL cân phải lớn hơn 0 mới được xác nhận.",
+      "belowMin": "Chưa đạt yêu cầu",
+      "belowMinDetail": "TL không được thấp hơn {weight} {unit}.",
       "aboveMax": "Vượt giới hạn",
-      "aboveMaxDetail": "Trọng lượng tối đa chỉ được phép đến {weight} {unit}.",
+      "aboveMaxDetail": "TL tối đa cho phép là {weight} {unit}.",
       "success": "Thành công",
-      "successWithinTolerance": "Trọng lượng đạt yêu cầu",
-      "successConfirmed": "Đã xác nhận trọng lượng"
+      "successWithinTolerance": "TL đạt yêu cầu",
+      "successConfirmed": "Đã xác nhận TL"
     }
   },
   "mixGlueManagement": {
@@ -297,6 +336,7 @@
     "fields": {
       "workOrder": "Đơn điều công",
       "glue": "Keo",
+<<<<<<< HEAD
       "totalWeight": "TL yêu cầu (Kg)",
       "componentCode": "Mã thành phần",
       "totalWeightActual": "TL thực tế (Kg)"
@@ -305,22 +345,32 @@
       "lineDetails": "Chi tiết dây chuyền",
       "mixingComponents": "Thành phần trộn keo",
       "noMixComponents": "Thành phần keo không trộn"
+=======
+      "totalWeight": "Tổng TL (KG)",
+      "componentCode": "Mã thành phần",
+      "totalWeightActual": "TL thực tế (KG)"
+    },
+    "sections": {
+      "lineDetails": "Chi tiết chuyền SX",
+      "mixingComponents": "Thành phần trộn keo",
+      "noMixComponents": "Thành phần không trộn keo"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "lineDetailsTable": {
       "columns": {
         "workshop": "Xưởng",
         "requestOrder": "Đơn yêu cầu",
-        "style": "Hình thể",
-        "line": "Chuyền",
+        "style": "Kiểu dáng",
+        "line": "Chuyền SX",
         "weight": "Trọng lượng",
-        "requestTime": "Thời gian lãnh"
+        "requestTime": "Thời gian lãnh liệu"
       }
     },
     "componentsTable": {
       "columns": {
         "name": "Tên thành phần",
         "requiredWeight": "TL yêu cầu",
-        "actualWeight": "TL thực tế (Kg)",
+        "actualWeight": "TL thực tế (KG)",
         "operator": "Người thao tác",
         "weighingTime": "Thời gian cân",
         "action": "Thao tác"
@@ -334,36 +384,49 @@
       "nameRequired": "Tên thành phần là bắt buộc.",
       "percentageLabel": "Phần trăm (%)",
       "percentageRequired": "Vui lòng nhập phần trăm.",
+<<<<<<< HEAD
       "weightLabel": "Trọng lượng",
       "weightRequired": "Vui lòng nhập trọng lượng ({unit})"
+=======
+      "weightLabel": "Trọng lượng (KG)",
+      "weightRequired": "Vui lòng nhập trọng lượng (KG)",
+      "toleranceGramsLabel": "Độ chênh lệch (g)",
+      "toleranceGramsRequired": "Vui lòng nhập gram chênh lệch lớn hơn 0"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
-    "unknownOperator": "Chưa xác định",
+    "unknownOperator": "Chưa chỉ định",
     "confirmDelete": {
       "title": "Xác nhận xóa",
       "componentLabel": "Thành phần: {name}",
-      "message": "Bạn có chắc chắn muốn xóa thành phần này?"
+      "message": "Bạn có chắc muốn xóa thành phần này?"
     },
     "exitAlert": {
-      "header": "Cảnh báo chưa lưu",
-      "message": "Bản nháp trên máy vẫn được giữ để vào lại tiếp tục làm. Bạn có chắc muốn thoát?",
+      "header": "Chưa lưu",
+      "message": "Bản nháp trên máy vẫn được giữ để tiếp tục sau. Bạn có chắc muốn thoát?",
       "stay": "Ở lại",
       "exit": "Thoát"
     },
     "toast": {
-      "restore": "Khôi phục",
+      "restore": "Đã khôi phục",
       "restoreDetail": "Đã tải lại dữ liệu đã lưu",
+<<<<<<< HEAD
       "loadFailed": "Không thể tải dữ liệu đơn hàng",
       "incompleteWeighing": "Vui lòng cân đầy đủ...",
       "incompleteNoMixWeighing": "Vui lòng cân đầy đủ keo không trộn trước khi hoàn thành.",
+=======
+      "loadFailed": "Không thể tải dữ liệu đơn điều công",
+      "incompleteWeighing": "Vui lòng hoàn thành cân tất cả thành phần...",
+      "incompleteNoMixWeighing": "Vui lòng hoàn thành cân tất cả thành phần không trộn keo trước khi hoàn tất.",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "saveSuccess": "Lưu thành công",
-      "saveSuccessDetail": "Dữ liệu đã được lưu. Vui lòng ra danh sách để Xác nhận!",
+      "saveSuccessDetail": "Dữ liệu đã lưu. Vui lòng quay lại danh sách để xác nhận!",
       "saveFailed": "Không thể lưu dữ liệu",
-      "weighingComplete": "Hoàn tất",
+      "weighingComplete": "Hoàn thành",
       "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
-      "baseNotFound": "Không tìm thấy hóa chất gốc",
-      "weighBaseFirst": "Vui lòng cân thành phần gốc trước khi thêm thành phần mới",
+      "baseNotFound": "Không tìm thấy keo trộn cơ bản",
+      "weighBaseFirst": "Vui lòng cân thành phần cơ bản trước khi thêm thành phần",
       "addSuccess": "Thành công",
-      "addSuccessDetail": "Đã thêm thành phần mới",
+      "addSuccessDetail": "Đã thêm thành phần",
       "deleteSuccess": "Đã xóa",
       "deleteSuccessDetail": "Xóa thành phần thành công: {name}",
       "loadMaterialsFailed": "Không thể tải thành phần",
@@ -378,39 +441,39 @@
   },
   "messages": {
     "notifi": "Thông báo!",
-    "submitted": "Đã gửi thành công, cám ơn!"
+    "submitted": "Đã gửi thành công, cảm ơn!"
   },
   "login": {
     "hello": "Xin chào!",
-    "subtitle": "Hệ thống phòng pha keo",
-    "scanTitle": "Đăng nhập bằng thẻ",
-    "scanInstructionPrefix": "Vui lòng quét mã ",
-    "scanInstructionQr": "QR hoặc Mã vạch/Barcode",
-    "scanInstructionSuffix": " trên thẻ nhân viên của bạn để vào hệ thống.",
-    "employeeCode": "Mã NV không hợp lệ!",
-    "scanButton": "QUÉT MÃ",
-    "loggingIn": "ĐANG ĐĂNG NHẬP...",
-    "processing": "ĐANG XỬ LÝ...",
+    "subtitle": "Hệ thống quản lý trộn keo",
+    "scanTitle": "Đăng nhập bằng thẻ nhân viên",
+    "scanInstructionPrefix": "Vui lòng quét ",
+    "scanInstructionQr": "QR hoặc mã vạch",
+    "scanInstructionSuffix": " trên thẻ nhân viên để vào hệ thống.",
+    "employeeCode": "Mã nhân viên không hợp lệ!",
+    "scanButton": "Quét mã",
+    "loggingIn": "Đang đăng nhập...",
+    "processing": "Đang xử lý...",
     "company": "Công ty",
-    "factory": "Nhà máy",
+    "factory": "Bộ phận SX",
     "account": "Tài khoản",
     "password": "Mật khẩu",
     "selectCompany": "Chọn công ty",
-    "selectFactory": "Chọn nhà máy",
-    "employeeIdPlaceholder": "Mã số nhân viên",
-    "loginButton": "ĐĂNG NHẬP",
+    "selectFactory": "Chọn bộ phận SX",
+    "employeeIdPlaceholder": "Mã nhân viên",
+    "loginButton": "Đăng nhập",
     "loadingTitle": "Đang đăng nhập...",
-    "loadingNote": "Vui lòng đợi trong giây lát",
-    "scanOverlayTitle": "Quét thẻ nhân viên",
-    "scanOverlayNotePrefix": "Đưa mã ",
-    "scanOverlayNoteSuffix": " trên thẻ vào khung bên dưới",
+    "loadingNote": "Vui lòng chờ",
+    "scanOverlayTitle": "Quét mã nhân viên",
+    "scanOverlayNotePrefix": "Đưa mã vạch trên thẻ ",
+    "scanOverlayNoteSuffix": " vào khung bên dưới",
     "cameraFrontOn": "Camera trước đang bật",
     "cancelScan": "Hủy quét",
     "footer": "© 2026 IT Jia Hsin",
     "loginFailed": "Đăng nhập thất bại.",
     "serverMaintenance": "Server đang bảo trì. Vui lòng thử lại sau. (Liên hệ IT nếu vấn đề vẫn tiếp diễn)",
-    "cameraPermission": "Cần cấp quyền camera để quét thẻ!",
-    "invalidBarcode": "Mã thẻ không hợp lệ hoặc không có dữ liệu!",
+    "cameraPermission": "Cần cấp quyền camera để quét thẻ nhân viên!",
+    "invalidBarcode": "Mã vạch thẻ không hợp lệ hoặc không có dữ liệu!",
     "enterEmployeeId": "Vui lòng nhập mã nhân viên!",
     "changeLanguage": "Đổi ngôn ngữ"
   }

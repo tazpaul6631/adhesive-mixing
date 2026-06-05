@@ -3,7 +3,9 @@
     "welcome": "Welcome",
     "save": "Save",
     "cancel": "Cancel",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "networkOffline": "No network",
+    "checkNetwork": "Please check your network connection and try again."
   },
   "home": {
     "title": "Home"
@@ -12,65 +14,65 @@
     "title": "Home",
     "logout": "Log out",
     "tabletH2title": "Hello!",
-    "tabletSubtitle": "Tablet management system",
+    "tabletSubtitle": "Mix glue management system",
     "features": {
       "mixGlue": {
-        "title": "List Mix Glue Management",
-        "description": "Manage glue mixing, check connections, and retrieve data from the scale."
+        "title": "Mixed glue list management",
+        "description": "Manage mixed and non-mixed glue, check connections, and use the electronic scale."
       },
       "separateMixedGlue": {
-        "title": "Separate Mixed Glue Management",
-        "description": "Manage repackaging of mixed glue."
+        "title": "Mixed glue repackaging management",
+        "description": "Manage repackaging of prepared glue."
       },
       "glueReturnLog": {
-        "title": "Glue Return Log Management",
-        "description": "Manage glue return log, check connections, and retrieve data from the scale."
+        "title": "Scrap record management",
+        "description": "Manage scrap records, check connections, and use the electronic scale."
       }
     }
   },
   "listMixGlue": {
-    "sectionTitle": "List Mix Glue",
+    "sectionTitle": "Mix glue list",
     "empty": "No data to display at the moment.",
     "columns": {
       "workOrder": "Work order",
-      "glue": "Glue",
-      "totalWeight": "Total weight (kg)",
-      "updater": "Updated by",
-      "updateDate": "Update date",
-      "confirm": "Confirm"
+      "glue": "Mix glue product",
+      "totalWeight": "Required total weight (KG)",
+      "updater": "Mix glue operator",
+      "updateDate": "Mix glue date",
+      "confirm": "QIP confirm"
     },
     "scan": {
-      "employeeNote": "Place the employee card <strong>barcode</strong> inside the frame"
+      "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"
     },
     "print": {
       "overlayTitle": "Printing labels",
       "overlayProgress": "Printing {current}/{total}",
       "retryTitle": "Label print failed",
-      "retryMessage": "{count} label(s) were not printed successfully. Retry?",
-      "retryConfirm": "Retry",
+      "retryMessage": "{count} label(s) were not printed successfully. Retry printing?",
+      "retryConfirm": "Retry print",
       "retryClose": "Close",
       "pendingButtonTitle": "View {count} pending label(s)",
       "labelItem": "Label {index}",
       "reasons": {
         "bluetooth_disconnect": "Bluetooth disconnected",
-        "out_of_battery": "Printer out of battery",
+        "out_of_battery": "Printer low battery",
         "out_of_paper": "Printer out of paper",
         "tspl_build": "Failed to build print command",
-        "skipped_after_error": "Skipped due to earlier error"
+        "skipped_after_error": "Not printed due to earlier error"
       }
     },
     "toast": {
       "warning": "Warning",
       "success": "Completed",
       "error": "Error",
-      "draftNotFound": "Order draft not found.",
-      "confirmSuccess": "Order confirmed!",
+      "draftNotFound": "Work order draft not found.",
+      "confirmSuccess": "Work order confirmed!",
       "confirmFailed": "Confirmation failed!",
-      "factoryNotFound": "Factory information not found.",
+      "factoryNotFound": "Business division information not found.",
       "printerNotConnected": "Printer is not connected.",
       "scanFailed": "Could not scan employee card or scan was cancelled.",
-      "invalidEmployeeCard": "Invalid employee card.",
-      "loadOrderFailed": "Could not load order details.",
+      "invalidEmployeeCard": "Verification failed. You are not QIP. Please contact Admin for verification.",
+      "loadOrderFailed": "Could not load work order details.",
       "mixGlueIdNotFound": "Mix glue ID not found.",
       "noLabels": "No labels to print.",
       "printSuccess": "Printed {count} label(s).",
@@ -83,65 +85,65 @@
     }
   },
   "listGlueReturnLog": {
-    "pageTitle": "Glue return log",
-    "sectionTitle": "Glue return log list",
+    "pageTitle": "Scrap record",
+    "sectionTitle": "Scrap record list",
     "empty": "No data to display at the moment.",
-    "selectedRow": "Selected row",
-    "selectRowHint": "Select a row in the table to weigh",
-    "weighed": "Weight confirmed",
+    "selectedRow": "Selected glue",
+    "selectRowHint": "Select the glue to weigh in the table",
+    "weighed": "Actual weighing",
     "columns": {
-      "seq": "#",
-      "lineChemical": "Glue / line",
-      "returnWeight": "Return weight",
+      "seq": "No.",
+      "lineChemical": "Glue / production line",
+      "returnWeight": "Scrap weight",
       "operator": "Operator",
-      "weighTime": "Weigh time",
-      "confirm": "Confirm",
-      "updater": "Updated by",
-      "updateDate": "Update date"
+      "weighTime": "Weighing time",
+      "confirm": "Weighing personnel confirm",
+      "updater": "Weighing operator",
+      "updateDate": "Weighing date"
     },
     "toast": {
       "warning": "Warning",
       "success": "Completed",
       "error": "Error",
-      "selectRowFirst": "Please select a row in the table to weigh.",
-      "scaleSaved": "Weight recorded. Press confirm in the last column to submit.",
-      "missingConfirmIds": "Missing returnGlueId or lineChemicalId from API. Cannot submit.",
-      "confirmSuccess": "Return glue weight confirmed.",
-      "confirmFailed": "Failed to confirm weight."
+      "selectRowFirst": "Please select the glue to weigh in the table first.",
+      "scaleSaved": "Weight recorded. Please tap the weighing personnel confirm button to submit.",
+      "missingConfirmIds": "API is missing returnGlueId or lineChemicalId. Cannot submit.",
+      "confirmSuccess": "Scrap weight confirmed.",
+      "confirmFailed": "Failed to confirm weighing."
     }
   },
   "listSeparateMixedGlue": {
-    "pageTitle": "List Separate Mixed Glue",
-    "sectionTitle": "List Separate Mixed Glue",
+    "pageTitle": "Mixed glue repackaging list",
+    "sectionTitle": "Mixed glue repackaging list",
     "scan": {
-      "employeeNote": "Place the employee card <strong>barcode</strong> inside the frame"
+      "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"
     },
     "print": {
       "overlayTitle": "Printing labels",
       "overlayProgress": "Printing {current}/{total}",
       "retryTitle": "Label print failed",
-      "retryMessage": "{count} label(s) were not printed successfully. Retry?",
-      "retryConfirm": "Retry",
+      "retryMessage": "{count} label(s) were not printed successfully. Retry printing?",
+      "retryConfirm": "Retry print",
       "retryClose": "Close",
       "pendingButton": "Pending labels",
       "pendingButtonTitle": "View {count} pending label(s)",
       "labelItem": "Label {index}",
       "reasons": {
         "bluetooth_disconnect": "Bluetooth disconnected",
-        "out_of_battery": "Printer out of battery",
+        "out_of_battery": "Printer low battery",
         "out_of_paper": "Printer out of paper",
         "tspl_build": "Failed to build print command",
-        "skipped_after_error": "Skipped due to earlier error"
+        "skipped_after_error": "Not printed due to earlier error"
       }
     },
     "toast": {
       "warning": "Warning",
       "success": "Completed",
       "error": "Error",
-      "factoryNotFound": "Factory information not found.",
+      "factoryNotFound": "Business division information not found.",
       "printerNotConnected": "Printer is not connected.",
       "scanFailed": "Could not scan employee card or scan was cancelled.",
-      "invalidEmployeeCard": "Invalid employee card.",
+      "invalidEmployeeCard": "Verification failed. You are not QIP. Please contact Admin for verification.",
       "loadOrderFailed": "Could not load order details.",
       "noLabels": "No labels to print.",
       "printSuccess": "Printed {count} label(s).",
@@ -153,10 +155,10 @@
   },
   "separateMixedGlue": {
     "management": {
-      "pageTitle": "Separate Mixed Glue",
+      "pageTitle": "Mixed glue repackaging",
       "sections": {
-        "mixedGlueBucket": "Mixed glue bucket allocation details",
-        "noMixGlue": "Non-mixed glue usage request details"
+        "mixedGlueBucket": "Mixed glue repackaging bucket requirement details",
+        "noMixGlue": "Non-mixed glue usage requirement details"
       }
     },
     "table": {
@@ -167,7 +169,8 @@
         "action": "Action",
         "glue": "Glue",
         "actualWeight": "Actual weight",
-        "weighingTime": "Weighing time"
+        "weighingTime": "Weighing time",
+        "glueWeight": "Required weight"
       },
       "placeholders": {
         "selectBucket": "Select container"
@@ -185,47 +188,53 @@
       "weightRequired": "Please enter a value ({unit})"
     },
     "chietDialog": {
-      "title": "Bucket glue allocation",
-      "currentGlue": "Glue being allocated",
+      "title": "Repack glue by container",
+      "currentGlue": "Glue being repackaged",
       "weighedWeight": "Weighed weight",
-      "capacityMustMatch": "Total container capacity must match weighed weight",
+      "capacityMustMatch": "Total container weight must match weighed weight",
       "viewOnly": "View only"
     },
     "toast": {
       "restore": "Restored",
-      "restoreDetail": "Saved data has been reloaded",
-      "loadFailed": "Could not load order data",
+      "restoreDetail": "Saved data has been loaded",
+      "loadFailed": "Could not load work order data",
       "incomplete": "Incomplete",
       "locked": "Cannot edit",
+<<<<<<< HEAD
       "completeFirst": "This order is already completed. Adding or deleting is not allowed.",
       "noMixAlreadySubmitted": "This noMix order was already submitted. Further edits are not allowed.",
+=======
+      "completeFirst": "This work order repackaging is complete. Adding or deleting is not allowed.",
+      "noMixAlreadySubmitted": "Non-mixed glue has already been submitted. Further edits are not allowed.",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "completeSuccess": "Completed",
       "completeSuccessDetail": "Data submitted successfully",
       "completeFailed": "Could not confirm completion",
       "weighingComplete": "Completed",
       "weighingCompleteDetail": "All components have been weighed.",
       "addSuccess": "Success",
-      "addSuccessDetail": "New component added",
+      "addSuccessDetail": "Component added",
       "deleteSuccess": "Deleted",
       "deleteSuccessDetail": "Component deleted successfully",
       "loadMaterialsFailed": "Could not load components",
       "notWeighed": "Not weighed",
-      "weighBeforeAdd": "Please weigh glue {name} before adding a new component.",
-      "weighBeforeChiet": "Please weigh glue {name} before bucket allocation.",
-      "chietSaved": "Allocation saved",
-      "chietSavedDetail": "Bucket allocation information temporarily saved",
+      "weighBeforeAdd": "Please weigh glue {name} before adding a component.",
+      "weighBeforeChiet": "Please weigh glue {name} before repackaging.",
+      "chietSaved": "Repackaging saved",
+      "chietSavedDetail": "Repackaging information temporarily saved",
       "progressSaveFailed": "Could not send progress save (C) to the server.",
       "selectBucketRow": "Please select a container on row {row} before adding a new row.",
       "selectBucketRowShort": "Please select a container on row {row}.",
-      "allocationComplete": "Fully allocated",
+      "allocationComplete": "Repackaging complete",
       "allocationCompleteDetail": "Total container weight has been reached; no need to add more.",
       "weightExceeded": "Weight exceeded",
-      "bucketCapacityExceeded": "Total container capacity exceeds {label}. Please choose a more suitable container.",
+      "bucketCapacityExceeded": "Total container weight exceeds {label}. Please choose a more suitable container.",
       "addRowMin": "Please add at least one row and select a container.",
-      "notWeighedForChiet": "Glue {name} has no weighed weight. Please weigh before allocation.",
+      "notWeighedForChiet": "Glue {name} has no weighed weight. Please weigh before repackaging.",
       "invalid": "Invalid",
-      "mixedGlueSelectBucket": "Mixed glue on row {row}: please select a container.",
+      "mixedGlueSelectBucket": "Mixed glue row {row}: please select a container.",
       "mixedGluePrefix": "Mixed glue: {message}",
+<<<<<<< HEAD
       "noMixSelectBucket": "Non-mixed glue on row {row}: please select a container.",
       "noMixPrefix": "Non-mixed glue: {message}",
       "noMixWeighFirst": "Non-mixed glue {name}: please weigh before completing.",
@@ -233,6 +242,15 @@
       "chietRequired": "Glue {name} has been weighed but bucket allocation is not confirmed. Open the dialog and confirm.",
       "chietSelectBucket": "Glue {name} on allocation row {row}: please select a container.",
       "chietPrefix": "Glue {name} allocation: {message}"
+=======
+      "noMixSelectBucket": "Non-mixed glue row {row}: please select a container.",
+      "noMixPrefix": "Non-mixed glue: {message}",
+      "noMixWeighFirst": "Non-mixed glue {name}: please complete weighing first.",
+      "pendingChietModal": "Repackaging information is not confirmed. Please complete the repackaging dialog.",
+      "chietRequired": "Glue {name} has been weighed but repackaging is not confirmed. Please open the dialog and confirm.",
+      "chietSelectBucket": "Glue {name} repackaging row {row}: please select a container.",
+      "chietPrefix": "Glue {name} repackaging: {message}"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "confirmDelete": {
       "title": "Confirm delete",
@@ -240,20 +258,20 @@
       "message": "Are you sure you want to delete this component?"
     },
     "exitAlert": {
-      "header": "Unsaved changes",
+      "header": "Unsaved",
       "message": "Are you sure you want to leave?",
-      "stay": "Stay",
+      "stay": "Cancel",
       "exit": "Leave"
     },
     "validation": {
-      "capacityMismatch": "Total container capacity does not match required weight.",
-      "capacityMismatchWeighed": "Total container capacity does not match weighed weight.",
-      "capacityExceedsRequired": "Total container capacity ({total} Kg) exceeds required weight ({target}).",
-      "capacityBelowRequired": "Total container capacity ({total} Kg) is below required weight ({target}).",
-      "capacityExceedsWeighed": "Total container capacity ({total} Kg) exceeds weighed weight ({target}).",
-      "capacityShortageWeighed": "Total container capacity ({total} Kg) is short by 500g or more compared to {target}. Please choose a larger container (e.g. 6 Kg).",
-      "capacityMismatchWeighedGeneric": "Total container capacity ({total} Kg) does not match weighed weight ({target}).",
-      "chietCapacityBlock": "Total container capacity is sufficient for weighed weight {label} (shortage under 500g still counts as complete). No need to add a new row."
+      "capacityMismatch": "Total container weight does not match required weight.",
+      "capacityMismatchWeighed": "Total container weight does not match weighed weight.",
+      "capacityExceedsRequired": "Total container weight ({total} KG) exceeds required weight ({target}).",
+      "capacityBelowRequired": "Total container weight ({total} KG) is below required weight ({target}).",
+      "capacityExceedsWeighed": "Total container weight ({total} KG) exceeds weighed weight ({target}).",
+      "capacityShortageWeighed": "Total container weight ({total} KG) is short by 500g or more compared to {target}. Please choose a larger container.",
+      "capacityMismatchWeighedGeneric": "Total container weight ({total} KG) does not match weighed weight ({target}).",
+      "chietCapacityBlock": "Total container weight matches weighed weight {label} (shortage under 500g still counts as sufficient). No need to add a new row."
     }
   },
   "bluetoothPrinter": {
@@ -262,15 +280,15 @@
     "connectingSaved": "Connecting to saved printer...",
     "searching": "Searching for printer...",
     "disconnect": "Disconnect printer",
-    "reconnectTitle": "Search and connect printer",
+    "reconnectTitle": "Search / connect printer",
     "reconnectAriaLabel": "Search printer"
   },
   "electronicScale": {
-    "label": "Actual scale weight",
+    "label": "Actual weighing",
     "refreshTitle": "Reconnect scale (use when switching scales on the hub or when the scale is unresponsive)",
     "refreshAriaLabel": "Reconnect scale",
     "connected": "Scale connected",
-    "connecting": "Connecting to scale port...",
+    "connecting": "Connecting to scale...",
     "searching": "Searching for connection...",
     "confirm": "Confirm",
     "toast": {
@@ -278,10 +296,10 @@
       "reconnectingDetail": "Scale connection has been reset. If multiple scales are on the hub, select the correct port when prompted.",
       "connectFailed": "Could not connect",
       "connectFailedDetail": "Please check the hub/USB cable and try again.",
-      "noTargetWeight": "No required weight",
+      "noTargetWeight": "No required weight yet",
       "noTargetWeightDetail": "This row has no required weight. Please weigh the base component first or select another row.",
       "zeroWeight": "Invalid weight",
-      "zeroWeightDetail": "Scale weight must be greater than 0 to confirm.",
+      "zeroWeightDetail": "Weighed weight must be greater than 0 to confirm.",
       "belowMin": "Below requirement",
       "belowMinDetail": "Weight must not be lower than {weight} {unit}.",
       "aboveMax": "Over limit",
@@ -292,10 +310,11 @@
     }
   },
   "mixGlueManagement": {
-    "pageTitle": "Mix Glue Management",
+    "pageTitle": "Mix glue management",
     "fields": {
       "workOrder": "Work order",
       "glue": "Glue",
+<<<<<<< HEAD
       "totalWeight": "Total weight (Kg)",
       "componentCode": "Component code",
       "totalWeightActual": ""
@@ -304,22 +323,32 @@
       "lineDetails": "Line details",
       "mixingComponents": "Mixing components",
       "noMixComponents": "Non-mixed glue components"
+=======
+      "totalWeight": "Total weight (KG)",
+      "componentCode": "Component code",
+      "totalWeightActual": "Actual weight (KG)"
+    },
+    "sections": {
+      "lineDetails": "Production line details",
+      "mixingComponents": "Mix glue components",
+      "noMixComponents": "Non-mix glue components"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "lineDetailsTable": {
       "columns": {
         "workshop": "Workshop",
         "requestOrder": "Request order",
         "style": "Style",
-        "line": "Line",
+        "line": "Production line",
         "weight": "Weight",
-        "requestTime": "Request time"
+        "requestTime": "Material request time"
       }
     },
     "componentsTable": {
       "columns": {
         "name": "Component name",
         "requiredWeight": "Required weight",
-        "actualWeight": "Actual weight (Kg)",
+        "actualWeight": "Actual weight (KG)",
         "operator": "Operator",
         "weighingTime": "Weighing time",
         "action": "Action"
@@ -333,17 +362,24 @@
       "nameRequired": "Component name is required.",
       "percentageLabel": "Percentage (%)",
       "percentageRequired": "Please enter a percentage.",
+<<<<<<< HEAD
       "weightLabel": "Weight",
       "weightRequired": "Please enter weight ({unit})"
+=======
+      "weightLabel": "Weight (KG)",
+      "weightRequired": "Please enter weight (KG)",
+      "toleranceGramsLabel": "Tolerance (g)",
+      "toleranceGramsRequired": "Please enter a tolerance greater than 0 g"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
-    "unknownOperator": "Unknown",
+    "unknownOperator": "Unassigned",
     "confirmDelete": {
       "title": "Confirm delete",
       "componentLabel": "Component: {name}",
       "message": "Are you sure you want to delete this component?"
     },
     "exitAlert": {
-      "header": "Unsaved changes",
+      "header": "Unsaved",
       "message": "The local draft will be kept so you can continue later. Are you sure you want to leave?",
       "stay": "Stay",
       "exit": "Leave"
@@ -351,18 +387,22 @@
     "toast": {
       "restore": "Restored",
       "restoreDetail": "Saved data has been reloaded",
-      "loadFailed": "Could not load order data",
+      "loadFailed": "Could not load work order data",
       "incompleteWeighing": "Please complete weighing for all components...",
+<<<<<<< HEAD
       "incompleteNoMixWeighing": "Please complete weighing for all non-mixed glue components before finishing.",
+=======
+      "incompleteNoMixWeighing": "Please complete weighing for all non-mix glue components before finishing.",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "saveSuccess": "Saved successfully",
-      "saveSuccessDetail": "Data saved. Please go to the list to confirm!",
+      "saveSuccessDetail": "Data saved. Please return to the list to confirm!",
       "saveFailed": "Could not save data",
       "weighingComplete": "Completed",
       "weighingCompleteDetail": "All components have been weighed.",
-      "baseNotFound": "Base chemical not found",
-      "weighBaseFirst": "Please weigh the base component before adding a new one",
+      "baseNotFound": "Base mix glue product not found",
+      "weighBaseFirst": "Please weigh the base component before adding a component",
       "addSuccess": "Success",
-      "addSuccessDetail": "New component added",
+      "addSuccessDetail": "Component added",
       "deleteSuccess": "Deleted",
       "deleteSuccessDetail": "Component deleted successfully: {name}",
       "loadMaterialsFailed": "Could not load components",
@@ -381,35 +421,35 @@
   },
   "login": {
     "hello": "Hello!",
-    "subtitle": "Adhesive mixing room system",
-    "scanTitle": "Sign in with card",
+    "subtitle": "Mix glue management system",
+    "scanTitle": "Sign in with employee card",
     "scanInstructionPrefix": "Please scan the ",
-    "scanInstructionQr": "QR or Barcode",
+    "scanInstructionQr": "QR or barcode",
     "scanInstructionSuffix": " on your employee card to enter the system.",
     "employeeCode": "Employee ID is invalid!",
-    "scanButton": "SCAN CODE",
-    "loggingIn": "SIGNING IN...",
-    "processing": "PROCESSING...",
+    "scanButton": "Scan",
+    "loggingIn": "Signing in...",
+    "processing": "Processing...",
     "company": "Company",
-    "factory": "Factory",
+    "factory": "Business division",
     "account": "Account",
     "password": "Password",
     "selectCompany": "Select company",
-    "selectFactory": "Select factory",
+    "selectFactory": "Select business division",
     "employeeIdPlaceholder": "Employee ID",
-    "loginButton": "SIGN IN",
+    "loginButton": "Sign in",
     "loadingTitle": "Signing in...",
-    "loadingNote": "Please wait a moment",
-    "scanOverlayTitle": "Scan employee card",
-    "scanOverlayNotePrefix": "Place the ",
-    "scanOverlayNoteSuffix": " on the card inside the frame below",
+    "loadingNote": "Please wait",
+    "scanOverlayTitle": "Scan employee ID",
+    "scanOverlayNotePrefix": "Align the barcode on the card ",
+    "scanOverlayNoteSuffix": " inside the frame below",
     "cameraFrontOn": "Front camera is active",
     "cancelScan": "Cancel scan",
     "footer": "© 2026 IT Jia Hsin",
     "loginFailed": "Sign in failed.",
     "serverMaintenance": "Server is under maintenance. Please try again later. (Contact IT if the issue persists)",
-    "cameraPermission": "Camera permission is required to scan the card!",
-    "invalidBarcode": "Invalid card code or no data found!",
+    "cameraPermission": "Camera permission is required to scan the employee card!",
+    "invalidBarcode": "Invalid card barcode or no data found!",
     "enterEmployeeId": "Please enter employee ID!",
     "changeLanguage": "Change language"
   }

@@ -1,12 +1,14 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary">
+      <ion-toolbar color="primary" style="padding: 8px !important;">
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
       </ion-toolbar>
+      <MobileOfflineNotice />
+      <PendingQueueButton queue-type="ReceiveGlue" />
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -148,7 +150,16 @@ import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
+<<<<<<< HEAD
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+=======
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
+import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
+import { addOfflineQueueItem } from '@/services/offlineQueue.service';
+import { useOfflineStore } from '@/store/offline';
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -160,6 +171,10 @@ type ResolveGlueQrResult = {
 
 const authStore = useAuthStore();
 const lineChemicalStore = useLineChemicalStore();
+<<<<<<< HEAD
+=======
+const offlineStore = useOfflineStore();
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 const { t } = useI18n();
 
 const lineQrText = ref("");
@@ -420,6 +435,18 @@ async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQr
   return { data: responseData.data, status: "success" };
 }
 
+<<<<<<< HEAD
+=======
+
+async function resolveGlueQr(qrText: string): Promise<ResolveGlueQrResult> {
+  if (!authStore.isOnline) {
+    return findGlueOfflineQrData(qrText);
+  }
+
+  return resolveGlueQrFromSystemUrl(qrText);
+}
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 async function openScanner(target: ConfirmScanTarget) {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
@@ -468,7 +495,7 @@ async function handleLineQrScanResult(qrText: string) {
   isLoadingLineQr.value = true;
 
   try {
-    const result = await resolveGlueQrFromSystemUrl(qrText);
+    const result = await resolveGlueQr(qrText);
 
     if (result.status === "invalid") {
       resetLineQrField();
@@ -509,7 +536,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
   isLoadingAllocatedQr.value = true;
 
   try {
-    const result = await resolveGlueQrFromSystemUrl(qrText);
+    const result = await resolveGlueQr(qrText);
 
     if (result.status === "invalid") {
       resetAllocatedQrField();
@@ -578,6 +605,27 @@ async function handleConfirmReturn() {
       payload.noSeparateGlueId = noSeparateGlueId;
     }
 
+<<<<<<< HEAD
+=======
+    if (!authStore.isOnline) {
+      await addOfflineQueueItem('ReceiveGlue', 'api/mobile/gluereturnlog/confirmgr', 'POST', payload);
+      await offlineStore.refreshQueueCounts();
+
+      lineChemicalStore.setLineChemicalSession({
+        lineChemicalId: lineChemicalInfo.value?.lineChemicalId ?? null,
+        productLineId: lineChemicalInfo.value?.productLineId ?? null,
+        factoryId: allocatedGlueInfo.value?.factoryId ?? null,
+        productLineName: lineChemicalInfo.value?.productLineName ?? null,
+        glueName: lineChemicalInfo.value?.glueName ?? null,
+        confirmedAt: new Date().toISOString(),
+      });
+
+      isConfirmReturnCompleted.value = true;
+      showToast(t('mobile.offlineQueue.saved'));
+      return;
+    }
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");
     console.info("Request payload:", payload);
 

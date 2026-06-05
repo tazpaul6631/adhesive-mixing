@@ -3,7 +3,9 @@
     "welcome": "歡迎",
     "save": "儲存",
     "cancel": "取消",
-    "loading": "載入中..."
+    "loading": "載入中...",
+    "networkOffline": "無網路",
+    "checkNetwork": "請檢查網路連線後再試。"
   },
   "home": {
     "title": "首頁"
@@ -15,8 +17,13 @@
     "tabletSubtitle": "調膠管理系統",
     "features": {
       "mixGlue": {
+<<<<<<< HEAD
         "title": "調膠清單管理",
         "description": "管理調膠、檢查連線並使用電子秤秤重。"
+=======
+        "title": "混合膠水調膠清單管理",
+        "description": "管理調膠與非調膠膠水、檢查連線並使用電子秤秤重。"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       },
       "separateMixedGlue": {
         "title": "混合膠水分裝管理",
@@ -69,7 +76,11 @@
       "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "尚未連接印表機。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
+<<<<<<< HEAD
       "invalidEmployeeCard": "員工卡無效。",
+=======
+      "invalidEmployeeCard": "驗證失敗，您不是 QIP，請聯絡管理員確認。",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "loadOrderFailed": "無法載入派工單明細。",
       "mixGlueIdNotFound": "找不到調膠編號。",
       "noLabels": "沒有可列印的標籤。",
@@ -141,7 +152,11 @@
       "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "印表機尚未連線。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
+<<<<<<< HEAD
       "invalidEmployeeCard": "員工卡無效。",
+=======
+      "invalidEmployeeCard": "驗證失敗，您不是 QIP，請聯絡管理員確認。",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "loadOrderFailed": "無法載入訂單明細。",
       "noLabels": "沒有可列印的標籤。",
       "printSuccess": "已列印 {count} 張標籤。",
@@ -167,7 +182,12 @@
         "action": "操作",
         "glue": "膠水",
         "actualWeight": "實際重量",
+<<<<<<< HEAD
         "weighingTime": "秤重時間"
+=======
+        "weighingTime": "秤重時間",
+        "glueWeight": "需求重量"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       },
       "placeholders": {
         "selectBucket": "選擇容器"
@@ -231,7 +251,12 @@
       "pendingChietModal": "尚有分裝資訊未確認。請完成分裝視窗。",
       "chietRequired": "膠水 {name} 已秤重但尚未確認分裝。請開啟視窗並確認。",
       "chietSelectBucket": "膠水 {name} 分裝第 {row} 列：請選擇容器。",
+<<<<<<< HEAD
       "chietPrefix": "膠水 {name} 分裝：{message}"
+=======
+      "chietPrefix": "膠水 {name} 分裝：{message}",
+      "noMixAlreadySubmitted": "非混合膠已提交確認，無法再編輯。"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "confirmDelete": {
       "title": "確認刪除",
@@ -250,7 +275,11 @@
       "capacityExceedsRequired": "容器總重量 ({total} KG) 超出需求重量 ({target})。",
       "capacityBelowRequired": "容器總重量 ({total} KG) 低於需求重量 ({target})。",
       "capacityExceedsWeighed": "容器總重量 ({total} KG) 超出已秤重重量 ({target})。",
+<<<<<<< HEAD
       "capacityShortageWeighed": "容器總重量 ({total} KG) 比 {target} 少 500g 以上。請選擇更大的容器（例如 6 KG）。",
+=======
+      "capacityShortageWeighed": "容器總重量 ({total} KG) 比 {target} 少 500g 以上。請選擇更大的容器。",
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "capacityMismatchWeighedGeneric": "容器總重量 ({total} KG) 與已秤重重量 ({target}) 不符。",
       "chietCapacityBlock": "容器總重量已符合已秤重重量 {label}（少於 500g 仍視為足夠）。無需再新增列。"
     }
@@ -297,7 +326,11 @@
       "glue": "膠水",
       "totalWeight": "總重量 (KG)",
       "componentCode": "成分編號",
+<<<<<<< HEAD
       "totalWeightActual": ""
+=======
+      "totalWeightActual": "實際重量 (KG)"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "sections": {
       "lineDetails": "生產線明細",
@@ -332,8 +365,15 @@
       "nameRequired": "成分名稱為必填。",
       "percentageLabel": "百分比 (%)",
       "percentageRequired": "請輸入百分比。",
+<<<<<<< HEAD
       "weightLabel": "重量",
       "weightRequired": "請輸入重量 ({unit})"
+=======
+      "weightLabel": "重量 (KG)",
+      "weightRequired": "請輸入重量 (KG)",
+      "toleranceGramsLabel": "允許誤差 (g)",
+      "toleranceGramsRequired": "請輸入大於 0 的誤差克數"
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "unknownOperator": "未指定",
     "confirmDelete": {

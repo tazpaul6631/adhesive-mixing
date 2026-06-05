@@ -1,12 +1,21 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
+<<<<<<< HEAD
       <ion-toolbar color="primary">
+=======
+      <ion-toolbar color="primary" style="padding: 8px !important;">
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
         <ion-buttons slot="start">
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t("mobile.glueReturn.title") }}</ion-title>
       </ion-toolbar>
+<<<<<<< HEAD
+=======
+      <MobileOfflineNotice />
+      <PendingQueueButton queue-type="ReturnGlue" />
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -21,7 +30,10 @@
                 <button
                   type="button"
                   class="qr-scan-field"
+<<<<<<< HEAD
                   :disabled="!canScanReturnGlue"
+=======
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
                   @click="openScanner"
                 >
                   <span
@@ -46,12 +58,57 @@
               </ion-card-content>
             </ion-card>
 
+<<<<<<< HEAD
             <div v-if="!canScanReturnGlue" class="status-box status-box--danger">
               <ion-icon class="status-box__icon" :icon="alertCircle"></ion-icon>
               <div class="status-box__content">
                 <p>{{ t("mobile.glueReturn.messages.requireConfirmedLine") }}</p>
               </div>
             </div>
+=======
+            <ion-card class="qr-container">
+              <ion-card-header>
+                <ion-card-title>{{ t("mobile.glueReturn.lineQrTitle") }}</ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="qr-scan-field-wrapper">
+                  <button
+                    type="button"
+                    class="qr-scan-field"
+                    :class="{ 'qr-scan-field--with-clear': optionalLineChemicalInfo }"
+                    @click="openLineScanner"
+                  >
+                    <span
+                      v-if="!lineQrText"
+                      class="qr-scan-field__text qr-scan-field__text--empty"
+                    >
+                      {{ t("mobile.glueReturn.lineScanPlaceholder") }}
+                    </span>
+                    <div v-else-if="optionalLineChemicalInfo" class="qr-scan-field__info">
+                      <div class="qr-scan-field__info-row">
+                        <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.lineLabel") }}</span>
+                        <span class="qr-scan-field__info-value">{{ optionalLineChemicalInfo.productLineName }}</span>
+                      </div>
+                      <div class="qr-scan-field__info-row">
+                        <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.glueLabel") }}</span>
+                        <span class="qr-scan-field__info-value">{{ optionalLineChemicalInfo.glueName }}</span>
+                      </div>
+                    </div>
+                    <span v-else class="qr-scan-field__text">{{ lineQrText }}</span>
+                    <ion-icon v-if="!optionalLineChemicalInfo" class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  </button>
+                  <button
+                    v-if="optionalLineChemicalInfo"
+                    type="button"
+                    class="qr-scan-field__clear"
+                    @click.stop="resetLineChemicalField"
+                  >
+                    <ion-icon :icon="closeCircleOutline"></ion-icon>
+                  </button>
+                </div>
+              </ion-card-content>
+            </ion-card>
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
             <ion-button
               expand="block"
@@ -124,12 +181,17 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/vue';
+<<<<<<< HEAD
 import { alertCircle, barcodeOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+=======
+import { alertCircle, barcodeOutline, closeCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import glueReturnApi from '@/api/glueReturn';
 import { useAuthStore } from '@/store/auth';
+<<<<<<< HEAD
 import { useLineChemicalStore } from '@/services/lineChemical.store';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
@@ -139,13 +201,34 @@ const lineChemicalStore = useLineChemicalStore();
 
 const returnQrText = ref('');
 const pendingReturnGlueInfo = ref<any>(null);
+=======
+import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
+import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
+import { addOfflineQueueItem } from '@/services/offlineQueue.service';
+import { useOfflineStore } from '@/store/offline';
+
+const { t } = useI18n();
+const authStore = useAuthStore();
+const offlineStore = useOfflineStore();
+
+const returnQrText = ref('');
+const lineQrText = ref('');
+const pendingReturnGlueInfo = ref<any>(null);
+const optionalLineChemicalInfo = ref<any>(null);
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 const isConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
 
+<<<<<<< HEAD
 const canScanReturnGlue = computed(() => lineChemicalStore.hasActiveLineChemical);
 const canSubmitReturn = computed(() => !!pendingReturnGlueInfo.value && canScanReturnGlue.value);
+=======
+const canSubmitReturn = computed(() => !!pendingReturnGlueInfo.value);
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
 function normalizeQrText(value: string) {
   return value.trim();
@@ -192,6 +275,13 @@ function getSystemQrUrl(qrText: string) {
 }
 
 function getGlueQrType(data: any) {
+<<<<<<< HEAD
+=======
+  if (hasPayloadValue(data?.lineChemicalId) && hasPayloadValue(data?.chemicalMasterId)) {
+    return 'lineChemical';
+  }
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   if (hasPayloadValue(data?.mixGlueMasterId) && hasPayloadValue(data?.glueId)) {
     return 'mixGlue';
   }
@@ -245,6 +335,18 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
   }
 }
 
+<<<<<<< HEAD
+=======
+
+async function resolveGlueQr(qrText: string) {
+  if (!authStore.isOnline) {
+    return findGlueOfflineQrData(qrText);
+  }
+
+  return resolveGlueQrFromSystemUrl(qrText);
+}
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 async function triggerMismatchFeedback() {
   try {
     await Haptics.notification({ type: NotificationType.Warning });
@@ -269,11 +371,14 @@ function closeConfirmDialog() {
 }
 
 async function openScanner() {
+<<<<<<< HEAD
   if (!canScanReturnGlue.value) {
     await showWarningAlert(t('mobile.glueReturn.messages.requireConfirmedLine'));
     return;
   }
 
+=======
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
@@ -295,7 +400,11 @@ async function openScanner() {
       return;
     }
 
+<<<<<<< HEAD
     const result = await resolveGlueQrFromSystemUrl(scannedValue);
+=======
+    const result = await resolveGlueQr(scannedValue);
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
     if (result.status === 'invalid') {
       resetReturnField();
@@ -325,6 +434,70 @@ async function openScanner() {
   }
 }
 
+<<<<<<< HEAD
+=======
+
+function resetLineChemicalField() {
+  lineQrText.value = '';
+  optionalLineChemicalInfo.value = null;
+}
+
+async function openLineScanner() {
+  try {
+    const { camera } = await BarcodeScanner.requestPermissions();
+
+    if (camera !== 'granted' && camera !== 'limited') {
+      alert(t('mobile.glueReturn.messages.cameraPermission'));
+      return;
+    }
+
+    const { barcodes } = await BarcodeScanner.scan();
+
+    if (!barcodes?.length) {
+      return;
+    }
+
+    const scannedValue = getBarcodeValue(barcodes[0]);
+
+    if (!scannedValue) {
+      await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+      return;
+    }
+
+    lineQrText.value = t('mobile.glueReturn.messages.loadingInfo');
+
+    const result = await resolveGlueQr(scannedValue);
+
+    if (result.status === 'invalid') {
+      resetLineChemicalField();
+      await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+      return;
+    }
+
+    if (result.status === 'noData' || !result.data) {
+      resetLineChemicalField();
+      await showWarningAlert(t('mobile.glueReturn.messages.noLineData'));
+      return;
+    }
+
+    const qrType = getGlueQrType(result.data);
+
+    if (qrType !== 'lineChemical') {
+      resetLineChemicalField();
+      await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+      return;
+    }
+
+    optionalLineChemicalInfo.value = result.data;
+    lineQrText.value = `${result.data.glueName || ''}`;
+  } catch (error) {
+    console.error('Lỗi khi quét mã QR thùng keo chuyền:', error);
+    resetLineChemicalField();
+    alert(t('mobile.glueReturn.messages.loadLineError'));
+  }
+}
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 function openConfirmDialog() {
   if (!canSubmitReturn.value) {
     return;
@@ -334,6 +507,7 @@ function openConfirmDialog() {
 }
 
 async function confirmReturnQr() {
+<<<<<<< HEAD
   if (!pendingReturnGlueInfo.value || !lineChemicalStore.hasActiveLineChemical) {
     return;
   }
@@ -344,6 +518,15 @@ async function confirmReturnQr() {
     alert(t('mobile.glueReturn.messages.requireConfirmedLine'));
     return;
   }
+=======
+  if (!pendingReturnGlueInfo.value) {
+    return;
+  }
+
+  const lineChemicalId = hasPayloadValue(optionalLineChemicalInfo.value?.lineChemicalId)
+    ? normalizeCompareValue(optionalLineChemicalInfo.value.lineChemicalId)
+    : '0';
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
   const userId = getCurrentUserId();
   const payload = {
@@ -358,6 +541,16 @@ async function confirmReturnQr() {
   isSubmittingReturn.value = true;
 
   try {
+<<<<<<< HEAD
+=======
+    if (!authStore.isOnline) {
+      await addOfflineQueueItem('ReturnGlue', 'api/mobile/gluereturnlog/create', 'POST', payload);
+      await offlineStore.refreshQueueCounts();
+      showToast(t('mobile.offlineQueue.saved'));
+      return;
+    }
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     const response = await glueReturnApi.glueReturn(payload);
     const responseData = response.data as any;
 
@@ -436,6 +629,13 @@ function showToast(message: string) {
   }
 }
 
+<<<<<<< HEAD
+=======
+.qr-scan-field-wrapper {
+  position: relative;
+}
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 .qr-scan-field {
   width: 100%;
   min-height: 55px;
@@ -506,10 +706,46 @@ function showToast(message: string) {
     word-break: break-word;
   }
 
+<<<<<<< HEAD
+=======
+  &--with-clear {
+    padding-right: 48px;
+  }
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   &__icon {
     flex-shrink: 0;
     font-size: 18px !important;
   }
+<<<<<<< HEAD
+=======
+
+  &__clear {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #94a3b8;
+    transform: translateY(-50%);
+
+    ion-icon {
+      font-size: 22px !important;
+    }
+
+    &:active {
+      color: #475569;
+      background: #f1f5f9;
+    }
+  }
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 }
 
 .confirm-button {
@@ -640,7 +876,15 @@ function showToast(message: string) {
     }
   }
 
+<<<<<<< HEAD
   .qr-scan-field {
+=======
+  .qr-scan-field-wrapper {
+  position: relative;
+}
+
+.qr-scan-field {
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     min-height: 78px;
     padding: 18px 24px;
     border-radius: 18px;
@@ -684,4 +928,8 @@ function showToast(message: string) {
     }
   }
 }
+<<<<<<< HEAD
 </style>
+=======
+</style>
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff

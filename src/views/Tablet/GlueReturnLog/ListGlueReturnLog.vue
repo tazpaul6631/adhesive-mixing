@@ -137,6 +137,7 @@ import {
   type GlueReturnLogPendingEntry,
 } from '@/store/glueReturnLogPending';
 import { useScaleManager } from '@/composables/useScaleManager';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 
@@ -163,6 +164,7 @@ const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const pendingStore = useGlueReturnLogPendingStore();
 const { startAutoConnect, releaseScaleConnection } = useScaleManager();
+const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 
 const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
@@ -384,12 +386,21 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
   applyRowPatch(row.glueReturnLogId, patch);
   void pendingStore.savePending(buildPendingEntry(row, patch));
 
+<<<<<<< HEAD
   toast.add({
     severity: 'info',
     summary: t('listGlueReturnLog.toast.success'),
     detail: t('listGlueReturnLog.toast.scaleSaved'),
     life: 6000,
   });
+=======
+  // toast.add({
+  //   severity: 'info',
+  //   summary: t('listGlueReturnLog.toast.success'),
+  //   detail: t('listGlueReturnLog.toast.scaleSaved'),
+  //   life: 6000,
+  // });
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 };
 
 const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
@@ -406,6 +417,8 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
     });
     return;
   }
+
+  if (!(await requireOnline())) return;
 
   isConfirming.value = true;
   submittingRowId.value = row.glueReturnLogId;
@@ -440,6 +453,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       life: 6000,
     });
   } catch (error) {
+    if (notifyOfflineFromError(error)) return;
     console.error('Lỗi xác nhận cân trả keo:', error);
     toast.add({
       severity: 'error',

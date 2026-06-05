@@ -15,6 +15,7 @@ import separateGlue from '@/api/separate';
 import bucketApi from '@/api/bucket';
 import { validateSeparateGlueAllocation, validateChietBucketCapacity, type BucketOption } from './separateGlue.bucket';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { useRequireOnline } from '@/composables/useRequireOnline';
 
 import type { HeaderInfo, MixingProcess, NewComponentFormData, PayloadBuildContext } from './separateMixedGlue.types';
 import {
@@ -30,6 +31,10 @@ import {
 } from './separateMixedGlue.mappers';
 import { buildSeparateGlueCommandPayload, buildSeparateGlueExitPayload } from './separateMixedGlue.payload';
 import {
+<<<<<<< HEAD
+=======
+  isNewNoMixSeparateAddRow,
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   markApiNoSeparateGlueCancelledByRow,
   normalizeNewNoMixSeparateAddRow,
   syncNoMixSeparateGlueState,
@@ -41,6 +46,7 @@ dayjs.extend(customParseFormat);
 export function useSeparateMixedGlueManagement() {
   const toast = useToast();
   const { t } = useAppLocale(() => 'tablet');
+  const { requireOnline, notifyOfflineFromError } = useRequireOnline();
   const authStore = useAuthStore();
   const draftStore = useMixGlueDraftStore();
   const { releaseScaleConnection } = useScaleManager();
@@ -348,6 +354,10 @@ export function useSeparateMixedGlueManagement() {
 
   const restoreDraftBranch = async (id: string, existingDraft: any) => {
     restoreNoMixSubmitLockFromDraft(existingDraft);
+<<<<<<< HEAD
+=======
+    const factoryId = authStore.user?.factoryId || '';
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     noMixChemicalsFull.value = existingDraft.noMixChemicalsFull as any[];
     noMixComponents.value = (existingDraft.noMixComponents as any[]) || [];
     extraChietList.value = (existingDraft.extraChietList as any[]) || [];
@@ -369,7 +379,11 @@ export function useSeparateMixedGlueManagement() {
       mixingProcess.value.component = noMixChemicalsFull.value[0]?.materialName || '';
     }
 
+<<<<<<< HEAD
     const { data } = await workOrder.getWorkOrder(id, 3);
+=======
+    const { data } = await workOrder.getWorkOrder(factoryId, id, 3);
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     if (!data?.success) {
       syncApiNoSeparateGlues({}, existingDraft);
       applySplitSeparateGlueDetails(existingDraft, {
@@ -418,7 +432,12 @@ export function useSeparateMixedGlueManagement() {
 
   const loadFreshBranch = async (id: string, existingDraft?: any) => {
     restoreNoMixSubmitLockFromDraft(existingDraft);
+<<<<<<< HEAD
     const { data } = await workOrder.getWorkOrder(id, 3);
+=======
+    const factoryId = authStore.user?.factoryId || '';
+    const { data } = await workOrder.getWorkOrder(factoryId, id, 3);
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     if (!data?.success) return;
 
     const respData = data.data;
@@ -501,6 +520,7 @@ export function useSeparateMixedGlueManagement() {
     return hasBucket;
   };
 
+<<<<<<< HEAD
   /** isNoMixGlue: không chọn thùng → submit luôn; đã add-row và chọn thùng → validate đủ. */
   const shouldValidateNoMixSeparateRows = () => {
     if (!hasNoMixChemicals.value) return false;
@@ -510,6 +530,19 @@ export function useSeparateMixedGlueManagement() {
     if (rows.length === 0) return false;
 
     return rows.some(isSeparateGlueRowFilled);
+=======
+  /** Dòng user bấm + (isNewAddRow); đơn chỉ keo không trộn không có dòng mặc định. */
+  const getNoMixUserAddedRows = () =>
+    noMixSeparateGlueDetails.value.filter(isNewNoMixSeparateAddRow);
+
+  /** isNoMixGlue: không add-row → submit bình thường; có add-row → bắt chọn thùng + đủ kg. */
+  const shouldValidateNoMixSeparateRows = () => {
+    if (!hasNoMixChemicals.value) return false;
+    if (headerInfo.value.isNoMixGlue) {
+      return getNoMixUserAddedRows().length > 0;
+    }
+    return true;
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   };
 
   const bucketListForValidation = ref<BucketOption[]>([]);
@@ -555,14 +588,31 @@ export function useSeparateMixedGlueManagement() {
     }
 
     if (shouldValidateNoMixSeparateRows()) {
+<<<<<<< HEAD
       for (let i = 0; i < noMixSeparateGlueDetails.value.length; i++) {
         if (!isSeparateGlueRowFilled(noMixSeparateGlueDetails.value[i])) {
           return t('separateMixedGlue.toast.noMixSelectBucket', { row: i + 1 });
+=======
+      const rowsToValidate = headerInfo.value.isNoMixGlue
+        ? getNoMixUserAddedRows()
+        : noMixSeparateGlueDetails.value;
+
+      for (const row of rowsToValidate) {
+        if (!isSeparateGlueRowFilled(row)) {
+          const rowIndex = noMixSeparateGlueDetails.value.indexOf(row);
+          return t('separateMixedGlue.toast.noMixSelectBucket', {
+            row: rowIndex >= 0 ? rowIndex + 1 : 1,
+          });
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
         }
       }
 
       const noMixCapacityResult = validateChietBucketCapacity(
+<<<<<<< HEAD
         noMixSeparateGlueDetails.value,
+=======
+        rowsToValidate,
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
         bucketList,
         noMixSeparateTargetWeight.value,
         'Kg'
@@ -617,6 +667,11 @@ export function useSeparateMixedGlueManagement() {
       return;
     }
 
+<<<<<<< HEAD
+=======
+    if (!(await requireOnline())) return;
+
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     const validationError = await validateBeforeComplete();
     if (validationError) {
       toast.add({
@@ -645,7 +700,8 @@ export function useSeparateMixedGlueManagement() {
       isDirty.value = false;
       toast.add({ severity: 'success', summary: t('separateMixedGlue.toast.completeSuccess'), detail: t('separateMixedGlue.toast.completeSuccessDetail'), life: 3000 });
       router.push('/list-separate-mixed-glue-management');
-    } catch {
+    } catch (error) {
+      if (notifyOfflineFromError(error)) return;
       toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.completeFailed'), life: 3000 });
     }
   };
@@ -1087,14 +1143,26 @@ export function useSeparateMixedGlueManagement() {
               cssClass: 'text-red-500',
               handler: () => {
                 void (async () => {
+                  if (!(await requireOnline())) {
+                    resolve(false);
+                    return;
+                  }
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
                     await separateGlue.postSeparateGlueCommand(payload);
+<<<<<<< HEAD
                     await draftStore.clearAll();
+=======
+                    // await draftStore.clearAll();
+>>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
                     isDirty.value = false;
                     resolve(true);
                   } catch (error) {
                     console.error(error);
+                    if (notifyOfflineFromError(error)) {
+                      resolve(false);
+                      return;
+                    }
                     toast.add({
                       severity: 'error',
                       summary: t('listMixGlue.toast.error'),
