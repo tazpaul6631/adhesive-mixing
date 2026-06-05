@@ -438,7 +438,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     showRetryDialog.value = false;
     await clearFailedItems();
 
-    const { data: woResponse } = await workOrder.getWorkOrder(row.workOrderMasterId, 2);
+    const { data: woResponse } = await workOrder.getWorkOrder(factoryId, row.workOrderMasterId, 2);
     if (!woResponse?.success || !woResponse?.data) {
       toast.add({
         severity: 'error',

@@ -34,7 +34,7 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-                }}</label>
+              }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
@@ -72,7 +72,7 @@
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                    }}</label>
+                  }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
@@ -115,7 +115,7 @@
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                    }}</label>
+                  }}</label>
                   <InputText v-model="noMixMixingProcess.component" readonly
                     class="font-bold text-primary border-blue-200" style="width: 350px;" />
                 </div>
@@ -483,6 +483,7 @@ const fetchWorkOrderDetail = async (id: string) => {
   isLoadingLine.value = true;
   isLoadingComponent.value = true;
   currentWorkOrderId.value = id;
+  const factoryId = authStore.user?.factoryId || '';
 
   try {
     await draftStore.ensureHydrated();
@@ -511,7 +512,7 @@ const fetchWorkOrderDetail = async (id: string) => {
         noMixMixingProcess.value.component = firstUnconfirmedNoMix.materialName || '';
       }
 
-      const { data } = await workOrder.getWorkOrder(id, 1);
+      const { data } = await workOrder.getWorkOrder(factoryId, id, 1);
       if (data?.success) {
         const respData = data.data;
         applyWorkOrderMeta(respData);
@@ -537,7 +538,7 @@ const fetchWorkOrderDetail = async (id: string) => {
       });
     } else {
       // 3. NẾU KHÔNG CÓ DRAFT: Chạy logic lấy API như cũ
-      const { data } = await workOrder.getWorkOrder(id, 1);
+      const { data } = await workOrder.getWorkOrder(factoryId, id, 1);
       if (data?.success) {
         const respData = data.data;
 
