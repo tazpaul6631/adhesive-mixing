@@ -8,7 +8,6 @@
         <ion-title>{{ t("mobile.glueReturn.title") }}</ion-title>
       </ion-toolbar>
       <MobileOfflineNotice />
-      <PendingQueueButton queue-type="ReturnGlue" />
     </ion-header>
 
     <ion-content class="mobile-content">
@@ -133,7 +132,7 @@
         :is-open="showSuccessToast"
         :message="toastMessage"
         duration="1800"
-        position="top"
+        position="bottom"
         color="success"
         @didDismiss="showSuccessToast = false"
       ></ion-toast>
@@ -168,7 +167,6 @@ import { useI18n } from 'vue-i18n';
 import glueReturnApi from '@/api/glueReturn';
 import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
-import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';

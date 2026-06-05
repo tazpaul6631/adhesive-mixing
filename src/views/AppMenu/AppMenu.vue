@@ -23,10 +23,9 @@
             <h2 v-else>{{ t('mobile.appMenu.hello') }}</h2>
             <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
+            <PendingQueueButton v-if="!isTablet" placement="appMenu" />
           </div>
         </div>
-
-        <PendingQueueButton v-if="!isTablet" />
 
         <div class="feature-grid animate__animated animate__fadeInUp">
 
@@ -64,7 +63,7 @@
 <script setup lang="ts">
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonIcon, IonButton
+  IonIcon, IonButton, alertController
 } from '@ionic/vue';
 import {
   scaleOutline, logOutOutline, qrCodeOutline, readerOutline,
@@ -73,6 +72,7 @@ import {
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
+import { useOfflineStore } from '@/store/offline';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
@@ -81,6 +81,7 @@ import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const offlineStore = useOfflineStore();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
@@ -97,6 +98,10 @@ const updateDeviceType = () => {
 
 onMounted(() => {
   window.addEventListener('resize', updateDeviceType);
+
+  if (!isTablet.value) {
+    void offlineStore.refreshQueueCounts();
+  }
 });
 
 onUnmounted(() => {
@@ -190,7 +195,26 @@ const navigate = (path: string) => {
 };
 
 
+const showLogoutBlockedAlert = async () => {
+  const alert = await alertController.create({
+    header: t('mobile.offlineQueue.logoutBlockedTitle'),
+    message: t('mobile.offlineQueue.logoutBlockedMessage'),
+    buttons: [t('mobile.offlineQueue.close')],
+  });
+
+  await alert.present();
+};
+
 const handleLogout = async () => {
+  if (!isTablet.value) {
+    await offlineStore.refreshQueueCounts();
+
+    if (offlineStore.totalPendingQueueCount > 0) {
+      await showLogoutBlockedAlert();
+      return;
+    }
+  }
+
   await authStore.logout();
 };
 </script>

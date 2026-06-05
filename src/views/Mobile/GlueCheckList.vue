@@ -87,7 +87,7 @@
         :is-open="showSuccessToast"
         :message="toastMessage"
         duration="1800"
-        position="top"
+        position="bottom"
         color="success"
         @didDismiss="showSuccessToast = false"
       ></ion-toast>
