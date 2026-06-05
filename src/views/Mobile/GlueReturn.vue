@@ -98,25 +98,14 @@
               <ion-spinner v-if="isSubmittingReturn" name="crescent"
                 class="return-confirm-dialog__button-spinner"></ion-spinner>
               <span>{{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.okButton")
-                }}</span>
+              }}</span>
             </ion-button>
           </div>
         </div>
       </ion-modal>
 
-<<<<<<< HEAD
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="top" color="success"
+      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="bottom" color="success"
         @didDismiss="showSuccessToast = false"></ion-toast>
-=======
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="bottom"
-        color="success"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
->>>>>>> origin/main
     </ion-content>
   </ion-page>
 </template>

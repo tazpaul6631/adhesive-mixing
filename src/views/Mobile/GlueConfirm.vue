@@ -26,7 +26,7 @@
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel")
-                        }}</span>
+                      }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
@@ -89,19 +89,8 @@
         </section>
       </div>
 
-<<<<<<< HEAD
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="top" color="success"
+      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="bottom" color="success"
         @didDismiss="showSuccessToast = false"></ion-toast>
-=======
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="bottom"
-        color="success"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
->>>>>>> origin/main
     </ion-content>
   </ion-page>
 </template>
