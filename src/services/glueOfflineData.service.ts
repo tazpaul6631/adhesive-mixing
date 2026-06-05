@@ -23,7 +23,7 @@ export type GlueOfflineQrResult = {
 export type GlueOfflineDownloadProgress = {
   current: number;
   total: number;
-  type?: GlueOfflineDataType | 'save';
+  type?: GlueOfflineDataType;
 };
 
 export type GlueOfflineDownloadCounts = Record<GlueOfflineDataType, number>;
@@ -31,11 +31,12 @@ export type GlueOfflineDownloadCounts = Record<GlueOfflineDataType, number>;
 type OfflineDataBucket = Record<GlueOfflineDataType, any[]>;
 
 type OfflineTableConfig = {
+  tableName: string;
   insertSql: string;
   getValues: (item: any) => any[];
 };
 
-const DOWNLOAD_TOTAL_STEPS = 6;
+const DOWNLOAD_TOTAL_STEPS = 5;
 
 function normalizeValue(value: any) {
   if (value === null || value === undefined) {
@@ -75,6 +76,7 @@ function assertSuccessAndExtractItems(response: any) {
 
 const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
   lineChemical: {
+    tableName: 'offline_line_chemical',
     insertSql: `
       INSERT OR REPLACE INTO offline_line_chemical (
         factory_id,
@@ -95,6 +97,7 @@ const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
     ],
   },
   mixGlue: {
+    tableName: 'offline_mix_glue',
     insertSql: `
       INSERT OR REPLACE INTO offline_mix_glue (
         factory_id,
@@ -115,6 +118,7 @@ const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
     ],
   },
   separateGlue: {
+    tableName: 'offline_separate_glue',
     insertSql: `
       INSERT OR REPLACE INTO offline_separate_glue (
         factory_id,
@@ -135,6 +139,7 @@ const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
     ],
   },
   noSeparateGlue: {
+    tableName: 'offline_no_separate_glue',
     insertSql: `
       INSERT OR REPLACE INTO offline_no_separate_glue (
         factory_id,
@@ -155,6 +160,7 @@ const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
     ],
   },
   checkList: {
+    tableName: 'offline_check_list',
     insertSql: `
       INSERT OR REPLACE INTO offline_check_list (
         factory_id,
@@ -333,14 +339,9 @@ async function createOfflineTables(db: GlueOfflineDbConnection) {
   `);
 }
 
-async function clearOfflineQrData(db: GlueOfflineDbConnection) {
-  await db.execute(`
-    DELETE FROM offline_line_chemical;
-    DELETE FROM offline_mix_glue;
-    DELETE FROM offline_separate_glue;
-    DELETE FROM offline_no_separate_glue;
-    DELETE FROM offline_check_list;
-  `);
+async function clearBucket(db: GlueOfflineDbConnection, type: GlueOfflineDataType) {
+  const config = tableConfigs[type];
+  await db.execute(`DELETE FROM ${config.tableName};`);
 }
 
 async function insertBucket(db: GlueOfflineDbConnection, type: GlueOfflineDataType, items: any[]) {
@@ -351,16 +352,13 @@ async function insertBucket(db: GlueOfflineDbConnection, type: GlueOfflineDataTy
   }
 }
 
-async function replaceOfflineQrData(data: OfflineDataBucket) {
-  const db = await getReadyDatabase();
-  await createOfflineTables(db);
-  await clearOfflineQrData(db);
-
-  await insertBucket(db, 'lineChemical', data.lineChemical);
-  await insertBucket(db, 'mixGlue', data.mixGlue);
-  await insertBucket(db, 'separateGlue', data.separateGlue);
-  await insertBucket(db, 'noSeparateGlue', data.noSeparateGlue);
-  await insertBucket(db, 'checkList', data.checkList);
+async function saveDownloadedBucket(
+  db: GlueOfflineDbConnection,
+  type: GlueOfflineDataType,
+  items: any[]
+) {
+  await clearBucket(db, type);
+  await insertBucket(db, type, items);
 }
 
 export async function downloadAndSaveGlueOfflineData(
@@ -373,6 +371,9 @@ export async function downloadAndSaveGlueOfflineData(
     throw new Error('Không tìm thấy mã nhà máy để tải dữ liệu offline.');
   }
 
+  const db = await getReadyDatabase();
+  await createOfflineTables(db);
+
   const data: OfflineDataBucket = {
     lineChemical: [],
     mixGlue: [],
@@ -384,29 +385,24 @@ export async function downloadAndSaveGlueOfflineData(
   onProgress?.({ current: 0, total: DOWNLOAD_TOTAL_STEPS });
 
   data.lineChemical = assertSuccessAndExtractItems(await offlineApi.getLineChemicalQrData(normalizedFactoryId));
+  await saveDownloadedBucket(db, 'lineChemical', data.lineChemical);
   onProgress?.({ current: 1, total: DOWNLOAD_TOTAL_STEPS, type: 'lineChemical' });
 
   data.mixGlue = assertSuccessAndExtractItems(await offlineApi.getMixGlueQrData(normalizedFactoryId));
+  await saveDownloadedBucket(db, 'mixGlue', data.mixGlue);
   onProgress?.({ current: 2, total: DOWNLOAD_TOTAL_STEPS, type: 'mixGlue' });
 
   data.separateGlue = assertSuccessAndExtractItems(await offlineApi.getSeparateGlueQrData(normalizedFactoryId));
+  await saveDownloadedBucket(db, 'separateGlue', data.separateGlue);
   onProgress?.({ current: 3, total: DOWNLOAD_TOTAL_STEPS, type: 'separateGlue' });
 
   data.noSeparateGlue = assertSuccessAndExtractItems(await offlineApi.getNoSeparateGlueQrData(normalizedFactoryId));
+  await saveDownloadedBucket(db, 'noSeparateGlue', data.noSeparateGlue);
   onProgress?.({ current: 4, total: DOWNLOAD_TOTAL_STEPS, type: 'noSeparateGlue' });
 
   data.checkList = assertSuccessAndExtractItems(await offlineApi.getCheckListQrData(normalizedFactoryId));
+  await saveDownloadedBucket(db, 'checkList', data.checkList);
   onProgress?.({ current: 5, total: DOWNLOAD_TOTAL_STEPS, type: 'checkList' });
-
-  await replaceOfflineQrData(data);
-  // console.log('Offline data saved:', {
-  //   lineChemical: data.lineChemical.length,
-  //   mixGlue: data.mixGlue.length,
-  //   separateGlue: data.separateGlue.length,
-  //   noSeparateGlue: data.noSeparateGlue.length,
-  //   checkList: data.checkList.length,
-  // });
-  onProgress?.({ current: 6, total: DOWNLOAD_TOTAL_STEPS, type: 'save' });
 
   return {
     lineChemical: data.lineChemical.length,

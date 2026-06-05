@@ -54,7 +54,7 @@ const updateDeviceType = () => {
 };
 
 const startMobileOfflineSyncIfNeeded = async () => {
-  if (!isMobilePhone.value || !authStore.isAuthenticated || offlineStore.isSyncingQueue) {
+  if (!isMobilePhone.value || route.path === '/login' || !authStore.isAuthenticated || offlineStore.isSyncingQueue) {
     return;
   }
 
@@ -65,7 +65,6 @@ const startMobileOfflineSyncIfNeeded = async () => {
       return;
     }
 
-    offlineStore.resetSyncState();
     await offlineStore.syncPendingQueue();
   } catch (error) {
     console.error('Không thể đồng bộ dữ liệu offline:', error);

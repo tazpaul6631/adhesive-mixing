@@ -204,7 +204,9 @@
       "receiveGlue": "Production Line Glue Receipt Confirmation",
       "returnGlue": "Return glue scan",
       "glueCheckList": "Glue Check List",
-      "saved": "Data has been saved locally and will be synced when the network is available."
+      "saved": "Data has been saved locally and will be synced when the network is available.",
+      "logoutBlockedTitle": "Cannot log out",
+      "logoutBlockedMessage": "There is still unsynced offline data. Please upload the data before logging out."
     },
     "offlineSync": {
       "title": "Syncing data",
