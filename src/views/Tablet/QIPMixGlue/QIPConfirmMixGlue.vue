@@ -131,7 +131,7 @@ import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
   IonTitle, onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave
 } from '@ionic/vue';
-
+import { useAuthStore } from '@/store/auth';
 import ConnectBluetooth from '@/components/ConnectBluetooth.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 
@@ -162,7 +162,7 @@ interface HeaderInfo {
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
-
+const authStore = useAuthStore();
 const contentRef = ref<any>(null);
 const isLoadingLine = ref(true);
 
@@ -189,9 +189,10 @@ const handlePrintSuccess = () => {
 const fetchWorkOrderDetail = async (id: string) => {
   resetState();
   isLoadingLine.value = true;
+  const factoryId = authStore.user?.factoryId || '';
 
   try {
-    const { data } = await workOrder.getWorkOrder(id, 2);
+    const { data } = await workOrder.getWorkOrder(factoryId, id, 2);
 
     if (data?.success && data?.data) {
       const respData = data.data;
