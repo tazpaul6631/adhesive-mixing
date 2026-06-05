@@ -31,6 +31,7 @@ import {
 } from './separateMixedGlue.mappers';
 import { buildSeparateGlueCommandPayload, buildSeparateGlueExitPayload } from './separateMixedGlue.payload';
 import {
+  isNewNoMixSeparateAddRow,
   markApiNoSeparateGlueCancelledByRow,
   normalizeNewNoMixSeparateAddRow,
   syncNoMixSeparateGlueState,
@@ -350,6 +351,7 @@ export function useSeparateMixedGlueManagement() {
 
   const restoreDraftBranch = async (id: string, existingDraft: any) => {
     restoreNoMixSubmitLockFromDraft(existingDraft);
+    const factoryId = authStore.user?.factoryId || '';
     noMixChemicalsFull.value = existingDraft.noMixChemicalsFull as any[];
     noMixComponents.value = (existingDraft.noMixComponents as any[]) || [];
     extraChietList.value = (existingDraft.extraChietList as any[]) || [];
@@ -371,7 +373,7 @@ export function useSeparateMixedGlueManagement() {
       mixingProcess.value.component = noMixChemicalsFull.value[0]?.materialName || '';
     }
 
-    const { data } = await workOrder.getWorkOrder(id, 3);
+    const { data } = await workOrder.getWorkOrder(factoryId, id, 3);
     if (!data?.success) {
       syncApiNoSeparateGlues({}, existingDraft);
       applySplitSeparateGlueDetails(existingDraft, {
@@ -420,7 +422,8 @@ export function useSeparateMixedGlueManagement() {
 
   const loadFreshBranch = async (id: string, existingDraft?: any) => {
     restoreNoMixSubmitLockFromDraft(existingDraft);
-    const { data } = await workOrder.getWorkOrder(id, 3);
+    const factoryId = authStore.user?.factoryId || '';
+    const { data } = await workOrder.getWorkOrder(factoryId, id, 3);
     if (!data?.success) return;
 
     const respData = data.data;
@@ -503,15 +506,17 @@ export function useSeparateMixedGlueManagement() {
     return hasBucket;
   };
 
-  /** isNoMixGlue: không chọn thùng → submit luôn; đã add-row và chọn thùng → validate đủ. */
+  /** Dòng user bấm + (isNewAddRow); đơn chỉ keo không trộn không có dòng mặc định. */
+  const getNoMixUserAddedRows = () =>
+    noMixSeparateGlueDetails.value.filter(isNewNoMixSeparateAddRow);
+
+  /** isNoMixGlue: không add-row → submit bình thường; có add-row → bắt chọn thùng + đủ kg. */
   const shouldValidateNoMixSeparateRows = () => {
     if (!hasNoMixChemicals.value) return false;
-    if (!headerInfo.value.isNoMixGlue) return true;
-
-    const rows = noMixSeparateGlueDetails.value;
-    if (rows.length === 0) return false;
-
-    return rows.some(isSeparateGlueRowFilled);
+    if (headerInfo.value.isNoMixGlue) {
+      return getNoMixUserAddedRows().length > 0;
+    }
+    return true;
   };
 
   const bucketListForValidation = ref<BucketOption[]>([]);
@@ -557,14 +562,21 @@ export function useSeparateMixedGlueManagement() {
     }
 
     if (shouldValidateNoMixSeparateRows()) {
-      for (let i = 0; i < noMixSeparateGlueDetails.value.length; i++) {
-        if (!isSeparateGlueRowFilled(noMixSeparateGlueDetails.value[i])) {
-          return t('separateMixedGlue.toast.noMixSelectBucket', { row: i + 1 });
+      const rowsToValidate = headerInfo.value.isNoMixGlue
+        ? getNoMixUserAddedRows()
+        : noMixSeparateGlueDetails.value;
+
+      for (const row of rowsToValidate) {
+        if (!isSeparateGlueRowFilled(row)) {
+          const rowIndex = noMixSeparateGlueDetails.value.indexOf(row);
+          return t('separateMixedGlue.toast.noMixSelectBucket', {
+            row: rowIndex >= 0 ? rowIndex + 1 : 1,
+          });
         }
       }
 
       const noMixCapacityResult = validateChietBucketCapacity(
-        noMixSeparateGlueDetails.value,
+        rowsToValidate,
         bucketList,
         noMixSeparateTargetWeight.value,
         'Kg'
