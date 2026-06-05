@@ -112,12 +112,12 @@
       </div>
     </div>
 
-    <OfflineDataLoading
+    <OfflineDataLoading v-if="shouldUseMobileOffline"
       :is-open="isLoggingIn && isLoginRoute"
       :title="loginLoadingTitle"
       :note="loginLoadingNote"
-      :current="offlineStore.downloadCurrent"
-      :total="offlineStore.downloadTotal"
+      :current="loginLoadingCurrent"
+      :total="loginLoadingTotal"
     />
 
     <Teleport to="body">
@@ -213,12 +213,24 @@ const isLoginButtonEnabled = computed(() => {
 });
 
 const isLoginRoute = computed(() => route.path === '/login');
+const shouldUseMobileOffline = computed(() => !isTablet.value);
+const isOfflineSyncStep = computed(() => offlineStore.isSyncingQueue || offlineStore.syncTotal > 0);
 const isOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData || offlineStore.downloadTotal > 0);
-const loginLoadingTitle = computed(() => (
-  isOfflineDownloadStep.value ? t('login.offlineDownloadTitle') : t('login.loadingTitle')
+const loginLoadingTitle = computed(() => {
+  if (isOfflineSyncStep.value) return t('login.offlineSyncTitle');
+  if (isOfflineDownloadStep.value) return t('login.offlineDownloadTitle');
+  return t('login.loadingTitle');
+});
+const loginLoadingNote = computed(() => {
+  if (isOfflineSyncStep.value) return t('login.offlineSyncNote');
+  if (isOfflineDownloadStep.value) return t('login.offlineDownloadNote');
+  return t('login.loadingNote');
+});
+const loginLoadingCurrent = computed(() => (
+  isOfflineSyncStep.value ? offlineStore.syncCurrent : offlineStore.downloadCurrent
 ));
-const loginLoadingNote = computed(() => (
-  isOfflineDownloadStep.value ? t('login.offlineDownloadNote') : t('login.loadingNote')
+const loginLoadingTotal = computed(() => (
+  isOfflineSyncStep.value ? offlineStore.syncTotal : offlineStore.downloadTotal
 ));
 
 const togglePasswordVisibility = () => {
@@ -479,6 +491,18 @@ const ensureLoginOnline = async () => {
   return true;
 };
 
+const syncPendingOfflineDataAfterLogin = async () => {
+  await offlineStore.refreshQueueCounts();
+
+  if (offlineStore.totalPendingQueueCount <= 0) {
+    return;
+  }
+
+  offlineStore.resetSyncState();
+  await offlineStore.syncPendingQueue();
+  offlineStore.resetSyncState();
+};
+
 const downloadOfflineDataAfterLogin = async (userData: any, fallbackFactoryId = '') => {
   const factoryId = resolveLoginFactoryId(userData, fallbackFactoryId);
 
@@ -510,10 +534,13 @@ const handleLoginResponse = async (response: any, loginCode: string, fallbackFac
     isLoading.value = true;
 
     try {
-      await downloadOfflineDataAfterLogin(userData, fallbackFactoryId);
+      if (shouldUseMobileOffline.value) {
+        await syncPendingOfflineDataAfterLogin();
+        await downloadOfflineDataAfterLogin(userData, fallbackFactoryId);
+      }
       await navigateAfterLogin();
     } catch (error: any) {
-      console.error('Lỗi tải dữ liệu offline sau đăng nhập:', error);
+      console.error('Lỗi xử lý dữ liệu offline sau đăng nhập:', error);
       code.value = loginCode;
       errorLogin.value = true;
       errorMessage.value = getLoginErrorMessage(error, t('login.offlineDownloadFailed'));
@@ -522,6 +549,7 @@ const handleLoginResponse = async (response: any, loginCode: string, fallbackFac
     } finally {
       resetLoginLoading();
       offlineStore.resetDownloadState();
+      offlineStore.resetSyncState();
     }
 
     return true;
@@ -539,6 +567,7 @@ const handleLoginError = (loginCode: string) => {
   errorLogin.value = true;
   errorMessage.value = t('login.serverMaintenance');
   offlineStore.resetDownloadState();
+  offlineStore.resetSyncState();
   resetLoginLoading();
 };
 
@@ -556,6 +585,7 @@ const handleTabletLogin = async () => {
   errorLogin.value = false;
   errorMessage.value = '';
   offlineStore.resetDownloadState();
+  offlineStore.resetSyncState();
 
   if (!(await ensureLoginOnline())) {
     return;
@@ -620,6 +650,7 @@ const processScannedData = async (scannedCode: string) => {
   isLoading.value = true;
   code.value = scannedCode;
   offlineStore.resetDownloadState();
+  offlineStore.resetSyncState();
 
   if (!scannedCode) {
     alert(t('login.enterEmployeeId'));

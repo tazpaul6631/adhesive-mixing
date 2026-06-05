@@ -179,10 +179,54 @@ export async function listPendingQueueItems(queueType?: OfflineQueueType): Promi
   });
 }
 
+
+export async function deleteOfflineQueueItems(ids: number[]) {
+  const validIds = ids
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  if (!validIds.length) {
+    return;
+  }
+
+  const db = await getReadyDatabase();
+  await ensureOfflineQueueTable();
+
+  const placeholders = validIds.map(() => '?').join(', ');
+  await db.run(`DELETE FROM offline_queue WHERE id IN (${placeholders})`, validIds);
+}
+
+export async function updateOfflineQueueItemsError(ids: number[], message: string) {
+  const validIds = ids
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  if (!validIds.length) {
+    return;
+  }
+
+  const db = await getReadyDatabase();
+  await ensureOfflineQueueTable();
+
+  const placeholders = validIds.map(() => '?').join(', ');
+  await db.run(
+    `
+      UPDATE offline_queue
+      SET retry_count = retry_count + 1,
+          last_error = ?,
+          updated_at = ?
+      WHERE id IN (${placeholders})
+    `,
+    [normalizeValue(message), new Date().toISOString(), ...validIds]
+  );
+}
+
 export default {
   ensureOfflineQueueTable,
   addOfflineQueueItem,
   countPendingQueueItems,
   getPendingQueueCounts,
   listPendingQueueItems,
+  deleteOfflineQueueItems,
+  updateOfflineQueueItemsError,
 };

@@ -59,7 +59,10 @@
     "offlineDownloadNote": "Vui lòng đợi trong giây lát. Dữ liệu QR đang được lưu để sử dụng offline.",
     "offlineLoginBlocked": "Thiết bị đang mất mạng. Vui lòng kết nối mạng để đăng nhập.",
     "offlineFactoryMissing": "Không tìm thấy mã nhà máy của người dùng. Vui lòng liên hệ IT.",
-    "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại."
+    "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
+    "offlineSyncTitle": "Đang đồng bộ dữ liệu",
+    "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
+    "offlineSyncFailed": "Không thể đồng bộ dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại."
   },
   "mobile": {
     "glueConfirm": {
@@ -212,6 +215,10 @@
       "returnGlue": "Quét keo trả về",
       "glueCheckList": "Tuần tra kiểm phòng pha keo",
       "saved": "Đã lưu dữ liệu tạm. Dữ liệu sẽ được đồng bộ khi có mạng."
+    },
+    "offlineSync": {
+      "title": "Đang đồng bộ dữ liệu",
+      "note": "Vui lòng đợi trong giây lát. Dữ liệu offline đang được gửi lên hệ thống."
     }
   }
 }

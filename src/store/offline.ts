@@ -9,6 +9,11 @@ import {
   type OfflineQueueCounts,
   type OfflineQueueType,
 } from '@/services/offlineQueue.service';
+import {
+  syncPendingOfflineQueue,
+  type OfflineSyncProgress,
+  type OfflineSyncResult,
+} from '@/services/offlineSync.service';
 
 const emptyQueueCounts = (): OfflineQueueCounts => ({
   ReceiveGlue: 0,
@@ -26,6 +31,11 @@ export const useOfflineStore = defineStore('offline', {
     lastDownloadCounts: null as GlueOfflineDownloadCounts | null,
     queueCounts: emptyQueueCounts(),
     isLoadingQueueCounts: false,
+    isSyncingQueue: false,
+    syncCurrent: 0,
+    syncTotal: 0,
+    syncMessage: '',
+    syncError: '',
   }),
 
   getters: {
@@ -35,6 +45,10 @@ export const useOfflineStore = defineStore('offline', {
     },
     totalPendingQueueCount: (state) => {
       return state.queueCounts.ReceiveGlue + state.queueCounts.ReturnGlue + state.queueCounts.GlueCheckList;
+    },
+    syncPercent: (state) => {
+      if (!state.syncTotal) return 0;
+      return Math.min(100, Math.round((state.syncCurrent / state.syncTotal) * 100));
     },
     getPendingQueueCount: (state) => {
       return (queueType: OfflineQueueType) => state.queueCounts[queueType] ?? 0;
@@ -55,6 +69,20 @@ export const useOfflineStore = defineStore('offline', {
       this.downloadCurrent = progress.current;
       this.downloadTotal = progress.total;
       this.downloadMessage = progress.type || '';
+    },
+
+    resetSyncState() {
+      this.isSyncingQueue = false;
+      this.syncCurrent = 0;
+      this.syncTotal = 0;
+      this.syncMessage = '';
+      this.syncError = '';
+    },
+
+    setSyncProgress(progress: OfflineSyncProgress) {
+      this.syncCurrent = progress.current;
+      this.syncTotal = progress.total;
+      this.syncMessage = progress.type || '';
     },
 
     async downloadOfflineQrData(factoryId: string) {
@@ -87,6 +115,35 @@ export const useOfflineStore = defineStore('offline', {
         console.error('Không thể đếm dữ liệu chờ đồng bộ:', error);
       } finally {
         this.isLoadingQueueCounts = false;
+      }
+    },
+
+    async syncPendingQueue(): Promise<OfflineSyncResult> {
+      if (this.isSyncingQueue) {
+        return {
+          syncedCount: this.syncCurrent,
+          totalCount: this.syncTotal,
+        };
+      }
+
+      this.isSyncingQueue = true;
+      this.syncError = '';
+      this.syncCurrent = 0;
+      this.syncTotal = 0;
+
+      try {
+        const result = await syncPendingOfflineQueue((progress) => {
+          this.setSyncProgress(progress);
+        });
+
+        await this.refreshQueueCounts();
+        return result;
+      } catch (error: any) {
+        this.syncError = error?.message || 'Không thể đồng bộ dữ liệu offline.';
+        await this.refreshQueueCounts();
+        throw error;
+      } finally {
+        this.isSyncingQueue = false;
       }
     },
   },

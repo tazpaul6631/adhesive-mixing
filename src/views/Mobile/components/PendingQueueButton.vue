@@ -204,20 +204,30 @@ function getPayloadRows(payload: any) {
 <style scoped lang="scss">
 .pending-queue {
   width: 100%;
-  padding: 8px 14px 0;
-  background: #f6f9fd;
+  padding: 8px 16px 0;
+  background: transparent;
 
   &__button {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid rgba(239, 68, 68, 0.28);
-    border-radius: 999px;
-    background: #fff7f7;
-    color: #b42318;
-    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #d97706;
+    font-size: 0.9rem;
     font-weight: 700;
-    line-height: 1.25;
-    text-align: center;
+    line-height: 1.35;
+    text-align: left;
+    text-decoration: none;
+  }
+
+  &__button:active {
+    color: #b45309;
+    text-decoration: underline;
   }
 }
 

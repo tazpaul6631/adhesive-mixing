@@ -49,7 +49,10 @@
     "offlineDownloadNote": "Please wait. QR data is being saved for offline use.",
     "offlineLoginBlocked": "The device is offline. Please connect to the network before logging in.",
     "offlineFactoryMissing": "Unable to find the user factory ID. Please contact IT.",
-    "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again."
+    "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again.",
+    "offlineSyncTitle": "Syncing data",
+    "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
+    "offlineSyncFailed": "Unable to sync offline data. Please check the network connection and try again."
   },
   "mobile": {
     "glueConfirm": {
@@ -202,6 +205,10 @@
       "returnGlue": "Return glue scan",
       "glueCheckList": "Glue Check List",
       "saved": "Data has been saved locally and will be synced when the network is available."
+    },
+    "offlineSync": {
+      "title": "Syncing data",
+      "note": "Please wait. Offline data is being uploaded to the system."
     }
   }
 }

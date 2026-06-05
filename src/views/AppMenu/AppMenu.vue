@@ -13,7 +13,6 @@
         </div>
       </ion-toolbar>
       <MobileOfflineNotice v-if="!isTablet" />
-      <PendingQueueButton v-if="!isTablet" />
     </ion-header>
 
     <ion-content class="ion-padding custom-content">
@@ -26,6 +25,8 @@
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
           </div>
         </div>
+
+        <PendingQueueButton v-if="!isTablet" />
 
         <div class="feature-grid animate__animated animate__fadeInUp">
 
