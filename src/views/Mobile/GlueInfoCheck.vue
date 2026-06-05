@@ -35,11 +35,7 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <div
-                    v-for="field in returnInfoFields"
-                    :key="field.label"
-                    class="info-content__row"
-                  >
+                  <div v-for="field in returnInfoFields" :key="field.label" class="info-content__row">
                     <span class="info-content__label">{{ field.label }}</span>
                     <span class="info-content__value">{{ field.value }}</span>
                   </div>
@@ -75,10 +71,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
-<<<<<<< HEAD
-=======
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';

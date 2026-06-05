@@ -386,21 +386,12 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
   applyRowPatch(row.glueReturnLogId, patch);
   void pendingStore.savePending(buildPendingEntry(row, patch));
 
-<<<<<<< HEAD
-  toast.add({
-    severity: 'info',
-    summary: t('listGlueReturnLog.toast.success'),
-    detail: t('listGlueReturnLog.toast.scaleSaved'),
-    life: 6000,
-  });
-=======
   // toast.add({
   //   severity: 'info',
   //   summary: t('listGlueReturnLog.toast.success'),
   //   detail: t('listGlueReturnLog.toast.scaleSaved'),
   //   life: 6000,
   // });
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 };
 
 const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {

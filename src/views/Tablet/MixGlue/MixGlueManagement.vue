@@ -34,11 +34,7 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-<<<<<<< HEAD
-                }}</label>
-=======
               }}</label>
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
@@ -76,7 +72,7 @@
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                    }}</label>
+                  }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
@@ -119,11 +115,7 @@
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-<<<<<<< HEAD
-                    }}</label>
-=======
                   }}</label>
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
                   <InputText v-model="noMixMixingProcess.component" readonly
                     class="font-bold text-primary border-blue-200" style="width: 350px;" />
                 </div>
@@ -326,17 +318,11 @@ const mixTargetWeight = computed(() => {
   return Number(weight) || 0;
 });
 
-<<<<<<< HEAD
-const calcToleranceGrams = (weight: number, weightUnit: string) => {
-  const unit = (weightUnit || 'Kg').toLowerCase();
-  const weightInGrams = unit === 'kg' ? weight * 1000 : weight;
-=======
 /** Dùng cho dòng API chưa có sai số (noMix). Keo thêm từ modal dùng gram nhập tay. */
 const calcToleranceGrams = (weight: number, weightUnit: string) => {
   const unit = (weightUnit || 'Kg').toLowerCase();
   const weightInGrams = unit === 'kg' ? weight * 1000 : weight;
   // Cũ: sai số = 5% trọng lượng (gram)
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   return Number((weightInGrams * 0.05).toFixed(3));
 };
 
@@ -691,11 +677,8 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 };
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
-<<<<<<< HEAD
-=======
   if (!(await requireOnline())) return;
 
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   const validationError = await validateBeforeNoMixComplete();
   if (validationError) {
     toast.add({
@@ -733,10 +716,7 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       router.push('/list-mix-glue');
     }
   } catch (error) {
-<<<<<<< HEAD
-=======
     if (notifyOfflineFromError(error)) return;
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     console.error(error);
     toast.add({
       severity: 'error',
@@ -763,11 +743,8 @@ const handleCompleteMixGlue = async () => {
     return;
   }
 
-<<<<<<< HEAD
-=======
   if (!(await requireOnline())) return;
 
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   try {
     const payloadToSubmit = buildPayload('1');
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
@@ -924,9 +901,6 @@ const openMixComponentDialog = () => {
 };
 
 const buildExtraComponent = (
-<<<<<<< HEAD
-  newComponentData: { name: string; percentage: number | string; materialCode: string; weightUnit: string },
-=======
   newComponentData: {
     name: string;
     percentage: number | string;
@@ -934,20 +908,14 @@ const buildExtraComponent = (
     weightUnit: string;
     toleranceGrams: number;
   },
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
   flags: { mixGlue: boolean; noMixGlue: boolean }
 ): ComponentDetail => {
   const enteredWeight = Number(newComponentData.percentage ?? 0);
   const weightUnit = newComponentData.weightUnit || 'Kg';
-<<<<<<< HEAD
-  const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
-  const weightStr = enteredWeight.toFixed(3);
-=======
   const weightStr = enteredWeight.toFixed(3);
   // Cũ: sai số = 5% trọng lượng — const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
   const deviationGrams = Number(newComponentData.toleranceGrams);
   const toleranceStr = String(deviationGrams);
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
   return {
     materialName: newComponentData.name,
@@ -959,13 +927,8 @@ const buildExtraComponent = (
     operator: '',
     operatorId: '',
     weighingTime: '',
-<<<<<<< HEAD
-    lowerTolerance: String(toleranceGrams),
-    upperTolerance: String(toleranceGrams),
-=======
     lowerTolerance: toleranceStr,
     upperTolerance: toleranceStr,
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     mixingRatio: '',
     glueExtra: true,
     mixGlue: flags.mixGlue,
@@ -979,10 +942,7 @@ const handleSaveNewComponent = async (newComponentData: {
   percentage: number | string;
   materialCode: string;
   weightUnit: string;
-<<<<<<< HEAD
-=======
   toleranceGrams: number;
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 }) => {
   if (!componentDetailsFull.value.length) {
     toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 3000 });

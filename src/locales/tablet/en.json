@@ -200,13 +200,8 @@
       "loadFailed": "Could not load work order data",
       "incomplete": "Incomplete",
       "locked": "Cannot edit",
-<<<<<<< HEAD
-      "completeFirst": "This order is already completed. Adding or deleting is not allowed.",
-      "noMixAlreadySubmitted": "This noMix order was already submitted. Further edits are not allowed.",
-=======
       "completeFirst": "This work order repackaging is complete. Adding or deleting is not allowed.",
       "noMixAlreadySubmitted": "Non-mixed glue has already been submitted. Further edits are not allowed.",
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "completeSuccess": "Completed",
       "completeSuccessDetail": "Data submitted successfully",
       "completeFailed": "Could not confirm completion",
@@ -234,15 +229,6 @@
       "invalid": "Invalid",
       "mixedGlueSelectBucket": "Mixed glue row {row}: please select a container.",
       "mixedGluePrefix": "Mixed glue: {message}",
-<<<<<<< HEAD
-      "noMixSelectBucket": "Non-mixed glue on row {row}: please select a container.",
-      "noMixPrefix": "Non-mixed glue: {message}",
-      "noMixWeighFirst": "Non-mixed glue {name}: please weigh before completing.",
-      "pendingChietModal": "Bucket allocation is not confirmed. Please complete the allocation dialog.",
-      "chietRequired": "Glue {name} has been weighed but bucket allocation is not confirmed. Open the dialog and confirm.",
-      "chietSelectBucket": "Glue {name} on allocation row {row}: please select a container.",
-      "chietPrefix": "Glue {name} allocation: {message}"
-=======
       "noMixSelectBucket": "Non-mixed glue row {row}: please select a container.",
       "noMixPrefix": "Non-mixed glue: {message}",
       "noMixWeighFirst": "Non-mixed glue {name}: please complete weighing first.",
@@ -250,7 +236,6 @@
       "chietRequired": "Glue {name} has been weighed but repackaging is not confirmed. Please open the dialog and confirm.",
       "chietSelectBucket": "Glue {name} repackaging row {row}: please select a container.",
       "chietPrefix": "Glue {name} repackaging: {message}"
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "confirmDelete": {
       "title": "Confirm delete",
@@ -314,16 +299,6 @@
     "fields": {
       "workOrder": "Work order",
       "glue": "Glue",
-<<<<<<< HEAD
-      "totalWeight": "Total weight (Kg)",
-      "componentCode": "Component code",
-      "totalWeightActual": ""
-    },
-    "sections": {
-      "lineDetails": "Line details",
-      "mixingComponents": "Mixing components",
-      "noMixComponents": "Non-mixed glue components"
-=======
       "totalWeight": "Total weight (KG)",
       "componentCode": "Component code",
       "totalWeightActual": "Actual weight (KG)"
@@ -332,7 +307,6 @@
       "lineDetails": "Production line details",
       "mixingComponents": "Mix glue components",
       "noMixComponents": "Non-mix glue components"
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "lineDetailsTable": {
       "columns": {
@@ -362,15 +336,10 @@
       "nameRequired": "Component name is required.",
       "percentageLabel": "Percentage (%)",
       "percentageRequired": "Please enter a percentage.",
-<<<<<<< HEAD
-      "weightLabel": "Weight",
-      "weightRequired": "Please enter weight ({unit})"
-=======
       "weightLabel": "Weight (KG)",
       "weightRequired": "Please enter weight (KG)",
       "toleranceGramsLabel": "Tolerance (g)",
       "toleranceGramsRequired": "Please enter a tolerance greater than 0 g"
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     },
     "unknownOperator": "Unassigned",
     "confirmDelete": {
@@ -389,11 +358,7 @@
       "restoreDetail": "Saved data has been reloaded",
       "loadFailed": "Could not load work order data",
       "incompleteWeighing": "Please complete weighing for all components...",
-<<<<<<< HEAD
-      "incompleteNoMixWeighing": "Please complete weighing for all non-mixed glue components before finishing.",
-=======
       "incompleteNoMixWeighing": "Please complete weighing for all non-mix glue components before finishing.",
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
       "saveSuccess": "Saved successfully",
       "saveSuccessDetail": "Data saved. Please return to the list to confirm!",
       "saveFailed": "Could not save data",

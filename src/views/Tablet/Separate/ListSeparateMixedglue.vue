@@ -409,11 +409,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
         toast.add({
           severity: 'error',
           summary: t('listSeparateMixedGlue.toast.error'),
-<<<<<<< HEAD
-          detail: validateData?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
-=======
           detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
           life: 6000,
         });
         return;
@@ -423,11 +419,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       toast.add({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
-<<<<<<< HEAD
-        detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
-=======
         detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
         life: 6000,
       });
       return;

@@ -20,20 +20,14 @@
                 <ion-card-title>{{ t("mobile.glueConfirm.lineQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  @click="openScanner('line')"
-                >
-                  <span
-                    v-if="!lineQrText"
-                    class="qr-scan-field__text qr-scan-field__text--empty"
-                  >
+                <button type="button" class="qr-scan-field" @click="openScanner('line')">
+                  <span v-if="!lineQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel") }}</span>
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel")
+                        }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
@@ -54,23 +48,12 @@
                 <ion-card-title>{{ t("mobile.glueConfirm.allocatedQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  @click="openScanner('allocated')"
-                >
-                  <span
-                    v-if="!allocatedQrText"
-                    class="qr-scan-field__text qr-scan-field__text--empty"
-                  >
+                <button type="button" class="qr-scan-field" @click="openScanner('allocated')">
+                  <span v-if="!allocatedQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
-                    <div
-                      v-for="row in allocatedDisplayRows"
-                      :key="row.label"
-                      class="qr-scan-field__info-row"
-                    >
+                    <div v-for="row in allocatedDisplayRows" :key="row.label" class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ row.label }}</span>
                       <span class="qr-scan-field__info-value">{{ row.value }}</span>
                     </div>
@@ -97,12 +80,8 @@
               </div>
             </div>
 
-            <ion-button
-              expand="block"
-              class="confirm-button"
-              :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn"
-            >
+            <ion-button expand="block" class="confirm-button" :disabled="isConfirmButtonDisabled"
+              @click="handleConfirmReturn">
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               {{ t("mobile.glueConfirm.confirmReturnButton") }}
             </ion-button>
@@ -111,14 +90,8 @@
         </section>
       </div>
 
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="top"
-        color="success"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
+      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="top" color="success"
+        @didDismiss="showSuccessToast = false"></ion-toast>
     </ion-content>
   </ion-page>
 </template>
@@ -150,16 +123,12 @@ import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
-<<<<<<< HEAD
-import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
-=======
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -171,10 +140,7 @@ type ResolveGlueQrResult = {
 
 const authStore = useAuthStore();
 const lineChemicalStore = useLineChemicalStore();
-<<<<<<< HEAD
-=======
 const offlineStore = useOfflineStore();
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 const { t } = useI18n();
 
 const lineQrText = ref("");
@@ -435,8 +401,6 @@ async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQr
   return { data: responseData.data, status: "success" };
 }
 
-<<<<<<< HEAD
-=======
 
 async function resolveGlueQr(qrText: string): Promise<ResolveGlueQrResult> {
   if (!authStore.isOnline) {
@@ -446,7 +410,6 @@ async function resolveGlueQr(qrText: string): Promise<ResolveGlueQrResult> {
   return resolveGlueQrFromSystemUrl(qrText);
 }
 
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
 async function openScanner(target: ConfirmScanTarget) {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
@@ -605,8 +568,6 @@ async function handleConfirmReturn() {
       payload.noSeparateGlueId = noSeparateGlueId;
     }
 
-<<<<<<< HEAD
-=======
     if (!authStore.isOnline) {
       await addOfflineQueueItem('ReceiveGlue', 'api/mobile/gluereturnlog/confirmgr', 'POST', payload);
       await offlineStore.refreshQueueCounts();
@@ -625,7 +586,6 @@ async function handleConfirmReturn() {
       return;
     }
 
->>>>>>> e7b0cc7bfde87f3cb1655227e73cb0653c3b3eff
     console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");
     console.info("Request payload:", payload);
 
