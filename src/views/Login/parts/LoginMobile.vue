@@ -498,7 +498,6 @@ const syncPendingOfflineDataAfterLogin = async () => {
     return;
   }
 
-  offlineStore.resetSyncState();
   await offlineStore.syncPendingQueue();
   offlineStore.resetSyncState();
 };

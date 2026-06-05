@@ -204,7 +204,9 @@
       "receiveGlue": "產線確認領膠水",
       "returnGlue": "掃描退回膠水",
       "glueCheckList": "膠水檢查清單",
-      "saved": "資料已暫存在本機，網路恢復後會同步。"
+      "saved": "資料已暫存在本機，網路恢復後會同步。",
+      "logoutBlockedTitle": "無法登出",
+      "logoutBlockedMessage": "仍有離線資料尚未同步。請先上傳資料後再登出。"
     },
     "offlineSync": {
       "title": "正在同步資料",

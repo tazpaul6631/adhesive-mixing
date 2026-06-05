@@ -141,7 +141,7 @@ function getSyncErrorMessage(error: any, response?: any) {
     || 'Không thể đồng bộ dữ liệu offline.';
 }
 
-export async function syncPendingOfflineQueue(
+async function runSyncPendingOfflineQueue(
   onProgress?: (progress: OfflineSyncProgress) => void
 ): Promise<OfflineSyncResult> {
   const pendingItems = await listPendingQueueItems();
@@ -186,6 +186,22 @@ export async function syncPendingOfflineQueue(
   }
 
   return { syncedCount, totalCount };
+}
+
+let activeSyncPromise: Promise<OfflineSyncResult> | null = null;
+
+export function syncPendingOfflineQueue(
+  onProgress?: (progress: OfflineSyncProgress) => void
+): Promise<OfflineSyncResult> {
+  if (activeSyncPromise) {
+    return activeSyncPromise;
+  }
+
+  activeSyncPromise = runSyncPendingOfflineQueue(onProgress).finally(() => {
+    activeSyncPromise = null;
+  });
+
+  return activeSyncPromise;
 }
 
 export default {
