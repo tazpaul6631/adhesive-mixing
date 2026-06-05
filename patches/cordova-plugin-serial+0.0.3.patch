@@ -15,3 +15,18 @@ index 2bc7f70..b81126e 100644
      </platform>
  
      <!-- ubuntu -->
+diff --git a/node_modules/cordova-plugin-serial/src/android/fr/drangies/cordova/serial/Serial.java b/node_modules/cordova-plugin-serial/src/android/fr/drangies/cordova/serial/Serial.java
+index a32d36f..c44d774 100644
+--- a/node_modules/cordova-plugin-serial/src/android/fr/drangies/cordova/serial/Serial.java
++++ b/node_modules/cordova-plugin-serial/src/android/fr/drangies/cordova/serial/Serial.java
+@@ -285,8 +285,8 @@ public class Serial extends CordovaPlugin {
+                     try {
+                         Log.d(TAG, data);
+                         byte[] buffer = hexStringToByteArray(data);
+-                        int result = port.write(buffer, 1000);
+-                        callbackContext.success(result + " bytes written.");
++                        port.write(buffer, 1000);
++                        callbackContext.success(buffer.length + " bytes written.");
+                     }
+                     catch (IOException e) {
+                         // deal with error
