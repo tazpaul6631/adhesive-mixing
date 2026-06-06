@@ -307,6 +307,20 @@ const buildPrintQueue = (respData: any, row: Partial<WorkOrderMaster>) =>
 const createWriteFn = () =>
   (tspl: string) => bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false);
 
+const createPrintRuntimeOptions = () => ({
+  isConnected: () => bluetoothRef.value?.isConnected?.() ?? false,
+});
+
+const hasPrintFailures = (
+  result: { ok: boolean; printedCount: number; failedItems: unknown[] },
+  total: number
+) => !result.ok || result.failedItems.length > 0 || result.printedCount < total;
+
+const ensurePrinterReady = async () => {
+  const ready = await bluetoothRef.value?.verifyHardwareConnected?.();
+  return ready === true;
+};
+
 const showPrintResultToast = (printedCount: number, total: number, hasFailures: boolean) => {
   if (!hasFailures) {
     toast.add({
@@ -349,7 +363,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
-  if (!bluetoothRef.value?.isConnected?.()) {
+  if (!(await ensurePrinterReady())) {
     toast.add({
       severity: 'warn',
       summary: t('listMixGlue.toast.warning'),
@@ -479,11 +493,12 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
       workOrderMasterName: row.workOrderMasterName,
       confirmBy: employeeId,
       lastPrintTotal: queue.length,
-    });
+    }, createPrintRuntimeOptions());
 
-    showPrintResultToast(result.printedCount, queue.length, result.failedItems.length > 0);
+    const printFailed = hasPrintFailures(result, queue.length);
+    showPrintResultToast(result.printedCount, queue.length, printFailed);
 
-    if (result.failedItems.length > 0) {
+    if (printFailed) {
       showRetryDialog.value = true;
       return;
     }
@@ -507,7 +522,7 @@ const handleRetryPrint = async () => {
   const factoryId = authStore.user?.factoryId;
   if (!factoryId) return;
 
-  if (!bluetoothRef.value?.isConnected?.()) {
+  if (!(await ensurePrinterReady())) {
     toast.add({
       severity: 'warn',
       summary: t('listMixGlue.toast.warning'),
@@ -521,11 +536,12 @@ const handleRetryPrint = async () => {
   const workOrderMasterId = printJobContext.value?.workOrderMasterId;
 
   try {
-    const result = await retryFailed(createWriteFn(), factoryId);
+    const result = await retryFailed(createWriteFn(), factoryId, createPrintRuntimeOptions());
     const total = printJobContext.value?.lastPrintTotal ?? lastPrintTotal.value;
-    showPrintResultToast(result.printedCount, total, result.failedItems.length > 0);
+    const printFailed = hasPrintFailures(result, total);
+    showPrintResultToast(result.printedCount, total, printFailed);
 
-    if (result.failedItems.length === 0) {
+    if (!printFailed) {
       showRetryDialog.value = false;
       lastPrintTotal.value = 0;
       if (workOrderMasterId) {
@@ -545,6 +561,7 @@ const restorePendingPrintJob = async () => {
   if (!restored) return;
 
   lastPrintTotal.value = restored.lastPrintTotal;
+  showRetryDialog.value = true;
   toast.add({
     severity: 'info',
     summary: t('listMixGlue.toast.warning'),

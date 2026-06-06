@@ -309,6 +309,11 @@ const createPrintRuntimeOptions = () => ({
   isConnected: () => bluetoothRef.value?.isConnected?.() ?? false,
 });
 
+const ensurePrinterReady = async () => {
+  const ready = await bluetoothRef.value?.verifyHardwareConnected?.();
+  return ready === true;
+};
+
 const hasPrintFailures = (
   result: { ok: boolean; printedCount: number; failedItems: unknown[] },
   total: number
@@ -355,7 +360,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
-  if (!bluetoothRef.value?.isConnected?.()) {
+  if (!(await ensurePrinterReady())) {
     toast.add({
       severity: 'warn',
       summary: t('listSeparateMixedGlue.toast.warning'),
@@ -501,7 +506,7 @@ const handleRetryPrint = async () => {
   const factoryId = authStore.user?.factoryId;
   if (!factoryId) return;
 
-  if (!bluetoothRef.value?.isConnected?.()) {
+  if (!(await ensurePrinterReady())) {
     toast.add({
       severity: 'warn',
       summary: t('listSeparateMixedGlue.toast.warning'),
@@ -540,6 +545,7 @@ const restorePendingPrintJob = async () => {
   if (!restored) return;
 
   lastPrintTotal.value = restored.lastPrintTotal;
+  showRetryDialog.value = true;
   toast.add({
     severity: 'info',
     summary: t('listSeparateMixedGlue.toast.warning'),

@@ -20,6 +20,10 @@ export interface MixGluePrintJobContext {
   lastPrintTotal: number;
 }
 
+export interface MixGlueBatchPrintRuntimeOptions {
+  isConnected?: () => boolean;
+}
+
 export function useMixGlueLabelBatchPrint() {
   const isPrinting = ref(false);
   const progress = ref({ current: 0, total: 0 });
@@ -70,7 +74,8 @@ export function useMixGlueLabelBatchPrint() {
     queue: MixGluePrintItem[],
     writeFn: (tspl: string) => Promise<boolean>,
     factoryId: string,
-    jobContext: MixGluePrintJobContext
+    jobContext: MixGluePrintJobContext,
+    runtimeOptions?: MixGlueBatchPrintRuntimeOptions
   ): Promise<MixGluePrintSequentialResult> => {
     if (isPrinting.value) {
       return { ok: false, printedCount: 0, failedItems: failedItems.value };
@@ -90,10 +95,36 @@ export function useMixGlueLabelBatchPrint() {
         jobContext.confirmBy,
         (current, total) => {
           progress.value = { current, total };
+        },
+        {
+          isConnected: runtimeOptions?.isConnected,
         }
       );
 
       return await applyBatchResult(result);
+    } catch (error) {
+      console.error('[useMixGlueLabelBatchPrint] startPrint failed:', error);
+      const printedCount = progress.value.current;
+      const failed = queue.slice(printedCount).map((item, offset) => ({
+        item,
+        reason: (offset === 0 ? 'bluetooth_disconnect' : 'skipped_after_error') as MixGluePrintFailureReason,
+        message: offset === 0
+          ? 'Mất kết nối Bluetooth với máy in.'
+          : 'Chưa in do lỗi ở tem trước đó.',
+      }));
+
+      failedItems.value = failed;
+      lastErrorReason.value = 'bluetooth_disconnect';
+      if (failed.length > 0) {
+        await persistPendingState();
+      }
+
+      return {
+        ok: false,
+        printedCount,
+        failedItems: failed,
+        stoppedReason: 'bluetooth_disconnect',
+      };
     } finally {
       isPrinting.value = false;
     }
@@ -101,7 +132,8 @@ export function useMixGlueLabelBatchPrint() {
 
   const retryFailed = async (
     writeFn: (tspl: string) => Promise<boolean>,
-    factoryId: string
+    factoryId: string,
+    runtimeOptions?: MixGlueBatchPrintRuntimeOptions
   ): Promise<MixGluePrintSequentialResult> => {
     const ctx = printJobContext.value;
     if (!failedItems.value.length || !ctx || isPrinting.value) {
@@ -121,10 +153,36 @@ export function useMixGlueLabelBatchPrint() {
         ctx.confirmBy,
         (current, total) => {
           progress.value = { current, total };
+        },
+        {
+          isConnected: runtimeOptions?.isConnected,
         }
       );
 
       return await applyBatchResult(result);
+    } catch (error) {
+      console.error('[useMixGlueLabelBatchPrint] retryFailed failed:', error);
+      const printedCount = progress.value.current;
+      const failed = retryQueue.slice(printedCount).map((item, offset) => ({
+        item,
+        reason: (offset === 0 ? 'bluetooth_disconnect' : 'skipped_after_error') as MixGluePrintFailureReason,
+        message: offset === 0
+          ? 'Mất kết nối Bluetooth với máy in.'
+          : 'Chưa in do lỗi ở tem trước đó.',
+      }));
+
+      failedItems.value = failed;
+      lastErrorReason.value = 'bluetooth_disconnect';
+      if (failed.length > 0) {
+        await persistPendingState();
+      }
+
+      return {
+        ok: false,
+        printedCount,
+        failedItems: failed,
+        stoppedReason: 'bluetooth_disconnect',
+      };
     } finally {
       isPrinting.value = false;
     }
