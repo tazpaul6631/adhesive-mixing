@@ -9,7 +9,7 @@
     "build": "vue-tsc && vite build",
     "build:web": "vue-tsc && vite build",
     "cap:sync:android": "npx cap sync android",
-    "cap:sync:ios": "npx cap sync ios",
+    "cap:sync:ios": "npx cap sync ios && node scripts/fix-ios-spm.mjs",
     "build:android": "npm run build:web && npm run cap:sync:android && node scripts/build-android.mjs",
     "build:android:signed": "npm run build:android && bash scripts/sign-android-apk.sh",
     "build:ios": "npm run build:web && npm run cap:sync:ios && node scripts/build-ios.mjs",

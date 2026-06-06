@@ -84,6 +84,8 @@ Push lên `main` chạy 2 job song song:
 
 Nếu chưa cấu hình iOS secrets, CI vẫn build Simulator app để verify compile.
 
+**Lưu ý iOS:** `cordova-plugin-android-permissions` chỉ có native Android; sau `cap sync ios` script `scripts/fix-ios-spm.mjs` tự gỡ reference khỏi `Package.swift` để tránh lỗi xcodebuild.
+
 ## Capacitor sync
 
 ```bash
