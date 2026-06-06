@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { chmodSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { platform } from 'node:os';
 
@@ -11,6 +11,11 @@ const gradlew = join(androidDir, isWin ? 'gradlew.bat' : 'gradlew');
 if (!existsSync(gradlew)) {
   console.error('[build-android] Missing android/gradlew. Run: npx cap add android');
   process.exit(1);
+}
+
+if (!isWin) {
+  // Git checkout on Linux/macOS may not preserve the executable bit.
+  chmodSync(gradlew, 0o755);
 }
 
 const cmd = isWin ? `"${gradlew}" assembleRelease` : './gradlew assembleRelease';
