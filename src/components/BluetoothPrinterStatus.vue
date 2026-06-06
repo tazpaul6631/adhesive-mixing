@@ -42,6 +42,8 @@ const {
   disconnect,
   cancelConnection,
   isConnected,
+  verifyHardwareConnected,
+  setPrintInProgress,
   writeTspl,
 } = useBluetoothPrinter(props);
 
@@ -69,6 +71,8 @@ defineExpose({
   cleanupBluetooth,
   refreshScan,
   isConnected,
+  verifyHardwareConnected,
+  setPrintInProgress,
   writeTspl,
 });
 </script>

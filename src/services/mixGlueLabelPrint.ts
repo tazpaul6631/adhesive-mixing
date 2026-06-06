@@ -50,6 +50,16 @@ const TSPL_TEXT_MAX_Y = 370;
 const TSPL_MAX_CHARS_FIRST_LINE = 24;
 const TSPL_MAX_CHARS_CONTINUATION = 26;
 const BATCH_CHUNK_SIZE = 10;
+const LABEL_PRINT_SETTLE_MS = 1200;
+const LABEL_PRINT_SETTLE_LARGE_BATCH_MS = 1500;
+const LARGE_LABEL_BATCH_THRESHOLD = 15;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const getLabelPrintSettleMs = (batchSize: number) =>
+  batchSize >= LARGE_LABEL_BATCH_THRESHOLD
+    ? LABEL_PRINT_SETTLE_LARGE_BATCH_MS
+    : LABEL_PRINT_SETTLE_MS;
 /** 69mm @ 203dpi — khớp tọa độ QR/text hiện có (x≈380). */
 const TSPL_LABEL_WIDTH = 555;
 const TSPL_PASTE_QR_MARGIN = 15;
@@ -483,7 +493,10 @@ export async function printMixGlueLabelsSequential(
   items: MixGluePrintItem[],
   factoryId: string,
   confirmBy: string,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  options?: {
+    isConnected?: () => boolean;
+  }
 ): Promise<MixGluePrintSequentialResult> {
   if (!items.length) {
     return { ok: false, printedCount: 0, failedItems: [] };
@@ -491,8 +504,26 @@ export async function printMixGlueLabelsSequential(
 
   let printedCount = 0;
   const total = items.length;
+  const settleMs = getLabelPrintSettleMs(total);
+  const isConnected = options?.isConnected;
 
   for (let index = 0; index < items.length; index++) {
+    if (isConnected && !isConnected()) {
+      const failedItems = collectMixGlueRemainingFailures(
+        items,
+        index,
+        'bluetooth_disconnect',
+        mixGlueFailureMessage.bluetooth_disconnect
+      );
+      onProgress?.(printedCount, total);
+      return {
+        ok: false,
+        printedCount,
+        failedItems,
+        stoppedReason: 'bluetooth_disconnect',
+      };
+    }
+
     const item = items[index];
     const tspl = await buildMixGlueLabelTspl(item, factoryId, confirmBy);
 
@@ -531,6 +562,10 @@ export async function printMixGlueLabelsSequential(
 
     printedCount += 1;
     onProgress?.(printedCount, total);
+
+    if (index < items.length - 1) {
+      await sleep(settleMs);
+    }
   }
 
   return { ok: true, printedCount, failedItems: [] };

@@ -134,6 +134,29 @@ export function useSeparateLabelBatchPrint() {
       });
 
       return await applyBatchResult(result);
+    } catch (error) {
+      console.error('[useSeparateLabelBatchPrint] startPrint failed:', error);
+      const printedCount = progress.value.current;
+      const failed = queue.slice(printedCount).map((item, offset) => ({
+        item,
+        reason: (offset === 0 ? 'bluetooth_disconnect' : 'skipped_after_error') as PrintFailureReason,
+        message: offset === 0
+          ? 'Mất kết nối Bluetooth với máy in.'
+          : 'Chưa in do lỗi ở tem trước đó.',
+      }));
+
+      failedItems.value = failed;
+      lastErrorReason.value = 'bluetooth_disconnect';
+      if (failed.length > 0) {
+        await persistPendingState();
+      }
+
+      return {
+        ok: false,
+        printedCount,
+        failedItems: failed,
+        stoppedReason: 'bluetooth_disconnect',
+      };
     } finally {
       isPrinting.value = false;
     }
@@ -167,6 +190,29 @@ export function useSeparateLabelBatchPrint() {
       });
 
       return await applyBatchResult(result);
+    } catch (error) {
+      console.error('[useSeparateLabelBatchPrint] retryFailed failed:', error);
+      const printedCount = progress.value.current;
+      const failed = retryQueue.slice(printedCount).map((item, offset) => ({
+        item,
+        reason: (offset === 0 ? 'bluetooth_disconnect' : 'skipped_after_error') as PrintFailureReason,
+        message: offset === 0
+          ? 'Mất kết nối Bluetooth với máy in.'
+          : 'Chưa in do lỗi ở tem trước đó.',
+      }));
+
+      failedItems.value = failed;
+      lastErrorReason.value = 'bluetooth_disconnect';
+      if (failed.length > 0) {
+        await persistPendingState();
+      }
+
+      return {
+        ok: false,
+        printedCount,
+        failedItems: failed,
+        stoppedReason: 'bluetooth_disconnect',
+      };
     } finally {
       isPrinting.value = false;
     }
