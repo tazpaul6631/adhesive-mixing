@@ -18,9 +18,14 @@
         <section class="check-panel">
           <ion-button expand="block" class="confirm-button" :disabled="isLoadingScan" @click="openScanner">
             <ion-spinner v-if="isLoadingScan" name="crescent"></ion-spinner>
-            <span v-else>
-              <ion-icon slot="start" :icon="qrCode"></ion-icon>
-              {{ t('mobile.glueCheckList.scanButton') }}</span>
+           <span v-else class="confirm-button__content">
+            <span class="confirm-button__icon">
+              <McScanFill />
+            </span>
+            <span class="confirm-button__text">
+              {{ t('mobile.glueCheckList.scanButton') }}
+            </span>
+          </span>
           </ion-button>
         </section>
       </div>
@@ -127,6 +132,7 @@ import { findCheckListOfflineData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
 import { barcodeOutline, qrCode } from "ionicons/icons";
+import { McScanFill } from '@kalimahapps/vue-icons';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
@@ -412,27 +418,47 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   --background-focused: #0b72ed;
   --background-hover: #0b72ed;
   --color: #ffffff;
+  --padding-top: 0;
+  --padding-bottom: 0;
   font-size: 16px !important;
   font-weight: 700;
   text-transform: none;
+}
 
-  ion-icon {
-    margin-right: 10px;
-  }
+.confirm-button::part(native) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  &::part(native) {
-    border-radius: 16px;
-  }
+.confirm-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  line-height: 1;
+}
 
-  &[disabled],
-  &--disabled {
-    opacity: 0.48;
-    pointer-events: none;
-  }
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+}
 
-  &--disabled::part(native) {
-    cursor: not-allowed;
-  }
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .check-form-modal {
