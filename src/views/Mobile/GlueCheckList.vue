@@ -18,7 +18,9 @@
         <section class="check-panel">
           <ion-button expand="block" class="confirm-button" :disabled="isLoadingScan" @click="openScanner">
             <ion-spinner v-if="isLoadingScan" name="crescent"></ion-spinner>
-            <span v-else>{{ t('mobile.glueCheckList.scanButton') }}</span>
+            <span v-else>
+              <ion-icon slot="start" :icon="qrCode"></ion-icon>
+              {{ t('mobile.glueCheckList.scanButton') }}</span>
           </ion-button>
         </section>
       </div>
@@ -124,6 +126,7 @@ import checkListApi from '@/api/checkList';
 import { findCheckListOfflineData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
+import { barcodeOutline, qrCode } from "ionicons/icons";
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
@@ -412,6 +415,24 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   font-size: 16px !important;
   font-weight: 700;
   text-transform: none;
+
+  ion-icon {
+    margin-right: 10px;
+  }
+
+  &::part(native) {
+    border-radius: 16px;
+  }
+
+  &[disabled],
+  &--disabled {
+    opacity: 0.48;
+    pointer-events: none;
+  }
+
+  &--disabled::part(native) {
+    cursor: not-allowed;
+  }
 }
 
 .check-form-modal {

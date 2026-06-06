@@ -194,7 +194,7 @@
       }
     },
     "common": {
-      "offlineLocalData": "無網路連線"
+      "offlineLocalData": "無網路連線 - 使用本地資料"
     },
     "offlineQueue": {
       "pendingData": "待同步資料",

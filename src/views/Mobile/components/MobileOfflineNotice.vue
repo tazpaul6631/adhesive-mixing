@@ -1,5 +1,6 @@
 <template>
   <div v-if="!isOnline" class="mobile-offline-notice" role="status">
+    <BxWifiOff/>
     {{ t('mobile.common.offlineLocalData') }}
   </div>
 </template>
@@ -9,6 +10,8 @@ import { computed, onMounted } from 'vue';
 import { Network } from '@capacitor/network';
 import { useAuthStore } from '@/store/auth';
 import { useAppLocale } from '@/composables/useAppLocale';
+import VueIcon from '@kalimahapps/vue-icons/VueIcon';
+import { BxWifiOff } from '@kalimahapps/vue-icons';
 
 const authStore = useAuthStore();
 const { t } = useAppLocale(() => 'mobile');
@@ -29,8 +32,8 @@ onMounted(async () => {
 .mobile-offline-notice {
   width: 100%;
   padding: 7px 14px;
-  text-align: center;
-  font-size: 0.95rem;
+  text-align: left;
+  font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.25;
   color: #991b1b;
