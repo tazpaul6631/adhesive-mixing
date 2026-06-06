@@ -45,13 +45,15 @@
 
           <template v-if="!isTablet">
             <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card shadow-sm"
-              @click="navigate(feature.path)">
+              :class="{ 'feature-card--disabled': feature.disabled }"
+              @click="navigateFeature(feature)">
               <div class="icon-wrapper" :style="{ background: feature.bgLight }">
                 <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
               </div>
               <div class="card-content">
                 <h3>{{ feature.title }}</h3>
                 <p>{{ feature.description }}</p>
+                <p v-if="feature.disabledMessage" class="card-content__offline-note">{{ feature.disabledMessage }}</p>
               </div>
             </div>
           </template>
@@ -74,16 +76,19 @@ import {
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useOfflineStore } from '@/store/offline';
+import { useOfflineLoginStore } from '@/store/offlineLogin';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
+import { clearGlueOfflineData } from '@/services/glueOfflineData.service';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
+const offlineLoginStore = useOfflineLoginStore();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
@@ -187,13 +192,28 @@ const mobileFeatures = computed(() => [
     description: t('mobile.appMenu.glueInfoCheckDescription'),
     icon: search,
     color: '#0ea5e9',
-    bgLight: '#e0f2fe'
+    bgLight: '#e0f2fe',
+    disabled: !authStore.isOnline,
+    disabledMessage: !authStore.isOnline ? t('mobile.appMenu.onlineOnly') : '',
   }
 ]);
+
+type AppMenuFeature = {
+  path: string;
+  disabled?: boolean;
+};
 
 // Hàm điều hướng chung
 const navigate = (path: string) => {
   router.push(path);
+};
+
+const navigateFeature = (feature: AppMenuFeature) => {
+  if (feature.disabled) {
+    return;
+  }
+
+  navigate(feature.path);
 };
 
 
@@ -215,6 +235,13 @@ const handleLogout = async () => {
       await showLogoutBlockedAlert();
       return;
     }
+  }
+
+  if (!isTablet.value) {
+    await clearGlueOfflineData();
+    await offlineLoginStore.clearOfflineLogin();
+    offlineStore.resetDownloadState();
+    offlineStore.resetSyncState();
   }
 
   await authStore.logout();
@@ -315,6 +342,24 @@ const handleLogout = async () => {
 
 .feature-card:active {
   transform: scale(0.97);
+}
+
+
+.feature-card--disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  filter: grayscale(0.12);
+}
+
+.feature-card--disabled:active {
+  transform: none;
+}
+
+.card-content__offline-note {
+  margin-top: 6px !important;
+  color: #dc2626 !important;
+  font-size: 0.82rem !important;
+  font-weight: 700;
 }
 
 .icon-wrapper {

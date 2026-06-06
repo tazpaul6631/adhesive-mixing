@@ -91,7 +91,8 @@
         :message="toastMessage"
         duration="1800"
         position="bottom"
-        color="success"
+        :color="toastColor"
+        :css-class="toastCssClass"
         @didDismiss="showSuccessToast = false"
       ></ion-toast>
     </ion-content>
@@ -120,12 +121,16 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import checkListApi from '@/api/checkList';
+import { findCheckListOfflineData } from '@/services/glueOfflineData.service';
+import { addOfflineQueueItem } from '@/services/offlineQueue.service';
+import { useOfflineStore } from '@/store/offline';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const offlineStore = useOfflineStore();
 
 const scannedCheckQr = ref<{ factoryId: string; cliId: string } | null>(null);
 const scannedCheckItem = ref<any>(null);
@@ -136,6 +141,8 @@ const isLoadingScan = ref(false);
 const isSubmittingForm = ref(false);
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
+const toastColor = ref<string | undefined>('success');
+const toastCssClass = ref('');
 
 const checkIssueName = computed(() => normalizeValue(scannedCheckItem.value?.checkListName));
 
@@ -170,6 +177,27 @@ function parseCheckListQrText(qrText: string) {
   }
 
   return { factoryId, cliId };
+}
+
+async function resolveCheckListItem(factoryId: string, cliId: string) {
+  if (!authStore.isOnline) {
+    const offlineResult = await findCheckListOfflineData(factoryId, cliId);
+
+    if (offlineResult.status !== 'success' || !offlineResult.data) {
+      return { data: null, success: false, message: t('mobile.glueCheckList.messages.noCheckListData') };
+    }
+
+    return { data: offlineResult.data, success: true, message: '' };
+  }
+
+  const response = await checkListApi.getCheckListItem(factoryId, cliId);
+  const responseData = response.data as any;
+
+  return {
+    data: responseData?.data ?? null,
+    success: !!responseData?.success && !!responseData?.data,
+    message: responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'),
+  };
 }
 
 function toggleCheckResult() {
@@ -230,16 +258,15 @@ async function openScanner() {
     }
 
     isLoadingScan.value = true;
-    const response = await checkListApi.getCheckListItem(qrParams.factoryId, qrParams.cliId);
-    const responseData = response.data as any;
+    const result = await resolveCheckListItem(qrParams.factoryId, qrParams.cliId);
 
-    if (!responseData?.success || !responseData?.data) {
-      await showWarningAlert(responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'));
+    if (!result.success || !result.data) {
+      await showWarningAlert(result.message || t('mobile.glueCheckList.messages.noCheckListData'));
       return;
     }
 
     scannedCheckQr.value = qrParams;
-    scannedCheckItem.value = responseData.data;
+    scannedCheckItem.value = result.data;
     checkResult.value = true;
     checkNote.value = '';
     isCheckDialogOpen.value = true;
@@ -265,11 +292,16 @@ function closeCheckDialog() {
 }
 
 async function sendCheckForm(recordStatus: '1' | 'C') {
+  if (isSubmittingForm.value) {
+    return;
+  }
+
   if (!scannedCheckQr.value || !scannedCheckItem.value) {
     alert(t('mobile.glueCheckList.messages.noCheckListData'));
     return;
   }
 
+  isSubmittingForm.value = true;
   const userId = getCurrentUserId();
 
   const payload = {
@@ -287,6 +319,14 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
   console.info('Request payload:', payload);
 
   try {
+    if (!authStore.isOnline) {
+      await addOfflineQueueItem('GlueCheckList', 'api/mobile/checklist/create', 'POST', payload);
+      await offlineStore.refreshQueueCounts();
+      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      resetAndCloseCheckDialog();
+      return;
+    }
+
     const response = await checkListApi.createCheckList(payload);
     console.info('Response:', response?.data ?? response);
 
@@ -296,11 +336,9 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
       throw new Error(responseData.message || t('mobile.glueCheckList.messages.submitError'));
     }
 
-    toastMessage.value = recordStatus === 'C'
+    showToast(recordStatus === 'C'
       ? t('mobile.glueCheckList.messages.cancelSuccess')
-      : t('mobile.glueCheckList.messages.submitSuccess');
-
-    showSuccessToast.value = true;
+      : t('mobile.glueCheckList.messages.submitSuccess'));
     closeCheckDialog();
   } catch (error) {
     console.error('Không thể gửi thông tin kiểm tra:', error);
@@ -311,6 +349,7 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
 
     alert(errorMessage);
   } finally {
+    isSubmittingForm.value = false;
     console.groupEnd();
   }
 }
@@ -321,6 +360,13 @@ async function submitCheckForm() {
 
 async function cancelCheckForm() {
   await sendCheckForm('C');
+}
+
+function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  toastMessage.value = message;
+  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
+  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
+  showSuccessToast.value = true;
 }
 </script>
 

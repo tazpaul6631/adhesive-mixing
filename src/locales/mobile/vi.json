@@ -62,7 +62,8 @@
     "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
     "offlineSyncTitle": "Đang đồng bộ dữ liệu",
     "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
-    "offlineSyncFailed": "Không thể đồng bộ dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại."
+    "offlineSyncFailed": "Không thể đồng bộ dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
+    "invalidOfflineUser": "Người dùng không hợp lệ."
   },
   "mobile": {
     "glueConfirm": {
@@ -113,7 +114,8 @@
       "glueInfoCheck": "Tra cứu thông tin thùng keo",
       "glueInfoCheckDescription": "Kiểm tra thông tin thùng keo phát",
       "glueCheckList": "Tuần tra kiểm phòng pha keo",
-      "glueCheckListDescription": "Quét mã kiểm tra và ghi nhận kết quả kiểm tra"
+      "glueCheckListDescription": "Quét mã kiểm tra và ghi nhận kết quả kiểm tra",
+      "onlineOnly": "(Chức năng chỉ hoạt động trực tuyến)"
     },
     "glueReturn": {
       "title": "Quét keo trả về",

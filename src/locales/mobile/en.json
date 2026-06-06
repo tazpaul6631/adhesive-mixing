@@ -52,7 +52,8 @@
     "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again.",
     "offlineSyncTitle": "Syncing data",
     "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
-    "offlineSyncFailed": "Unable to sync offline data. Please check the network connection and try again."
+    "offlineSyncFailed": "Unable to sync offline data. Please check the network connection and try again.",
+    "invalidOfflineUser": "Invalid user."
   },
   "mobile": {
     "glueConfirm": {
@@ -103,7 +104,8 @@
       "glueInfoCheck": "Glue Bucket Information Lookup",
       "glueInfoCheckDescription": "Check allocated glue bucket information",
       "glueCheckList": "Glue Check List",
-      "glueCheckListDescription": "Scan inspection codes and record check results"
+      "glueCheckListDescription": "Scan inspection codes and record check results",
+      "onlineOnly": "(This feature only works online)"
     },
     "glueReturn": {
       "title": "Return glue scan",

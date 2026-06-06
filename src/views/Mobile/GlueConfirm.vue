@@ -118,7 +118,8 @@
         :message="toastMessage"
         duration="1800"
         position="bottom"
-        color="success"
+        :color="toastColor"
+        :css-class="toastCssClass"
         @didDismiss="showSuccessToast = false"
       ></ion-toast>
     </ion-content>
@@ -182,6 +183,8 @@ const allocatedDisplayRows = ref<Array<{ label: string; value: string }>>([]);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref("");
+const toastColor = ref<string | undefined>('success');
+const toastCssClass = ref('');
 const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
 const isLoadingAllocatedQr = ref(false);
@@ -611,7 +614,7 @@ async function handleConfirmReturn() {
       });
 
       isConfirmReturnCompleted.value = true;
-      showToast(t('mobile.offlineQueue.saved'));
+      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       return;
     }
 
@@ -674,8 +677,10 @@ function resetConfirmReturnStatus() {
   isConfirmReturnCompleted.value = false;
 }
 
-function showToast(message: string) {
+function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
   toastMessage.value = message;
+  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
+  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
   showSuccessToast.value = true;
 }
 

@@ -4,12 +4,12 @@
     <RouteLoadingOverlay />
     <AppToast />
     <OfflineDataLoading
-      v-if="shouldShowMobileSyncLoading"
-      :is-open="offlineStore.isSyncingQueue"
-      :title="t('mobile.offlineSync.title')"
-      :note="t('mobile.offlineSync.note')"
-      :current="offlineStore.syncCurrent"
-      :total="offlineStore.syncTotal"
+      v-if="shouldShowMobileOfflineLoading"
+      :is-open="shouldShowMobileOfflineLoading"
+      :title="mobileOfflineLoadingTitle"
+      :note="mobileOfflineLoadingNote"
+      :current="mobileOfflineLoadingCurrent"
+      :total="mobileOfflineLoadingTotal"
     />
   </ion-app>
 </template>
@@ -37,9 +37,29 @@ const { t } = useI18n();
 const isTablet = ref(typeof window !== 'undefined' ? window.innerWidth >= 768 : false);
 
 const isMobilePhone = computed(() => !isTablet.value);
-const shouldShowMobileSyncLoading = computed(() => {
-  return isMobilePhone.value && route.path !== '/login' && offlineStore.isSyncingQueue;
+const shouldShowMobileOfflineLoading = computed(() => {
+  return isMobilePhone.value
+    && route.path !== '/login'
+    && (offlineStore.isSyncingQueue || offlineStore.isDownloadingOfflineData);
 });
+const isMobileOfflineSyncStep = computed(() => offlineStore.isSyncingQueue || offlineStore.syncTotal > 0);
+const isMobileOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData || offlineStore.downloadTotal > 0);
+const mobileOfflineLoadingTitle = computed(() => {
+  if (isMobileOfflineSyncStep.value) return t('mobile.offlineSync.title');
+  if (isMobileOfflineDownloadStep.value) return t('login.offlineDownloadTitle');
+  return t('login.loadingTitle');
+});
+const mobileOfflineLoadingNote = computed(() => {
+  if (isMobileOfflineSyncStep.value) return t('mobile.offlineSync.note');
+  if (isMobileOfflineDownloadStep.value) return t('login.offlineDownloadNote');
+  return t('login.loadingNote');
+});
+const mobileOfflineLoadingCurrent = computed(() => (
+  isMobileOfflineSyncStep.value ? offlineStore.syncCurrent : offlineStore.downloadCurrent
+));
+const mobileOfflineLoadingTotal = computed(() => (
+  isMobileOfflineSyncStep.value ? offlineStore.syncTotal : offlineStore.downloadTotal
+));
 
 // Xử lý nút Back vật lý trên Android
 useBackButton(-1, () => {
@@ -53,33 +73,84 @@ const updateDeviceType = () => {
   isTablet.value = window.innerWidth >= 768;
 };
 
-const startMobileOfflineSyncIfNeeded = async () => {
-  if (!isMobilePhone.value || route.path === '/login' || !authStore.isAuthenticated || offlineStore.isSyncingQueue) {
+const normalizeAppValue = (value: any) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+};
+
+const getNestedValue = (source: any, path: string[]) => {
+  return path.reduce((current, key) => current?.[key], source);
+};
+
+const resolveCurrentFactoryId = () => {
+  const userData = authStore.user;
+  const candidates = [
+    userData?.factoryId,
+    userData?.factoryID,
+    userData?.factoryCode,
+    userData?.factory,
+    getNestedValue(userData, ['factory', 'factoryId']),
+    getNestedValue(userData, ['employee', 'factoryId']),
+    getNestedValue(userData, ['user', 'factoryId']),
+  ];
+
+  return candidates.map(normalizeAppValue).find(Boolean) || '';
+};
+
+let activeReconnectRefreshPromise: Promise<void> | null = null;
+
+const startMobileOfflineRefreshAfterReconnect = async () => {
+  if (!isMobilePhone.value || route.path === '/login' || !authStore.isAuthenticated) {
     return;
   }
 
-  try {
+  if (activeReconnectRefreshPromise) {
+    return activeReconnectRefreshPromise;
+  }
+
+  activeReconnectRefreshPromise = (async () => {
     await offlineStore.refreshQueueCounts();
 
-    if (offlineStore.totalPendingQueueCount <= 0) {
+    if (offlineStore.totalPendingQueueCount > 0) {
+      await offlineStore.syncPendingQueue();
+    }
+
+    const factoryId = resolveCurrentFactoryId();
+    if (!factoryId) {
+      console.warn('Không tìm thấy factoryId để tải lại dữ liệu offline sau khi có mạng.');
       return;
     }
 
-    await offlineStore.syncPendingQueue();
-  } catch (error) {
-    console.error('Không thể đồng bộ dữ liệu offline:', error);
-  } finally {
-    if (!offlineStore.isSyncingQueue) {
-      offlineStore.resetSyncState();
-    }
-  }
+    offlineStore.resetDownloadState();
+    await offlineStore.downloadOfflineQrData(factoryId);
+  })()
+    .catch((error) => {
+      console.error('Không thể đồng bộ hoặc tải lại dữ liệu offline:', error);
+    })
+    .finally(() => {
+      if (!offlineStore.isSyncingQueue) {
+        offlineStore.resetSyncState();
+      }
+
+      if (!offlineStore.isDownloadingOfflineData) {
+        offlineStore.resetDownloadState();
+      }
+
+      activeReconnectRefreshPromise = null;
+    });
+
+  return activeReconnectRefreshPromise;
 };
 
 const applyNetworkStatus = (connected: boolean) => {
+  const wasOnline = authStore.isOnline;
   authStore.setNetworkStatus(connected);
 
-  if (connected) {
-    void startMobileOfflineSyncIfNeeded();
+  if (connected && !wasOnline) {
+    void startMobileOfflineRefreshAfterReconnect();
   }
 };
 
