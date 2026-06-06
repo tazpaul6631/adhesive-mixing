@@ -44,7 +44,9 @@
                     </div>
                   </div>
                   <span v-else class="qr-scan-field__text">{{ returnQrText }}</span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -78,7 +80,9 @@
                       </div>
                     </div>
                     <span v-else class="qr-scan-field__text">{{ lineQrText }}</span>
-                    <ion-icon v-if="!optionalLineChemicalInfo" class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                    <span v-if="!optionalLineChemicalInfo" class="confirm-button__icon">
+                      <McScanFill />
+                    </span>
                   </button>
                   <button
                     v-if="optionalLineChemicalInfo"
@@ -176,6 +180,7 @@ import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
+import { McScanFill } from '@kalimahapps/vue-icons';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -689,6 +694,29 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     opacity: 0.48;
     pointer-events: none;
   }
+}
+
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+  color:rgba(0, 0, 0, 0.582)
+}
+
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .status-box {

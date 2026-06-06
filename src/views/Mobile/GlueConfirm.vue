@@ -46,7 +46,9 @@
                   <span v-else class="qr-scan-field__text">
                     {{ lineQrText }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -80,7 +82,9 @@
                   <span v-else class="qr-scan-field__text">
                     {{ allocatedQrText }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -159,6 +163,7 @@ import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
+import { McScanFill } from '@kalimahapps/vue-icons';
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -869,6 +874,29 @@ function getAllocatedDisplayRows(info: any) {
   &--disabled::part(native) {
     cursor: not-allowed;
   }
+}
+
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+  color:rgba(0, 0, 0, 0.582)
+}
+
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .status-box {
