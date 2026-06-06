@@ -192,7 +192,7 @@
       }
     },
     "common": {
-      "offlineLocalData": "No network — using local data"
+      "offlineLocalData": "No network"
     },
     "offlineQueue": {
       "pendingData": "Pending sync data",

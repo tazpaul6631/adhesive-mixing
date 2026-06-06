@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -35,7 +38,11 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <div v-for="field in returnInfoFields" :key="field.label" class="info-content__row">
+                  <div
+                    v-for="field in returnInfoFields"
+                    :key="field.label"
+                    class="info-content__row"
+                  >
                     <span class="info-content__label">{{ field.label }}</span>
                     <span class="info-content__value">{{ field.value }}</span>
                   </div>
@@ -72,6 +79,7 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';

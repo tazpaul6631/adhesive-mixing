@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueCheckList.title') }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -118,6 +121,7 @@ import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import checkListApi from '@/api/checkList';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();

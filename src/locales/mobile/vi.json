@@ -202,7 +202,7 @@
       }
     },
     "common": {
-      "offlineLocalData": "Không có mạng — đang dùng dữ liệu cục bộ"
+      "offlineLocalData": "Không có mạng"
     },
     "offlineQueue": {
       "pendingData": "Dữ liệu chờ đồng bộ",

@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -19,14 +22,20 @@
                 <ion-card-title>{{ t("mobile.glueConfirm.lineQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner('line')">
-                  <span v-if="!lineQrText" class="qr-scan-field__text qr-scan-field__text--empty">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner('line')"
+                >
+                  <span
+                    v-if="!lineQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel")
-                      }}</span>
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel") }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
@@ -47,12 +56,23 @@
                 <ion-card-title>{{ t("mobile.glueConfirm.allocatedQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner('allocated')">
-                  <span v-if="!allocatedQrText" class="qr-scan-field__text qr-scan-field__text--empty">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner('allocated')"
+                >
+                  <span
+                    v-if="!allocatedQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
-                    <div v-for="row in allocatedDisplayRows" :key="row.label" class="qr-scan-field__info-row">
+                    <div
+                      v-for="row in allocatedDisplayRows"
+                      :key="row.label"
+                      class="qr-scan-field__info-row"
+                    >
                       <span class="qr-scan-field__info-label">{{ row.label }}</span>
                       <span class="qr-scan-field__info-value">{{ row.value }}</span>
                     </div>
@@ -79,8 +99,12 @@
               </div>
             </div>
 
-            <ion-button expand="block" class="confirm-button" :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn">
+            <ion-button
+              expand="block"
+              class="confirm-button"
+              :disabled="isConfirmButtonDisabled"
+              @click="handleConfirmReturn"
+            >
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               {{ t("mobile.glueConfirm.confirmReturnButton") }}
             </ion-button>
@@ -89,8 +113,14 @@
         </section>
       </div>
 
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="bottom" color="success"
-        @didDismiss="showSuccessToast = false"></ion-toast>
+      <ion-toast
+        :is-open="showSuccessToast"
+        :message="toastMessage"
+        duration="1800"
+        position="bottom"
+        color="success"
+        @didDismiss="showSuccessToast = false"
+      ></ion-toast>
     </ion-content>
   </ion-page>
 </template>
@@ -123,6 +153,7 @@ import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';

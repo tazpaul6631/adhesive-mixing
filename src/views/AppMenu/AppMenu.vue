@@ -6,6 +6,7 @@
 
         <div slot="end" class="app-menu-toolbar__actions">
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
+          <NetworkStatusIcon v-if="!isTablet" />
           <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
             <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
@@ -77,6 +78,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
@@ -163,14 +165,6 @@ const mobileFeatures = computed(() => [
     color: '#f59e0b',
     bgLight: '#fef3c7'
   },
-  // {
-  //   path: '/mobile/glue-return',
-  //   title: t('mobile.appMenu.glueReturn'),
-  //   description: t('mobile.appMenu.glueReturnDescription'),
-  //   icon: qrCodeOutline,
-  //   color: '#8b5cf6',
-  //   bgLight: '#ede9fe'
-  // },
   {
     path: '/mobile/glue-return',
     title: t('mobile.appMenu.glueReturn'),
@@ -246,7 +240,7 @@ const handleLogout = async () => {
 .app-menu-toolbar__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 100%;
 }
 
@@ -260,7 +254,7 @@ const handleLogout = async () => {
   font-weight: 600;
   font-size: 1.5rem;
   height: 50px;
-  margin-left: 20px;
+  margin-left: 0;
 }
 
 .logout-btn ion-icon {
