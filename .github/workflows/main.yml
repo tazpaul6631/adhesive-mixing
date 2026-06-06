@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -43,47 +43,76 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Web Assets (Vue.js)
-        run: npm run build
+      - name: Build Android APK
+        run: npm run build:android
 
-      - name: Sync with Capacitor
-        run: npx cap sync android
-
-      - name: Build Android APK (Release)
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-      # CI-only keystore (mỗi lần build tạo mới). Production: dùng secrets + keystore cố định.
-      - name: Generate keystore and sign APK
+      - name: Sign APK
         env:
           KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          cd android/app/build/outputs/apk/release
-          STORE_PASS="${KEYSTORE_PASS:-12345678}"
-          KEY_PASS_VAL="${KEY_PASS:-12345678}"
-
-          keytool -genkey -v -keystore adhesive-mixing-ci.jks -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias adhesive_mixing -storepass "$STORE_PASS" -keypass "$KEY_PASS_VAL" \
-            -dname "CN=JiaHsin, OU=IT, O=JiaHsin, L=HCM, ST=HCM, C=VN"
-
-          zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
-
-          apksigner sign \
-            --ks adhesive-mixing-ci.jks \
-            --ks-pass "pass:$STORE_PASS" \
-            --ks-key-alias adhesive_mixing \
-            --key-pass "pass:$KEY_PASS_VAL" \
-            --out adhesive-mixing-release.apk \
-            app-release-aligned.apk
-
-          apksigner verify --verbose adhesive-mixing-release.apk
+        run: bash scripts/sign-android-apk.sh
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adhesive-mixing
+          name: adhesive-mixing-android
           path: android/app/build/outputs/apk/release/adhesive-mixing-release.apk
           retention-days: 7
+
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build iOS (Simulator)
+        run: npm run build:ios
+
+      - name: Upload iOS Simulator App
+        uses: actions/upload-artifact@v4
+        with:
+          name: adhesive-mixing-ios-simulator
+          path: ios/App/build/DerivedData/Build/Products/Release-iphonesimulator/App.app
+          retention-days: 7
+
+      - name: Archive iOS (optional, requires Apple signing secrets)
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -z "${APPLE_CERTIFICATE_P12:-}" ]; then
+            echo "Skipping iOS archive — set APPLE_CERTIFICATE_P12 secret to enable."
+            exit 0
+          fi
+
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$APPLE_CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import $RUNNER_TEMP/certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          npm run build:ios:archive
+
+      - name: Upload iOS Archive (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adhesive-mixing-ios-archive
+          path: ios/App/build/App.xcarchive
+          retention-days: 7
+          if-no-files-found: ignore
