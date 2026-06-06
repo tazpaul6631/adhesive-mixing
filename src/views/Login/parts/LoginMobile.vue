@@ -216,8 +216,8 @@ const isLoginButtonEnabled = computed(() => {
 
 const isLoginRoute = computed(() => route.path === '/login');
 const shouldUseMobileOffline = computed(() => !isTablet.value);
-const isOfflineSyncStep = computed(() => offlineStore.isSyncingQueue || offlineStore.syncTotal > 0);
-const isOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData || offlineStore.downloadTotal > 0);
+const isOfflineSyncStep = computed(() => offlineStore.isSyncingQueue);
+const isOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData);
 const loginLoadingTitle = computed(() => {
   if (isOfflineSyncStep.value) return t('login.offlineSyncTitle');
   if (isOfflineDownloadStep.value) return t('login.offlineDownloadTitle');

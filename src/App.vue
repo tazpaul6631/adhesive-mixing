@@ -42,8 +42,8 @@ const shouldShowMobileOfflineLoading = computed(() => {
     && route.path !== '/login'
     && (offlineStore.isSyncingQueue || offlineStore.isDownloadingOfflineData);
 });
-const isMobileOfflineSyncStep = computed(() => offlineStore.isSyncingQueue || offlineStore.syncTotal > 0);
-const isMobileOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData || offlineStore.downloadTotal > 0);
+const isMobileOfflineSyncStep = computed(() => offlineStore.isSyncingQueue);
+const isMobileOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData);
 const mobileOfflineLoadingTitle = computed(() => {
   if (isMobileOfflineSyncStep.value) return t('mobile.offlineSync.title');
   if (isMobileOfflineDownloadStep.value) return t('login.offlineDownloadTitle');
@@ -116,6 +116,7 @@ const startMobileOfflineRefreshAfterReconnect = async () => {
 
     if (offlineStore.totalPendingQueueCount > 0) {
       await offlineStore.syncPendingQueue();
+      offlineStore.resetSyncState();
     }
 
     const factoryId = resolveCurrentFactoryId();
