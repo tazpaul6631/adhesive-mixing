@@ -194,7 +194,7 @@
       }
     },
     "common": {
-      "offlineLocalData": "No network"
+      "offlineLocalData": "No network connection - Using local data"
     },
     "offlineQueue": {
       "pendingData": "Pending sync data",
