@@ -6,13 +6,14 @@
 
         <div slot="end" class="app-menu-toolbar__actions">
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
+          <component :is="NetworkStatusIcon" v-if="!isTablet && NetworkStatusIcon" />
           <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
             <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
           </ion-button>
         </div>
       </ion-toolbar>
-      <MobileOfflineNotice v-if="!isTablet" />
+      <component :is="MobileOfflineNotice" v-if="!isTablet && MobileOfflineNotice" />
     </ion-header>
 
     <ion-content class="ion-padding custom-content">
@@ -23,7 +24,7 @@
             <h2 v-else>{{ t('mobile.appMenu.hello') }}</h2>
             <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
-            <PendingQueueButton v-if="!isTablet" placement="appMenu" />
+            <component :is="PendingQueueButton" v-if="!isTablet && PendingQueueButton" placement="appMenu" />
           </div>
         </div>
 
@@ -44,13 +45,15 @@
 
           <template v-if="!isTablet">
             <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card shadow-sm"
-              @click="navigate(feature.path)">
+              :class="{ 'feature-card--disabled': feature.disabled }"
+              @click="navigateFeature(feature)">
               <div class="icon-wrapper" :style="{ background: feature.bgLight }">
                 <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
               </div>
               <div class="card-content">
                 <h3>{{ feature.title }}</h3>
                 <p>{{ feature.description }}</p>
+                <p v-if="feature.disabledMessage" class="card-content__offline-note">{{ feature.disabledMessage }}</p>
               </div>
             </div>
           </template>
@@ -73,18 +76,33 @@ import {
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useOfflineStore } from '@/store/offline';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useOfflineLoginStore } from '@/store/offlineLogin';
+import { ref, computed, onMounted, onUnmounted, shallowRef, type Component } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
-import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
-import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
+import { resolveAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
+import { clearGlueOfflineData } from '@/services/glueOfflineData.service';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
+const offlineLoginStore = useOfflineLoginStore();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
+
+const NetworkStatusIcon = shallowRef<Component | null>(null);
+const MobileOfflineNotice = shallowRef<Component | null>(null);
+const PendingQueueButton = shallowRef<Component | null>(null);
+
+const loadMobileShell = async () => {
+  if (isTablet.value) return;
+
+  const shell = await resolveAppMenuMobileShell();
+  NetworkStatusIcon.value = shell.NetworkStatusIcon;
+  MobileOfflineNotice.value = shell.MobileOfflineNotice;
+  PendingQueueButton.value = shell.PendingQueueButton;
+};
 
 const { t, syncLocaleForDevice } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
 
@@ -93,6 +111,9 @@ const updateDeviceType = () => {
   if (nextTablet !== isTablet.value) {
     isTablet.value = nextTablet;
     void syncLocaleForDevice();
+    if (!nextTablet) {
+      void loadMobileShell();
+    }
   }
 };
 
@@ -100,6 +121,7 @@ onMounted(() => {
   window.addEventListener('resize', updateDeviceType);
 
   if (!isTablet.value) {
+    void loadMobileShell();
     void offlineStore.refreshQueueCounts();
   }
 });
@@ -163,14 +185,6 @@ const mobileFeatures = computed(() => [
     color: '#f59e0b',
     bgLight: '#fef3c7'
   },
-  // {
-  //   path: '/mobile/glue-return',
-  //   title: t('mobile.appMenu.glueReturn'),
-  //   description: t('mobile.appMenu.glueReturnDescription'),
-  //   icon: qrCodeOutline,
-  //   color: '#8b5cf6',
-  //   bgLight: '#ede9fe'
-  // },
   {
     path: '/mobile/glue-return',
     title: t('mobile.appMenu.glueReturn'),
@@ -193,13 +207,28 @@ const mobileFeatures = computed(() => [
     description: t('mobile.appMenu.glueInfoCheckDescription'),
     icon: search,
     color: '#0ea5e9',
-    bgLight: '#e0f2fe'
+    bgLight: '#e0f2fe',
+    disabled: !authStore.isOnline,
+    disabledMessage: !authStore.isOnline ? t('mobile.appMenu.onlineOnly') : '',
   }
 ]);
+
+type AppMenuFeature = {
+  path: string;
+  disabled?: boolean;
+};
 
 // Hàm điều hướng chung
 const navigate = (path: string) => {
   router.push(path);
+};
+
+const navigateFeature = (feature: AppMenuFeature) => {
+  if (feature.disabled) {
+    return;
+  }
+
+  navigate(feature.path);
 };
 
 
@@ -221,6 +250,13 @@ const handleLogout = async () => {
       await showLogoutBlockedAlert();
       return;
     }
+  }
+
+  if (!isTablet.value) {
+    await clearGlueOfflineData();
+    await offlineLoginStore.clearOfflineLogin();
+    offlineStore.resetDownloadState();
+    offlineStore.resetSyncState();
   }
 
   await authStore.logout();
@@ -246,7 +282,7 @@ const handleLogout = async () => {
 .app-menu-toolbar__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 100%;
 }
 
@@ -260,7 +296,7 @@ const handleLogout = async () => {
   font-weight: 600;
   font-size: 1.5rem;
   height: 50px;
-  margin-left: 20px;
+  margin-left: 0;
 }
 
 .logout-btn ion-icon {
@@ -321,6 +357,24 @@ const handleLogout = async () => {
 
 .feature-card:active {
   transform: scale(0.97);
+}
+
+
+.feature-card--disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  filter: grayscale(0.12);
+}
+
+.feature-card--disabled:active {
+  transform: none;
+}
+
+.card-content__offline-note {
+  margin-top: 6px !important;
+  color: #dc2626 !important;
+  font-size: 0.82rem !important;
+  font-weight: 700;
 }
 
 .icon-wrapper {

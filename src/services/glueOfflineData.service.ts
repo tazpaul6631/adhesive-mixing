@@ -250,6 +250,38 @@ function parseGlueQrText(qrText: string): ParsedGlueQr | null {
   return { qrCode, factoryId, itemId };
 }
 
+
+type ParsedCheckListQr = {
+  factoryId: string;
+  checkListItemId: string;
+};
+
+function parseCheckListQrText(qrText: string): ParsedCheckListQr | null {
+  const normalizedQrText = normalizeValue(qrText).replace(/^\/+|\/+$/g, '');
+
+  if (!normalizedQrText) {
+    return null;
+  }
+
+  const parts = normalizedQrText
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const factoryId = normalizeValue(parts[0]);
+  const checkListItemId = normalizeValue(parts[1]);
+
+  if (!factoryId || !checkListItemId) {
+    return null;
+  }
+
+  return { factoryId, checkListItemId };
+}
+
 async function findRawJsonByQrConfig(
   db: GlueOfflineDbConnection,
   config: OfflineQrLookupConfig,
@@ -361,6 +393,14 @@ async function saveDownloadedBucket(
   await insertBucket(db, type, items);
 }
 
+async function clearAllOfflineBuckets(db: GlueOfflineDbConnection) {
+  await clearBucket(db, 'lineChemical');
+  await clearBucket(db, 'mixGlue');
+  await clearBucket(db, 'separateGlue');
+  await clearBucket(db, 'noSeparateGlue');
+  await clearBucket(db, 'checkList');
+}
+
 export async function downloadAndSaveGlueOfflineData(
   factoryId: string,
   onProgress?: (progress: GlueOfflineDownloadProgress) => void
@@ -413,6 +453,12 @@ export async function downloadAndSaveGlueOfflineData(
   };
 }
 
+export async function clearGlueOfflineData() {
+  const db = await getReadyDatabase();
+  await createOfflineTables(db);
+  await clearAllOfflineBuckets(db);
+}
+
 export async function ensureGlueOfflineTables() {
   const db = await getReadyDatabase();
   await createOfflineTables(db);
@@ -443,8 +489,54 @@ export async function findGlueOfflineQrData(qrText: string): Promise<GlueOffline
   return { data, status: 'success', type: config.type };
 }
 
+
+export async function findCheckListOfflineData(
+  factoryId: string,
+  checkListItemId: string
+): Promise<GlueOfflineQrResult> {
+  const normalizedFactoryId = normalizeValue(factoryId);
+  const normalizedCheckListItemId = normalizeValue(checkListItemId);
+
+  if (!normalizedFactoryId || !normalizedCheckListItemId) {
+    return { data: null, status: 'invalid', type: 'checkList' };
+  }
+
+  const db = await getReadyDatabase();
+  await createOfflineTables(db);
+
+  const data = await findRawJsonByQrConfig(
+    db,
+    {
+      type: 'checkList',
+      tableName: 'offline_check_list',
+      idColumn: 'check_list_item_id',
+    },
+    normalizedFactoryId,
+    normalizedCheckListItemId
+  );
+
+  if (!data) {
+    return { data: null, status: 'noData', type: 'checkList' };
+  }
+
+  return { data, status: 'success', type: 'checkList' };
+}
+
+export async function findCheckListOfflineQrData(qrText: string): Promise<GlueOfflineQrResult> {
+  const parsedQr = parseCheckListQrText(qrText);
+
+  if (!parsedQr) {
+    return { data: null, status: 'invalid', type: 'checkList' };
+  }
+
+  return findCheckListOfflineData(parsedQr.factoryId, parsedQr.checkListItemId);
+}
+
 export default {
   downloadAndSaveGlueOfflineData,
+  clearGlueOfflineData,
   ensureGlueOfflineTables,
   findGlueOfflineQrData,
+  findCheckListOfflineData,
+  findCheckListOfflineQrData,
 };

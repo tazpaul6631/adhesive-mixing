@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t("mobile.glueReturn.title") }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -19,8 +22,15 @@
                 <ion-card-title>{{ t("mobile.glueReturn.qrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner">
-                  <span v-if="!returnQrText" class="qr-scan-field__text qr-scan-field__text--empty">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner"
+                >
+                  <span
+                    v-if="!returnQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
                     {{ t("mobile.glueReturn.scanPlaceholder") }}
                   </span>
                   <div v-else-if="pendingReturnGlueInfo" class="qr-scan-field__info">
@@ -34,7 +44,9 @@
                     </div>
                   </div>
                   <span v-else class="qr-scan-field__text">{{ returnQrText }}</span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -45,9 +57,16 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="qr-scan-field-wrapper">
-                  <button type="button" class="qr-scan-field"
-                    :class="{ 'qr-scan-field--with-clear': optionalLineChemicalInfo }" @click="openLineScanner">
-                    <span v-if="!lineQrText" class="qr-scan-field__text qr-scan-field__text--empty">
+                  <button
+                    type="button"
+                    class="qr-scan-field"
+                    :class="{ 'qr-scan-field--with-clear': optionalLineChemicalInfo }"
+                    @click="openLineScanner"
+                  >
+                    <span
+                      v-if="!lineQrText"
+                      class="qr-scan-field__text qr-scan-field__text--empty"
+                    >
                       {{ t("mobile.glueReturn.lineScanPlaceholder") }}
                     </span>
                     <div v-else-if="optionalLineChemicalInfo" class="qr-scan-field__info">
@@ -61,18 +80,28 @@
                       </div>
                     </div>
                     <span v-else class="qr-scan-field__text">{{ lineQrText }}</span>
-                    <ion-icon v-if="!optionalLineChemicalInfo" class="qr-scan-field__icon" :icon="barcodeOutline"
-                      color="primary"></ion-icon>
+                    <span v-if="!optionalLineChemicalInfo" class="confirm-button__icon">
+                      <McScanFill />
+                    </span>
                   </button>
-                  <button v-if="optionalLineChemicalInfo" type="button" class="qr-scan-field__clear"
-                    @click.stop="resetLineChemicalField">
+                  <button
+                    v-if="optionalLineChemicalInfo"
+                    type="button"
+                    class="qr-scan-field__clear"
+                    @click.stop="resetLineChemicalField"
+                  >
                     <ion-icon :icon="closeCircleOutline"></ion-icon>
                   </button>
                 </div>
               </ion-card-content>
             </ion-card>
 
-            <ion-button expand="block" class="confirm-button" :disabled="!canSubmitReturn" @click="openConfirmDialog">
+            <ion-button
+              expand="block"
+              class="confirm-button"
+              :disabled="!canSubmitReturn"
+              @click="openConfirmDialog"
+            >
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               {{ t("mobile.glueReturn.confirmButton") }}
             </ion-button>
@@ -80,8 +109,12 @@
         </section>
       </div>
 
-      <ion-modal :is-open="isConfirmDialogOpen" class="return-confirm-modal" :backdrop-dismiss="false"
-        @didDismiss="closeConfirmDialog">
+      <ion-modal
+        :is-open="isConfirmDialogOpen"
+        class="return-confirm-modal"
+        :backdrop-dismiss="false"
+        @didDismiss="closeConfirmDialog"
+      >
         <div class="return-confirm-dialog">
           <div class="return-confirm-dialog__icon">
             <ion-icon :icon="alertCircle"></ion-icon>
@@ -95,17 +128,22 @@
               {{ t("mobile.glueReturn.cancelButton") }}
             </ion-button>
             <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click.stop="confirmReturnQr">
-              <ion-spinner v-if="isSubmittingReturn" name="crescent"
-                class="return-confirm-dialog__button-spinner"></ion-spinner>
-              <span>{{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.okButton")
-              }}</span>
+              <ion-spinner v-if="isSubmittingReturn" name="crescent" class="return-confirm-dialog__button-spinner"></ion-spinner>
+              <span>{{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.okButton") }}</span>
             </ion-button>
           </div>
         </div>
       </ion-modal>
 
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="bottom" color="success"
-        @didDismiss="showSuccessToast = false"></ion-toast>
+      <ion-toast
+        :is-open="showSuccessToast"
+        :message="toastMessage"
+        duration="1800"
+        position="bottom"
+        :color="toastColor"
+        :css-class="toastCssClass"
+        @didDismiss="showSuccessToast = false"
+      ></ion-toast>
     </ion-content>
   </ion-page>
 </template>
@@ -137,10 +175,12 @@ import { useI18n } from 'vue-i18n';
 import glueReturnApi from '@/api/glueReturn';
 import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
+import { McScanFill } from '@kalimahapps/vue-icons';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -154,6 +194,8 @@ const isConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
+const toastColor = ref<string | undefined>('success');
+const toastCssClass = ref('');
 
 const canSubmitReturn = computed(() => !!pendingReturnGlueInfo.value);
 
@@ -437,7 +479,7 @@ async function confirmReturnQr() {
     if (!authStore.isOnline) {
       await addOfflineQueueItem('ReturnGlue', 'api/mobile/gluereturnlog/create', 'POST', payload);
       await offlineStore.refreshQueueCounts();
-      showToast(t('mobile.offlineQueue.saved'));
+      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       return;
     }
 
@@ -458,8 +500,10 @@ async function confirmReturnQr() {
   }
 }
 
-function showToast(message: string) {
+function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
   toastMessage.value = message;
+  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
+  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
   showSuccessToast.value = true;
 }
 </script>
@@ -652,6 +696,29 @@ function showToast(message: string) {
   }
 }
 
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+  color:rgba(0, 0, 0, 0.582)
+}
+
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .status-box {
   display: flex;
   align-items: center;
@@ -758,10 +825,10 @@ function showToast(message: string) {
   }
 
   .qr-scan-field-wrapper {
-    position: relative;
-  }
+  position: relative;
+}
 
-  .qr-scan-field {
+.qr-scan-field {
     min-height: 78px;
     padding: 18px 24px;
     border-radius: 18px;

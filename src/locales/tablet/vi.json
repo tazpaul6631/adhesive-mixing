@@ -254,9 +254,9 @@
       "capacityExceedsRequired": "Tổng TL thùng chứa ({total} KG) vượt quá TL yêu cầu ({target}).",
       "capacityBelowRequired": "Tổng TL thùng chứa ({total} KG) thấp hơn TL yêu cầu ({target}).",
       "capacityExceedsWeighed": "Tổng TL thùng chứa ({total} KG) vượt quá TL đã cân ({target}).",
-      "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) thiếu từ 500g trở lên so với {target}. Vui lòng chọn thùng lớn hơn.",
+      "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) chưa khớp TL chiết ({target}). Vui lòng chọn thùng phù hợp.",
       "capacityMismatchWeighedGeneric": "Tổng TL thùng chứa ({total} KG) không khớp TL đã cân ({target}).",
-      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL đã cân {label} (thiếu dưới 500g vẫn tính đủ). Không cần thêm dòng mới."
+      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL chiết {label}. Không cần thêm dòng mới."
     }
   },
   "bluetoothPrinter": {

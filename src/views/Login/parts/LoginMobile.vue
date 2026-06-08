@@ -169,6 +169,9 @@ import type { DeviceLocaleScope } from '@/i18n';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import OfflineDataLoading from '@/views/Mobile/components/OfflineDataLoading.vue';
 import { useOfflineStore } from '@/store/offline';
+import { useOfflineLoginStore } from '@/store/offlineLogin';
+import { prefetchPostLoginRoute, prefetchTabletRoutesIdle } from '@/router/routeChunks';
+import { prefetchAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
 
 type SelectOption = { label: string; value: string };
 
@@ -182,6 +185,7 @@ const companyOptions = ref<SelectOption[]>([]);
 const factoryOptions = ref<SelectOption[]>([]);
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
+const offlineLoginStore = useOfflineLoginStore();
 const router = useRouter();
 const route = useRoute();
 const isNative = Capacitor.isNativePlatform();
@@ -214,8 +218,8 @@ const isLoginButtonEnabled = computed(() => {
 
 const isLoginRoute = computed(() => route.path === '/login');
 const shouldUseMobileOffline = computed(() => !isTablet.value);
-const isOfflineSyncStep = computed(() => offlineStore.isSyncingQueue || offlineStore.syncTotal > 0);
-const isOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData || offlineStore.downloadTotal > 0);
+const isOfflineSyncStep = computed(() => offlineStore.isSyncingQueue);
+const isOfflineDownloadStep = computed(() => offlineStore.isDownloadingOfflineData);
 const loginLoadingTitle = computed(() => {
   if (isOfflineSyncStep.value) return t('login.offlineSyncTitle');
   if (isOfflineDownloadStep.value) return t('login.offlineDownloadTitle');
@@ -357,6 +361,10 @@ const updateDeviceType = () => {
 onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
   await syncLocaleForDevice();
+  void prefetchPostLoginRoute(isNative);
+  if (!isTablet.value) {
+    void prefetchAppMenuMobileShell();
+  }
 });
 
 onUnmounted(() => {
@@ -466,28 +474,45 @@ const resolveLoginFactoryId = (userData: any, fallbackFactoryId = '') => {
   return candidates.map(normalizeLoginValue).find(Boolean) || '';
 };
 
-const ensureLoginOnline = async () => {
+const getCurrentNetworkStatus = async () => {
   try {
     const status = await Network.getStatus();
     authStore.setNetworkStatus(status.connected);
-
-    if (!status.connected) {
-      errorLogin.value = true;
-      errorMessage.value = t('login.offlineLoginBlocked');
-      resetLoginLoading();
-      return false;
-    }
+    return status.connected;
   } catch (error) {
     console.warn('Không thể kiểm tra trạng thái mạng trước khi đăng nhập:', error);
+    return authStore.isOnline;
+  }
+};
 
-    if (!authStore.isOnline) {
-      errorLogin.value = true;
-      errorMessage.value = t('login.offlineLoginBlocked');
-      resetLoginLoading();
-      return false;
-    }
+const ensureLoginOnline = async () => {
+  const isOnline = await getCurrentNetworkStatus();
+
+  if (!isOnline) {
+    errorLogin.value = true;
+    errorMessage.value = t('login.offlineLoginBlocked');
+    resetLoginLoading();
+    return false;
   }
 
+  return true;
+};
+
+const handleOfflineScannedLogin = async (scannedCode: string) => {
+  const savedUserData = await offlineLoginStore.getMatchedOfflineUser(scannedCode);
+
+  if (!savedUserData) {
+    code.value = scannedCode;
+    errorLogin.value = true;
+    errorMessage.value = t('login.invalidOfflineUser');
+    resetLoginLoading();
+    return false;
+  }
+
+  authStore.setAuthData(savedUserData);
+  offlineLoginStore.markOfflineLoginSession();
+  await navigateAfterLogin();
+  resetLoginLoading();
   return true;
 };
 
@@ -518,8 +543,16 @@ const getLoginErrorMessage = (error: any, fallback: string) => {
 };
 
 const navigateAfterLogin = async () => {
+  await prefetchPostLoginRoute(isNative);
+
   if (isNative) {
+    if (!isTablet.value) {
+      await prefetchAppMenuMobileShell();
+    }
     await router.push('/app-menu');
+    if (isTablet.value) {
+      prefetchTabletRoutesIdle();
+    }
   } else {
     await router.push('/dashboard');
   }
@@ -536,6 +569,8 @@ const handleLoginResponse = async (response: any, loginCode: string, fallbackFac
       if (shouldUseMobileOffline.value) {
         await syncPendingOfflineDataAfterLogin();
         await downloadOfflineDataAfterLogin(userData, fallbackFactoryId);
+        await offlineLoginStore.saveOnlineLogin(loginCode, userData);
+        offlineLoginStore.markOnlineSession();
       }
       await navigateAfterLogin();
     } catch (error: any) {
@@ -658,7 +693,17 @@ const processScannedData = async (scannedCode: string) => {
     return;
   }
 
-  if (!(await ensureLoginOnline())) {
+  const isOnline = await getCurrentNetworkStatus();
+
+  if (!isOnline) {
+    if (shouldUseMobileOffline.value) {
+      await handleOfflineScannedLogin(scannedCode);
+      return;
+    }
+
+    errorLogin.value = true;
+    errorMessage.value = t('login.offlineLoginBlocked');
+    resetLoginLoading();
     return;
   }
 

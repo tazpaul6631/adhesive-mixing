@@ -49,9 +49,7 @@ const app = createApp(App)
   .use(ToastService);
 
 router.isReady().then(async () => {
-  await Promise.all([
-    useMixGlueDraftStore(pinia).ensureHydrated(),
-    initAppLocale(window.innerWidth),
-  ]);
+  await initAppLocale(window.innerWidth);
   app.mount('#app');
+  void useMixGlueDraftStore(pinia).ensureHydrated();
 });

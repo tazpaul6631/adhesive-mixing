@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -24,7 +27,10 @@
                     {{ returnQrText || t('mobile.glueInfoCheck.scanPlaceholder') }}
                   </span>
                   <ion-spinner v-if="isLoadingQr" name="crescent" class="qr-scan-field__spinner"></ion-spinner>
-                  <ion-icon v-else class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <!-- <ion-icon v-else class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon> -->
+                  <span v-else class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -35,7 +41,11 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <div v-for="field in returnInfoFields" :key="field.label" class="info-content__row">
+                  <div
+                    v-for="field in returnInfoFields"
+                    :key="field.label"
+                    class="info-content__row"
+                  >
                     <span class="info-content__label">{{ field.label }}</span>
                     <span class="info-content__value">{{ field.value }}</span>
                   </div>
@@ -72,7 +82,9 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { McScanFill } from '@kalimahapps/vue-icons';
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
 type ResolveGlueQrResult = {
@@ -468,6 +480,29 @@ async function handleGlueInfoScanResult(value: string) {
     width: 18px;
     height: 18px;
   }
+}
+
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+  color:rgba(0, 0, 0, 0.582)
+}
+
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .info-content {

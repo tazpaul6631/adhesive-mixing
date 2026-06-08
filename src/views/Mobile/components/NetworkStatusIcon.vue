@@ -1,6 +1,8 @@
 <template>
   <span class="network-status-icon" :class="statusClass" :title="statusLabel" :aria-label="statusLabel">
-    <ion-icon :icon="statusIcon"></ion-icon>
+    <!-- <ion-icon :icon="statusIcon"></ion-icon> -->
+    <BxWifi v-if="isOnline"/>
+    <BxWifiOff v-else/>
   </span>
 </template>
 
@@ -11,6 +13,7 @@ import { cloudOfflineOutline, wifiOutline, wifi } from 'ionicons/icons';
 import { Network } from '@capacitor/network';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { useAuthStore } from '@/store/auth';
+import { BxWifi, BxWifiOff } from '@kalimahapps/vue-icons';
 
 const authStore = useAuthStore();
 let networkListener: PluginListenerHandle | null = null;
@@ -41,7 +44,7 @@ onUnmounted(() => {
 
 <style scoped>
 .network-status-icon {
-  width: 34px;
+  width: px;
   height: 34px;
   display: inline-flex;
   align-items: center;
@@ -53,6 +56,10 @@ onUnmounted(() => {
 
 .network-status-icon ion-icon {
   font-size: 1.35rem;
+}
+
+.network-status-icon {
+  font-size: 1.25rem;
 }
 
 .network-status-icon--online {

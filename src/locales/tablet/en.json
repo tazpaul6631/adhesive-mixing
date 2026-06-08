@@ -254,9 +254,9 @@
       "capacityExceedsRequired": "Total container weight ({total} KG) exceeds required weight ({target}).",
       "capacityBelowRequired": "Total container weight ({total} KG) is below required weight ({target}).",
       "capacityExceedsWeighed": "Total container weight ({total} KG) exceeds weighed weight ({target}).",
-      "capacityShortageWeighed": "Total container weight ({total} KG) is short by 500g or more compared to {target}. Please choose a larger container.",
+      "capacityShortageWeighed": "Total container weight ({total} KG) does not match target decant weight ({target}). Please choose a suitable container.",
       "capacityMismatchWeighedGeneric": "Total container weight ({total} KG) does not match weighed weight ({target}).",
-      "chietCapacityBlock": "Total container weight matches weighed weight {label} (shortage under 500g still counts as sufficient). No need to add a new row."
+      "chietCapacityBlock": "Total container weight matches target decant weight {label}. No need to add a new row."
     }
   },
   "bluetoothPrinter": {

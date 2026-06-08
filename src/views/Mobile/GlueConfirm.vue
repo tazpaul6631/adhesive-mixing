@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -19,14 +22,20 @@
                 <ion-card-title>{{ t("mobile.glueConfirm.lineQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner('line')">
-                  <span v-if="!lineQrText" class="qr-scan-field__text qr-scan-field__text--empty">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner('line')"
+                >
+                  <span
+                    v-if="!lineQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
                     <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel")
-                      }}</span>
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel") }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
@@ -37,7 +46,9 @@
                   <span v-else class="qr-scan-field__text">
                     {{ lineQrText }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -47,12 +58,23 @@
                 <ion-card-title>{{ t("mobile.glueConfirm.allocatedQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button type="button" class="qr-scan-field" @click="openScanner('allocated')">
-                  <span v-if="!allocatedQrText" class="qr-scan-field__text qr-scan-field__text--empty">
+                <button
+                  type="button"
+                  class="qr-scan-field"
+                  @click="openScanner('allocated')"
+                >
+                  <span
+                    v-if="!allocatedQrText"
+                    class="qr-scan-field__text qr-scan-field__text--empty"
+                  >
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
-                    <div v-for="row in allocatedDisplayRows" :key="row.label" class="qr-scan-field__info-row">
+                    <div
+                      v-for="row in allocatedDisplayRows"
+                      :key="row.label"
+                      class="qr-scan-field__info-row"
+                    >
                       <span class="qr-scan-field__info-label">{{ row.label }}</span>
                       <span class="qr-scan-field__info-value">{{ row.value }}</span>
                     </div>
@@ -60,7 +82,9 @@
                   <span v-else class="qr-scan-field__text">
                     {{ allocatedQrText }}
                   </span>
-                  <ion-icon class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
                 </button>
               </ion-card-content>
             </ion-card>
@@ -79,8 +103,12 @@
               </div>
             </div>
 
-            <ion-button expand="block" class="confirm-button" :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn">
+            <ion-button
+              expand="block"
+              class="confirm-button"
+              :disabled="isConfirmButtonDisabled"
+              @click="handleConfirmReturn"
+            >
               <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
               {{ t("mobile.glueConfirm.confirmReturnButton") }}
             </ion-button>
@@ -89,8 +117,15 @@
         </section>
       </div>
 
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="bottom" color="success"
-        @didDismiss="showSuccessToast = false"></ion-toast>
+      <ion-toast
+        :is-open="showSuccessToast"
+        :message="toastMessage"
+        duration="1800"
+        position="bottom"
+        :color="toastColor"
+        :css-class="toastCssClass"
+        @didDismiss="showSuccessToast = false"
+      ></ion-toast>
     </ion-content>
   </ion-page>
 </template>
@@ -123,10 +158,12 @@ import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from "@/services/lineChemical.store";
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
+import { McScanFill } from '@kalimahapps/vue-icons';
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -151,6 +188,8 @@ const allocatedDisplayRows = ref<Array<{ label: string; value: string }>>([]);
 
 const showSuccessToast = ref(false);
 const toastMessage = ref("");
+const toastColor = ref<string | undefined>('success');
+const toastCssClass = ref('');
 const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
 const isLoadingAllocatedQr = ref(false);
@@ -177,14 +216,7 @@ const isFirstTwoQrMatched = computed(() => {
 });
 
 const isAllocatedGlueExpired = computed(() => {
-  const expiredValue = allocatedGlueInfo.value?.isExpired;
-
-  if (typeof expiredValue === "boolean") {
-    return expiredValue;
-  }
-
-  const normalizedValue = normalizeCompareValue(expiredValue).toLowerCase();
-  return normalizedValue === "true" || normalizedValue === "1";
+  return isEndDateExpired(allocatedGlueInfo.value?.endDate);
 });
 
 const allocatedExpiredMessage = computed(() => {
@@ -237,6 +269,37 @@ function normalizeCompareValue(value: any) {
 
 function hasPayloadValue(value: any) {
   return value !== null && value !== undefined && normalizeCompareValue(value) !== "";
+}
+
+function parseEndDateValue(value: any) {
+  const normalizedValue = normalizeCompareValue(value);
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const normalizedDateText = normalizedValue.includes("T")
+    ? normalizedValue
+    : normalizedValue.replace(" ", "T");
+
+  const parsedDate = new Date(normalizedDateText);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    console.warn("Invalid glue endDate value:", value);
+    return null;
+  }
+
+  return parsedDate;
+}
+
+function isEndDateExpired(value: any) {
+  const endDate = parseEndDateValue(value);
+
+  if (!endDate) {
+    return false;
+  }
+
+  return Date.now() >= endDate.getTime();
 }
 
 async function triggerMismatchFeedback() {
@@ -580,7 +643,7 @@ async function handleConfirmReturn() {
       });
 
       isConfirmReturnCompleted.value = true;
-      showToast(t('mobile.offlineQueue.saved'));
+      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       return;
     }
 
@@ -643,8 +706,10 @@ function resetConfirmReturnStatus() {
   isConfirmReturnCompleted.value = false;
 }
 
-function showToast(message: string) {
+function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
   toastMessage.value = message;
+  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
+  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
   showSuccessToast.value = true;
 }
 
@@ -833,6 +898,29 @@ function getAllocatedDisplayRows(info: any) {
   &--disabled::part(native) {
     cursor: not-allowed;
   }
+}
+
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+  color:rgba(0, 0, 0, 0.582)
+}
+
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .status-box {

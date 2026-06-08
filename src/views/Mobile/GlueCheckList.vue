@@ -6,6 +6,9 @@
           <ion-back-button default-href="/app-menu"></ion-back-button>
         </ion-buttons>
         <ion-title>{{ t('mobile.glueCheckList.title') }}</ion-title>
+        <ion-buttons slot="end">
+          <NetworkStatusIcon />
+        </ion-buttons>
       </ion-toolbar>
       <MobileOfflineNotice />
     </ion-header>
@@ -15,7 +18,14 @@
         <section class="check-panel">
           <ion-button expand="block" class="confirm-button" :disabled="isLoadingScan" @click="openScanner">
             <ion-spinner v-if="isLoadingScan" name="crescent"></ion-spinner>
-            <span v-else>{{ t('mobile.glueCheckList.scanButton') }}</span>
+           <span v-else class="confirm-button__content">
+            <span class="confirm-button__icon">
+              <McScanFill />
+            </span>
+            <span class="confirm-button__text">
+              {{ t('mobile.glueCheckList.scanButton') }}
+            </span>
+          </span>
           </ion-button>
         </section>
       </div>
@@ -88,7 +98,8 @@
         :message="toastMessage"
         duration="1800"
         position="bottom"
-        color="success"
+        :color="toastColor"
+        :css-class="toastCssClass"
         @didDismiss="showSuccessToast = false"
       ></ion-toast>
     </ion-content>
@@ -117,11 +128,18 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import checkListApi from '@/api/checkList';
+import { findCheckListOfflineData } from '@/services/glueOfflineData.service';
+import { addOfflineQueueItem } from '@/services/offlineQueue.service';
+import { useOfflineStore } from '@/store/offline';
+import { barcodeOutline, qrCode } from "ionicons/icons";
+import { McScanFill } from '@kalimahapps/vue-icons';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const offlineStore = useOfflineStore();
 
 const scannedCheckQr = ref<{ factoryId: string; cliId: string } | null>(null);
 const scannedCheckItem = ref<any>(null);
@@ -132,6 +150,8 @@ const isLoadingScan = ref(false);
 const isSubmittingForm = ref(false);
 const showSuccessToast = ref(false);
 const toastMessage = ref('');
+const toastColor = ref<string | undefined>('success');
+const toastCssClass = ref('');
 
 const checkIssueName = computed(() => normalizeValue(scannedCheckItem.value?.checkListName));
 
@@ -166,6 +186,27 @@ function parseCheckListQrText(qrText: string) {
   }
 
   return { factoryId, cliId };
+}
+
+async function resolveCheckListItem(factoryId: string, cliId: string) {
+  if (!authStore.isOnline) {
+    const offlineResult = await findCheckListOfflineData(factoryId, cliId);
+
+    if (offlineResult.status !== 'success' || !offlineResult.data) {
+      return { data: null, success: false, message: t('mobile.glueCheckList.messages.noCheckListData') };
+    }
+
+    return { data: offlineResult.data, success: true, message: '' };
+  }
+
+  const response = await checkListApi.getCheckListItem(factoryId, cliId);
+  const responseData = response.data as any;
+
+  return {
+    data: responseData?.data ?? null,
+    success: !!responseData?.success && !!responseData?.data,
+    message: responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'),
+  };
 }
 
 function toggleCheckResult() {
@@ -226,16 +267,15 @@ async function openScanner() {
     }
 
     isLoadingScan.value = true;
-    const response = await checkListApi.getCheckListItem(qrParams.factoryId, qrParams.cliId);
-    const responseData = response.data as any;
+    const result = await resolveCheckListItem(qrParams.factoryId, qrParams.cliId);
 
-    if (!responseData?.success || !responseData?.data) {
-      await showWarningAlert(responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'));
+    if (!result.success || !result.data) {
+      await showWarningAlert(result.message || t('mobile.glueCheckList.messages.noCheckListData'));
       return;
     }
 
     scannedCheckQr.value = qrParams;
-    scannedCheckItem.value = responseData.data;
+    scannedCheckItem.value = result.data;
     checkResult.value = true;
     checkNote.value = '';
     isCheckDialogOpen.value = true;
@@ -261,11 +301,16 @@ function closeCheckDialog() {
 }
 
 async function sendCheckForm(recordStatus: '1' | 'C') {
+  if (isSubmittingForm.value) {
+    return;
+  }
+
   if (!scannedCheckQr.value || !scannedCheckItem.value) {
     alert(t('mobile.glueCheckList.messages.noCheckListData'));
     return;
   }
 
+  isSubmittingForm.value = true;
   const userId = getCurrentUserId();
 
   const payload = {
@@ -283,6 +328,14 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
   console.info('Request payload:', payload);
 
   try {
+    if (!authStore.isOnline) {
+      await addOfflineQueueItem('GlueCheckList', 'api/mobile/checklist/create', 'POST', payload);
+      await offlineStore.refreshQueueCounts();
+      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      resetAndCloseCheckDialog();
+      return;
+    }
+
     const response = await checkListApi.createCheckList(payload);
     console.info('Response:', response?.data ?? response);
 
@@ -292,12 +345,10 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
       throw new Error(responseData.message || t('mobile.glueCheckList.messages.submitError'));
     }
 
-    toastMessage.value = recordStatus === 'C'
+    showToast(recordStatus === 'C'
       ? t('mobile.glueCheckList.messages.cancelSuccess')
-      : t('mobile.glueCheckList.messages.submitSuccess');
-
-    showSuccessToast.value = true;
-    closeCheckDialog();
+      : t('mobile.glueCheckList.messages.submitSuccess'));
+    resetAndCloseCheckDialog();
   } catch (error) {
     console.error('Không thể gửi thông tin kiểm tra:', error);
 
@@ -307,6 +358,7 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
 
     alert(errorMessage);
   } finally {
+    isSubmittingForm.value = false;
     console.groupEnd();
   }
 }
@@ -317,6 +369,13 @@ async function submitCheckForm() {
 
 async function cancelCheckForm() {
   await sendCheckForm('C');
+}
+
+function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  toastMessage.value = message;
+  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
+  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
+  showSuccessToast.value = true;
 }
 </script>
 
@@ -359,9 +418,47 @@ async function cancelCheckForm() {
   --background-focused: #0b72ed;
   --background-hover: #0b72ed;
   --color: #ffffff;
+  --padding-top: 0;
+  --padding-bottom: 0;
   font-size: 16px !important;
   font-weight: 700;
   text-transform: none;
+}
+
+.confirm-button::part(native) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  line-height: 1;
+}
+
+.confirm-button__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  line-height: 1;
+}
+
+.confirm-button__icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.confirm-button__text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .check-form-modal {
