@@ -75,6 +75,11 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Clear SwiftPM cache
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/org.swift.swiftpm
+
       - name: Build iOS (Simulator)
         run: npm run build:ios
 

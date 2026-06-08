@@ -1,7 +1,22 @@
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { platform } from 'node:os';
+
+/** Avoid SPM "artifact already exists" / corrupted xcframework download on CI. */
+const clearSwiftPmCaches = () => {
+  const cacheRoots = [
+    join(homedir(), 'Library/Caches/org.swift.swiftpm'),
+    join(homedir(), 'Library/org.swift.swiftpm'),
+  ];
+
+  for (const cacheRoot of cacheRoots) {
+    if (!existsSync(cacheRoot)) continue;
+    console.log(`[build-ios] Clearing SwiftPM cache: ${cacheRoot}`);
+    rmSync(cacheRoot, { recursive: true, force: true });
+  }
+};
 
 if (platform() !== 'darwin') {
   console.error('[build-ios] iOS builds require macOS with Xcode installed.');
@@ -20,6 +35,8 @@ if (!existsSync(xcodeProject)) {
 
 const derivedDataPath = join(iosProjectDir, 'build/DerivedData');
 const mode = process.argv[2] || 'simulator';
+
+clearSwiftPmCaches();
 
 if (mode === 'archive') {
   console.log('[build-ios] Archiving for device (requires Apple signing in Xcode)...');

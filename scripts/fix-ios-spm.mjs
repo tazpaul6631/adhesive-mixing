@@ -1,6 +1,16 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+const readCapacitorIosVersion = () => {
+  const packageJsonPath = join(process.cwd(), 'package.json');
+  const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  const raw =
+    pkg.dependencies?.['@capacitor/ios'] ??
+    pkg.dependencies?.['@capacitor/core'] ??
+    '8.3.1';
+  return String(raw).replace(/^[\^~]/, '');
+};
+
 /**
  * Capacitor may add Cordova plugins to ios/App/CapApp-SPM/Package.swift even when
  * they have no native iOS SPM package (e.g. cordova-plugin-android-permissions).
@@ -35,11 +45,18 @@ for (const pluginName of IOS_SPM_PLUGINS_TO_REMOVE) {
   content = content.replace(productLine, '\n');
 }
 
-if (content === original) {
-  console.log('[fix-ios-spm] No Android-only Cordova plugin references found.');
-} else {
+const capacitorVersion = readCapacitorIosVersion();
+const pinnedSwiftPm = `https://github.com/ionic-team/capacitor-swift-pm.git", exact: "${capacitorVersion}"`;
+content = content.replace(
+  /https:\/\/github\.com\/ionic-team\/capacitor-swift-pm\.git", exact: "[^"]+"/g,
+  pinnedSwiftPm
+);
+
+if (content !== original) {
   writeFileSync(packageSwiftPath, content, 'utf8');
-  console.log('[fix-ios-spm] Removed Android-only plugin references from Package.swift');
+  console.log('[fix-ios-spm] Updated Package.swift (Cordova plugins / capacitor-swift-pm pin).');
+} else {
+  console.log('[fix-ios-spm] Package.swift already up to date.');
 }
 
 // Verify remaining local Cordova SPM paths exist (created by cap sync, gitignored).
