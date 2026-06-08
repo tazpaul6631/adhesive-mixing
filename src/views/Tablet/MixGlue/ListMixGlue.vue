@@ -89,7 +89,7 @@
                 headerClass="dt-col-action" bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <div v-else-if="shouldShowConfirmActions(data)" class="flex gap-2">
+                  <div v-else-if="shouldShowConfirmActions(data)" class="flex gap-2 justify-content-center">
                     <Button :disabled="data.mixGlueStep !== '2' || isRowProcessing(data.workOrderMasterId)"
                       icon="pi pi-check-circle" severity="success" size="large"
                       @click.stop="handleConfirm(data.workOrderMasterId)" />

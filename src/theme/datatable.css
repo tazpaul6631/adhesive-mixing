@@ -17,15 +17,14 @@
 }
 
 .auto-columns-table .dt-col-action {
-  width: auto;
+  width: 180px;
   min-width: auto;
-  text-align: center;
-  white-space: nowrap;
 }
 
 .auto-columns-table .dt-col-primary {
   min-width: auto;
   width: auto;
+  white-space: nowrap;
 }
 
 .auto-columns-table .dt-col-text {
@@ -35,8 +34,7 @@
 
 .auto-columns-table .dt-col-datetime {
   min-width: auto;
-  width: auto;
-  white-space: nowrap;
+  width: 180px;
 }
 
 .auto-columns-table .dt-col-weight {
