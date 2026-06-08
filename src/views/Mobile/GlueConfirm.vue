@@ -216,14 +216,7 @@ const isFirstTwoQrMatched = computed(() => {
 });
 
 const isAllocatedGlueExpired = computed(() => {
-  const expiredValue = allocatedGlueInfo.value?.isExpired;
-
-  if (typeof expiredValue === "boolean") {
-    return expiredValue;
-  }
-
-  const normalizedValue = normalizeCompareValue(expiredValue).toLowerCase();
-  return normalizedValue === "true" || normalizedValue === "1";
+  return isEndDateExpired(allocatedGlueInfo.value?.endDate);
 });
 
 const allocatedExpiredMessage = computed(() => {
@@ -276,6 +269,37 @@ function normalizeCompareValue(value: any) {
 
 function hasPayloadValue(value: any) {
   return value !== null && value !== undefined && normalizeCompareValue(value) !== "";
+}
+
+function parseEndDateValue(value: any) {
+  const normalizedValue = normalizeCompareValue(value);
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const normalizedDateText = normalizedValue.includes("T")
+    ? normalizedValue
+    : normalizedValue.replace(" ", "T");
+
+  const parsedDate = new Date(normalizedDateText);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    console.warn("Invalid glue endDate value:", value);
+    return null;
+  }
+
+  return parsedDate;
+}
+
+function isEndDateExpired(value: any) {
+  const endDate = parseEndDateValue(value);
+
+  if (!endDate) {
+    return false;
+  }
+
+  return Date.now() >= endDate.getTime();
 }
 
 async function triggerMismatchFeedback() {
