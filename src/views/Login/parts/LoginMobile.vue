@@ -170,6 +170,8 @@ import LocaleSelect from '@/components/LocaleSelect.vue';
 import OfflineDataLoading from '@/views/Mobile/components/OfflineDataLoading.vue';
 import { useOfflineStore } from '@/store/offline';
 import { useOfflineLoginStore } from '@/store/offlineLogin';
+import { prefetchPostLoginRoute, prefetchTabletRoutesIdle } from '@/router/routeChunks';
+import { prefetchAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
 
 type SelectOption = { label: string; value: string };
 
@@ -359,6 +361,10 @@ const updateDeviceType = () => {
 onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
   await syncLocaleForDevice();
+  void prefetchPostLoginRoute(isNative);
+  if (!isTablet.value) {
+    void prefetchAppMenuMobileShell();
+  }
 });
 
 onUnmounted(() => {
@@ -537,8 +543,16 @@ const getLoginErrorMessage = (error: any, fallback: string) => {
 };
 
 const navigateAfterLogin = async () => {
+  await prefetchPostLoginRoute(isNative);
+
   if (isNative) {
+    if (!isTablet.value) {
+      await prefetchAppMenuMobileShell();
+    }
     await router.push('/app-menu');
+    if (isTablet.value) {
+      prefetchTabletRoutesIdle();
+    }
   } else {
     await router.push('/dashboard');
   }

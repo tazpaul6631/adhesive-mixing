@@ -78,12 +78,12 @@ import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from 'dayjs';
 import {
-  normalizeWeightToKg,
   sortBucketsByClosestCapacity,
   sumSelectedBucketCapacityKg,
   validateChietBucketCapacity,
-  formatTargetWeightLabel,
+  formatEffectiveChietTargetLabel,
   formatChietCapacityBlockMessage,
+  resolveChietTargetCapacityKg,
   getCapacityMatchToleranceKg,
   isChietCapacityComplete,
   type BucketOption,
@@ -115,10 +115,10 @@ const { markPendingScrollToNewRow } = useScrollToNewTableRow(
 );
 
 const getWeighedWeightKg = () =>
-  normalizeWeightToKg(props.weighedWeight ?? 0, props.weighedWeightUnit || 'Kg');
+  resolveChietTargetCapacityKg(props.weighedWeight ?? 0, props.weighedWeightUnit || 'Kg');
 
 const getWeighedWeightLabel = () =>
-  formatTargetWeightLabel(props.weighedWeight, props.weighedWeightUnit || 'Kg');
+  formatEffectiveChietTargetLabel(props.weighedWeight, props.weighedWeightUnit || 'Kg');
 
 const getSelectedBucketTotalKg = () =>
   sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);

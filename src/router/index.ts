@@ -3,6 +3,8 @@ import { RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { Capacitor } from '@capacitor/core';
 import MainLayout from '../views/MainLayout.vue';
+import LoginPage from '@/views/Login/LoginPage.vue';
+import AppMenu from '@/views/AppMenu/AppMenu.vue';
 import { startRouteLoading, stopRouteLoading } from './loading';
 
 const routes: Array<RouteRecordRaw> = [
@@ -14,8 +16,8 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login/LoginPage.vue'),
-    meta: { requiresAuth: false }
+    component: LoginPage,
+    meta: { requiresAuth: false, skipRouteLoading: true }
   },
   {
     path: '/',
@@ -32,7 +34,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/app-menu',
     name: 'AppMenu',
-    component: () => import('@/views/AppMenu/AppMenu.vue'),
+    component: AppMenu,
     meta: { requiresAuth: true }
   },
   {
@@ -119,14 +121,6 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!authStore.token;
   const isApp = Capacitor.isNativePlatform();
 
-  if (to.fullPath !== from.fullPath) {
-    startRouteLoading();
-  }
-
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
-  }
-
   // 1. Nếu trang yêu cầu đăng nhập NHƯNG chưa đăng nhập -> Đẩy về Login
   if (to.meta.requiresAuth && !isAuthenticated) {
     return next('/login');
@@ -139,18 +133,22 @@ router.beforeEach((to, from, next) => {
 
   // 3. Xử lý ngăn chặn truy cập chéo nền tảng (Sau khi đã qua khâu check Auth)
   if (isApp) {
-    // App không được phép vào các route của Web (ví dụ: dashboard)
     if (to.path === '/dashboard') {
       return next('/app-menu');
     }
-  } else {
-    // Web không được phép vào các route của App
-    if (to.path === '/app-menu') {
-      return next('/dashboard'); // Hoặc đẩy ra 404 tùy bạn
-    }
+  } else if (to.path === '/app-menu') {
+    return next('/dashboard');
   }
 
-  // 4. Mọi thứ hợp lệ -> Cho đi tiếp
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+
+  const skipRouteLoading = Boolean(to.meta.skipRouteLoading);
+  if (to.fullPath !== from.fullPath && !skipRouteLoading) {
+    startRouteLoading();
+  }
+
   next();
 });
 

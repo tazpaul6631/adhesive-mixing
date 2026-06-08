@@ -6,14 +6,14 @@
 
         <div slot="end" class="app-menu-toolbar__actions">
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
-          <NetworkStatusIcon v-if="!isTablet" />
+          <component :is="NetworkStatusIcon" v-if="!isTablet && NetworkStatusIcon" />
           <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
             <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
           </ion-button>
         </div>
       </ion-toolbar>
-      <MobileOfflineNotice v-if="!isTablet" />
+      <component :is="MobileOfflineNotice" v-if="!isTablet && MobileOfflineNotice" />
     </ion-header>
 
     <ion-content class="ion-padding custom-content">
@@ -24,7 +24,7 @@
             <h2 v-else>{{ t('mobile.appMenu.hello') }}</h2>
             <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
-            <PendingQueueButton v-if="!isTablet" placement="appMenu" />
+            <component :is="PendingQueueButton" v-if="!isTablet && PendingQueueButton" placement="appMenu" />
           </div>
         </div>
 
@@ -77,11 +77,9 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useOfflineStore } from '@/store/offline';
 import { useOfflineLoginStore } from '@/store/offlineLogin';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, shallowRef, type Component } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
-import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
-import PendingQueueButton from '@/views/Mobile/components/PendingQueueButton.vue';
-import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
+import { resolveAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
 import { clearGlueOfflineData } from '@/services/glueOfflineData.service';
 import { useAppLocale } from '@/composables/useAppLocale';
 
@@ -93,6 +91,19 @@ const offlineLoginStore = useOfflineLoginStore();
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
 
+const NetworkStatusIcon = shallowRef<Component | null>(null);
+const MobileOfflineNotice = shallowRef<Component | null>(null);
+const PendingQueueButton = shallowRef<Component | null>(null);
+
+const loadMobileShell = async () => {
+  if (isTablet.value) return;
+
+  const shell = await resolveAppMenuMobileShell();
+  NetworkStatusIcon.value = shell.NetworkStatusIcon;
+  MobileOfflineNotice.value = shell.MobileOfflineNotice;
+  PendingQueueButton.value = shell.PendingQueueButton;
+};
+
 const { t, syncLocaleForDevice } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
 
 const updateDeviceType = () => {
@@ -100,6 +111,9 @@ const updateDeviceType = () => {
   if (nextTablet !== isTablet.value) {
     isTablet.value = nextTablet;
     void syncLocaleForDevice();
+    if (!nextTablet) {
+      void loadMobileShell();
+    }
   }
 };
 
@@ -107,6 +121,7 @@ onMounted(() => {
   window.addEventListener('resize', updateDeviceType);
 
   if (!isTablet.value) {
+    void loadMobileShell();
     void offlineStore.refreshQueueCounts();
   }
 });

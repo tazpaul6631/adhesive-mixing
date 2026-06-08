@@ -42,7 +42,8 @@
           <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
-            :disabled="isViewMode || disabled" @change="handleBucketChange(data, index)" />
+            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets"
+            @show="handleBucketSelectShow" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
@@ -79,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
@@ -94,7 +95,9 @@ import {
   validateSeparateGlueAllocation,
   validateChietBucketCapacity,
   formatTargetWeightLabel,
+  formatEffectiveChietTargetLabel,
   formatChietCapacityBlockMessage,
+  resolveChietTargetCapacityKg,
   getCapacityMatchToleranceKg,
   isChietCapacityComplete,
   WEIGHT_EPSILON,
@@ -123,6 +126,8 @@ const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(1).fill({}));
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
+const isLoadingBuckets = ref(false);
+let bucketLoadPromise: Promise<void> | null = null;
 const bucketSelectResetKeys = ref<Record<number, number>>({});
 const tableWrapperRef = ref<HTMLElement | null>(null);
 
@@ -143,8 +148,17 @@ const clearRowBucketSelection = async (rowData: any, rowIndex: number) => {
 const getTargetWeightKg = () =>
   normalizeWeightToKg(props.targetWeight ?? 0, props.targetWeightUnit || 'Kg');
 
-const getTargetWeightLabel = () =>
-  formatTargetWeightLabel(props.targetWeight, props.targetWeightUnit || 'Kg');
+const getEffectiveTargetWeightKg = () => (
+  props.useChietCapacityValidation
+    ? resolveChietTargetCapacityKg(props.targetWeight ?? 0, props.targetWeightUnit || 'Kg')
+    : getTargetWeightKg()
+);
+
+const getTargetWeightLabel = () => (
+  props.useChietCapacityValidation
+    ? formatEffectiveChietTargetLabel(props.targetWeight, props.targetWeightUnit || 'Kg')
+    : formatTargetWeightLabel(props.targetWeight, props.targetWeightUnit || 'Kg')
+);
 
 const orderDetailsSelectionKey = computed(() =>
   props.orderDetails.map((row) =>
@@ -178,7 +192,7 @@ const shouldBlockAddRow = () => {
 };
 
 const getBucketOptionsForRow = (currentRow: any) => {
-  const targetWeightKg = getTargetWeightKg();
+  const targetWeightKg = getEffectiveTargetWeightKg();
   if (targetWeightKg <= 0 || bucketList.value.length === 0) {
     return bucketList.value;
   }
@@ -303,8 +317,52 @@ const handleDeleteRow = (rowData: any) => {
   emit('delete-row', rowData);
 };
 
+const mapBucketOptions = (items: any[]): BucketOption[] =>
+  items.map((item: any) => ({
+    ...item,
+    label: `${item.capacity} ${item.capacityUnit || 'Kg'}`,
+  }));
+
+const fetchBucketList = async () => {
+  if (bucketLoadPromise) {
+    await bucketLoadPromise;
+    return;
+  }
+
+  bucketLoadPromise = (async () => {
+    isLoadingBuckets.value = true;
+    try {
+      const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
+      if (data?.success && data.data) {
+        bucketList.value = mapBucketOptions(data.data);
+      } else {
+        bucketList.value = [];
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách thùng chứa', error);
+      bucketList.value = [];
+      toast.add({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: t('common.checkNetwork'),
+        life: 6000,
+      });
+    } finally {
+      isLoadingBuckets.value = false;
+      bucketLoadPromise = null;
+    }
+  })();
+
+  await bucketLoadPromise;
+};
+
+const handleBucketSelectShow = () => {
+  if (props.isViewMode || props.disabled || isLoadingBuckets.value) return;
+  void fetchBucketList();
+};
+
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
-  const targetWeightKg = getTargetWeightKg();
+  const targetWeightKg = getEffectiveTargetWeightKg();
   if (targetWeightKg > 0 && rowData.selectedBucketId) {
     const totalKg = getSelectedBucketTotalKg();
     const tolerance = props.useChietCapacityValidation
@@ -349,19 +407,5 @@ defineExpose({
       { requireAllRequestDetails: false }
     );
   },
-});
-
-onMounted(async () => {
-  try {
-    const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-    if (data?.success && data.data) {
-      bucketList.value = data.data.map((item: any) => ({
-        ...item,
-        label: `${item.capacity} ${item.capacityUnit || 'Kg'}`
-      }));
-    }
-  } catch (error) {
-    console.error('Lỗi khi tải danh sách thùng chứa', error);
-  }
 });
 </script>
