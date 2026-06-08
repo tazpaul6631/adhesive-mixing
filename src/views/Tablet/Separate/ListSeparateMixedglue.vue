@@ -89,7 +89,7 @@
                 bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <div v-else class="flex gap-2">
+                  <div v-else class="flex gap-2 justify-content-center">
                     <Button icon="pi pi-print" severity="success" size="large"
                       :disabled="isRowProcessing(data.workOrderMasterId) || !data.separateGlueComplete && !data.isNoMixGlue"
                       :loading="isRowPrinting(data.workOrderMasterId)" @click.stop="handlePrint(data)" />
