@@ -95,6 +95,16 @@ npm run cap:sync:ios
 
 App ID: `adhesive.mixing` (xem `capacitor.config.ts`).
 
+### Đổi icon / splash (tùy chọn, chỉ khi dev trên máy local)
+
+Icon native đã có trong `android/` và `ios/`. Khi cần generate lại từ `assets/icon.png`:
+
+```bash
+npx @capacitor/assets@latest generate --android --ios
+```
+
+(Không cài `@capacitor/assets` vào `package.json` — tránh lỗi `sharp` trên CI Node 22.)
+
 
 Ứng dụng được phát triển trên nền tảng **Ionic + Capacitor + Vue 3**, tích hợp với Backend C# để cung cấp giải pháp an ninh toàn diện.
 
