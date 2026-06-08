@@ -57,12 +57,12 @@
   },
   "mobile": {
     "glueConfirm": {
-      "title": "Production Line Glue Receipt Confirmation",
+      "title": "Confirm Glue Delivery",
       "lineQrTitle": "Line Glue QR Code",
       "allocatedQrTitle": "Glue Bucket QR Code",
       "scanPlaceholder": "Tap to scan QR code",
       "statusLabel": "Status:",
-      "confirmReturnButton": "Confirm Glue Receipt",
+      "confirmReturnButton": "Confirm Glue Delivery",
       "scanReturnQrButton": "Scan return glue bucket QR code",
       "returnDialogTitle": "Confirm return glue bucket",
       "returnDialogMessage": "Confirm return of the scanned glue bucket?",
@@ -97,7 +97,7 @@
     "appMenu": {
       "hello": "Hello!",
       "system": "Mobile Management System",
-      "glueConfirm": "Production Line Glue Receipt Confirmation",
+      "glueConfirm": "Confirm Glue Delivery",
       "description": "Use the phone camera to scan QR codes",
       "glueReturn": "Return glue scan",
       "glueReturnDescription": "Scan returned glue buckets after confirming the production line",

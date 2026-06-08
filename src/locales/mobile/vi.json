@@ -67,12 +67,12 @@
   },
   "mobile": {
     "glueConfirm": {
-      "title": "Chuyền xác nhận nhận keo",
+      "title": "Xác nhận phát keo",
       "lineQrTitle": "Mã QR keo chuyền",
       "allocatedQrTitle": "Mã QR thùng keo phát",
       "scanPlaceholder": "Chạm để quét mã QR",
       "statusLabel": "Trạng thái:",
-      "confirmReturnButton": "Xác nhận nhận keo",
+      "confirmReturnButton": "Xác nhận phát keo",
       "scanReturnQrButton": "Quét Mã QR thùng keo trả về",
       "returnDialogTitle": "Xác nhận thùng keo trả về",
       "returnDialogMessage": "Xác nhận trả về thùng keo đã quét?",
@@ -107,7 +107,7 @@
     "appMenu": {
       "hello": "Xin chào!",
       "system": "Hệ thống quản lý trên Mobile",
-      "glueConfirm": "Chuyền xác nhận nhận keo",
+      "glueConfirm": "Xác nhận phát keo",
       "description": "Sử dụng camera điện thoại để quét mã vạch",
       "glueReturn": "Quét keo trả về",
       "glueReturnDescription": "Quét thùng keo trả về sau khi xác nhận chuyền",
