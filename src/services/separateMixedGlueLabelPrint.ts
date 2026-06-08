@@ -17,6 +17,7 @@ export interface SeparateLabelDto {
   pasteQrCode?: string;
   separateGlueId?: string | number;
   noSeparateGlueId?: string | number;
+  glueWeight?: string;
 }
 
 export interface SeparatePrintItem {
@@ -513,7 +514,7 @@ QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
   const styleBlock = appendTsplLabeledBlock(
     tspl,
     TSPL_LEFT_X,
-    200,
+    170,
     'Keo:',
     dto.glueName || '',
     TSPL_MAX_CHARS_FIRST_LINE,
@@ -522,10 +523,22 @@ QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
   );
   tspl = styleBlock.tspl;
 
-  const productLineBlock = appendTsplLabeledBlock(
+  const weightBlock = appendTsplLabeledBlock(
     tspl,
     TSPL_LEFT_X,
     styleBlock.nextY,
+    'Cân nặng:',
+    dto.glueWeight || '',
+    TSPL_MAX_CHARS_FIRST_LINE,
+    TSPL_MAX_CHARS_CONTINUATION,
+    3
+  );
+  tspl = weightBlock.tspl;
+
+  const productLineBlock = appendTsplLabeledBlock(
+    tspl,
+    TSPL_LEFT_X,
+    weightBlock.nextY,
     'Chuyền:',
     dto.productLineName || '',
     TSPL_MAX_CHARS_FIRST_LINE,

@@ -5,8 +5,31 @@ const t = (key: string, params?: Record<string, unknown>) =>
 
 export const WEIGHT_EPSILON = 0.001;
 
-/** Modal chiết: thiếu dưới 500g so với trọng lượng đã cân vẫn tính đủ. */
-export const CHIET_MAX_ACCEPTABLE_SHORTAGE_KG = 0.5;
+/**
+ * TL chiết mục tiêu (Kg, 1 chữ số thập phân) từ TL thực tế đã cân.
+ * Chữ số thứ 3 >= 5 → làm tròn lên 0.1; ngược lại làm tròn xuống 0.1.
+ * VD: 5.154→5.1, 5.601→5.6, 5.699→5.7
+ */
+export const resolveChietTargetCapacityKg = (
+  weight: number | string | undefined,
+  unit = 'Kg'
+): number => {
+  const kg = normalizeWeightToKg(weight ?? 0, unit);
+  if (kg <= 0) return 0;
+
+  const milliKg = Math.round(kg * 1000);
+  const thirdDecimalDigit = Math.abs(milliKg) % 10;
+
+  if (thirdDecimalDigit >= 5) {
+    return Math.ceil(milliKg / 100) / 10;
+  }
+  return Math.floor(milliKg / 100) / 10;
+};
+
+export const formatEffectiveChietTargetLabel = (
+  weight: number | string | undefined,
+  unit = 'Kg'
+): string => formatTargetWeightLabel(resolveChietTargetCapacityKg(weight, unit), 'Kg');
 
 export type BucketOption = {
   bucketId: string | number;
@@ -65,13 +88,14 @@ export const isDecimalTargetWeight = (
   return Math.abs(num - Math.round(num)) > WEIGHT_EPSILON;
 };
 
+/** So khớp chính xác TL thùng với TL chiết đã quy đổi (chỉ dung sai float). */
 export const getCapacityMatchToleranceKg = (
   targetWeight: number | string | undefined,
   targetWeightUnit = 'Kg'
 ): number => {
   void targetWeight;
   void targetWeightUnit;
-  return CHIET_MAX_ACCEPTABLE_SHORTAGE_KG;
+  return WEIGHT_EPSILON;
 };
 
 export const getChietShortageKg = (totalKg: number, targetKg: number): number =>
@@ -85,23 +109,17 @@ export const isChietCapacityComplete = (
   targetWeight: number | string | undefined,
   targetWeightUnit = 'Kg'
 ): boolean => {
-  const targetKg = normalizeWeightToKg(targetWeight ?? 0, targetWeightUnit);
-  if (targetKg <= 0) return false;
+  const expectedKg = resolveChietTargetCapacityKg(targetWeight, targetWeightUnit);
+  if (expectedKg <= 0) return false;
 
-  const shortageKg = getChietShortageKg(totalKg, targetKg);
-  if (shortageKg <= WEIGHT_EPSILON) {
-    const overflowKg = getChietOverflowKg(totalKg, targetKg);
-    return overflowKg <= CHIET_MAX_ACCEPTABLE_SHORTAGE_KG;
-  }
-
-  return shortageKg < CHIET_MAX_ACCEPTABLE_SHORTAGE_KG;
+  return Math.abs(totalKg - expectedKg) <= WEIGHT_EPSILON;
 };
 
 export const formatChietCapacityBlockMessage = (
   targetWeight: number | string | undefined,
   targetWeightUnit = 'Kg'
 ) => {
-  const label = formatTargetWeightLabel(targetWeight, targetWeightUnit);
+  const label = formatEffectiveChietTargetLabel(targetWeight, targetWeightUnit);
   return t('separateMixedGlue.validation.chietCapacityBlock', { label });
 };
 
@@ -112,19 +130,20 @@ export const buildChietAddRowDebugInfo = (
   targetWeightUnit = 'Kg'
 ) => {
   const targetKg = normalizeWeightToKg(targetWeight ?? 0, targetWeightUnit);
+  const expectedKg = resolveChietTargetCapacityKg(targetWeight, targetWeightUnit);
   const totalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList);
-  const shortageKg = getChietShortageKg(totalKg, targetKg);
-  const overflowKg = getChietOverflowKg(totalKg, targetKg);
+  const shortageKg = getChietShortageKg(totalKg, expectedKg);
+  const overflowKg = getChietOverflowKg(totalKg, expectedKg);
 
   return {
     targetWeight,
     targetWeightUnit,
     targetKg,
-    targetLabel: formatTargetWeightLabel(targetWeight, targetWeightUnit),
+    expectedKg,
+    targetLabel: formatEffectiveChietTargetLabel(targetWeight, targetWeightUnit),
     totalBucketKg: totalKg,
     shortageKg: Number(shortageKg.toFixed(4)),
     overflowKg: Number(overflowKg.toFixed(4)),
-    maxAcceptableShortageKg: CHIET_MAX_ACCEPTABLE_SHORTAGE_KG,
     isCapacityComplete: isChietCapacityComplete(totalKg, targetWeight, targetWeightUnit),
     bucketListLoaded: bucketList.length,
     rows: orderDetails.map((row, index) => ({
@@ -248,11 +267,11 @@ export const validateChietBucketCapacity = (
   targetWeight: number | string | undefined,
   targetWeightUnit = 'Kg'
 ): { ok: boolean; totalKg: number; message?: string } => {
-  const targetKg = normalizeWeightToKg(targetWeight ?? 0, targetWeightUnit);
-  const targetLabel = formatTargetWeightLabel(targetWeight, targetWeightUnit);
+  const expectedKg = resolveChietTargetCapacityKg(targetWeight, targetWeightUnit);
+  const targetLabel = formatEffectiveChietTargetLabel(targetWeight, targetWeightUnit);
   const totalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList);
 
-  if (targetKg <= 0) {
+  if (expectedKg <= 0) {
     return { ok: true, totalKg };
   }
 
@@ -260,10 +279,7 @@ export const validateChietBucketCapacity = (
     return { ok: true, totalKg };
   }
 
-  const shortageKg = getChietShortageKg(totalKg, targetKg);
-  const overflowKg = getChietOverflowKg(totalKg, targetKg);
-
-  if (overflowKg > CHIET_MAX_ACCEPTABLE_SHORTAGE_KG) {
+  if (totalKg > expectedKg + WEIGHT_EPSILON) {
     return {
       ok: false,
       totalKg,
@@ -274,21 +290,10 @@ export const validateChietBucketCapacity = (
     };
   }
 
-  if (shortageKg >= CHIET_MAX_ACCEPTABLE_SHORTAGE_KG) {
-    return {
-      ok: false,
-      totalKg,
-      message: t('separateMixedGlue.validation.capacityShortageWeighed', {
-        total: formatWeightKg(totalKg),
-        target: targetLabel,
-      }),
-    };
-  }
-
   return {
     ok: false,
     totalKg,
-    message: t('separateMixedGlue.validation.capacityMismatchWeighedGeneric', {
+    message: t('separateMixedGlue.validation.capacityShortageWeighed', {
       total: formatWeightKg(totalKg),
       target: targetLabel,
     }),

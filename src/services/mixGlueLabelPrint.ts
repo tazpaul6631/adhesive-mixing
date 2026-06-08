@@ -290,7 +290,7 @@ export async function buildMixGlueLabelTspl(
     return null;
   }
 
-  const { glueName, startDate, endDate, action, productLineName, pasteQrCode } = response.data.data;
+  const { glueName, startDate, endDate, action, productLineName, pasteQrCode, glueWeight } = response.data.data;
 
   let tspl = `
 SIZE 69 mm, 49 mm
@@ -311,7 +311,7 @@ QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
   const styleBlock = appendTsplLabeledBlock(
     tspl,
     TSPL_LEFT_X,
-    200,
+    170,
     'Keo:',
     glueName || '',
     TSPL_MAX_CHARS_FIRST_LINE,
@@ -320,10 +320,22 @@ QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
   );
   tspl = styleBlock.tspl;
 
-  const chuyenBlock = appendTsplLabeledBlock(
+  const weightBlock = appendTsplLabeledBlock(
     tspl,
     TSPL_LEFT_X,
     styleBlock.nextY,
+    'Cân nặng:',
+    glueWeight || '',
+    TSPL_MAX_CHARS_FIRST_LINE,
+    TSPL_MAX_CHARS_CONTINUATION,
+    3
+  );
+  tspl = weightBlock.tspl;
+
+  const chuyenBlock = appendTsplLabeledBlock(
+    tspl,
+    TSPL_LEFT_X,
+    weightBlock.nextY,
     'Chuyền:',
     productLineName || '',
     TSPL_MAX_CHARS_FIRST_LINE,
