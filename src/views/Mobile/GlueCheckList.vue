@@ -348,7 +348,7 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
     showToast(recordStatus === 'C'
       ? t('mobile.glueCheckList.messages.cancelSuccess')
       : t('mobile.glueCheckList.messages.submitSuccess'));
-    closeCheckDialog();
+    resetAndCloseCheckDialog();
   } catch (error) {
     console.error('Không thể gửi thông tin kiểm tra:', error);
 
