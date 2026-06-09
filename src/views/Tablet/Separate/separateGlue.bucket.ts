@@ -6,9 +6,9 @@ const t = (key: string, params?: Record<string, unknown>) =>
 export const WEIGHT_EPSILON = 0.001;
 
 /**
- * TL chiết mục tiêu (Kg, 1 chữ số thập phân) từ TL thực tế đã cân.
- * Chữ số thứ 3 >= 5 → làm tròn lên 0.1; ngược lại làm tròn xuống 0.1.
- * VD: 5.154→5.1, 5.601→5.6, 5.699→5.7
+ * TL chiết mục tiêu (Kg, bước 0.1) từ TL thực tế đã cân — khớp thùng 0.1–0.9 kg.
+ * Làm tròn xuống 0.1; chỉ làm tròn lên khi phần lẻ (kg×10) >= 0.95.
+ * VD: 5.149→5.1, 5.154→5.1, 5.199→5.2, 5.601→5.6
  */
 export const resolveChietTargetCapacityKg = (
   weight: number | string | undefined,
@@ -17,13 +17,14 @@ export const resolveChietTargetCapacityKg = (
   const kg = normalizeWeightToKg(weight ?? 0, unit);
   if (kg <= 0) return 0;
 
-  const milliKg = Math.round(kg * 1000);
-  const thirdDecimalDigit = Math.abs(milliKg) % 10;
+  const scaled = kg * 10;
+  const wholeTenths = Math.floor(scaled);
+  const fracTenths = scaled - wholeTenths;
 
-  if (thirdDecimalDigit >= 5) {
-    return Math.ceil(milliKg / 100) / 10;
+  if (fracTenths >= 0.95 - WEIGHT_EPSILON) {
+    return Math.ceil(scaled) / 10;
   }
-  return Math.floor(milliKg / 100) / 10;
+  return wholeTenths / 10;
 };
 
 export const formatEffectiveChietTargetLabel = (

@@ -203,6 +203,8 @@ const isLoadingCompanies = ref(false);
 const isLoadingFactories = ref(false);
 
 let scanListener: PluginListenerHandle | null = null;
+/** Chặn barcodesScanned bắn trùng (tablet ML Kit) trước khi stopScanner kịp gỡ listener. */
+let scanLoginLocked = false;
 
 const isFactoryFieldEnabled = computed(() => !!selectedCompany.value && !isLoadingCompanies.value);
 const isCredentialFieldsEnabled = computed(() => !!selectedFactory.value && !isLoadingFactories.value);
@@ -243,6 +245,7 @@ const togglePasswordVisibility = () => {
 };
 
 const resetLoginLoading = () => {
+  scanLoginLocked = false;
   isLoggingIn.value = false;
   isLoading.value = false;
 };
@@ -420,9 +423,12 @@ const beginFrontCameraScan = async () => {
   await nextTick();
 
   scanListener = await BarcodeScanner.addListener('barcodesScanned', async (event) => {
+    if (scanLoginLocked) return;
+
     const scannedValue = event.barcodes?.[0] ? getBarcodeValue(event.barcodes[0]) : '';
     if (!scannedValue) return;
 
+    scanLoginLocked = true;
     isLoggingIn.value = true;
     isLoading.value = true;
     await stopScanner();
@@ -664,6 +670,8 @@ const startScan = async () => {
     if (barcodes?.length) {
       const scannedValue = getBarcodeValue(barcodes[0]);
       if (scannedValue) {
+        if (scanLoginLocked) return;
+        scanLoginLocked = true;
         await processScannedData(scannedValue);
       } else {
         alert(t('login.invalidBarcode'));
