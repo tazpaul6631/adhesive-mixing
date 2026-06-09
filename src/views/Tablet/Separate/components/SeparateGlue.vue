@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
@@ -101,6 +101,8 @@ import {
   getCapacityMatchToleranceKg,
   isChietCapacityComplete,
   WEIGHT_EPSILON,
+  findBucketOptionById,
+  normalizeBucketIdForSelect,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 
@@ -191,20 +193,56 @@ const shouldBlockAddRow = () => {
   return isWeighedCapacityComplete();
 };
 
+const syncStoredBucketIdTypes = () => {
+  if (bucketList.value.length === 0) return;
+
+  props.orderDetails.forEach((row) => {
+    const raw = row.selectedBucketId ?? row.bucketId;
+    if (raw == null || raw === '') return;
+
+    const normalized = normalizeBucketIdForSelect(raw, bucketList.value);
+    if (normalized != null && normalized !== row.selectedBucketId) {
+      row.selectedBucketId = normalized;
+    }
+  });
+};
+
 const getBucketOptionsForRow = (currentRow: any) => {
-  const targetWeightKg = getEffectiveTargetWeightKg();
-  if (targetWeightKg <= 0 || bucketList.value.length === 0) {
+  if (bucketList.value.length === 0) {
     return bucketList.value;
   }
 
-  const remainingKg = targetWeightKg - sumSelectedBucketCapacityKg(
-    props.orderDetails,
-    bucketList.value,
-    currentRow
-  );
+  const targetWeightKg = getEffectiveTargetWeightKg();
+  let options = bucketList.value;
 
-  return sortBucketsByClosestCapacity(bucketList.value, remainingKg);
+  if (targetWeightKg > 0) {
+    const remainingKg = targetWeightKg - sumSelectedBucketCapacityKg(
+      props.orderDetails,
+      bucketList.value,
+      currentRow
+    );
+    options = sortBucketsByClosestCapacity(bucketList.value, remainingKg);
+  }
+
+  const selectedId = currentRow?.selectedBucketId ?? currentRow?.bucketId;
+  if (selectedId == null || selectedId === '') return options;
+
+  const selectedOption = findBucketOptionById(bucketList.value, selectedId);
+  if (
+    selectedOption
+    && !options.some((item) => String(item.bucketId) === String(selectedOption.bucketId))
+  ) {
+    return [selectedOption, ...options];
+  }
+
+  return options;
 };
+
+const hasStoredBucketSelection = () =>
+  props.orderDetails.some((row) => {
+    const id = row.selectedBucketId ?? row.bucketId;
+    return id != null && id !== '';
+  });
 
 const isAllocationComplete = () => {
   const targetWeightKg = getTargetWeightKg();
@@ -350,11 +388,21 @@ const fetchBucketList = async () => {
     } finally {
       isLoadingBuckets.value = false;
       bucketLoadPromise = null;
+      syncStoredBucketIdTypes();
     }
   })();
 
   await bucketLoadPromise;
 };
+
+watch(
+  () => [props.isLoading, props.orderDetails.length, orderDetailsSelectionKey.value] as const,
+  ([loading]) => {
+    if (loading || !hasStoredBucketSelection()) return;
+    void fetchBucketList();
+  },
+  { immediate: true }
+);
 
 const handleBucketSelectShow = () => {
   if (props.isViewMode || props.disabled || isLoadingBuckets.value) return;

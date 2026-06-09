@@ -57,12 +57,12 @@
   },
   "mobile": {
     "glueConfirm": {
-      "title": "產線確認領膠水",
+      "title": "確認發膠",
       "lineQrTitle": "產線膠水 QR 碼",
       "allocatedQrTitle": "膠水桶 QR 碼",
       "scanPlaceholder": "點擊掃描 QR 碼",
       "statusLabel": "狀態：",
-      "confirmReturnButton": "產線主管確認領膠",
+      "confirmReturnButton": "產線主管確認發膠",
       "scanReturnQrButton": "掃描退回膠桶 QR 碼",
       "returnDialogTitle": "確認退回膠桶",
       "returnDialogMessage": "確認退回已掃描的膠桶？",
@@ -97,7 +97,7 @@
     "appMenu": {
       "hello": "您好！",
       "system": "行動端管理系統",
-      "glueConfirm": "產線確認領膠水",
+      "glueConfirm": "確認發膠",
       "description": "使用手機相機掃描 QR Code",
       "glueReturn": "掃描退回膠水",
       "glueReturnDescription": "在確認產線後掃描退回膠桶",

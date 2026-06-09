@@ -1,5 +1,6 @@
 import format from '@/mixins/format';
 import type { HeaderInfo, RequestDetailOption, SeparateGlueRow } from './separateMixedGlue.types';
+import { buildNoMixTableRowsFromApiItems } from './noSeparateGlueSync';
 
 const formatGlueWeightDisplay = (weight: unknown): string | null => {
   if (weight === undefined || weight === null || weight === '') return null;
@@ -184,7 +185,13 @@ export const resolveSplitSeparateGlueDetails = (
   );
   const pickNoMixRows = () => {
     if (draftNoMix.length > 0) return mapSeparateGlueRows(draftNoMix, noMixGlueId);
-    if (isNoMixGlue) return [];
+    if (isNoMixGlue) {
+      const draftApi = existingDraft?.apiNoSeparateGlues;
+      if (Array.isArray(draftApi) && draftApi.length > 0) {
+        return buildNoMixTableRowsFromApiItems(draftApi, noMixGlueId);
+      }
+      return [];
+    }
     return resolvedNoMix;
   };
 

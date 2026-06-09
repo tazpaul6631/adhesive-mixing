@@ -1153,13 +1153,17 @@ export function useSeparateMixedGlueManagement() {
   };
 
   useBackButton(10, () => {
-    if (!isDirty.value) {
-      navigateToSeparateList();
-      return;
-    }
-    void alertExitPage().then(ok => {
+    void (async () => {
+      await persistDraftOnLeave();
+
+      if (!isDirty.value) {
+        navigateToSeparateList();
+        return;
+      }
+
+      const ok = await alertExitPage();
       if (ok) navigateToSeparateList();
-    });
+    })();
   });
 
   onBeforeRouteLeave(async () => {
