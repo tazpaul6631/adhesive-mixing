@@ -1053,6 +1053,7 @@ const alertExitPage = (): Promise<boolean> =>
                   const payload = buildPayload('C', { onlyProgressLines: true });
                   await mixGlueApi.postMixGlueCommand(payload);
                   await saveDraftSnapshot();
+                  // await draftStore.clearDraft(currentWorkOrderId.value);
                   isDirty.value = false;
                   resolve(true);
                 } catch (error) {

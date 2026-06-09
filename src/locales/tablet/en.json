@@ -37,8 +37,8 @@
       "workOrder": "Work order",
       "glue": "Mix glue product",
       "totalWeight": "Required total weight (KG)",
-      "updater": "Mix glue operator",
-      "updateDate": "Mix glue date",
+      "updater": "Glue updater",
+      "updateDate": "Glue update date",
       "confirm": "QIP confirm"
     },
     "scan": {

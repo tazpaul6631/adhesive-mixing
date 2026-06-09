@@ -38,6 +38,31 @@ export type BucketOption = {
   label?: string;
 };
 
+export const findBucketOptionById = (
+  bucketList: BucketOption[],
+  bucketId: unknown
+): BucketOption | undefined =>
+  bucketList.find((item) => String(item.bucketId) === String(bucketId));
+
+/** Khớp kiểu bucketId với optionValue của Select (tránh lệch string/number sau khi đọc draft). */
+export const normalizeBucketIdForSelect = (
+  value: unknown,
+  bucketList: BucketOption[]
+): string | number | null => {
+  if (value == null || value === '') return null;
+
+  const matched = findBucketOptionById(bucketList, value);
+  if (matched) return matched.bucketId;
+
+  const sample = bucketList[0]?.bucketId;
+  if (typeof sample === 'number') {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : String(value);
+  }
+
+  return String(value);
+};
+
 export const normalizeWeightToKg = (value: number | string, unit = 'Kg'): number => {
   const num = Number(value);
   if (!Number.isFinite(num)) return 0;
