@@ -37,8 +37,8 @@
       "workOrder": "派工單",
       "glue": "調膠品",
       "totalWeight": "需求總重量 (KG)",
-      "updater": "膠水更新人員",
-      "updateDate": "膠水更新日期",
+      "updater": "派工人員",
+      "updateDate": "派工日期",
       "confirm": "QIP確認"
     },
     "scan": {
