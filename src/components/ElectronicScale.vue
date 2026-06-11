@@ -2,19 +2,18 @@
   <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
     <label class="text-800 font-medium block" style="width: fit-content;">
       <span>{{ t('electronicScale.label') }}</span>
-      <Button icon="pi pi-refresh" severity="secondary" text rounded size="small" class="scale-refresh-btn"
-        :title="t('electronicScale.refreshTitle')" :loading="isRefreshing" :disabled="isRefreshing"
-        :aria-label="t('electronicScale.refreshAriaLabel')" @click="handleRefreshConnection" />
-      <span v-if="isConnected" class="text-green-500 font-normal text-sm">
+      <span v-if="isConnected" class="text-green-500 font-normal text-sm ml-2">
         <i class="pi pi-check-circle"></i> {{ t('electronicScale.connected') }}
       </span>
-      <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm">
+      <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm ml-2">
         <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.connecting') }}
       </span>
-      <span v-else class="text-red-500 font-normal text-sm fade-blink">
+      <span v-else class="text-red-500 font-normal text-sm fade-blink ml-2">
         <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.searching') }}
       </span>
     </label>
+
+    <!-- <ScaleDevicePicker v-if="!hideScalePicker" :session-id="scaleSessionId" class="mb-2" /> -->
 
     <div class="flex justify-content-between align-items-end">
       <div class="p-inputgroup flex align-items-center">
@@ -45,6 +44,7 @@
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated, watch, computed, getCurrentInstance } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useScaleManager } from '@/composables/useScaleManager';
+import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const toast = useToast();
@@ -60,7 +60,11 @@ const props = defineProps({
   /** false = cân bao nhiêu xác nhận bấy nhiêu; true = bắt buộc nằm trong sai số. */
   enforceTolerance: { type: Boolean, default: true },
   /** Dòng đã xác nhận cân: hiển thị TL thực tế đã lưu, không lấy số live từ cân. */
-  lockedWeight: { type: [Number, String], default: '' }
+  lockedWeight: { type: [Number, String], default: '' },
+  /** Session dùng chung (vd. MixGlueManagement); không truyền thì tự tạo theo instance. */
+  scaleSessionId: { type: [String, Number, Symbol], default: undefined },
+  /** Ẩn dropdown chọn cân trong component (picker đặt ở parent). */
+  hideScalePicker: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
@@ -143,10 +147,8 @@ const {
   isScaleConnecting,
   startAutoConnect,
   stopAutoConnect,
-  forceReconnect,
 } = useScaleManager();
-const scaleSessionId = getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
-const isRefreshing = ref(false);
+const scaleSessionId = props.scaleSessionId ?? getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
 
 const beginScaleSession = () => {
   startAutoConnect(scaleSessionId);
@@ -158,36 +160,9 @@ const endScaleSession = () => {
   emit('connection-status', false);
 };
 
-const handleRefreshConnection = async () => {
-  if (isRefreshing.value) return;
-
-  isRefreshing.value = true;
-  resetDisplayedWeight();
-
-  try {
-    await forceReconnect(scaleSessionId, { pickPort: true });
-    toast.add({
-      severity: 'info',
-      summary: t('electronicScale.toast.reconnecting'),
-      detail: t('electronicScale.toast.reconnectingDetail'),
-      life: 6000,
-    });
-  } catch (error) {
-    console.error('[ElectronicScale] refresh connection failed:', error);
-    toast.add({
-      severity: 'warn',
-      summary: t('electronicScale.toast.connectFailed'),
-      detail: t('electronicScale.toast.connectFailedDetail'),
-      life: 6000,
-    });
-  } finally {
-    isRefreshing.value = false;
-  }
-};
-
 // Đồng bộ trạng thái kết nối ra UI — chỉ "đã kết nối" khi thực sự nhận được dữ liệu cân
 const isConnected = computed(() => isGlobalConnected.value);
-const isConnecting = computed(() => isScaleConnecting.value || isRefreshing.value);
+const isConnecting = computed(() => isScaleConnecting.value);
 const isStable = computed(() => isGlobalStable.value);
 
 // --- LOGIC KIỂM TRA & XÁC NHẬN ---
@@ -353,12 +328,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.scale-refresh-btn {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-}
-
 .fade-blink {
   animation: fadeBlink 1.5s infinite;
 }

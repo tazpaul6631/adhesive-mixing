@@ -34,7 +34,7 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-              }}</label>
+                }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
@@ -62,22 +62,25 @@
         <!-- BẢNG 2: Keo trộn -->
         <transition name="slide-fade">
           <div v-if="hasMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
+            <div
+              class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.mixingComponents') }}
               </span>
+              <ScaleDevicePicker :session-id="mixGlueScaleSessionId" />
             </div>
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                  }}</label>
+                    }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
 
-                <ElectronicScale :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
+                <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
+                  :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
                   :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
                   :upper-tolerance="activeComponent?.upperTolerance ?? ''"
                   :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
@@ -105,22 +108,25 @@
         <!-- BẢNG 3: Keo không trộn (chỉ hiển thị khi API có dữ liệu) -->
         <transition name="slide-fade">
           <div v-if="hasNoMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl">
+            <div
+              class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.noMixComponents') }}
               </span>
+              <ScaleDevicePicker :session-id="mixGlueScaleSessionId" />
             </div>
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
                 <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                  }}</label>
+                    }}</label>
                   <InputText v-model="noMixMixingProcess.component" readonly
                     class="font-bold text-primary border-blue-200" style="width: 350px;" />
                 </div>
 
-                <ElectronicScale :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
+                <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
+                  :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
                   :lower-tolerance="noMixScaleTolerance.lower" :upper-tolerance="noMixScaleTolerance.upper"
                   :enforce-tolerance="noMixTargetWeight > 0"
                   :locked-weight="activeNoMixComponent?.weighingTime ? (activeNoMixComponent?.actualWeight ?? '') : ''"
@@ -179,6 +185,7 @@ import type { PayloadBuildContext } from '@/views/Tablet/Separate/separateMixedG
 import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separateGlue.bucket';
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
+import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable.vue';
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
@@ -192,7 +199,11 @@ import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 
 dayjs.extend(customParseFormat);
+
+const MIX_GLUE_SCALE_SESSION = 'mix-glue-scale-session';
+
 const { releaseScaleConnection } = useScaleManager();
+const mixGlueScaleSessionId = MIX_GLUE_SCALE_SESSION;
 const { t } = useAppLocale(() => 'tablet');
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 // ============================================================================

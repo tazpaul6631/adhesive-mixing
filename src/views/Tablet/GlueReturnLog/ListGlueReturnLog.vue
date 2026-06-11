@@ -17,10 +17,13 @@
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
         <div class="surface-card p-0 shadow-1 border-round-xl">
-          <div class="surface-100 p-3 border-round-top-xl">
+          <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>{{ t('listGlueReturnLog.sectionTitle') }}
             </span>
+            <ScaleDevicePicker :session-id="glueReturnLogScaleSessionId" />
+          </div>
+          <div class="surface-100 px-3 pb-3">
             <div class="grid formgrid align-items-end">
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
                 <label class="text-800 font-medium mb-2 block">{{ t('listGlueReturnLog.selectedRow') }}</label>
@@ -29,7 +32,8 @@
               </div>
 
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
-                <ElectronicScaleGlueReturn :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
+                <ElectronicScaleGlueReturn :scale-session-id="glueReturnLogScaleSessionId" hide-scale-picker
+                  :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
                   :locked-weight="showReturnWeight(selectedItem) ? String(selectedItem?.returnWeight ?? '') : ''"
                   :disable-confirm="!selectedItem || !!selectedItem?.scaleConfirmed || isRowApiSubmitted(selectedItem)"
                   @confirm-weight="handleScaleConfirmWeight" />
@@ -132,6 +136,7 @@ import format from '@/mixins/format';
 import glueReturnLogApi from '@/api/glueReturnLog';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import ElectronicScaleGlueReturn from '@/components/ElectronicScaleGlueReturn.vue';
+import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import {
   useGlueReturnLogPendingStore,
   type GlueReturnLogPendingEntry,
@@ -140,6 +145,7 @@ import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
+const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
 
 export interface GlueReturnLogItem {
   factoryId: string;
