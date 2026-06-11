@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -44,6 +45,80 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
         }
     }
 
+    private List<UsbSerialDriver> findAllDrivers() {
+        UsbManager manager = (UsbManager) getContext().getSystemService(Context.USB_SERVICE);
+        return UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+    }
+
+    private UsbSerialDriver findDriverById(String deviceId) {
+        if (deviceId == null || deviceId.isEmpty()) {
+            return null;
+        }
+
+        for (UsbSerialDriver driver : findAllDrivers()) {
+            if (deviceId.equals(driver.getDevice().getDeviceName())) {
+                return driver;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean ensureUsbPermission(UsbManager manager, UsbDevice device) {
+        if (manager.hasPermission(device)) {
+            return true;
+        }
+
+        int flags = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+            ? PendingIntent.FLAG_MUTABLE
+            : 0;
+        PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(
+            getContext(),
+            0,
+            new Intent("com.android.example.USB_PERMISSION"),
+            flags
+        );
+        manager.requestPermission(device, usbPermissionIntent);
+        return false;
+    }
+
+    @PluginMethod
+    public void listDevices(PluginCall call) {
+        UsbManager manager = (UsbManager) getContext().getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = findAllDrivers();
+        JSArray devices = new JSArray();
+
+        for (int index = 0; index < availableDrivers.size(); index++) {
+            UsbSerialDriver driver = availableDrivers.get(index);
+            UsbDevice device = driver.getDevice();
+
+            JSObject item = new JSObject();
+            item.put("id", device.getDeviceName());
+            String scaleName;
+            if (index == 0) {
+                scaleName = "Cân Nhỏ";
+            } else if (index == 1) {
+                scaleName = "Cân Lớn";
+            } else {
+                scaleName = String.format(
+                    "Cân %d",
+                    index + 1,
+                    device.getVendorId(),
+                    device.getProductId()
+                );
+            }
+            item.put("label", scaleName);
+            item.put("vendorId", device.getVendorId());
+            item.put("productId", device.getProductId());
+            item.put("hasPermission", manager.hasPermission(device));
+            devices.put(item);
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("devices", devices);
+        call.resolve(ret);
+    }
+
     @PluginMethod
     public void disconnect(PluginCall call) {
         internalDisconnect();
@@ -55,27 +130,22 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
         internalDisconnect();
 
         UsbManager manager = (UsbManager) getContext().getSystemService(Context.USB_SERVICE);
-        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+        List<UsbSerialDriver> availableDrivers = findAllDrivers();
 
         if (availableDrivers.isEmpty()) {
             call.reject("Không tìm thấy thiết bị USB nào!");
             return;
         }
 
-        UsbSerialDriver driver = availableDrivers.get(0);
+        String deviceId = call.getString("deviceId");
+        UsbSerialDriver driver = findDriverById(deviceId);
+        if (driver == null) {
+            driver = availableDrivers.get(0);
+        }
+
         UsbDevice device = driver.getDevice();
 
-        if (!manager.hasPermission(device)) {
-            int flags = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
-                ? PendingIntent.FLAG_MUTABLE
-                : 0;
-            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(
-                getContext(),
-                0,
-                new Intent("com.android.example.USB_PERMISSION"),
-                flags
-            );
-            manager.requestPermission(device, usbPermissionIntent);
+        if (!ensureUsbPermission(manager, device)) {
             call.reject("Đang xin quyền, hãy bấm OK trên màn hình rồi thử lại");
             return;
         }
@@ -91,7 +161,9 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
             ioManager = new SerialInputOutputManager(usbPort, this);
             ioManager.start();
 
-            call.resolve();
+            JSObject ret = new JSObject();
+            ret.put("deviceId", device.getDeviceName());
+            call.resolve(ret);
         } catch (IOException e) {
             internalDisconnect();
             call.reject("Lỗi kết nối: " + e.getMessage());
