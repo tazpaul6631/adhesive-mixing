@@ -261,6 +261,7 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
+      departmentId: authStore.user?.departmentId,
       separateGlueCheck: true,
       page: page,
       pageSize: pageSize

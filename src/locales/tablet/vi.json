@@ -37,8 +37,8 @@
       "workOrder": "Đơn điều công",
       "glue": "Keo trộn",
       "totalWeight": "Tổng TL yêu cầu (KG)",
-      "updater": "Người cập nhật keo",
-      "updateDate": "Ngày cập nhật keo",
+      "updater": "Nhân viên điều công",
+      "updateDate": "Ngày điều công",
       "confirm": "Xác nhận QIP"
     },
     "scan": {
