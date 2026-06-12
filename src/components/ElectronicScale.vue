@@ -13,8 +13,6 @@
       </span>
     </label>
 
-    <!-- <ScaleDevicePicker v-if="!hideScalePicker" :session-id="scaleSessionId" class="mb-2" /> -->
-
     <div class="flex justify-content-between align-items-end">
       <div class="p-inputgroup flex align-items-center">
         <InputText :model-value="displayWeight" readonly class="text-right font-bold bg-white" style="width: 250px;"
@@ -25,10 +23,12 @@
           }" />
         <span class="p-inputgroup-addon font-bold px-1">{{ effectiveDisplayUnit }}</span>
 
-        <!-- Sai số chỉ hiển thị khi bắt buộc kiểm tra dung sai -->
-        <div v-if="enforceTolerance" class="ml-1 min-w-max border-left-1 border-300 pl-3">
-          <div class="text-red-500 font-bold text-xs">-{{ effectiveLowerTolerance }} g</div>
-          <div class="text-green-600 font-bold text-xs">+{{ effectiveUpperTolerance }} g</div>
+        <!-- Sai số: hiển thị khi bắt buộc kiểm tra dung sai hoặc parent truyền lower/upper > 0 -->
+        <div v-if="enforceTolerance || hasExplicitTolerance" class="ml-1 min-w-max border-left-1 border-300 pl-3">
+          <div class="text-red-500 font-bold text-xs">-{{ effectiveLowerTolerance }} {{ effectiveLowerToleranceUnit }}
+          </div>
+          <div class="text-green-600 font-bold text-xs">+{{ effectiveUpperTolerance }} {{ effectiveUpperToleranceUnit }}
+          </div>
         </div>
       </div>
 
@@ -44,7 +44,6 @@
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated, watch, computed, getCurrentInstance } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useScaleManager } from '@/composables/useScaleManager';
-import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const toast = useToast();
@@ -55,6 +54,10 @@ const props = defineProps({
   targetWeight: { type: [Number, String], default: 0 },
   lowerTolerance: { type: [Number, String], default: '' },
   upperTolerance: { type: [Number, String], default: '' },
+  /** Đơn vị sai số dưới (bảng trộn — từ BE). Không truyền → hiển thị g. */
+  lowerToleranceUnit: { type: [Number, String], default: '' },
+  /** Đơn vị sai số trên (bảng trộn — từ BE). Không truyền → hiển thị g. */
+  upperToleranceUnit: { type: [Number, String], default: '' },
   weightUnit: { type: [Number, String], default: '' },
   disableConfirm: { type: Boolean, default: false },
   /** false = cân bao nhiêu xác nhận bấy nhiêu; true = bắt buộc nằm trong sai số. */
@@ -82,12 +85,53 @@ const effectiveUpperTolerance = computed(() => {
   return Number(props.upperTolerance);
 });
 
-const isKgUnit = computed(() => props.weightUnit?.toString().toLowerCase() === 'kg');
+/** Parent truyền sai số cụ thể (vd. noMix ±10g) — hiển thị dù chưa bật enforceTolerance. */
+const hasExplicitTolerance = computed(() => {
+  const lower = Number(props.lowerTolerance);
+  const upper = Number(props.upperTolerance);
+  return (Number.isFinite(lower) && lower > 0) || (Number.isFinite(upper) && upper > 0);
+});
+
+const formatToleranceUnitLabel = (unit?: string | number) => {
+  const normalized = String(unit || 'g').trim().toLowerCase();
+  return normalized === 'kg' ? 'KG' : 'G';
+};
+
+const effectiveLowerToleranceUnit = computed(() =>
+  formatToleranceUnitLabel(props.lowerToleranceUnit || 'g')
+);
+
+const effectiveUpperToleranceUnit = computed(() =>
+  formatToleranceUnitLabel(props.upperToleranceUnit || 'g')
+);
+
+const normalizeWeightUnit = (unit?: string | number): 'kg' | 'g' => {
+  const normalized = String(unit || 'g').trim().toLowerCase();
+  return normalized === 'kg' ? 'kg' : 'g';
+};
+
+/** Quy đổi giá trị sang đơn vị cân của dòng (weightUnit) — dùng đúng unit BE trả về. */
+const convertToWeightUnit = (
+  value: number,
+  fromUnit: string | number | undefined,
+  weightUnit: 'kg' | 'g'
+) => {
+  const from = normalizeWeightUnit(fromUnit);
+  const val = Number.isFinite(value) ? value : 0;
+  if (weightUnit === 'kg') {
+    return from === 'kg' ? val : val / 1000;
+  }
+  return from === 'kg' ? val * 1000 : val;
+};
+
+const rowWeightUnit = computed(() => normalizeWeightUnit(props.weightUnit));
+
+const isKgUnit = computed(() => rowWeightUnit.value === 'kg');
 
 /** Đơn vị hiển thị trên UI — theo weightUnit của dòng. */
 const effectiveDisplayUnit = computed(() => {
   const unit = String(props.weightUnit || 'g').trim();
-  return unit.toLowerCase() === 'kg' ? 'Kg' : 'g';
+  return unit.toLowerCase() === 'kg' ? 'KG' : 'G';
 });
 
 /** Cân serial luôn trả về kg → quy đổi sang gram để tính nội bộ. */
@@ -122,21 +166,32 @@ const displayWeight = computed(() => formatGramsForDisplay(weightGrams.value));
 
 const getCurrentWeightInGrams = () => weightGrams.value;
 
-const getToleranceRangeInGrams = () => {
-  const targetGrams = toGrams(parseFloat(String(props.targetWeight ?? '0')), isKgUnit.value);
-  const lowerTolGram = Number(effectiveLowerTolerance.value) || 0;
-  const upperTolGram = Number(effectiveUpperTolerance.value) || 0;
+const getCurrentWeightInWeightUnit = () => fromGrams(getCurrentWeightInGrams());
+
+/** Min/max theo target + sai số BE (mỗi sai số giữ đúng unit BE, quy về weightUnit để so). */
+const getToleranceRangeInWeightUnit = () => {
+  const unit = rowWeightUnit.value;
+  const target = parseFloat(String(props.targetWeight ?? '0')) || 0;
+  const lowerTol = convertToWeightUnit(
+    Number(effectiveLowerTolerance.value) || 0,
+    props.lowerToleranceUnit || 'g',
+    unit
+  );
+  const upperTol = convertToWeightUnit(
+    Number(effectiveUpperTolerance.value) || 0,
+    props.upperToleranceUnit || 'g',
+    unit
+  );
 
   return {
-    targetGrams,
-    minGrams: Number((targetGrams - lowerTolGram).toFixed(3)),
-    maxGrams: Number((targetGrams + upperTolGram).toFixed(3)),
+    min: Number((target - lowerTol).toFixed(3)),
+    max: Number((target + upperTol).toFixed(3)),
   };
 };
 
-const isWeightWithinTolerance = (currentGrams: number) => {
-  const { minGrams, maxGrams } = getToleranceRangeInGrams();
-  return currentGrams >= minGrams && currentGrams <= maxGrams;
+const isWeightWithinTolerance = (currentInWeightUnit: number) => {
+  const { min, max } = getToleranceRangeInWeightUnit();
+  return currentInWeightUnit >= min && currentInWeightUnit <= max;
 };
 
 // --- GỌI GLOBAL MANAGER ---
@@ -237,7 +292,7 @@ const isExceedingLimit = computed(() => {
   if (hasLockedWeight.value) return false;
   if (!hasTargetWeight.value) return false;
 
-  return !isWeightWithinTolerance(getCurrentWeightInGrams());
+  return !isWeightWithinTolerance(getCurrentWeightInWeightUnit());
 });
 
 const confirmWeight = () => {
@@ -265,17 +320,16 @@ const confirmWeight = () => {
   const weightForRow = fromGrams(currentGrams).toFixed(3);
 
   if (props.enforceTolerance) {
-    const { minGrams, maxGrams } = getToleranceRangeInGrams();
+    const { min, max } = getToleranceRangeInWeightUnit();
     const unit = effectiveDisplayUnit.value;
-    const minDisplay = fromGrams(minGrams);
-    const maxDisplay = fromGrams(maxGrams);
+    const currentInWeightUnit = getCurrentWeightInWeightUnit();
 
-    if (currentGrams < minGrams) {
+    if (currentInWeightUnit < min) {
       toast.add({
         severity: 'error',
         summary: t('electronicScale.toast.belowMin'),
         detail: t('electronicScale.toast.belowMinDetail', {
-          weight: minDisplay.toFixed(3),
+          weight: min.toFixed(3),
           unit,
         }),
         life: 6000
@@ -283,12 +337,12 @@ const confirmWeight = () => {
       return;
     }
 
-    if (currentGrams > maxGrams) {
+    if (currentInWeightUnit > max) {
       toast.add({
         severity: 'error',
         summary: t('electronicScale.toast.aboveMax'),
         detail: t('electronicScale.toast.aboveMaxDetail', {
-          weight: maxDisplay.toFixed(3),
+          weight: max.toFixed(3),
           unit,
         }),
         life: 6000

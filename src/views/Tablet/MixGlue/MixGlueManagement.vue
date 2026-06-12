@@ -83,6 +83,9 @@
                   :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
                   :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
                   :upper-tolerance="activeComponent?.upperTolerance ?? ''"
+                  :lower-tolerance-unit="activeComponent?.lowerToleranceUnit"
+                  :upper-tolerance-unit="activeComponent?.upperToleranceUnit"
+                  :enforce-tolerance="mixTargetWeight > 0"
                   :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
                   :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
@@ -128,7 +131,7 @@
                 <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
                   :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
                   :lower-tolerance="noMixScaleTolerance.lower" :upper-tolerance="noMixScaleTolerance.upper"
-                  :enforce-tolerance="noMixTargetWeight > 0"
+                  :enforce-tolerance="!!activeNoMixComponent && noMixTargetWeight > 0"
                   :locked-weight="activeNoMixComponent?.weighingTime ? (activeNoMixComponent?.actualWeight ?? '') : ''"
                   :disable-confirm="!!activeNoMixComponent?.weighingTime" @update:weight="handleNoMixWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmNoMixWeight" />
@@ -244,6 +247,8 @@ interface ComponentDetail {
   mixingRatio?: string;
   lowerTolerance?: string;
   upperTolerance?: string;
+  lowerToleranceUnit?: string;
+  upperToleranceUnit?: string;
   materialCode?: string;
   materialName?: string;
   weightUnit?: string;
@@ -329,45 +334,41 @@ const mixTargetWeight = computed(() => {
   return Number(weight) || 0;
 });
 
-/** Dùng cho dòng API chưa có sai số (noMix). Keo thêm từ modal dùng gram nhập tay. */
-const calcToleranceGrams = (weight: number, weightUnit: string) => {
-  const unit = (weightUnit || 'Kg').toLowerCase();
-  const weightInGrams = unit === 'kg' ? weight * 1000 : weight;
-  // Cũ: sai số = 5% trọng lượng (gram)
-  return Number((weightInGrams * 0.05).toFixed(3));
-};
-
-const hasRowTolerance = (row: ComponentDetail | null) => {
-  if (!row) return false;
-  const lower = Number(row.lowerTolerance);
-  const upper = Number(row.upperTolerance);
-  return (Number.isFinite(lower) && lower > 0) || (Number.isFinite(upper) && upper > 0);
-};
-
-const resolveScaleToleranceGrams = (row: ComponentDetail | null) => {
-  if (!row) return { lower: '5', upper: '5' };
-
-  if (hasRowTolerance(row)) {
-    return {
-      lower: String(row.lowerTolerance ?? ''),
-      upper: String(row.upperTolerance ?? ''),
-    };
-  }
-
-  const target = Number(row.glueWeight ?? row.requiredWeight ?? 0);
-  const tolerance = calcToleranceGrams(target, row.weightUnit || 'Kg');
-  return { lower: String(tolerance), upper: String(tolerance) };
-};
+/** Keo không trộn: dùng lower/upperTolerance từ BE; thiếu thì mặc định ±10g. Keo trộn: dùng BE. */
+const NO_MIX_SCALE_TOLERANCE_GRAMS = 10;
 
 const noMixTargetWeight = computed(() => {
   const row = activeNoMixComponent.value;
   if (!row) return 0;
-  return Number(row.glueWeight ?? row.requiredWeight ?? 0) || 0;
+
+  const direct = Number(row.glueWeight ?? row.requiredWeight ?? 0);
+  if (direct > 0) return direct;
+
+  if (!row.glueExtra && headerInfo.value.totalWeight) {
+    return Number(headerInfo.value.totalWeight) || 0;
+  }
+
+  return 0;
 });
 
-const noMixScaleTolerance = computed(() =>
-  resolveScaleToleranceGrams(activeNoMixComponent.value)
-);
+const noMixScaleTolerance = computed(() => {
+  const row = activeNoMixComponent.value;
+  const defaultTol = NO_MIX_SCALE_TOLERANCE_GRAMS;
+
+  if (!row) {
+    return { lower: '', upper: '' };
+  }
+
+  const lower = Number(row.lowerTolerance);
+  const upper = Number(row.upperTolerance);
+  const hasLower = Number.isFinite(lower) && lower > 0;
+  const hasUpper = Number.isFinite(upper) && upper > 0;
+
+  return {
+    lower: String(hasLower ? lower : defaultTol),
+    upper: String(hasUpper ? upper : defaultTol),
+  };
+});
 
 const mapMixChemicals = (items: any[] = []): ComponentDetail[] =>
   items.map((item: any) => ({
@@ -379,6 +380,8 @@ const mapMixChemicals = (items: any[] = []): ComponentDetail[] =>
     actualWeight: item.actualWeight || '',
     lowerTolerance: item.lowerTolerance || '0',
     upperTolerance: item.upperTolerance || '0',
+    lowerToleranceUnit: item.lowerToleranceUnit || '',
+    upperToleranceUnit: item.upperToleranceUnit || '',
     mixingRatio: item.mixingRatio || '100',
     glueExtra: item.glueExtra || false,
   }));
@@ -940,6 +943,8 @@ const buildExtraComponent = (
     weighingTime: '',
     lowerTolerance: toleranceStr,
     upperTolerance: toleranceStr,
+    lowerToleranceUnit: 'g',
+    upperToleranceUnit: 'g',
     mixingRatio: '',
     glueExtra: true,
     mixGlue: flags.mixGlue,

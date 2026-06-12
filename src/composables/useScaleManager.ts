@@ -1,12 +1,24 @@
 import { ref } from 'vue';
 import { registerPlugin, WebPlugin } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
 export type ScaleDevice = {
   id: string;
   label: string;
+  serial?: string;
+  deviceName?: string;
   vendorId?: number;
   productId?: number;
   hasPermission?: boolean;
+};
+
+type ScaleSizeKey = 'small' | 'large';
+type ScaleLabelRegistry = Record<string, ScaleSizeKey>;
+
+const SCALE_LABEL_REGISTRY_KEY = 'scale-device-labels';
+const SCALE_LABELS: Record<ScaleSizeKey, string> = {
+  small: 'Cân Nhỏ',
+  large: 'Cân Lớn',
 };
 
 type ConnectOptions = {
@@ -20,6 +32,15 @@ class SerialScaleWeb extends WebPlugin {
   private readLoopActive = false;
   private grantedPorts: any[] = [];
 
+  private buildWebPortId(port: any, index: number) {
+    const info = port?.getInfo?.() ?? {};
+    const serial = String(info.serialNumber ?? '').trim();
+    if (serial) return serial;
+    const vendorId = info.usbVendorId ?? 0;
+    const productId = info.usbProductId ?? 0;
+    return `web-${vendorId}-${productId}-${index}`;
+  }
+
   async listDevices() {
     const nav = (navigator as any).serial;
     if (!nav) {
@@ -27,10 +48,17 @@ class SerialScaleWeb extends WebPlugin {
     }
 
     this.grantedPorts = await nav.getPorts();
-    const devices = this.grantedPorts.map((_: unknown, index: number) => ({
-      id: String(index),
-      label: index === 0 ? 'Cân Nhỏ' : index === 1 ? 'Cân Lớn' : `Serial ${index + 1}`,
-    }));
+    const devices = this.grantedPorts.map((port: any, index: number) => {
+      const info = port?.getInfo?.() ?? {};
+      const id = this.buildWebPortId(port, index);
+      return {
+        id,
+        label: id,
+        serial: String(info.serialNumber ?? '').trim() || undefined,
+        vendorId: info.usbVendorId,
+        productId: info.usbProductId,
+      };
+    });
 
     return { devices };
   }
@@ -46,18 +74,23 @@ class SerialScaleWeb extends WebPlugin {
     if (options?.pickPort) {
       this.port = await nav.requestPort();
     } else if (options?.deviceId != null && options.deviceId !== '') {
-      const index = Number(options.deviceId);
-      if (Number.isInteger(index) && this.grantedPorts[index]) {
-        this.port = this.grantedPorts[index];
+      const ports = await nav.getPorts();
+      this.grantedPorts = ports;
+      const matchedIndex = ports.findIndex((port: any, index: number) =>
+        this.buildWebPortId(port, index) === options.deviceId
+      );
+      if (matchedIndex >= 0) {
+        this.port = ports[matchedIndex];
       } else {
-        const ports = await nav.getPorts();
-        this.grantedPorts = ports;
-        this.port = ports[index] ?? ports[0] ?? await nav.requestPort();
+        throw new Error('Không tìm thấy cân đã chọn. Hãy refresh danh sách USB.');
       }
     } else {
       const ports = await nav.getPorts();
       this.grantedPorts = ports;
-      this.port = ports.length > 0 ? ports[0] : await nav.requestPort();
+      if (ports.length !== 1) {
+        throw new Error('Vui lòng chọn cân USB trước khi kết nối.');
+      }
+      this.port = ports[0];
     }
 
     await this.port.open({ baudRate: 9600 });
@@ -135,6 +168,52 @@ let dataBuffer = '';
 let lastDataAt = 0;
 
 const sessionDeviceIds = new Map<string | number | symbol, string>();
+
+const loadScaleLabelRegistry = async (): Promise<ScaleLabelRegistry> => {
+  const { value } = await Preferences.get({ key: SCALE_LABEL_REGISTRY_KEY });
+  if (!value) return {};
+  try {
+    return JSON.parse(value) as ScaleLabelRegistry;
+  } catch {
+    return {};
+  }
+};
+
+const saveScaleLabelRegistry = async (registry: ScaleLabelRegistry) => {
+  await Preferences.set({ key: SCALE_LABEL_REGISTRY_KEY, value: JSON.stringify(registry) });
+};
+
+/** Gán Cân Nhỏ / Cân Lớn theo ID ổn định (serial), không theo thứ tự cắm hub. */
+const applyScaleLabels = async (devices: ScaleDevice[]): Promise<ScaleDevice[]> => {
+  if (devices.length === 0) return [];
+
+  const registry = await loadScaleLabelRegistry();
+  const unmapped = devices.filter((device) => !registry[device.id]);
+
+  if (devices.length === 2 && unmapped.length > 0) {
+    if (!registry[devices[0].id]) registry[devices[0].id] = 'small';
+    if (!registry[devices[1].id]) registry[devices[1].id] = 'large';
+    await saveScaleLabelRegistry(registry);
+  }
+
+  return devices.map((device) => {
+    const size = registry[device.id];
+    if (size) {
+      return { ...device, label: SCALE_LABELS[size] };
+    }
+    const suffix = device.serial?.slice(-6) || device.id.slice(-6);
+    return { ...device, label: `Cân USB (${suffix})` };
+  });
+};
+
+const pruneSessionDeviceIds = (devices: ScaleDevice[]) => {
+  const connectedIds = new Set(devices.map((device) => device.id));
+  for (const [sessionId, deviceId] of sessionDeviceIds.entries()) {
+    if (!connectedIds.has(deviceId)) {
+      sessionDeviceIds.delete(sessionId);
+    }
+  }
+};
 
 const disconnectHardware = async () => {
   isGlobalConnected.value = false;
@@ -236,7 +315,9 @@ const parseScalePayload = (raw: string) => {
 const fetchAvailableScales = async (): Promise<ScaleDevice[]> => {
   try {
     const result = await SerialScale.listDevices();
-    const devices = Array.isArray(result?.devices) ? result.devices : [];
+    const raw = Array.isArray(result?.devices) ? result.devices : [];
+    const devices = await applyScaleLabels(raw);
+    pruneSessionDeviceIds(devices);
     availableScales.value = devices;
     return devices;
   } catch (e) {
@@ -254,12 +335,17 @@ const resolveDeviceIdForSession = (
   if (devices.length === 0) return null;
 
   if (devices.length === 1) {
+    sessionDeviceIds.set(sessionId, devices[0].id);
     return devices[0].id;
   }
 
   const preferred = explicitDeviceId || sessionDeviceIds.get(sessionId);
   if (preferred && devices.some((device) => device.id === preferred)) {
     return preferred;
+  }
+
+  if (preferred) {
+    sessionDeviceIds.delete(sessionId);
   }
 
   return null;
@@ -393,6 +479,34 @@ export function useScaleManager() {
     });
   };
 
+  /** Quét lại USB hub, cập nhật dropdown và kết nối lại cân đã chọn (nếu còn). */
+  const refreshScaleDevices = async (sessionId: string | number | symbol) => {
+    activeScaleSessionId.value = sessionId;
+    globalWeight.value = '0.000';
+
+    await forceDisconnect();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const devices = await fetchAvailableScales();
+    const saved = sessionDeviceIds.get(sessionId);
+
+    if (devices.length === 0) {
+      pendingSelectionSessionId.value = null;
+      return { devices, connected: false, needsSelection: false };
+    }
+
+    const deviceId = resolveDeviceIdForSession(sessionId, devices, saved ?? undefined);
+
+    if (!deviceId) {
+      pendingSelectionSessionId.value = sessionId;
+      return { devices, connected: false, needsSelection: true };
+    }
+
+    pendingSelectionSessionId.value = null;
+    await connectToScale({ sessionId, deviceId, force: true });
+    return { devices, connected: true, needsSelection: false, deviceId };
+  };
+
   const startAutoConnect = (sessionId: string | number | symbol) => {
     if (activeScaleSessionId.value !== null && activeScaleSessionId.value !== sessionId) {
       void internalStop();
@@ -456,6 +570,7 @@ export function useScaleManager() {
     stopAutoConnect,
     releaseScaleConnection,
     forceReconnect,
+    refreshScaleDevices,
     selectScaleDevice,
     fetchAvailableScales,
     isSessionPendingSelection,
