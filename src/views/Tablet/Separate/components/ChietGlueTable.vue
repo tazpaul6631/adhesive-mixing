@@ -264,6 +264,11 @@ const handleDeleteRow = (rowData: any) => {
 };
 
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
+  if (!rowData.selectedBucketId) {
+    rowData.bucketId = undefined;
+  } else {
+    rowData.bucketId = rowData.selectedBucketId;
+  }
   updateRowCompletionInfo(rowData);
   emit('update-bucket');
 };

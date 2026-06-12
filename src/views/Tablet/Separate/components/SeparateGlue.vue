@@ -105,6 +105,9 @@ import {
   WEIGHT_EPSILON,
   findBucketOptionById,
   normalizeBucketIdForSelect,
+  mapBucketOptions,
+  getRowActiveBucketId,
+  pruneStaleBucketIds,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 
@@ -165,9 +168,7 @@ const getTargetWeightLabel = () => (
 );
 
 const orderDetailsSelectionKey = computed(() =>
-  props.orderDetails.map((row) =>
-    String(row.selectedBucketId ?? row.bucketId ?? '')
-  ).join('|')
+  props.orderDetails.map((row) => String(getRowActiveBucketId(row) ?? '')).join('|')
 );
 
 const getSelectedBucketTotalKg = () =>
@@ -291,9 +292,7 @@ const isAllocationComplete = () => {
 //   return Array.isArray(rowData.selectedRequestDetailIds) && rowData.selectedRequestDetailIds.length > 0;
 // };
 
-const hasBucketSelection = (rowData: any) => {
-  return !!rowData.selectedBucketId;
-};
+const hasBucketSelection = (rowData: any) => getRowActiveBucketId(rowData) != null;
 
 const updateRowCompletionInfo = (rowData: any) => {
   if (hasBucketSelection(rowData)) {
@@ -364,12 +363,6 @@ const handleDeleteRow = (rowData: any) => {
   emit('delete-row', rowData);
 };
 
-const mapBucketOptions = (items: any[]): BucketOption[] =>
-  items.map((item: any) => ({
-    ...item,
-    label: `${item.capacity} ${item.capacityUnit || 'Kg'}`,
-  }));
-
 const fetchBucketList = async () => {
   if (bucketLoadPromise) {
     await bucketLoadPromise;
@@ -419,6 +412,12 @@ const handleBucketSelectShow = () => {
 };
 
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
+  if (!rowData.selectedBucketId) {
+    rowData.bucketId = undefined;
+  } else {
+    rowData.bucketId = rowData.selectedBucketId;
+  }
+
   if (rowData.selectedBucketId && !props.useChietCapacityValidation) {
     const targetWeightKg = getEffectiveTargetWeightKg();
     if (targetWeightKg > 0 && getSelectedBucketTotalKg() > targetWeightKg + WEIGHT_EPSILON) {
