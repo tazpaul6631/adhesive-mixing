@@ -39,6 +39,31 @@ export type BucketOption = {
   label?: string;
 };
 
+export const mapBucketOptions = (items: any[]): BucketOption[] =>
+  (items || []).map((item: any) => ({
+    ...item,
+    label: item.label || `${item.capacity} ${item.capacityUnit || 'Kg'}`,
+  }));
+
+/** Chỉ thùng user đã chọn trên UI (Select bind selectedBucketId). */
+export const getRowActiveBucketId = (row: any): string | number | null => {
+  const selected = row?.selectedBucketId;
+  if (selected == null || selected === '') return null;
+  return selected;
+};
+
+/** Xóa bucketId cũ khi dòng chưa chọn — tránh validate đếm thùng ẩn. */
+export const pruneStaleBucketIds = (rows: any[]) => {
+  rows.forEach((row) => {
+    if (getRowActiveBucketId(row) == null) {
+      row.selectedBucketId = null;
+      row.bucketId = undefined;
+      return;
+    }
+    row.bucketId = row.selectedBucketId;
+  });
+};
+
 export const findBucketOptionById = (
   bucketList: BucketOption[],
   bucketId: unknown
@@ -143,10 +168,7 @@ export const hasMeaningfulFractionalKg = (kg: number): boolean => {
 };
 
 export const getFilledBucketRows = (orderDetails: any[]) =>
-  orderDetails.filter((row) => {
-    const id = row.selectedBucketId ?? row.bucketId;
-    return id != null && id !== '';
-  });
+  orderDetails.filter((row) => getRowActiveBucketId(row) != null);
 
 export const getMinBucketCapacityKg = (bucketList: BucketOption[]): number | null => {
   let min: number | null = null;
@@ -167,7 +189,7 @@ export const hasBucketCapacityExceedingActual = (
   if (actualKg <= 0) return false;
 
   return getFilledBucketRows(orderDetails).some((row) => {
-    const bucket = findBucketOptionById(bucketList, row.selectedBucketId ?? row.bucketId);
+    const bucket = findBucketOptionById(bucketList, getRowActiveBucketId(row));
     return !!bucket && getBucketCapacityKg(bucket) > actualKg + WEIGHT_EPSILON;
   });
 };
@@ -198,7 +220,7 @@ export const shouldBlockChietAddRow = (
 ): boolean => {
   const rows = orderDetails || [];
   if (rows.length === 0) return false;
-  if (rows.some((row) => !(row.selectedBucketId ?? row.bucketId))) return false;
+  if (rows.some((row) => getRowActiveBucketId(row) == null)) return false;
 
   if (hasChietTotalExceededActual(rows, bucketList, targetWeight, targetWeightUnit)) {
     return true;
@@ -223,10 +245,15 @@ export const validateChietFirstBucketFloorChoice = (
     return { ok: true };
   }
 
+  const totalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList);
+  if (totalKg >= actualKg - WEIGHT_EPSILON) {
+    return { ok: true };
+  }
+
   const firstRow = getFilledBucketRows(orderDetails)[0];
   if (!firstRow) return { ok: true };
 
-  const bucket = findBucketOptionById(bucketList, firstRow.selectedBucketId ?? firstRow.bucketId);
+  const bucket = findBucketOptionById(bucketList, getRowActiveBucketId(firstRow));
   if (!bucket) return { ok: true };
 
   const firstCapacityKg = getBucketCapacityKg(bucket);
@@ -313,10 +340,10 @@ export const sumSelectedBucketCapacityKg = (
   orderDetails.forEach((row) => {
     if (row === excludeRow) return;
 
-    const bucketId = row.selectedBucketId ?? row.bucketId;
-    if (!bucketId) return;
+    const bucketId = getRowActiveBucketId(row);
+    if (bucketId == null) return;
 
-    const bucket = bucketList.find((item) => String(item.bucketId) === String(bucketId));
+    const bucket = findBucketOptionById(bucketList, bucketId);
     if (bucket) {
       sum += getBucketCapacityKg(bucket);
     }
@@ -435,7 +462,7 @@ export const validateChietBucketCapacity = (
     return { ok: false, totalKg, message: floorChoice.message };
   }
 
-  if (totalKg > actualKg + WEIGHT_EPSILON) {
+  if (totalKg >= actualKg - WEIGHT_EPSILON) {
     return { ok: true, totalKg };
   }
 
