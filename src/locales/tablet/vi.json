@@ -256,7 +256,10 @@
       "capacityExceedsWeighed": "Tổng TL thùng chứa ({total} KG) vượt quá TL đã cân ({target}).",
       "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) chưa khớp TL chiết ({target}). Vui lòng chọn thùng phù hợp.",
       "capacityMismatchWeighedGeneric": "Tổng TL thùng chứa ({total} KG) không khớp TL đã cân ({target}).",
-      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL chiết {label}. Không cần thêm dòng mới."
+      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL chiết {label}. Không cần thêm dòng mới.",
+      "chietOversizedBucketBlock": "Đã chọn thùng lớn hơn TL thực tế ({label}). Không thể thêm dòng mới.",
+      "chietTotalExceededBlock": "Tổng TL thùng ({total} Kg) đã vượt TL thực tế ({target}). Không thể thêm dòng mới.",
+      "chietChooseClosestBucket": "Vui lòng chọn thùng gần nhất với số lượng còn lại ({remaining} Kg). Ví dụ: TL thực tế 12,1–12,9 Kg không thể chọn thùng 12 Kg đầu tiên."
     }
   },
   "bluetoothPrinter": {
@@ -326,7 +329,7 @@
       "columns": {
         "name": "Tên thành phần",
         "requiredWeight": "TL yêu cầu",
-        "actualWeight": "TL thực tế (KG)",
+        "actualWeight": "TL thực tế",
         "operator": "Người thao tác",
         "weighingTime": "Thời gian cân",
         "action": "Thao tác"
@@ -340,8 +343,8 @@
       "nameRequired": "Tên thành phần là bắt buộc.",
       "percentageLabel": "Phần trăm (%)",
       "percentageRequired": "Vui lòng nhập phần trăm.",
-      "weightLabel": "Trọng lượng (KG)",
-      "weightRequired": "Vui lòng nhập trọng lượng (KG)",
+      "weightLabel": "Trọng lượng ({unit})",
+      "weightRequired": "Vui lòng nhập trọng lượng ({unit})",
       "toleranceGramsLabel": "Độ chênh lệch (g)",
       "toleranceGramsRequired": "Vui lòng nhập gram chênh lệch lớn hơn 0"
     },

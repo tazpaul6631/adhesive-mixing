@@ -83,9 +83,12 @@ import {
   validateChietBucketCapacity,
   formatEffectiveChietTargetLabel,
   formatChietCapacityBlockMessage,
+  formatTargetWeightLabel,
+  getActualWeighedKg,
+  shouldBlockChietAddRow,
+  hasChietTotalExceededActual,
+  formatWeightKg,
   resolveChietTargetCapacityKg,
-  getCapacityMatchToleranceKg,
-  isChietCapacityComplete,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
@@ -115,10 +118,13 @@ const { markPendingScrollToNewRow } = useScrollToNewTableRow(
 );
 
 const getWeighedWeightKg = () =>
-  resolveChietTargetCapacityKg(props.weighedWeight ?? 0, props.weighedWeightUnit || 'Kg');
+  getActualWeighedKg(props.weighedWeight, props.weighedWeightUnit || 'Kg');
 
 const getWeighedWeightLabel = () =>
-  formatEffectiveChietTargetLabel(props.weighedWeight, props.weighedWeightUnit || 'Kg');
+  formatTargetWeightLabel(props.weighedWeight, props.weighedWeightUnit || 'Kg');
+
+const getChietTargetWeightKg = () =>
+  resolveChietTargetCapacityKg(props.weighedWeight ?? 0, props.weighedWeightUnit || 'Kg');
 
 const getSelectedBucketTotalKg = () =>
   sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
@@ -136,22 +142,16 @@ const hasBucketSelection = (rowData: any) => !!rowData.selectedBucketId;
 
 const isRowComplete = (rowData: any) => hasBucketSelection(rowData);
 
-const isWeighedCapacityComplete = () =>
-  isChietCapacityComplete(
-    getSelectedBucketTotalKg(),
-    props.weighedWeight,
-    props.weighedWeightUnit || 'Kg'
-  );
-
 const shouldBlockAddRow = () => {
   void orderDetailsSelectionKey.value;
   void bucketList.value.length;
 
-  const rows = props.orderDetails || [];
-  if (rows.length === 0) return false;
-  if (rows.some((row) => !isRowComplete(row))) return false;
-
-  return isWeighedCapacityComplete();
+  return shouldBlockChietAddRow(
+    props.orderDetails,
+    bucketList.value,
+    props.weighedWeight,
+    props.weighedWeightUnit || 'Kg'
+  );
 };
 
 // const getSelectedIdsInOtherRows = (currentRow: any) => {
@@ -173,7 +173,7 @@ const shouldBlockAddRow = () => {
 // };
 
 const getBucketOptionsForRow = (currentRow: any) => {
-  const targetKg = getWeighedWeightKg();
+  const targetKg = getChietTargetWeightKg();
   if (targetKg <= 0 || bucketList.value.length === 0) {
     return bucketList.value;
   }
@@ -232,10 +232,23 @@ const handleAddRow = () => {
     }
 
     if (blocked) {
+      const actualLabel = getWeighedWeightLabel();
+      const totalKg = getSelectedBucketTotalKg();
+      const exceeded = hasChietTotalExceededActual(
+        props.orderDetails,
+        bucketList.value,
+        props.weighedWeight,
+        props.weighedWeightUnit || 'Kg'
+      );
       toast.add({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.allocationComplete'),
-        detail: formatChietCapacityBlockMessage(props.weighedWeight, props.weighedWeightUnit || 'Kg'),
+        detail: exceeded
+          ? t('separateMixedGlue.validation.chietTotalExceededBlock', {
+            total: formatWeightKg(totalKg),
+            target: actualLabel,
+          })
+          : formatChietCapacityBlockMessage(props.weighedWeight, props.weighedWeightUnit || 'Kg'),
         life: 6000,
       });
       return;
@@ -251,23 +264,6 @@ const handleDeleteRow = (rowData: any) => {
 };
 
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
-  const targetKg = getWeighedWeightKg();
-  if (targetKg > 0 && rowData.selectedBucketId) {
-    const totalKg = getSelectedBucketTotalKg();
-    const tolerance = getCapacityMatchToleranceKg(props.weighedWeight, props.weighedWeightUnit || 'Kg');
-
-    if (totalKg > targetKg + tolerance) {
-      await clearRowBucketSelection(rowData, rowIndex);
-      toast.add({
-        severity: 'warn',
-        summary: t('separateMixedGlue.toast.weightExceeded'),
-        detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getWeighedWeightLabel() }),
-        life: 6000,
-      });
-      return;
-    }
-  }
-
   updateRowCompletionInfo(rowData);
   emit('update-bucket');
 };
