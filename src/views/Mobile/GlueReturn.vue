@@ -51,47 +51,64 @@
               </ion-card-content>
             </ion-card>
 
-            <ion-card class="qr-container">
+            <ion-card class="qr-container line-qr-container">
               <ion-card-header>
                 <ion-card-title>{{ t("mobile.glueReturn.lineQrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <div class="qr-scan-field-wrapper">
-                  <button
-                    type="button"
-                    class="qr-scan-field"
-                    :class="{ 'qr-scan-field--with-clear': optionalLineChemicalInfo }"
-                    @click="openLineScanner"
+
+                <button
+                  type="button"
+                  class="line-scan-add-button"
+                  :disabled="!pendingReturnGlueInfo"
+                  @click="openLineScanner"
+                >
+                  <span>{{ t("mobile.glueReturn.lineScanAddButton") }}</span>
+                  <span class="confirm-button__icon">
+                    <McScanFill />
+                  </span>
+                </button>
+
+                <p v-if="!pendingReturnGlueInfo" class="line-scan-hint">
+                  {{ t("mobile.glueReturn.lineScanDisabledHint") }}
+                </p>
+
+                <div v-if="lineChemicalItems.length" class="line-chemical-list">
+                  <div class="line-chemical-list__title">
+                    {{ t("mobile.glueReturn.lineListTitle", { count: lineChemicalItems.length }) }}
+                  </div>
+
+                  <div
+                    class="line-chemical-list__items"
+                    :class="{ 'line-chemical-list__items--scrollable': lineChemicalItems.length >= 2 }"
                   >
-                    <span
-                      v-if="!lineQrText"
-                      class="qr-scan-field__text qr-scan-field__text--empty"
+                    <div
+                      v-for="item in lineChemicalItems"
+                      :key="item.id"
+                      class="line-chemical-card"
                     >
-                      {{ t("mobile.glueReturn.lineScanPlaceholder") }}
-                    </span>
-                    <div v-else-if="optionalLineChemicalInfo" class="qr-scan-field__info">
-                      <div class="qr-scan-field__info-row">
-                        <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.lineLabel") }}</span>
-                        <span class="qr-scan-field__info-value">{{ optionalLineChemicalInfo.productLineName }}</span>
+                      <div class="line-chemical-card__main">
+                        <div class="line-chemical-card__row">
+                          <span class="line-chemical-card__label">{{ t("mobile.glueReturn.fields.lineLabel") }}</span>
+                          <span class="line-chemical-card__value">{{ item.productLineName || '-' }}</span>
+                        </div>
+
+                        <div class="line-chemical-card__row">
+                          <span class="line-chemical-card__label">{{ t("mobile.glueReturn.fields.glueLabel") }}</span>
+                          <span class="line-chemical-card__value">{{ item.glueName || '-' }}</span>
+                        </div>
                       </div>
-                      <div class="qr-scan-field__info-row">
-                        <span class="qr-scan-field__info-label">{{ t("mobile.glueReturn.fields.glueLabel") }}</span>
-                        <span class="qr-scan-field__info-value">{{ optionalLineChemicalInfo.glueName }}</span>
-                      </div>
+
+                      <button
+                        type="button"
+                        class="line-chemical-card__delete"
+                        :aria-label="t('mobile.glueReturn.removeLineItem')"
+                        @click.stop="removeLineChemicalItem(item.id)"
+                      >
+                        <ion-icon :icon="trashOutline"></ion-icon>
+                      </button>
                     </div>
-                    <span v-else class="qr-scan-field__text">{{ lineQrText }}</span>
-                    <span v-if="!optionalLineChemicalInfo" class="confirm-button__icon">
-                      <McScanFill />
-                    </span>
-                  </button>
-                  <button
-                    v-if="optionalLineChemicalInfo"
-                    type="button"
-                    class="qr-scan-field__clear"
-                    @click.stop="resetLineChemicalField"
-                  >
-                    <ion-icon :icon="closeCircleOutline"></ion-icon>
-                  </button>
+                  </div>
                 </div>
               </ion-card-content>
             </ion-card>
@@ -168,7 +185,7 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/vue';
-import { alertCircle, barcodeOutline, closeCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import { alertCircle, shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -182,14 +199,24 @@ import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
 import { McScanFill } from '@kalimahapps/vue-icons';
 
+interface LineChemicalItem {
+  id: string;
+  rawQrText: string;
+  productLineName: string;
+  glueName: string;
+  lineChemicalName: string;
+  chemicalMasterId: string;
+  isMatched: boolean;
+  rawData: any;
+}
+
 const { t } = useI18n();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
 
 const returnQrText = ref('');
-const lineQrText = ref('');
 const pendingReturnGlueInfo = ref<any>(null);
-const optionalLineChemicalInfo = ref<any>(null);
+const lineChemicalItems = ref<LineChemicalItem[]>([]);
 const isConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
 const showSuccessToast = ref(false);
@@ -197,11 +224,9 @@ const toastMessage = ref('');
 const toastColor = ref<string | undefined>('success');
 const toastCssClass = ref('');
 
-const canSubmitReturn = computed(() => !!pendingReturnGlueInfo.value);
+const hasLineChemicalMismatch = computed(() => lineChemicalItems.value.some((item) => !item.isMatched));
+const canSubmitReturn = computed(() => !!pendingReturnGlueInfo.value && !hasLineChemicalMismatch.value && !isSubmittingReturn.value);
 
-function normalizeQrText(value: string) {
-  return value.trim();
-}
 
 function normalizeCompareValue(value: any) {
   if (value === null || value === undefined) {
@@ -237,6 +262,24 @@ function getReturnGlueIdValue(info: any) {
   }
 
   return 0;
+}
+
+function getReturnGlueCompareValue(info: any) {
+  if (hasPayloadValue(info?.glueId)) {
+    return normalizeCompareValue(info.glueId);
+  }
+
+  if (hasPayloadValue(info?.materialCode)) {
+    return normalizeCompareValue(info.materialCode);
+  }
+
+  return '';
+}
+
+function getLineChemicalIdList() {
+  return lineChemicalItems.value
+    .map((item) => normalizeCompareValue(item.rawData?.lineChemicalId))
+    .filter(Boolean);
 }
 
 function getSystemQrUrl(qrText: string) {
@@ -301,7 +344,6 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
   }
 }
 
-
 async function resolveGlueQr(qrText: string) {
   if (!authStore.isOnline) {
     return findGlueOfflineQrData(qrText);
@@ -328,9 +370,17 @@ function resetReturnField() {
   pendingReturnGlueInfo.value = null;
 }
 
+function resetLineChemicalList() {
+  lineChemicalItems.value = [];
+}
+
+function resetReturnWorkflow() {
+  resetReturnField();
+  resetLineChemicalList();
+}
+
 function closeConfirmDialog() {
   isConfirmDialogOpen.value = false;
-  resetReturnField();
 }
 
 async function openScanner() {
@@ -358,13 +408,13 @@ async function openScanner() {
     const result = await resolveGlueQr(scannedValue);
 
     if (result.status === 'invalid') {
-      resetReturnField();
+      resetReturnWorkflow();
       await showWarningAlert(t('mobile.glueReturn.messages.invalidQr'));
       return;
     }
 
     if (result.status === 'noData' || !result.data) {
-      resetReturnField();
+      resetReturnWorkflow();
       await showWarningAlert(t('mobile.glueReturn.messages.noGlueData'));
       return;
     }
@@ -372,26 +422,48 @@ async function openScanner() {
     const qrType = getGlueQrType(result.data);
 
     if (!isAllocatedGlueQrType(qrType)) {
-      resetReturnField();
+      resetReturnWorkflow();
       await showWarningAlert(t('mobile.glueReturn.messages.invalidQr'));
       return;
     }
 
     returnQrText.value = `${result.data.glueName || ''}`;
     pendingReturnGlueInfo.value = result.data;
+    resetLineChemicalList();
   } catch (error) {
     console.error('Lỗi khi quét mã QR:', error);
     alert(t('mobile.glueReturn.messages.loadError'));
   }
 }
 
+function buildLineChemicalItem(data: any, rawQrText: string): LineChemicalItem {
+  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
+  const lineChemicalMasterId = normalizeCompareValue(data?.chemicalMasterId);
+  const returnGlueCompareValue = getReturnGlueCompareValue(pendingReturnGlueInfo.value);
+  const isMatched = !!lineChemicalMasterId && !!returnGlueCompareValue && lineChemicalMasterId === returnGlueCompareValue;
 
-function resetLineChemicalField() {
-  lineQrText.value = '';
-  optionalLineChemicalInfo.value = null;
+  return {
+    id: lineChemicalId || `${Date.now()}-${lineChemicalItems.value.length}`,
+    rawQrText,
+    productLineName: normalizeCompareValue(data?.productLineName),
+    glueName: normalizeCompareValue(data?.glueName),
+    lineChemicalName: normalizeCompareValue(data?.lineChemicalName),
+    chemicalMasterId: lineChemicalMasterId,
+    isMatched,
+    rawData: data,
+  };
+}
+
+function removeLineChemicalItem(id: string) {
+  lineChemicalItems.value = lineChemicalItems.value.filter((item) => item.id !== id);
 }
 
 async function openLineScanner() {
+  if (!pendingReturnGlueInfo.value) {
+    await showWarningAlert(t('mobile.glueReturn.messages.requireReturnGlueFirst'));
+    return;
+  }
+
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
@@ -413,18 +485,14 @@ async function openLineScanner() {
       return;
     }
 
-    lineQrText.value = t('mobile.glueReturn.messages.loadingInfo');
-
     const result = await resolveGlueQr(scannedValue);
 
     if (result.status === 'invalid') {
-      resetLineChemicalField();
       await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
       return;
     }
 
     if (result.status === 'noData' || !result.data) {
-      resetLineChemicalField();
       await showWarningAlert(t('mobile.glueReturn.messages.noLineData'));
       return;
     }
@@ -432,16 +500,28 @@ async function openLineScanner() {
     const qrType = getGlueQrType(result.data);
 
     if (qrType !== 'lineChemical') {
-      resetLineChemicalField();
       await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
       return;
     }
 
-    optionalLineChemicalInfo.value = result.data;
-    lineQrText.value = `${result.data.glueName || ''}`;
+    const lineChemicalId = normalizeCompareValue(result.data?.lineChemicalId);
+    const isDuplicated = !!lineChemicalId && lineChemicalItems.value.some((item) => item.id === lineChemicalId);
+
+    if (isDuplicated) {
+      await showWarningAlert(t('mobile.glueReturn.messages.duplicateLineQr'));
+      return;
+    }
+
+    const item = buildLineChemicalItem(result.data, scannedValue);
+
+    if (!item.isMatched) {
+      await showWarningAlert(t('mobile.glueReturn.messages.lineMismatchWarning'));
+      return;
+    }
+
+    lineChemicalItems.value = [...lineChemicalItems.value, item];
   } catch (error) {
     console.error('Lỗi khi quét mã QR thùng keo chuyền:', error);
-    resetLineChemicalField();
     alert(t('mobile.glueReturn.messages.loadLineError'));
   }
 }
@@ -455,19 +535,16 @@ function openConfirmDialog() {
 }
 
 async function confirmReturnQr() {
-  if (!pendingReturnGlueInfo.value) {
+  if (!pendingReturnGlueInfo.value || hasLineChemicalMismatch.value) {
     return;
   }
 
-  const lineChemicalId = hasPayloadValue(optionalLineChemicalInfo.value?.lineChemicalId)
-    ? normalizeCompareValue(optionalLineChemicalInfo.value.lineChemicalId)
-    : '0';
-
+  const lineChemicalIds = getLineChemicalIdList();
   const userId = getCurrentUserId();
   const payload = {
     factoryId: normalizeCompareValue(pendingReturnGlueInfo.value.factoryId),
     returnGlueId: getReturnGlueIdValue(pendingReturnGlueInfo.value),
-    lineChemicalId,
+    lineChemicalIds,
     recordStatus: '1',
     createrId: userId,
     updaterId: userId,
@@ -480,6 +557,8 @@ async function confirmReturnQr() {
       await addOfflineQueueItem('ReturnGlue', 'api/mobile/gluereturnlog/create', 'POST', payload);
       await offlineStore.refreshQueueCounts();
       showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      resetReturnWorkflow();
+      closeConfirmDialog();
       return;
     }
 
@@ -491,12 +570,13 @@ async function confirmReturnQr() {
     }
 
     showToast(t('mobile.glueReturn.messages.returnSuccess'));
+    resetReturnWorkflow();
+    closeConfirmDialog();
   } catch (error) {
     console.error('Không thể tạo log trả keo:', error);
     alert(error instanceof Error ? error.message : t('mobile.glueReturn.messages.returnConfirmError'));
   } finally {
     isSubmittingReturn.value = false;
-    closeConfirmDialog();
   }
 }
 
@@ -507,7 +587,6 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   showSuccessToast.value = true;
 }
 </script>
-
 
 <style scoped lang="scss">
 .header-container {
@@ -561,10 +640,6 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   ion-card-content {
     padding: 0 24px 24px;
   }
-}
-
-.qr-scan-field-wrapper {
-  position: relative;
 }
 
 .qr-scan-field {
@@ -636,39 +711,156 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     font-weight: 700;
     word-break: break-word;
   }
+}
 
-  &--with-clear {
-    padding-right: 48px;
+.line-qr-container {
+  ion-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+.line-scan-description {
+  margin: -4px 0 0;
+  color: #64748b;
+  font-size: 13px !important;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.line-scan-add-button {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 1px dashed #0b72ed;
+  border-radius: 16px;
+  background: #f4f8ff;
+  color: #0b72ed;
+  font-size: 15px !important;
+  font-weight: 700;
+  outline: none;
+
+  &:active {
+    background: #eaf2ff;
+  }
+
+  &:disabled {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
   }
 
   &__icon {
-    flex-shrink: 0;
-    font-size: 18px !important;
-  }
-
-  &__clear {
-    position: absolute;
-    top: 50%;
-    right: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    font-size: 20px !important;
+  }
+}
+
+.line-scan-hint {
+  margin: -4px 0 0;
+  color: #ee4646;
+  font-size: 12px !important;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.line-chemical-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+
+  &__title {
+    color: #475569;
+    font-size: 13px !important;
+    font-weight: 700;
+  }
+
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 2px;
+  }
+
+  &__items--scrollable {
+    max-height: 238px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+  }
+}
+
+.line-chemical-card {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #f8fbff;
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    line-height: 1.35;
+  }
+
+  &__label {
+    flex-shrink: 0;
+    color: #64748b;
+    font-size: 16px !important;
+    font-weight: 700;
+  }
+
+  &__value {
+    color: #1e293b;
+    font-size: 16px !important;
+    font-weight: 700;
+    word-break: break-word;
+  }
+
+  &__delete {
+    flex: 0 0 36px;
+    width: 36px;
+    min-height: 36px;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
     border: 0;
     border-radius: 50%;
-    background: transparent;
-    color: #94a3b8;
-    transform: translateY(-50%);
+    background: #ffffff;
+    color: #ee4646;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 
     ion-icon {
-      font-size: 22px !important;
+      font-size: 20px !important;
     }
 
     &:active {
-      color: #475569;
-      background: #f1f5f9;
+      color: #dc2626;
+      background: #fee2e2;
     }
   }
 }
@@ -711,41 +903,6 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   width: 22px;
   height: 22px;
   display: block;
-}
-
-.confirm-button__text {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
-}
-
-.status-box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  font-size: 14px !important;
-
-  &__icon {
-    flex-shrink: 0;
-    font-size: 18px !important;
-  }
-
-  &__content {
-    flex: 1;
-  }
-
-  &__content p {
-    margin: 0;
-    line-height: 1.45;
-  }
-
-  &--danger {
-    border: 1px solid #fecaca;
-    color: #dc1f2e;
-    background: #fff7f7;
-  }
 }
 
 .return-confirm-modal {
@@ -824,14 +981,56 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     }
   }
 
-  .qr-scan-field-wrapper {
-  position: relative;
-}
-
-.qr-scan-field {
+  .qr-scan-field {
     min-height: 78px;
     padding: 18px 24px;
     border-radius: 18px;
+  }
+
+  .line-scan-description {
+    font-size: 15px !important;
+  }
+
+  .line-scan-add-button {
+    min-height: 64px;
+    border-radius: 18px;
+    font-size: 17px !important;
+  }
+
+  .line-scan-hint {
+    font-size: 14px !important;
+  }
+
+  .line-chemical-list {
+    gap: 12px;
+
+    &__title {
+      font-size: 15px !important;
+    }
+
+    &__items {
+      gap: 12px;
+    }
+
+    &__items--scrollable {
+      max-height: 310px;
+    }
+  }
+
+  .line-chemical-card {
+    padding: 16px;
+    border-radius: 18px;
+
+    &__label,
+    &__value {
+      font-size: 15px !important;
+    }
+
+    &__delete {
+      flex-basis: 42px;
+      width: 42px;
+      min-height: 42px;
+    }
   }
 
   .confirm-button {

@@ -119,7 +119,8 @@
       "submittingButton": "送出中...",
       "fields": {
         "lineLabel": "產線：",
-        "glueLabel": "膠水："
+        "glueLabel": "膠水：",
+        "lineChemicalLabel": "明細："
       },
       "messages": {
         "requireConfirmedLine": "請先完成產線確認領膠，之後再掃描退回膠桶。",
@@ -132,10 +133,20 @@
         "loadingInfo": "正在載入資訊...",
         "invalidLineQr": "QR Code 無效，請重新掃描產線膠桶 QR Code。",
         "noLineData": "找不到產線膠桶資料。",
-        "loadLineError": "無法取得產線膠桶 QR 資訊，請檢查 API 連線！"
+        "loadLineError": "無法取得產線膠桶 QR 資訊，請檢查 API 連線！",
+        "requireReturnGlueFirst": "請先掃描退回膠桶 QR Code。",
+        "duplicateLineQr": "此產線膠桶 QR Code 已掃描。",
+        "lineMismatchWarning": "已掃描的產線膠桶與發膠桶不相符。"
       },
       "lineQrTitle": "產線膠桶 QR Code（選填）",
-      "lineScanPlaceholder": "掃描產線膠桶 QR Code"
+      "lineScanPlaceholder": "掃描產線膠桶 QR Code",
+      "lineScanDescription": "可掃描一個或多個產線膠桶，以便在退回前確認膠水類型。",
+      "lineScanAddButton": "掃描更多產線膠桶",
+      "lineScanDisabledHint": "請先掃描退回膠桶 QR Code。",
+      "lineListTitle": "已掃描 {count} 條產線",
+      "lineMatched": "相符",
+      "lineMismatch": "不相符",
+      "removeLineItem": "刪除產線膠桶"
     },
     "glueInfoCheck": {
       "title": "膠桶資訊查詢",

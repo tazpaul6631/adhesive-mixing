@@ -63,11 +63,21 @@ function mapReceiveGluePayload(payload: any) {
   return requestPayload;
 }
 
+function normalizeIdArrayValue(value: any) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => normalizeValue(item))
+    .filter(Boolean);
+}
+
 function mapReturnGluePayload(payload: any) {
   return {
     factoryId: normalizeValue(payload?.factoryId),
     returnGlueId: normalizeIdValue(payload?.returnGlueId),
-    lineChemicalId: normalizeIdValue(payload?.lineChemicalId),
+    lineChemicalIds: normalizeIdArrayValue(payload?.lineChemicalIds),
     recordStatus: normalizeValue(payload?.recordStatus || '1'),
     createrId: normalizeValue(payload?.createrId),
     updaterId: normalizeValue(payload?.updaterId),

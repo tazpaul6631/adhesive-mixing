@@ -119,7 +119,8 @@
       "submittingButton": "Submitting...",
       "fields": {
         "lineLabel": "Line:",
-        "glueLabel": "Glue:"
+        "glueLabel": "Glue:",
+        "lineChemicalLabel": "Detail:"
       },
       "messages": {
         "requireConfirmedLine": "Please confirm the production line glue first before scanning the returned glue bucket.",
@@ -132,10 +133,20 @@
         "loadingInfo": "Loading information...",
         "invalidLineQr": "Invalid QR code. Please scan the line glue bucket QR code again.",
         "noLineData": "No line glue bucket data found.",
-        "loadLineError": "Unable to retrieve the line glue bucket QR information. Please check the API connection!"
+        "loadLineError": "Unable to retrieve the line glue bucket QR information. Please check the API connection!",
+        "requireReturnGlueFirst": "Please scan the returned glue bucket QR code first.",
+        "duplicateLineQr": "This line glue bucket QR code has already been scanned.",
+        "lineMismatchWarning": "The scanned line glue bucket does not match the delivery glue bucket."
       },
       "lineQrTitle": "Line glue bucket QR code (optional)",
-      "lineScanPlaceholder": "Scan the line glue bucket QR code"
+      "lineScanPlaceholder": "Scan the line glue bucket QR code",
+      "lineScanDescription": "Scan one or more line glue buckets to check the glue type before returning.",
+      "lineScanAddButton": "Scan another line glue bucket",
+      "lineScanDisabledHint": "Please scan the returned glue bucket QR code first.",
+      "lineListTitle": "Scanned lines: {count}",
+      "lineMatched": "Matched",
+      "lineMismatch": "Not matched",
+      "removeLineItem": "Remove line glue bucket"
     },
     "glueInfoCheck": {
       "title": "Glue Bucket Information Lookup",
