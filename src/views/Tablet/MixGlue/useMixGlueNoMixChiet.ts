@@ -142,8 +142,13 @@ export function useMixGlueNoMixChiet(options: {
   const onNoMixRowClick = (event: { data: NoMixRow }) => {
     if (options.isLoadingComponent.value || !event.data?.materialName) return;
 
-    options.noMixMixingProcess.value.component = event.data.materialName;
-    options.activeNoMixComponent.value = { ...event.data };
+    const row = { ...event.data };
+    if (!row.glueWeight && !row.glueExtra) {
+      row.glueWeight = row.requiredWeight || options.headerInfo.value.totalWeight;
+    }
+
+    options.noMixMixingProcess.value.component = row.materialName;
+    options.activeNoMixComponent.value = row;
     options.selectedItemNoMix.value = event.data;
     options.noMixMixingProcess.value.weight = '0.000';
   };

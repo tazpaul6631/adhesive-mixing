@@ -38,7 +38,7 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <span v-else>{{ data.glueWeight || data.requiredWeight || '' }}</span>
+          <span v-else>{{ data.glueWeight || '' }} {{ data.weightUnit }}</span>
         </template>
       </Column>
 
@@ -46,9 +46,8 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else
-            :class="data.actualWeight ? 'bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm' : ''">
-            {{ data.actualWeight || '' }}
+          <span v-else>
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${data.weightUnit}` : '' }}
           </span>
         </template>
       </Column>

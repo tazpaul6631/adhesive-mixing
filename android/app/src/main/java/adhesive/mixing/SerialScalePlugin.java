@@ -50,13 +50,35 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
         return UsbSerialProber.getDefaultProber().findAllDrivers(manager);
     }
 
+    private String readDeviceSerial(UsbDevice device) {
+        try {
+            String serial = device.getSerialNumber();
+            if (serial != null && !serial.isEmpty()) {
+                return serial;
+            }
+        } catch (SecurityException ignored) {
+        }
+        return "";
+    }
+
+    /** ID ổn định theo serial USB; fallback deviceName khi chưa có quyền đọc serial. */
+    private String getDeviceStableId(UsbDevice device) {
+        String serial = readDeviceSerial(device);
+        if (!serial.isEmpty()) {
+            return serial;
+        }
+        return device.getDeviceName();
+    }
+
     private UsbSerialDriver findDriverById(String deviceId) {
         if (deviceId == null || deviceId.isEmpty()) {
             return null;
         }
 
         for (UsbSerialDriver driver : findAllDrivers()) {
-            if (deviceId.equals(driver.getDevice().getDeviceName())) {
+            UsbDevice device = driver.getDevice();
+            if (deviceId.equals(getDeviceStableId(device))
+                || deviceId.equals(device.getDeviceName())) {
                 return driver;
             }
         }
@@ -88,26 +110,16 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
         List<UsbSerialDriver> availableDrivers = findAllDrivers();
         JSArray devices = new JSArray();
 
-        for (int index = 0; index < availableDrivers.size(); index++) {
-            UsbSerialDriver driver = availableDrivers.get(index);
+        for (UsbSerialDriver driver : availableDrivers) {
             UsbDevice device = driver.getDevice();
+            String stableId = getDeviceStableId(device);
+            String serial = readDeviceSerial(device);
 
             JSObject item = new JSObject();
-            item.put("id", device.getDeviceName());
-            String scaleName;
-            if (index == 0) {
-                scaleName = "Cân Nhỏ";
-            } else if (index == 1) {
-                scaleName = "Cân Lớn";
-            } else {
-                scaleName = String.format(
-                    "Cân %d",
-                    index + 1,
-                    device.getVendorId(),
-                    device.getProductId()
-                );
-            }
-            item.put("label", scaleName);
+            item.put("id", stableId);
+            item.put("label", stableId);
+            item.put("serial", serial);
+            item.put("deviceName", device.getDeviceName());
             item.put("vendorId", device.getVendorId());
             item.put("productId", device.getProductId());
             item.put("hasPermission", manager.hasPermission(device));
@@ -140,7 +152,8 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
         String deviceId = call.getString("deviceId");
         UsbSerialDriver driver = findDriverById(deviceId);
         if (driver == null) {
-            driver = availableDrivers.get(0);
+            call.reject("Không tìm thấy cân đã chọn. Hãy bấm refresh để quét lại USB.");
+            return;
         }
 
         UsbDevice device = driver.getDevice();
@@ -162,7 +175,7 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
             ioManager.start();
 
             JSObject ret = new JSObject();
-            ret.put("deviceId", device.getDeviceName());
+            ret.put("deviceId", getDeviceStableId(device));
             call.resolve(ret);
         } catch (IOException e) {
             internalDisconnect();
