@@ -138,7 +138,7 @@
         "duplicateLineQr": "此產線膠桶 QR Code 已掃描。",
         "lineMismatchWarning": "已掃描的產線膠桶與發膠桶不相符。"
       },
-      "lineQrTitle": "產線膠桶 QR Code（選填）",
+      "lineQrTitle": "產線膠桶 QR Code",
       "lineScanPlaceholder": "掃描產線膠桶 QR Code",
       "lineScanDescription": "可掃描一個或多個產線膠桶，以便在退回前確認膠水類型。",
       "lineScanAddButton": "掃描更多產線膠桶",

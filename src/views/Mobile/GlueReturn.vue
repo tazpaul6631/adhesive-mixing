@@ -225,7 +225,13 @@ const toastColor = ref<string | undefined>('success');
 const toastCssClass = ref('');
 
 const hasLineChemicalMismatch = computed(() => lineChemicalItems.value.some((item) => !item.isMatched));
-const canSubmitReturn = computed(() => !!pendingReturnGlueInfo.value && !hasLineChemicalMismatch.value && !isSubmittingReturn.value);
+const hasLineChemicalData = computed(() => lineChemicalItems.value.length > 0);
+const canSubmitReturn = computed(() => {
+  return !!pendingReturnGlueInfo.value
+    && hasLineChemicalData.value
+    && !hasLineChemicalMismatch.value
+    && !isSubmittingReturn.value;
+});
 
 
 function normalizeCompareValue(value: any) {
@@ -535,7 +541,7 @@ function openConfirmDialog() {
 }
 
 async function confirmReturnQr() {
-  if (!pendingReturnGlueInfo.value || hasLineChemicalMismatch.value) {
+  if (!pendingReturnGlueInfo.value || !hasLineChemicalData.value || hasLineChemicalMismatch.value) {
     return;
   }
 

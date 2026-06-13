@@ -138,7 +138,7 @@
         "duplicateLineQr": "This line glue bucket QR code has already been scanned.",
         "lineMismatchWarning": "The scanned line glue bucket does not match the delivery glue bucket."
       },
-      "lineQrTitle": "Line glue bucket QR code (optional)",
+      "lineQrTitle": "Line glue bucket QR code",
       "lineScanPlaceholder": "Scan the line glue bucket QR code",
       "lineScanDescription": "Scan one or more line glue buckets to check the glue type before returning.",
       "lineScanAddButton": "Scan another line glue bucket",
