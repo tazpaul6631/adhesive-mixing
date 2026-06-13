@@ -17,7 +17,8 @@
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
         <div class="surface-card p-0 shadow-1 border-round-xl">
-          <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
+          <div
+            class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>{{ t('listGlueReturnLog.sectionTitle') }}
             </span>
@@ -107,9 +108,11 @@
                 bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <Button v-else icon="pi pi-check-circle" severity="success" size="large"
-                    :disabled="!canSubmitRow(data)" :loading="isConfirming && submittingRowId === data.glueReturnLogId"
-                    @click="handleSubmitGlueReturnLog(data)" />
+                  <div v-else class="flex justify-content-center">
+                    <Button icon="pi pi-check-circle" severity="success" size="large" :disabled="!canSubmitRow(data)"
+                      :loading="isConfirming && submittingRowId === data.glueReturnLogId"
+                      @click="handleSubmitGlueReturnLog(data)" />
+                  </div>
                 </template>
               </Column>
             </DataTable>
@@ -426,7 +429,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       factoryId: row.factoryId || authStore.user?.factoryId || '',
       glueReturnLogId: row.glueReturnLogId,
       returnGlueId: row.returnGlueId,
-      lineChemicalId: row.lineChemicalId,
+      // lineChemicalId: row.lineChemicalId,
       returnWeight: Number(row.returnWeight),
       returnWeightUnit: row.returnWeightUnit || 'Kg',
       weightTime: row.weightTime,

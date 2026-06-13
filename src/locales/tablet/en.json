@@ -39,6 +39,8 @@
       "totalWeight": "Required total weight (KG)",
       "updater": "Glue updater",
       "updateDate": "Glue update date",
+      "glueConfirm": "Confirm mixed glue",
+      "qipConfirm": "QIP confirm",
       "confirm": "QIP confirm"
     },
     "scan": {

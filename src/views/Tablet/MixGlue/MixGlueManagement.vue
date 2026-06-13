@@ -34,14 +34,14 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-                }}</label>
+              }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
-                <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
+                <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
-                <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" size="large"
+                <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" class="button-lg"
                   @click="handleComplete" />
               </div>
             </div>
@@ -72,9 +72,9 @@
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
-                <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
+                <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                    }}</label>
+                  }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
@@ -84,8 +84,7 @@
                   :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
                   :upper-tolerance="activeComponent?.upperTolerance ?? ''"
                   :lower-tolerance-unit="activeComponent?.lowerToleranceUnit"
-                  :upper-tolerance-unit="activeComponent?.upperToleranceUnit"
-                  :enforce-tolerance="mixTargetWeight > 0"
+                  :upper-tolerance-unit="activeComponent?.upperToleranceUnit" :enforce-tolerance="mixTargetWeight > 0"
                   :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
                   :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
@@ -121,9 +120,9 @@
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
-                <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
+                <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                    }}</label>
+                  }}</label>
                   <InputText v-model="noMixMixingProcess.component" readonly
                     class="font-bold text-primary border-blue-200" style="width: 350px;" />
                 </div>

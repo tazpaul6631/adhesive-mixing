@@ -39,6 +39,8 @@
       "totalWeight": "Tổng TL yêu cầu (KG)",
       "updater": "Nhân viên điều công",
       "updateDate": "Ngày điều công",
+      "glueConfirm": "Xác nhận trộn xong",
+      "qipConfirm": "QIP xác nhận",
       "confirm": "Xác nhận QIP"
     },
     "scan": {

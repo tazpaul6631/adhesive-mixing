@@ -40,7 +40,7 @@
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
                 <Button :disabled="isNoMixGlue ? isNoMixGlueOperationLocked : separateGlueComplete"
-                  icon="pi pi-check-circle" severity="success" size="large" @click="handleComplete" />
+                  icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
               </div>
             </div>
           </div>

@@ -85,17 +85,29 @@
                 </template>
               </Column>
 
-              <Column v-if="showConfirmColumn" :header="t('listMixGlue.columns.confirm')" :exportable="false"
-                headerClass="dt-col-action" bodyClass="dt-col-action">
+              <Column v-if="showConfirmColumn" :header="t('listMixGlue.columns.glueConfirm')" :exportable="false"
+                headerClass="dt-col-action-glue" bodyClass="dt-col-action-glue">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <div v-else-if="shouldShowConfirmActions(data)" class="flex gap-2 justify-content-center">
+                  <div v-else-if="shouldShowConfirmActions(data)" class="flex justify-content-center">
                     <Button :disabled="data.mixGlueStep !== '2' || isRowProcessing(data.workOrderMasterId)"
-                      icon="pi pi-check-circle" severity="success" size="large"
+                      icon="pi pi-check-circle" severity="success" class="button-lg"
+                      :title="t('listMixGlue.columns.glueConfirm')" :aria-label="t('listMixGlue.columns.glueConfirm')"
                       @click.stop="handleConfirm(data.workOrderMasterId)" />
+                  </div>
+                </template>
+              </Column>
+
+              <Column v-if="showConfirmColumn" :header="t('listMixGlue.columns.qipConfirm')" :exportable="false"
+                headerClass="dt-col-action-qip" bodyClass="dt-col-action-qip">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
+                  <div v-else-if="shouldShowConfirmActions(data)" class="flex justify-content-center">
                     <Button
                       :disabled="data.mixGlueStep !== '3' || !canPrintRow(data) || isRowProcessing(data.workOrderMasterId)"
-                      icon="pi pi-print" severity="success" size="large" @click.stop="handlePrint(data)" />
+                      icon="pi pi-print" severity="success" class="button-lg"
+                      :title="t('listMixGlue.columns.qipConfirm')" :aria-label="t('listMixGlue.columns.qipConfirm')"
+                      @click.stop="handlePrint(data)" />
                   </div>
                 </template>
               </Column>
@@ -803,5 +815,14 @@ body.barcode-scanner-active .list-mix-glue-content {
     top: 18%;
     opacity: 0.35;
   }
+}
+
+.button-lg {
+  width: 60px;
+  height: 60px;
+}
+
+.button-lg .pi {
+  font-size: 1.5rem;
 }
 </style>

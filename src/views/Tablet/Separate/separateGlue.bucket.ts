@@ -369,6 +369,69 @@ export const sortBucketsByClosestCapacity = (
     return leftDistance - rightDistance;
   });
 
+export const sortBucketsByCapacityAsc = (bucketList: BucketOption[]): BucketOption[] =>
+  [...bucketList].sort((left, right) => getBucketCapacityKg(left) - getBucketCapacityKg(right));
+
+/**
+ * Dung tích thùng nhỏ nhất vẫn >= mức kg cần phủ.
+ * VD cần 1.2 kg → 2 kg; cần 4.2 kg → 5 kg; cần 0.2 kg → 0.5 kg.
+ */
+export const getNearestBucketCapacityCoveringActual = (
+  bucketList: BucketOption[],
+  targetKg: number
+): number | null => {
+  if (targetKg <= WEIGHT_EPSILON || bucketList.length === 0) return null;
+
+  let nearest: number | null = null;
+  bucketList.forEach((bucket) => {
+    const cap = getBucketCapacityKg(bucket);
+    if (cap <= WEIGHT_EPSILON || cap < targetKg - WEIGHT_EPSILON) return;
+    if (nearest == null || cap < nearest) nearest = cap;
+  });
+  return nearest;
+};
+
+/**
+ * Chiết: dropdown từ thùng nhỏ nhất → thùng gần nhất phủ **phần còn lại** (TL thực − đã chọn).
+ * VD TL 4.200: đã chọn 3.00 → còn 1.2 → hiện đến 2.00; đã chọn 4.00 → còn 0.2 → hiện đến 0.50.
+ */
+export const filterChietBucketOptionsForRow = (
+  bucketList: BucketOption[],
+  actualKg: number,
+  orderDetails: any[],
+  currentRow: any
+): BucketOption[] => {
+  if (bucketList.length === 0) return bucketList;
+
+  const selectedTotalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList, currentRow);
+  const remainingActualKg = Math.max(0, actualKg - selectedTotalKg);
+  const capTargetKg = remainingActualKg > WEIGHT_EPSILON ? remainingActualKg : actualKg;
+  const maxCapKg = getNearestBucketCapacityCoveringActual(bucketList, capTargetKg);
+
+  if (maxCapKg == null) {
+    return sortBucketsByCapacityAsc(bucketList);
+  }
+
+  const selectedId = getRowActiveBucketId(currentRow);
+  const selectedOption = selectedId != null
+    ? findBucketOptionById(bucketList, selectedId)
+    : undefined;
+
+  let options = bucketList.filter((bucket) =>
+    getBucketCapacityKg(bucket) <= maxCapKg + WEIGHT_EPSILON
+  );
+  options = sortBucketsByCapacityAsc(options);
+
+  if (
+    selectedOption
+    && !options.some((item) => String(item.bucketId) === String(selectedOption.bucketId))
+  ) {
+    options = sortBucketsByCapacityAsc([selectedOption, ...options]);
+  }
+
+  return options;
+};
+
 export const getAssignedRequestDetailIds = (orderDetails: any[]): Set<string> => {
   const assignedIds = new Set<string>();
 
