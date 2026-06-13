@@ -527,7 +527,7 @@ QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
     tspl,
     TSPL_LEFT_X,
     styleBlock.nextY,
-    'Cân nặng:',
+    'Thùng:',
     dto.glueWeight || '',
     TSPL_MAX_CHARS_FIRST_LINE,
     TSPL_MAX_CHARS_CONTINUATION,
