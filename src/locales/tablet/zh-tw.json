@@ -39,6 +39,8 @@
       "totalWeight": "需求總重量 (KG)",
       "updater": "派工人員",
       "updateDate": "派工日期",
+      "glueConfirm": "完成攪拌",
+      "qipConfirm": "QIP確認",
       "confirm": "QIP確認"
     },
     "scan": {

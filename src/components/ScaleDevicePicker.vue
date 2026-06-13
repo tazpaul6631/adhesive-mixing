@@ -3,9 +3,9 @@
     <Select :key="scaleListKey" v-model="selectedScaleDeviceId" :options="availableScales" option-label="label"
       option-value="id" :placeholder="t('electronicScale.selectScalePlaceholder')" class="scale-device-picker__select"
       :disabled="isBusy || isSingleScale" append-to="body" @change="handleScaleSelect" />
-    <Button icon="pi pi-refresh" severity="secondary" outlined rounded size="small" class="scale-device-picker__refresh"
-      :title="t('electronicScale.refreshTitle')" :loading="isRefreshing" :disabled="isBusy"
-      :aria-label="t('electronicScale.refreshAriaLabel')" @click="handleRefresh" />
+    <Button icon="pi pi-refresh" severity="secondary" outlined rounded size="small"
+      class="scale-device-picker__refresh ml-2" :title="t('electronicScale.refreshTitle')" :loading="isRefreshing"
+      :disabled="isBusy" :aria-label="t('electronicScale.refreshAriaLabel')" @click="handleRefresh" />
   </div>
 </template>
 

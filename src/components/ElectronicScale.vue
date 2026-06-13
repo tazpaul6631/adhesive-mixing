@@ -1,5 +1,5 @@
 <template>
-  <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
+  <div class="col-12 sm:col-8 lg:col-7 lg:mb-0">
     <label class="text-800 font-medium block" style="width: fit-content;">
       <span>{{ t('electronicScale.label') }}</span>
       <span v-if="isConnected" class="text-green-500 font-normal text-sm ml-2">
@@ -25,9 +25,9 @@
 
         <!-- Sai số: hiển thị khi bắt buộc kiểm tra dung sai hoặc parent truyền lower/upper > 0 -->
         <div v-if="enforceTolerance || hasExplicitTolerance" class="ml-1 min-w-max border-left-1 border-300 pl-3">
-          <div class="text-red-500 font-bold text-xs">-{{ effectiveLowerTolerance }} {{ effectiveLowerToleranceUnit }}
+          <div class="text-green-600 font-bold text-sl">+{{ effectiveUpperTolerance }} {{ effectiveUpperToleranceUnit }}
           </div>
-          <div class="text-green-600 font-bold text-xs">+{{ effectiveUpperTolerance }} {{ effectiveUpperToleranceUnit }}
+          <div class="text-red-500 font-bold text-sl">-{{ effectiveLowerTolerance }} {{ effectiveLowerToleranceUnit }}
           </div>
         </div>
       </div>

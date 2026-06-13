@@ -68,9 +68,9 @@
       <Column v-if="!isViewMode" :header="t('separateMixedGlue.table.columns.action')" :exportable="false"
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
-              :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')"
+          <div class="flex justify-content-center">
+            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text
+              :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" class="button-lg"
               @click.stop="handleDeleteRow(data)" />
           </div>
         </template>
@@ -99,6 +99,7 @@ import {
   formatChietCapacityBlockMessage,
   resolveChietTargetCapacityKg,
   getActualWeighedKg,
+  filterChietBucketOptionsForRow,
   shouldBlockChietAddRow,
   hasChietTotalExceededActual,
   formatWeightKg,
@@ -207,6 +208,18 @@ const syncStoredBucketIdTypes = () => {
 const getBucketOptionsForRow = (currentRow: any) => {
   if (bucketList.value.length === 0) {
     return bucketList.value;
+  }
+
+  if (props.useChietCapacityValidation) {
+    const actualKg = getActualWeighedKg(props.targetWeight, props.targetWeightUnit || 'Kg');
+    if (actualKg > 0) {
+      return filterChietBucketOptionsForRow(
+        bucketList.value,
+        actualKg,
+        props.orderDetails,
+        currentRow
+      );
+    }
   }
 
   const targetWeightKg = getEffectiveTargetWeightKg();

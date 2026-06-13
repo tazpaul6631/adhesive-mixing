@@ -78,7 +78,7 @@ import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from 'dayjs';
 import {
-  sortBucketsByClosestCapacity,
+  filterChietBucketOptionsForRow,
   sumSelectedBucketCapacityKg,
   validateChietBucketCapacity,
   formatEffectiveChietTargetLabel,
@@ -89,6 +89,7 @@ import {
   hasChietTotalExceededActual,
   formatWeightKg,
   resolveChietTargetCapacityKg,
+  mapBucketOptions,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
@@ -173,18 +174,17 @@ const shouldBlockAddRow = () => {
 // };
 
 const getBucketOptionsForRow = (currentRow: any) => {
-  const targetKg = getChietTargetWeightKg();
-  if (targetKg <= 0 || bucketList.value.length === 0) {
+  const actualKg = getWeighedWeightKg();
+  if (actualKg <= 0 || bucketList.value.length === 0) {
     return bucketList.value;
   }
 
-  const remainingKg = targetKg - sumSelectedBucketCapacityKg(
-    props.orderDetails,
+  return filterChietBucketOptionsForRow(
     bucketList.value,
+    actualKg,
+    props.orderDetails,
     currentRow
   );
-
-  return sortBucketsByClosestCapacity(bucketList.value, remainingKg);
 };
 
 const updateRowCompletionInfo = (rowData: any) => {
@@ -277,10 +277,7 @@ const loadBucketList = async () => {
   try {
     const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
     if (data?.success && data.data) {
-      bucketList.value = data.data.map((item: any) => ({
-        ...item,
-        label: `${item.capacity} ${item.capacityUnit || 'Kg'}`,
-      }));
+      bucketList.value = mapBucketOptions(data.data);
     }
   } catch (error) {
     console.error('[ChietGlueTable] Lỗi khi tải danh sách thùng chứa', error);
