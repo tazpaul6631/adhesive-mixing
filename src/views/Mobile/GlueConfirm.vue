@@ -647,6 +647,7 @@ async function handleConfirmReturn() {
 
       showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       resetAllocatedQrField();
+      resetLineQrField();
       return;
     }
 
@@ -674,6 +675,7 @@ async function handleConfirmReturn() {
 
       showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
       resetAllocatedQrField();
+      resetLineQrField();
     } finally {
       console.groupEnd();
     }
