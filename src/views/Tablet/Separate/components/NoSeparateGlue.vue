@@ -32,7 +32,7 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ data.glueWeight || '' }}</span>
+          <span v-else>{{ data.glueWeight || '' }} {{ data.weightUnit }}</span>
         </template>
       </Column>
 
@@ -40,9 +40,8 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else
-            :class="data.actualWeight ? 'bg-blue-50 text-blue-700 px-2 py-1 border-round-md font-medium text-sm' : ''">
-            {{ data.actualWeight || '' }}
+          <span v-else>
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${data.weightUnit}` : '' }}
           </span>
         </template>
       </Column>
@@ -68,14 +67,14 @@
       <Column :header="t('separateMixedGlue.table.columns.action')" :exportable="false" headerClass="dt-col-action"
         bodyClass="dt-col-action">
         <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text rounded :disabled="disabled"
+          <div class="flex justify-content-center">
+            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text :disabled="disabled"
               :aria-label="t('separateMixedGlue.table.addAriaLabel')" @click.stop="$emit('chiet-row', data)" />
 
-            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text rounded
+            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text
               :aria-label="t('separateMixedGlue.table.viewAriaLabel')" @click.stop="$emit('view-row', data)" />
 
-            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text rounded :disabled="disabled"
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text :disabled="disabled"
               :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="$emit('delete-row', data)" />
           </div>
         </template>

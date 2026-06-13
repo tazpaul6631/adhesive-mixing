@@ -85,12 +85,12 @@
                 </template>
               </Column>
 
-              <Column :header="t('listMixGlue.columns.confirm')" :exportable="false" headerClass="dt-col-action"
-                bodyClass="dt-col-action">
+              <Column :header="t('listMixGlue.columns.qipConfirm')" :exportable="false" headerClass="dt-col-action-qip"
+                bodyClass="dt-col-action-qip">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex gap-2 justify-content-center">
-                    <Button icon="pi pi-print" severity="success" size="large"
+                    <Button icon="pi pi-print" severity="success" class="button-lg"
                       :disabled="isRowProcessing(data.workOrderMasterId) || !data.separateGlueComplete && !data.isNoMixGlue"
                       :loading="isRowPrinting(data.workOrderMasterId)" @click.stop="handlePrint(data)" />
                   </div>
@@ -261,6 +261,7 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
   try {
     const payload = {
       factoryId: authStore.user?.factoryId,
+      departmentId: authStore.user?.departmentId,
       separateGlueCheck: true,
       page: page,
       pageSize: pageSize

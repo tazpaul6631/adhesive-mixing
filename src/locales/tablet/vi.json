@@ -37,8 +37,10 @@
       "workOrder": "Đơn điều công",
       "glue": "Keo trộn",
       "totalWeight": "Tổng TL yêu cầu (KG)",
-      "updater": "Người cập nhật keo",
-      "updateDate": "Ngày cập nhật keo",
+      "updater": "Nhân viên điều công",
+      "updateDate": "Ngày điều công",
+      "glueConfirm": "Xác nhận trộn xong",
+      "qipConfirm": "QIP xác nhận",
       "confirm": "Xác nhận QIP"
     },
     "scan": {
@@ -256,7 +258,10 @@
       "capacityExceedsWeighed": "Tổng TL thùng chứa ({total} KG) vượt quá TL đã cân ({target}).",
       "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) chưa khớp TL chiết ({target}). Vui lòng chọn thùng phù hợp.",
       "capacityMismatchWeighedGeneric": "Tổng TL thùng chứa ({total} KG) không khớp TL đã cân ({target}).",
-      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL chiết {label}. Không cần thêm dòng mới."
+      "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL chiết {label}. Không cần thêm dòng mới.",
+      "chietOversizedBucketBlock": "Đã chọn thùng lớn hơn TL thực tế ({label}). Không thể thêm dòng mới.",
+      "chietTotalExceededBlock": "Tổng TL thùng ({total} Kg) đã vượt TL thực tế ({target}). Không thể thêm dòng mới.",
+      "chietChooseClosestBucket": "Vui lòng chọn thùng gần nhất với số lượng còn lại ({remaining} Kg). Ví dụ: TL thực tế 12,1–12,9 Kg không thể chọn thùng 12 Kg đầu tiên."
     }
   },
   "bluetoothPrinter": {
@@ -275,10 +280,14 @@
     "connected": "Đã kết nối cân điện tử",
     "connecting": "Đang kết nối cân điện tử...",
     "searching": "Đang tìm kết nối...",
+    "selectScale": "Chọn cân USB",
+    "selectScalePlaceholder": "Chọn cân để kết nối",
+    "selectScaleHint": "Phát hiện nhiều cân — vui lòng chọn cân trước khi cân.",
     "confirm": "Xác nhận",
     "toast": {
       "reconnecting": "Đang kết nối lại",
-      "reconnectingDetail": "Đã reset kết nối cân. Nếu có nhiều cân trên hub, hãy chọn đúng cổng khi được hỏi.",
+      "reconnectingDetail": "Đã reset kết nối cân.",
+      "reconnectingMultiScale": "Đã reset kết nối. Vui lòng chọn cân trong danh sách bên dưới.",
       "connectFailed": "Không kết nối được",
       "connectFailedDetail": "Vui lòng kiểm tra hub/cáp USB và thử lại.",
       "noTargetWeight": "Chưa có TL yêu cầu",
@@ -322,7 +331,7 @@
       "columns": {
         "name": "Tên thành phần",
         "requiredWeight": "TL yêu cầu",
-        "actualWeight": "TL thực tế (KG)",
+        "actualWeight": "TL thực tế",
         "operator": "Người thao tác",
         "weighingTime": "Thời gian cân",
         "action": "Thao tác"
@@ -336,8 +345,8 @@
       "nameRequired": "Tên thành phần là bắt buộc.",
       "percentageLabel": "Phần trăm (%)",
       "percentageRequired": "Vui lòng nhập phần trăm.",
-      "weightLabel": "Trọng lượng (KG)",
-      "weightRequired": "Vui lòng nhập trọng lượng (KG)",
+      "weightLabel": "Trọng lượng ({unit})",
+      "weightRequired": "Vui lòng nhập trọng lượng ({unit})",
       "toleranceGramsLabel": "Độ chênh lệch (g)",
       "toleranceGramsRequired": "Vui lòng nhập gram chênh lệch lớn hơn 0"
     },

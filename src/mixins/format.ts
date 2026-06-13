@@ -28,6 +28,17 @@ const formatDate = (dateString: string | null | undefined): string => {
     return date.toLocaleDateString('vi-VN');
 };
 
+/** Bỏ số 0 thừa khi hiển thị (8.500 → 8.5, 425.000 → 425). */
+const formatDisplayWeight = (value: number | string | null | undefined): string => {
+    if (value == null || value === '') return '';
+
+    const num = Number(value);
+    if (!Number.isFinite(num)) return String(value).trim();
+
+    return num.toFixed(3).replace(/\.?0+$/, '') || '0';
+};
+
 export default {
-    formatDate
-}
+    formatDate,
+    formatDisplayWeight,
+};

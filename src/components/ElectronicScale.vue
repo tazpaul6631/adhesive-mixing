@@ -1,17 +1,14 @@
 <template>
-  <div class="col-12 sm:col-7 lg:col-6 lg:mb-0">
+  <div class="col-12 sm:col-8 lg:col-7 lg:mb-0">
     <label class="text-800 font-medium block" style="width: fit-content;">
       <span>{{ t('electronicScale.label') }}</span>
-      <Button icon="pi pi-refresh" severity="secondary" text rounded size="small" class="scale-refresh-btn"
-        :title="t('electronicScale.refreshTitle')" :loading="isRefreshing" :disabled="isRefreshing"
-        :aria-label="t('electronicScale.refreshAriaLabel')" @click="handleRefreshConnection" />
-      <span v-if="isConnected" class="text-green-500 font-normal text-sm">
+      <span v-if="isConnected" class="text-green-500 font-normal text-sm ml-2">
         <i class="pi pi-check-circle"></i> {{ t('electronicScale.connected') }}
       </span>
-      <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm">
+      <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm ml-2">
         <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.connecting') }}
       </span>
-      <span v-else class="text-red-500 font-normal text-sm fade-blink">
+      <span v-else class="text-red-500 font-normal text-sm fade-blink ml-2">
         <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.searching') }}
       </span>
     </label>
@@ -26,10 +23,12 @@
           }" />
         <span class="p-inputgroup-addon font-bold px-1">{{ effectiveDisplayUnit }}</span>
 
-        <!-- Sai số chỉ hiển thị khi bắt buộc kiểm tra dung sai -->
-        <div v-if="enforceTolerance" class="ml-1 min-w-max border-left-1 border-300 pl-3">
-          <div class="text-red-500 font-bold text-xs">-{{ effectiveLowerTolerance }} g</div>
-          <div class="text-green-600 font-bold text-xs">+{{ effectiveUpperTolerance }} g</div>
+        <!-- Sai số: hiển thị khi bắt buộc kiểm tra dung sai hoặc parent truyền lower/upper > 0 -->
+        <div v-if="enforceTolerance || hasExplicitTolerance" class="ml-1 min-w-max border-left-1 border-300 pl-3">
+          <div class="text-green-600 font-bold text-sl">+{{ effectiveUpperTolerance }} {{ effectiveUpperToleranceUnit }}
+          </div>
+          <div class="text-red-500 font-bold text-sl">-{{ effectiveLowerTolerance }} {{ effectiveLowerToleranceUnit }}
+          </div>
         </div>
       </div>
 
@@ -55,12 +54,20 @@ const props = defineProps({
   targetWeight: { type: [Number, String], default: 0 },
   lowerTolerance: { type: [Number, String], default: '' },
   upperTolerance: { type: [Number, String], default: '' },
+  /** Đơn vị sai số dưới (bảng trộn — từ BE). Không truyền → hiển thị g. */
+  lowerToleranceUnit: { type: [Number, String], default: '' },
+  /** Đơn vị sai số trên (bảng trộn — từ BE). Không truyền → hiển thị g. */
+  upperToleranceUnit: { type: [Number, String], default: '' },
   weightUnit: { type: [Number, String], default: '' },
   disableConfirm: { type: Boolean, default: false },
   /** false = cân bao nhiêu xác nhận bấy nhiêu; true = bắt buộc nằm trong sai số. */
   enforceTolerance: { type: Boolean, default: true },
   /** Dòng đã xác nhận cân: hiển thị TL thực tế đã lưu, không lấy số live từ cân. */
-  lockedWeight: { type: [Number, String], default: '' }
+  lockedWeight: { type: [Number, String], default: '' },
+  /** Session dùng chung (vd. MixGlueManagement); không truyền thì tự tạo theo instance. */
+  scaleSessionId: { type: [String, Number, Symbol], default: undefined },
+  /** Ẩn dropdown chọn cân trong component (picker đặt ở parent). */
+  hideScalePicker: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:weight', 'connection-status', 'confirm-weight']);
@@ -78,12 +85,53 @@ const effectiveUpperTolerance = computed(() => {
   return Number(props.upperTolerance);
 });
 
-const isKgUnit = computed(() => props.weightUnit?.toString().toLowerCase() === 'kg');
+/** Parent truyền sai số cụ thể (vd. noMix ±10g) — hiển thị dù chưa bật enforceTolerance. */
+const hasExplicitTolerance = computed(() => {
+  const lower = Number(props.lowerTolerance);
+  const upper = Number(props.upperTolerance);
+  return (Number.isFinite(lower) && lower > 0) || (Number.isFinite(upper) && upper > 0);
+});
+
+const formatToleranceUnitLabel = (unit?: string | number) => {
+  const normalized = String(unit || 'g').trim().toLowerCase();
+  return normalized === 'kg' ? 'KG' : 'G';
+};
+
+const effectiveLowerToleranceUnit = computed(() =>
+  formatToleranceUnitLabel(props.lowerToleranceUnit || 'g')
+);
+
+const effectiveUpperToleranceUnit = computed(() =>
+  formatToleranceUnitLabel(props.upperToleranceUnit || 'g')
+);
+
+const normalizeWeightUnit = (unit?: string | number): 'kg' | 'g' => {
+  const normalized = String(unit || 'g').trim().toLowerCase();
+  return normalized === 'kg' ? 'kg' : 'g';
+};
+
+/** Quy đổi giá trị sang đơn vị cân của dòng (weightUnit) — dùng đúng unit BE trả về. */
+const convertToWeightUnit = (
+  value: number,
+  fromUnit: string | number | undefined,
+  weightUnit: 'kg' | 'g'
+) => {
+  const from = normalizeWeightUnit(fromUnit);
+  const val = Number.isFinite(value) ? value : 0;
+  if (weightUnit === 'kg') {
+    return from === 'kg' ? val : val / 1000;
+  }
+  return from === 'kg' ? val * 1000 : val;
+};
+
+const rowWeightUnit = computed(() => normalizeWeightUnit(props.weightUnit));
+
+const isKgUnit = computed(() => rowWeightUnit.value === 'kg');
 
 /** Đơn vị hiển thị trên UI — theo weightUnit của dòng. */
 const effectiveDisplayUnit = computed(() => {
   const unit = String(props.weightUnit || 'g').trim();
-  return unit.toLowerCase() === 'kg' ? 'Kg' : 'g';
+  return unit.toLowerCase() === 'kg' ? 'KG' : 'G';
 });
 
 /** Cân serial luôn trả về kg → quy đổi sang gram để tính nội bộ. */
@@ -118,21 +166,32 @@ const displayWeight = computed(() => formatGramsForDisplay(weightGrams.value));
 
 const getCurrentWeightInGrams = () => weightGrams.value;
 
-const getToleranceRangeInGrams = () => {
-  const targetGrams = toGrams(parseFloat(String(props.targetWeight ?? '0')), isKgUnit.value);
-  const lowerTolGram = Number(effectiveLowerTolerance.value) || 0;
-  const upperTolGram = Number(effectiveUpperTolerance.value) || 0;
+const getCurrentWeightInWeightUnit = () => fromGrams(getCurrentWeightInGrams());
+
+/** Min/max theo target + sai số BE (mỗi sai số giữ đúng unit BE, quy về weightUnit để so). */
+const getToleranceRangeInWeightUnit = () => {
+  const unit = rowWeightUnit.value;
+  const target = parseFloat(String(props.targetWeight ?? '0')) || 0;
+  const lowerTol = convertToWeightUnit(
+    Number(effectiveLowerTolerance.value) || 0,
+    props.lowerToleranceUnit || 'g',
+    unit
+  );
+  const upperTol = convertToWeightUnit(
+    Number(effectiveUpperTolerance.value) || 0,
+    props.upperToleranceUnit || 'g',
+    unit
+  );
 
   return {
-    targetGrams,
-    minGrams: Number((targetGrams - lowerTolGram).toFixed(3)),
-    maxGrams: Number((targetGrams + upperTolGram).toFixed(3)),
+    min: Number((target - lowerTol).toFixed(3)),
+    max: Number((target + upperTol).toFixed(3)),
   };
 };
 
-const isWeightWithinTolerance = (currentGrams: number) => {
-  const { minGrams, maxGrams } = getToleranceRangeInGrams();
-  return currentGrams >= minGrams && currentGrams <= maxGrams;
+const isWeightWithinTolerance = (currentInWeightUnit: number) => {
+  const { min, max } = getToleranceRangeInWeightUnit();
+  return currentInWeightUnit >= min && currentInWeightUnit <= max;
 };
 
 // --- GỌI GLOBAL MANAGER ---
@@ -143,10 +202,8 @@ const {
   isScaleConnecting,
   startAutoConnect,
   stopAutoConnect,
-  forceReconnect,
 } = useScaleManager();
-const scaleSessionId = getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
-const isRefreshing = ref(false);
+const scaleSessionId = props.scaleSessionId ?? getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
 
 const beginScaleSession = () => {
   startAutoConnect(scaleSessionId);
@@ -158,36 +215,9 @@ const endScaleSession = () => {
   emit('connection-status', false);
 };
 
-const handleRefreshConnection = async () => {
-  if (isRefreshing.value) return;
-
-  isRefreshing.value = true;
-  resetDisplayedWeight();
-
-  try {
-    await forceReconnect(scaleSessionId, { pickPort: true });
-    toast.add({
-      severity: 'info',
-      summary: t('electronicScale.toast.reconnecting'),
-      detail: t('electronicScale.toast.reconnectingDetail'),
-      life: 6000,
-    });
-  } catch (error) {
-    console.error('[ElectronicScale] refresh connection failed:', error);
-    toast.add({
-      severity: 'warn',
-      summary: t('electronicScale.toast.connectFailed'),
-      detail: t('electronicScale.toast.connectFailedDetail'),
-      life: 6000,
-    });
-  } finally {
-    isRefreshing.value = false;
-  }
-};
-
 // Đồng bộ trạng thái kết nối ra UI — chỉ "đã kết nối" khi thực sự nhận được dữ liệu cân
 const isConnected = computed(() => isGlobalConnected.value);
-const isConnecting = computed(() => isScaleConnecting.value || isRefreshing.value);
+const isConnecting = computed(() => isScaleConnecting.value);
 const isStable = computed(() => isGlobalStable.value);
 
 // --- LOGIC KIỂM TRA & XÁC NHẬN ---
@@ -262,7 +292,7 @@ const isExceedingLimit = computed(() => {
   if (hasLockedWeight.value) return false;
   if (!hasTargetWeight.value) return false;
 
-  return !isWeightWithinTolerance(getCurrentWeightInGrams());
+  return !isWeightWithinTolerance(getCurrentWeightInWeightUnit());
 });
 
 const confirmWeight = () => {
@@ -290,17 +320,16 @@ const confirmWeight = () => {
   const weightForRow = fromGrams(currentGrams).toFixed(3);
 
   if (props.enforceTolerance) {
-    const { minGrams, maxGrams } = getToleranceRangeInGrams();
+    const { min, max } = getToleranceRangeInWeightUnit();
     const unit = effectiveDisplayUnit.value;
-    const minDisplay = fromGrams(minGrams);
-    const maxDisplay = fromGrams(maxGrams);
+    const currentInWeightUnit = getCurrentWeightInWeightUnit();
 
-    if (currentGrams < minGrams) {
+    if (currentInWeightUnit < min) {
       toast.add({
         severity: 'error',
         summary: t('electronicScale.toast.belowMin'),
         detail: t('electronicScale.toast.belowMinDetail', {
-          weight: minDisplay.toFixed(3),
+          weight: min.toFixed(3),
           unit,
         }),
         life: 6000
@@ -308,12 +337,12 @@ const confirmWeight = () => {
       return;
     }
 
-    if (currentGrams > maxGrams) {
+    if (currentInWeightUnit > max) {
       toast.add({
         severity: 'error',
         summary: t('electronicScale.toast.aboveMax'),
         detail: t('electronicScale.toast.aboveMaxDetail', {
-          weight: maxDisplay.toFixed(3),
+          weight: max.toFixed(3),
           unit,
         }),
         life: 6000
@@ -353,12 +382,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.scale-refresh-btn {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-}
-
 .fade-blink {
   animation: fadeBlink 1.5s infinite;
 }

@@ -39,9 +39,9 @@
             </div>
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
-                <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined size="large"
+                <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
-                <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" size="large"
+                <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" class="button-lg"
                   @click="handleComplete" />
               </div>
             </div>
@@ -62,24 +62,29 @@
         <!-- BẢNG 2: Keo trộn -->
         <transition name="slide-fade">
           <div v-if="hasMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between">
+            <div
+              class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.mixingComponents') }}
               </span>
+              <ScaleDevicePicker :session-id="mixGlueScaleSessionId" />
             </div>
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
-                <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
+                <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
                   }}</label>
                   <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
                     style="width: 350px;" />
                 </div>
 
-                <ElectronicScale :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
+                <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
+                  :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
                   :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
                   :upper-tolerance="activeComponent?.upperTolerance ?? ''"
+                  :lower-tolerance-unit="activeComponent?.lowerToleranceUnit"
+                  :upper-tolerance-unit="activeComponent?.upperToleranceUnit" :enforce-tolerance="mixTargetWeight > 0"
                   :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
                   :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
@@ -105,24 +110,27 @@
         <!-- BẢNG 3: Keo không trộn (chỉ hiển thị khi API có dữ liệu) -->
         <transition name="slide-fade">
           <div v-if="hasNoMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl">
+            <div
+              class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.noMixComponents') }}
               </span>
+              <ScaleDevicePicker :session-id="mixGlueScaleSessionId" />
             </div>
 
             <div class="md:p-2 surface-50 border-bottom-1 surface-border">
               <div class="grid formgrid align-items-end">
-                <div class="col-12 sm:col-5 lg:col-6 lg:mb-0">
+                <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                   <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
                   }}</label>
                   <InputText v-model="noMixMixingProcess.component" readonly
                     class="font-bold text-primary border-blue-200" style="width: 350px;" />
                 </div>
 
-                <ElectronicScale :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
+                <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
+                  :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
                   :lower-tolerance="noMixScaleTolerance.lower" :upper-tolerance="noMixScaleTolerance.upper"
-                  :enforce-tolerance="noMixTargetWeight > 0"
+                  :enforce-tolerance="!!activeNoMixComponent && noMixTargetWeight > 0"
                   :locked-weight="activeNoMixComponent?.weighingTime ? (activeNoMixComponent?.actualWeight ?? '') : ''"
                   :disable-confirm="!!activeNoMixComponent?.weighingTime" @update:weight="handleNoMixWeightChange"
                   @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmNoMixWeight" />
@@ -179,6 +187,7 @@ import type { PayloadBuildContext } from '@/views/Tablet/Separate/separateMixedG
 import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separateGlue.bucket';
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
+import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable.vue';
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
@@ -192,7 +201,11 @@ import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 
 dayjs.extend(customParseFormat);
+
+const MIX_GLUE_SCALE_SESSION = 'mix-glue-scale-session';
+
 const { releaseScaleConnection } = useScaleManager();
+const mixGlueScaleSessionId = MIX_GLUE_SCALE_SESSION;
 const { t } = useAppLocale(() => 'tablet');
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 // ============================================================================
@@ -233,6 +246,8 @@ interface ComponentDetail {
   mixingRatio?: string;
   lowerTolerance?: string;
   upperTolerance?: string;
+  lowerToleranceUnit?: string;
+  upperToleranceUnit?: string;
   materialCode?: string;
   materialName?: string;
   weightUnit?: string;
@@ -318,45 +333,41 @@ const mixTargetWeight = computed(() => {
   return Number(weight) || 0;
 });
 
-/** Dùng cho dòng API chưa có sai số (noMix). Keo thêm từ modal dùng gram nhập tay. */
-const calcToleranceGrams = (weight: number, weightUnit: string) => {
-  const unit = (weightUnit || 'Kg').toLowerCase();
-  const weightInGrams = unit === 'kg' ? weight * 1000 : weight;
-  // Cũ: sai số = 5% trọng lượng (gram)
-  return Number((weightInGrams * 0.05).toFixed(3));
-};
-
-const hasRowTolerance = (row: ComponentDetail | null) => {
-  if (!row) return false;
-  const lower = Number(row.lowerTolerance);
-  const upper = Number(row.upperTolerance);
-  return (Number.isFinite(lower) && lower > 0) || (Number.isFinite(upper) && upper > 0);
-};
-
-const resolveScaleToleranceGrams = (row: ComponentDetail | null) => {
-  if (!row) return { lower: '5', upper: '5' };
-
-  if (hasRowTolerance(row)) {
-    return {
-      lower: String(row.lowerTolerance ?? ''),
-      upper: String(row.upperTolerance ?? ''),
-    };
-  }
-
-  const target = Number(row.glueWeight ?? row.requiredWeight ?? 0);
-  const tolerance = calcToleranceGrams(target, row.weightUnit || 'Kg');
-  return { lower: String(tolerance), upper: String(tolerance) };
-};
+/** Keo không trộn: dùng lower/upperTolerance từ BE; thiếu thì mặc định ±10g. Keo trộn: dùng BE. */
+const NO_MIX_SCALE_TOLERANCE_GRAMS = 10;
 
 const noMixTargetWeight = computed(() => {
   const row = activeNoMixComponent.value;
   if (!row) return 0;
-  return Number(row.glueWeight ?? row.requiredWeight ?? 0) || 0;
+
+  const direct = Number(row.glueWeight ?? row.requiredWeight ?? 0);
+  if (direct > 0) return direct;
+
+  if (!row.glueExtra && headerInfo.value.totalWeight) {
+    return Number(headerInfo.value.totalWeight) || 0;
+  }
+
+  return 0;
 });
 
-const noMixScaleTolerance = computed(() =>
-  resolveScaleToleranceGrams(activeNoMixComponent.value)
-);
+const noMixScaleTolerance = computed(() => {
+  const row = activeNoMixComponent.value;
+  const defaultTol = NO_MIX_SCALE_TOLERANCE_GRAMS;
+
+  if (!row) {
+    return { lower: '', upper: '' };
+  }
+
+  const lower = Number(row.lowerTolerance);
+  const upper = Number(row.upperTolerance);
+  const hasLower = Number.isFinite(lower) && lower > 0;
+  const hasUpper = Number.isFinite(upper) && upper > 0;
+
+  return {
+    lower: String(hasLower ? lower : defaultTol),
+    upper: String(hasUpper ? upper : defaultTol),
+  };
+});
 
 const mapMixChemicals = (items: any[] = []): ComponentDetail[] =>
   items.map((item: any) => ({
@@ -368,6 +379,8 @@ const mapMixChemicals = (items: any[] = []): ComponentDetail[] =>
     actualWeight: item.actualWeight || '',
     lowerTolerance: item.lowerTolerance || '0',
     upperTolerance: item.upperTolerance || '0',
+    lowerToleranceUnit: item.lowerToleranceUnit || '',
+    upperToleranceUnit: item.upperToleranceUnit || '',
     mixingRatio: item.mixingRatio || '100',
     glueExtra: item.glueExtra || false,
   }));
@@ -929,6 +942,8 @@ const buildExtraComponent = (
     weighingTime: '',
     lowerTolerance: toleranceStr,
     upperTolerance: toleranceStr,
+    lowerToleranceUnit: 'g',
+    upperToleranceUnit: 'g',
     mixingRatio: '',
     glueExtra: true,
     mixGlue: flags.mixGlue,

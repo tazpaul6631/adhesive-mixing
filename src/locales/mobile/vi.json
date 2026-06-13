@@ -129,7 +129,8 @@
       "submittingButton": "Đang gửi...",
       "fields": {
         "lineLabel": "Chuyền:",
-        "glueLabel": "Keo:"
+        "glueLabel": "Keo:",
+        "lineChemicalLabel": "Chi tiết:"
       },
       "messages": {
         "requireConfirmedLine": "Vui lòng xác nhận keo chuyền trước khi quét thùng keo trả về.",
@@ -142,10 +143,20 @@
         "loadingInfo": "Đang tải thông tin...",
         "invalidLineQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.",
         "noLineData": "Không có dữ liệu thùng keo chuyền.",
-        "loadLineError": "Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!"
+        "loadLineError": "Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!",
+        "requireReturnGlueFirst": "Vui lòng quét mã QR thùng keo trả về trước.",
+        "duplicateLineQr": "Mã QR thùng keo chuyền này đã được quét.",
+        "lineMismatchWarning": "Thùng keo chuyền đã quét không khớp với thùng keo phát."
       },
-      "lineQrTitle": "Mã QR thùng keo chuyền (tùy chọn)",
-      "lineScanPlaceholder": "Quét mã QR thùng keo chuyền"
+      "lineQrTitle": "Mã QR thùng keo chuyền",
+      "lineScanPlaceholder": "Quét mã QR thùng keo chuyền",
+      "lineScanDescription": "Có thể quét nhiều thùng keo chuyền để kiểm tra loại keo trước khi trả.",
+      "lineScanAddButton": "Quét thêm keo chuyền",
+      "lineScanDisabledHint": "Vui lòng quét mã QR thùng keo trả về trước.",
+      "lineListTitle": "Đã quét {count} chuyền",
+      "lineMatched": "Khớp",
+      "lineMismatch": "Không khớp",
+      "removeLineItem": "Xóa keo chuyền"
     },
     "glueInfoCheck": {
       "title": "Tra cứu thông tin thùng keo",

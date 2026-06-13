@@ -7,7 +7,7 @@
         <label for="name" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.nameLabel') }}</label>
 
         <Select id="name" v-model="selectedMaterial" :options="materialsList" optionLabel="materialName"
-          :placeholder="t('mixGlueManagement.addComponentDialog.namePlaceholder')" class="w-full"
+          :placeholder="t('mixGlueManagement.addComponentDialog.namePlaceholder')" class="w-full" filter
           :invalid="submitted && !selectedMaterial" :loading="isLoadingMaterials" @show="$emit('fetch-materials')"
           showClear />
 
@@ -17,12 +17,15 @@
       </div>
 
       <div class="flex flex-column gap-2">
-        <label for="weight" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.weightLabel')
+        <label for="weight" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.weightLabel', {
+          unit:
+            weightUnitSuffix
+        })
         }}</label>
         <InputNumber id="weight" v-model="weight" suffix=" Kg" :min="0" :invalid="submitted && weight === null"
           class="w-full" />
         <small v-if="submitted && weight === null" class="text-red-500">
-          {{ t('mixGlueManagement.addComponentDialog.weightRequired') }}
+          {{ t('mixGlueManagement.addComponentDialog.weightRequired', { unit: weightUnitSuffix }) }}
         </small>
       </div>
 

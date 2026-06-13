@@ -1,12 +1,67 @@
 import { ref } from 'vue';
 import { registerPlugin, WebPlugin } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
-type ConnectOptions = { pickPort?: boolean };
+export type ScaleDevice = {
+  id: string;
+  label: string;
+  serial?: string;
+  deviceName?: string;
+  vendorId?: number;
+  productId?: number;
+  hasPermission?: boolean;
+};
+
+type ScaleSizeKey = 'small' | 'large';
+type ScaleLabelRegistry = Record<string, ScaleSizeKey>;
+
+const SCALE_LABEL_REGISTRY_KEY = 'scale-device-labels';
+const SCALE_LABELS: Record<ScaleSizeKey, string> = {
+  small: 'Cân Nhỏ',
+  large: 'Cân Lớn',
+};
+
+type ConnectOptions = {
+  pickPort?: boolean;
+  deviceId?: string;
+};
 
 class SerialScaleWeb extends WebPlugin {
   private port: any = null;
   private reader: any = null;
   private readLoopActive = false;
+  private grantedPorts: any[] = [];
+
+  private buildWebPortId(port: any, index: number) {
+    const info = port?.getInfo?.() ?? {};
+    const serial = String(info.serialNumber ?? '').trim();
+    if (serial) return serial;
+    const vendorId = info.usbVendorId ?? 0;
+    const productId = info.usbProductId ?? 0;
+    return `web-${vendorId}-${productId}-${index}`;
+  }
+
+  async listDevices() {
+    const nav = (navigator as any).serial;
+    if (!nav) {
+      return { devices: [] as ScaleDevice[] };
+    }
+
+    this.grantedPorts = await nav.getPorts();
+    const devices = this.grantedPorts.map((port: any, index: number) => {
+      const info = port?.getInfo?.() ?? {};
+      const id = this.buildWebPortId(port, index);
+      return {
+        id,
+        label: id,
+        serial: String(info.serialNumber ?? '').trim() || undefined,
+        vendorId: info.usbVendorId,
+        productId: info.usbProductId,
+      };
+    });
+
+    return { devices };
+  }
 
   async connect(options?: ConnectOptions) {
     await this.disconnect();
@@ -18,14 +73,29 @@ class SerialScaleWeb extends WebPlugin {
 
     if (options?.pickPort) {
       this.port = await nav.requestPort();
+    } else if (options?.deviceId != null && options.deviceId !== '') {
+      const ports = await nav.getPorts();
+      this.grantedPorts = ports;
+      const matchedIndex = ports.findIndex((port: any, index: number) =>
+        this.buildWebPortId(port, index) === options.deviceId
+      );
+      if (matchedIndex >= 0) {
+        this.port = ports[matchedIndex];
+      } else {
+        throw new Error('Không tìm thấy cân đã chọn. Hãy refresh danh sách USB.');
+      }
     } else {
       const ports = await nav.getPorts();
-      this.port = ports.length > 0 ? ports[0] : await nav.requestPort();
+      this.grantedPorts = ports;
+      if (ports.length !== 1) {
+        throw new Error('Vui lòng chọn cân USB trước khi kết nối.');
+      }
+      this.port = ports[0];
     }
 
     await this.port.open({ baudRate: 9600 });
     void this.readLoop();
-    return { value: 'connected' };
+    return { deviceId: options?.deviceId ?? '0', value: 'connected' };
   }
 
   async readLoop() {
@@ -79,6 +149,10 @@ const globalWeight = ref('0.000');
 const isGlobalConnected = ref(false);
 const isGlobalStable = ref(false);
 const isScaleConnecting = ref(false);
+const availableScales = ref<ScaleDevice[]>([]);
+const pendingSelectionSessionId = ref<string | number | symbol | null>(null);
+const activeScaleSessionId = ref<string | number | symbol | null>(null);
+const connectedScaleDeviceId = ref<string | null>(null);
 
 const DATA_WATCHDOG_MS = 4000;
 const PORT_HANDSHAKE_MS = 6000;
@@ -92,11 +166,59 @@ let autoConnectInterval: ReturnType<typeof setInterval> | null = null;
 let connectInProgress = false;
 let dataBuffer = '';
 let lastDataAt = 0;
-let activeScaleSessionId: string | number | symbol | null = null;
+
+const sessionDeviceIds = new Map<string | number | symbol, string>();
+
+const loadScaleLabelRegistry = async (): Promise<ScaleLabelRegistry> => {
+  const { value } = await Preferences.get({ key: SCALE_LABEL_REGISTRY_KEY });
+  if (!value) return {};
+  try {
+    return JSON.parse(value) as ScaleLabelRegistry;
+  } catch {
+    return {};
+  }
+};
+
+const saveScaleLabelRegistry = async (registry: ScaleLabelRegistry) => {
+  await Preferences.set({ key: SCALE_LABEL_REGISTRY_KEY, value: JSON.stringify(registry) });
+};
+
+/** Gán Cân Nhỏ / Cân Lớn theo ID ổn định (serial), không theo thứ tự cắm hub. */
+const applyScaleLabels = async (devices: ScaleDevice[]): Promise<ScaleDevice[]> => {
+  if (devices.length === 0) return [];
+
+  const registry = await loadScaleLabelRegistry();
+  const unmapped = devices.filter((device) => !registry[device.id]);
+
+  if (devices.length === 2 && unmapped.length > 0) {
+    if (!registry[devices[0].id]) registry[devices[0].id] = 'small';
+    if (!registry[devices[1].id]) registry[devices[1].id] = 'large';
+    await saveScaleLabelRegistry(registry);
+  }
+
+  return devices.map((device) => {
+    const size = registry[device.id];
+    if (size) {
+      return { ...device, label: SCALE_LABELS[size] };
+    }
+    const suffix = device.serial?.slice(-6) || device.id.slice(-6);
+    return { ...device, label: `Cân USB (${suffix})` };
+  });
+};
+
+const pruneSessionDeviceIds = (devices: ScaleDevice[]) => {
+  const connectedIds = new Set(devices.map((device) => device.id));
+  for (const [sessionId, deviceId] of sessionDeviceIds.entries()) {
+    if (!connectedIds.has(deviceId)) {
+      sessionDeviceIds.delete(sessionId);
+    }
+  }
+};
 
 const disconnectHardware = async () => {
   isGlobalConnected.value = false;
   isGlobalStable.value = false;
+  connectedScaleDeviceId.value = null;
   lastDataAt = 0;
   dataBuffer = '';
   clearWatchdog();
@@ -190,6 +312,45 @@ const parseScalePayload = (raw: string) => {
   markDataReceived();
 };
 
+const fetchAvailableScales = async (): Promise<ScaleDevice[]> => {
+  try {
+    const result = await SerialScale.listDevices();
+    const raw = Array.isArray(result?.devices) ? result.devices : [];
+    const devices = await applyScaleLabels(raw);
+    pruneSessionDeviceIds(devices);
+    availableScales.value = devices;
+    return devices;
+  } catch (e) {
+    console.warn('Không thể liệt kê cân USB:', e);
+    availableScales.value = [];
+    return [];
+  }
+};
+
+const resolveDeviceIdForSession = (
+  sessionId: string | number | symbol,
+  devices: ScaleDevice[],
+  explicitDeviceId?: string
+): string | null => {
+  if (devices.length === 0) return null;
+
+  if (devices.length === 1) {
+    sessionDeviceIds.set(sessionId, devices[0].id);
+    return devices[0].id;
+  }
+
+  const preferred = explicitDeviceId || sessionDeviceIds.get(sessionId);
+  if (preferred && devices.some((device) => device.id === preferred)) {
+    return preferred;
+  }
+
+  if (preferred) {
+    sessionDeviceIds.delete(sessionId);
+  }
+
+  return null;
+};
+
 export function useScaleManager() {
   const forceDisconnect = async () => {
     await disconnectHardware();
@@ -200,15 +361,44 @@ export function useScaleManager() {
       clearInterval(autoConnectInterval);
       autoConnectInterval = null;
     }
-    activeScaleSessionId = null;
+    pendingSelectionSessionId.value = null;
+    activeScaleSessionId.value = null;
     await disconnectHardware();
   };
 
-  const connectToScale = async (options?: { force?: boolean; pickPort?: boolean }) => {
+  const connectHardware = async (deviceId: string) => {
+    errorListener = await SerialScale.addListener('onScaleError', () => {
+      void handleStaleConnection();
+    });
+
+    dataListener = await SerialScale.addListener('onScaleData', (result: any) => {
+      parseScalePayload(String(result?.data ?? ''));
+    });
+
+    const result = await SerialScale.connect({ deviceId });
+    connectedScaleDeviceId.value = result?.deviceId ?? deviceId;
+
+    clearHandshakeTimeout();
+    handshakeTimeout = setTimeout(() => {
+      if (!isGlobalConnected.value) {
+        void handleStaleConnection();
+      }
+    }, PORT_HANDSHAKE_MS);
+  };
+
+  const connectToScale = async (options?: {
+    force?: boolean;
+    pickPort?: boolean;
+    deviceId?: string;
+    sessionId?: string | number | symbol;
+  }) => {
+    const sessionId = options?.sessionId ?? activeScaleSessionId.value;
+    if (sessionId == null) return;
+
     const force = options?.force ?? false;
 
     if (connectInProgress) return;
-    if (isGlobalConnected.value && !force) return;
+    if (isGlobalConnected.value && !force && pendingSelectionSessionId.value === null) return;
 
     connectInProgress = true;
     isScaleConnecting.value = true;
@@ -219,22 +409,29 @@ export function useScaleManager() {
         await new Promise((resolve) => setTimeout(resolve, 350));
       }
 
-      errorListener = await SerialScale.addListener('onScaleError', () => {
-        void handleStaleConnection();
-      });
+      if (options?.pickPort) {
+        pendingSelectionSessionId.value = null;
+        await connectHardware('');
+        return;
+      }
 
-      dataListener = await SerialScale.addListener('onScaleData', (result: any) => {
-        parseScalePayload(String(result?.data ?? ''));
-      });
+      const devices = await fetchAvailableScales();
 
-      await SerialScale.connect({ pickPort: options?.pickPort ?? false });
+      if (devices.length === 0) {
+        pendingSelectionSessionId.value = null;
+        throw new Error('Không tìm thấy cân USB nào');
+      }
 
-      clearHandshakeTimeout();
-      handshakeTimeout = setTimeout(() => {
-        if (!isGlobalConnected.value) {
-          void handleStaleConnection();
-        }
-      }, PORT_HANDSHAKE_MS);
+      const deviceId = resolveDeviceIdForSession(sessionId, devices, options?.deviceId);
+
+      if (!deviceId) {
+        pendingSelectionSessionId.value = sessionId;
+        return;
+      }
+
+      pendingSelectionSessionId.value = null;
+      sessionDeviceIds.set(sessionId, deviceId);
+      await connectHardware(deviceId);
     } catch (e) {
       console.error('Lỗi kết nối cân:', e);
       await forceDisconnect();
@@ -244,58 +441,140 @@ export function useScaleManager() {
     }
   };
 
+  const selectScaleDevice = async (
+    sessionId: string | number | symbol,
+    deviceId: string
+  ) => {
+    if (!deviceId) return;
+
+    activeScaleSessionId.value = sessionId;
+    sessionDeviceIds.set(sessionId, deviceId);
+    pendingSelectionSessionId.value = null;
+    globalWeight.value = '0.000';
+    await connectToScale({ sessionId, deviceId, force: true });
+  };
+
   const forceReconnect = async (
     sessionId: string | number | symbol,
-    options?: { pickPort?: boolean }
+    options?: { pickPort?: boolean; deviceId?: string }
   ) => {
-    activeScaleSessionId = sessionId;
+    activeScaleSessionId.value = sessionId;
     globalWeight.value = '0.000';
-    await connectToScale({ force: true, pickPort: options?.pickPort ?? false });
+
+    if (options?.pickPort) {
+      await connectToScale({ sessionId, force: true, pickPort: true });
+      return;
+    }
+
+    const devices = await fetchAvailableScales();
+    if (devices.length > 1 && !options?.deviceId) {
+      pendingSelectionSessionId.value = sessionId;
+      return;
+    }
+
+    await connectToScale({
+      sessionId,
+      force: true,
+      deviceId: options?.deviceId,
+    });
+  };
+
+  /** Quét lại USB hub, cập nhật dropdown và kết nối lại cân đã chọn (nếu còn). */
+  const refreshScaleDevices = async (sessionId: string | number | symbol) => {
+    activeScaleSessionId.value = sessionId;
+    globalWeight.value = '0.000';
+
+    await forceDisconnect();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const devices = await fetchAvailableScales();
+    const saved = sessionDeviceIds.get(sessionId);
+
+    if (devices.length === 0) {
+      pendingSelectionSessionId.value = null;
+      return { devices, connected: false, needsSelection: false };
+    }
+
+    const deviceId = resolveDeviceIdForSession(sessionId, devices, saved ?? undefined);
+
+    if (!deviceId) {
+      pendingSelectionSessionId.value = sessionId;
+      return { devices, connected: false, needsSelection: true };
+    }
+
+    pendingSelectionSessionId.value = null;
+    await connectToScale({ sessionId, deviceId, force: true });
+    return { devices, connected: true, needsSelection: false, deviceId };
   };
 
   const startAutoConnect = (sessionId: string | number | symbol) => {
-    if (activeScaleSessionId !== null && activeScaleSessionId !== sessionId) {
+    if (activeScaleSessionId.value !== null && activeScaleSessionId.value !== sessionId) {
       void internalStop();
     }
 
-    activeScaleSessionId = sessionId;
-    void connectToScale();
+    activeScaleSessionId.value = sessionId;
+    void connectToScale({ sessionId });
 
     if (!autoConnectInterval) {
       autoConnectInterval = setInterval(() => {
-        if (activeScaleSessionId === null || connectInProgress) return;
+        if (activeScaleSessionId.value === null || connectInProgress) return;
+        if (pendingSelectionSessionId.value !== null) return;
 
         const stale = isGlobalConnected.value
           && lastDataAt > 0
           && Date.now() - lastDataAt > DATA_WATCHDOG_MS;
 
         if (!isGlobalConnected.value || stale) {
-          void connectToScale({ force: stale });
+          void connectToScale({ sessionId: activeScaleSessionId.value!, force: stale });
         }
       }, AUTO_RETRY_MS);
     }
   };
 
   const stopAutoConnect = (sessionId: string | number | symbol) => {
-    if (activeScaleSessionId !== sessionId) return;
+    if (activeScaleSessionId.value !== sessionId) return;
 
-    activeScaleSessionId = null;
+    if (pendingSelectionSessionId.value === sessionId) {
+      pendingSelectionSessionId.value = null;
+    }
+
+    activeScaleSessionId.value = null;
     void internalStop();
   };
 
   const releaseScaleConnection = () => {
-    activeScaleSessionId = null;
+    pendingSelectionSessionId.value = null;
+    activeScaleSessionId.value = null;
     void internalStop();
   };
+
+  const isSessionPendingSelection = (sessionId: string | number | symbol) =>
+    pendingSelectionSessionId.value === sessionId;
+
+  const isSessionActive = (sessionId: string | number | symbol) =>
+    activeScaleSessionId.value === sessionId;
+
+  const getSessionSelectedDeviceId = (sessionId: string | number | symbol) =>
+    sessionDeviceIds.get(sessionId) ?? null;
 
   return {
     globalWeight,
     isGlobalConnected,
     isGlobalStable,
     isScaleConnecting,
+    availableScales,
+    pendingSelectionSessionId,
+    activeScaleSessionId,
+    connectedScaleDeviceId,
     startAutoConnect,
     stopAutoConnect,
     releaseScaleConnection,
     forceReconnect,
+    refreshScaleDevices,
+    selectScaleDevice,
+    fetchAvailableScales,
+    isSessionPendingSelection,
+    isSessionActive,
+    getSessionSelectedDeviceId,
   };
 }

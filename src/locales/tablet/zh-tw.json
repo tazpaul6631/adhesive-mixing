@@ -37,8 +37,10 @@
       "workOrder": "派工單",
       "glue": "調膠品",
       "totalWeight": "需求總重量 (KG)",
-      "updater": "膠水更新人員",
-      "updateDate": "膠水更新日期",
+      "updater": "派工人員",
+      "updateDate": "派工日期",
+      "glueConfirm": "完成攪拌",
+      "qipConfirm": "QIP確認",
       "confirm": "QIP確認"
     },
     "scan": {
@@ -256,7 +258,10 @@
       "capacityExceedsWeighed": "容器總重量 ({total} KG) 超出已秤重重量 ({target})。",
       "capacityShortageWeighed": "容器總重量 ({total} KG) 與分裝目標重量 ({target}) 不符。請選擇合適的容器。",
       "capacityMismatchWeighedGeneric": "容器總重量 ({total} KG) 與已秤重重量 ({target}) 不符。",
-      "chietCapacityBlock": "容器總重量已符合分裝目標重量 {label}。無需再新增列。"
+      "chietCapacityBlock": "容器總重量已符合分裝目標重量 {label}。無需再新增列。",
+      "chietOversizedBucketBlock": "已選擇大於實際重量的容器（{label}）。無法再新增列。",
+      "chietTotalExceededBlock": "容器總重量（{total} Kg）已超過實際重量（{target}）。無法再新增列。",
+      "chietChooseClosestBucket": "請選擇最接近剩餘數量（{remaining} Kg）的容器。例如實際重量 12.1–12.9 Kg 時，不能先選 12 Kg 容器。"
     }
   },
   "bluetoothPrinter": {
@@ -275,10 +280,14 @@
     "connected": "已連接電子秤",
     "connecting": "正在連接電子秤...",
     "searching": "正在搜尋連線...",
+    "selectScale": "選擇 USB 電子秤",
+    "selectScalePlaceholder": "選擇要連接的電子秤",
+    "selectScaleHint": "偵測到多台電子秤 — 請先選擇後再秤重。",
     "confirm": "確認",
     "toast": {
       "reconnecting": "重新連接中",
-      "reconnectingDetail": "已重置電子秤連線。若 hub 上有多台電子秤，請在提示時選擇正確連接口。",
+      "reconnectingDetail": "已重置電子秤連線。",
+      "reconnectingMultiScale": "已重置連線。請從下方清單選擇電子秤。",
       "connectFailed": "無法連接",
       "connectFailedDetail": "請檢查 hub/USB 線後再試。",
       "noTargetWeight": "尚無需求重量",
@@ -322,7 +331,7 @@
       "columns": {
         "name": "成分名稱",
         "requiredWeight": "需求重量",
-        "actualWeight": "實際重量 (KG)",
+        "actualWeight": "實際重量",
         "operator": "操作人員",
         "weighingTime": "秤重時間",
         "action": "操作"
@@ -336,8 +345,8 @@
       "nameRequired": "成分名稱為必填。",
       "percentageLabel": "百分比 (%)",
       "percentageRequired": "請輸入百分比。",
-      "weightLabel": "重量 (KG)",
-      "weightRequired": "請輸入重量 (KG)",
+      "weightLabel": "重量 ({unit})",
+      "weightRequired": "請輸入重量 ({unit})",
       "toleranceGramsLabel": "允許誤差 (g)",
       "toleranceGramsRequired": "請輸入大於 0 的誤差克數"
     },

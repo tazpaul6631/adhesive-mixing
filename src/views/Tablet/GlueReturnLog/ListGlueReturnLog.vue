@@ -17,10 +17,14 @@
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
       <div class="main-container max-w-full mx-auto">
         <div class="surface-card p-0 shadow-1 border-round-xl">
-          <div class="surface-100 p-3 border-round-top-xl">
+          <div
+            class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
             <span class="font-bold text-700 text-lg">
               <i class="pi pi-list mr-2"></i>{{ t('listGlueReturnLog.sectionTitle') }}
             </span>
+            <ScaleDevicePicker :session-id="glueReturnLogScaleSessionId" />
+          </div>
+          <div class="surface-100 px-3 pb-3">
             <div class="grid formgrid align-items-end">
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
                 <label class="text-800 font-medium mb-2 block">{{ t('listGlueReturnLog.selectedRow') }}</label>
@@ -29,7 +33,8 @@
               </div>
 
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
-                <ElectronicScaleGlueReturn :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
+                <ElectronicScaleGlueReturn :scale-session-id="glueReturnLogScaleSessionId" hide-scale-picker
+                  :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
                   :locked-weight="showReturnWeight(selectedItem) ? String(selectedItem?.returnWeight ?? '') : ''"
                   :disable-confirm="!selectedItem || !!selectedItem?.scaleConfirmed || isRowApiSubmitted(selectedItem)"
                   @confirm-weight="handleScaleConfirmWeight" />
@@ -103,9 +108,11 @@
                 bodyClass="dt-col-action">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <Button v-else icon="pi pi-check-circle" severity="success" size="large"
-                    :disabled="!canSubmitRow(data)" :loading="isConfirming && submittingRowId === data.glueReturnLogId"
-                    @click="handleSubmitGlueReturnLog(data)" />
+                  <div v-else class="flex justify-content-center">
+                    <Button icon="pi pi-check-circle" severity="success" size="large" :disabled="!canSubmitRow(data)"
+                      :loading="isConfirming && submittingRowId === data.glueReturnLogId"
+                      @click="handleSubmitGlueReturnLog(data)" />
+                  </div>
                 </template>
               </Column>
             </DataTable>
@@ -132,6 +139,7 @@ import format from '@/mixins/format';
 import glueReturnLogApi from '@/api/glueReturnLog';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import ElectronicScaleGlueReturn from '@/components/ElectronicScaleGlueReturn.vue';
+import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import {
   useGlueReturnLogPendingStore,
   type GlueReturnLogPendingEntry,
@@ -140,6 +148,7 @@ import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
+const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
 
 export interface GlueReturnLogItem {
   factoryId: string;
@@ -314,6 +323,7 @@ const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
   try {
     const payload = {
       factoryId: authStore.user?.factoryId || '',
+      departmentId: authStore.user?.departmentId,
       page,
       pageSize,
     };
@@ -419,7 +429,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       factoryId: row.factoryId || authStore.user?.factoryId || '',
       glueReturnLogId: row.glueReturnLogId,
       returnGlueId: row.returnGlueId,
-      lineChemicalId: row.lineChemicalId,
+      // lineChemicalId: row.lineChemicalId,
       returnWeight: Number(row.returnWeight),
       returnWeightUnit: row.returnWeightUnit || 'Kg',
       weightTime: row.weightTime,

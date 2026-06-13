@@ -42,7 +42,7 @@
           <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
-            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets"
+            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets" filter
             @show="handleBucketSelectShow" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
@@ -68,9 +68,9 @@
       <Column v-if="!isViewMode" :header="t('separateMixedGlue.table.columns.action')" :exportable="false"
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text rounded
-              :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')"
+          <div class="flex justify-content-center">
+            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text
+              :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" class="button-lg"
               @click.stop="handleDeleteRow(data)" />
           </div>
         </template>
@@ -98,11 +98,17 @@ import {
   formatEffectiveChietTargetLabel,
   formatChietCapacityBlockMessage,
   resolveChietTargetCapacityKg,
-  getCapacityMatchToleranceKg,
-  isChietCapacityComplete,
+  getActualWeighedKg,
+  filterChietBucketOptionsForRow,
+  shouldBlockChietAddRow,
+  hasChietTotalExceededActual,
+  formatWeightKg,
   WEIGHT_EPSILON,
   findBucketOptionById,
   normalizeBucketIdForSelect,
+  mapBucketOptions,
+  getRowActiveBucketId,
+  pruneStaleBucketIds,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 
@@ -163,20 +169,11 @@ const getTargetWeightLabel = () => (
 );
 
 const orderDetailsSelectionKey = computed(() =>
-  props.orderDetails.map((row) =>
-    String(row.selectedBucketId ?? row.bucketId ?? '')
-  ).join('|')
+  props.orderDetails.map((row) => String(getRowActiveBucketId(row) ?? '')).join('|')
 );
 
 const getSelectedBucketTotalKg = () =>
   sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
-
-const isWeighedCapacityComplete = () =>
-  isChietCapacityComplete(
-    getSelectedBucketTotalKg(),
-    props.targetWeight,
-    props.targetWeightUnit || 'Kg'
-  );
 
 const shouldBlockAddRow = () => {
   if (!props.useChietCapacityValidation) {
@@ -186,11 +183,12 @@ const shouldBlockAddRow = () => {
   void orderDetailsSelectionKey.value;
   void bucketList.value.length;
 
-  const rows = props.orderDetails || [];
-  if (rows.length === 0) return false;
-  if (rows.some((row) => !isRowComplete(row))) return false;
-
-  return isWeighedCapacityComplete();
+  return shouldBlockChietAddRow(
+    props.orderDetails,
+    bucketList.value,
+    props.targetWeight,
+    props.targetWeightUnit || 'Kg'
+  );
 };
 
 const syncStoredBucketIdTypes = () => {
@@ -210,6 +208,18 @@ const syncStoredBucketIdTypes = () => {
 const getBucketOptionsForRow = (currentRow: any) => {
   if (bucketList.value.length === 0) {
     return bucketList.value;
+  }
+
+  if (props.useChietCapacityValidation) {
+    const actualKg = getActualWeighedKg(props.targetWeight, props.targetWeightUnit || 'Kg');
+    if (actualKg > 0) {
+      return filterChietBucketOptionsForRow(
+        bucketList.value,
+        actualKg,
+        props.orderDetails,
+        currentRow
+      );
+    }
   }
 
   const targetWeightKg = getEffectiveTargetWeightKg();
@@ -295,9 +305,7 @@ const isAllocationComplete = () => {
 //   return Array.isArray(rowData.selectedRequestDetailIds) && rowData.selectedRequestDetailIds.length > 0;
 // };
 
-const hasBucketSelection = (rowData: any) => {
-  return !!rowData.selectedBucketId;
-};
+const hasBucketSelection = (rowData: any) => getRowActiveBucketId(rowData) != null;
 
 const updateRowCompletionInfo = (rowData: any) => {
   if (hasBucketSelection(rowData)) {
@@ -337,10 +345,23 @@ const handleAddRow = () => {
     }
 
     if (shouldBlockAddRow()) {
+      const actualLabel = formatTargetWeightLabel(props.targetWeight, props.targetWeightUnit || 'Kg');
+      const totalKg = getSelectedBucketTotalKg();
+      const exceeded = hasChietTotalExceededActual(
+        props.orderDetails,
+        bucketList.value,
+        props.targetWeight,
+        props.targetWeightUnit || 'Kg'
+      );
       toast.add({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.allocationComplete'),
-        detail: formatChietCapacityBlockMessage(props.targetWeight, props.targetWeightUnit || 'Kg'),
+        detail: exceeded
+          ? t('separateMixedGlue.validation.chietTotalExceededBlock', {
+            total: formatWeightKg(totalKg),
+            target: actualLabel,
+          })
+          : formatChietCapacityBlockMessage(props.targetWeight, props.targetWeightUnit || 'Kg'),
         life: 6000,
       });
       return;
@@ -354,12 +375,6 @@ const handleAddRow = () => {
 const handleDeleteRow = (rowData: any) => {
   emit('delete-row', rowData);
 };
-
-const mapBucketOptions = (items: any[]): BucketOption[] =>
-  items.map((item: any) => ({
-    ...item,
-    label: `${item.capacity} ${item.capacityUnit || 'Kg'}`,
-  }));
 
 const fetchBucketList = async () => {
   if (bucketLoadPromise) {
@@ -410,14 +425,15 @@ const handleBucketSelectShow = () => {
 };
 
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
-  const targetWeightKg = getEffectiveTargetWeightKg();
-  if (targetWeightKg > 0 && rowData.selectedBucketId) {
-    const totalKg = getSelectedBucketTotalKg();
-    const tolerance = props.useChietCapacityValidation
-      ? getCapacityMatchToleranceKg(props.targetWeight, props.targetWeightUnit || 'Kg')
-      : WEIGHT_EPSILON;
+  if (!rowData.selectedBucketId) {
+    rowData.bucketId = undefined;
+  } else {
+    rowData.bucketId = rowData.selectedBucketId;
+  }
 
-    if (totalKg > targetWeightKg + tolerance) {
+  if (rowData.selectedBucketId && !props.useChietCapacityValidation) {
+    const targetWeightKg = getEffectiveTargetWeightKg();
+    if (targetWeightKg > 0 && getSelectedBucketTotalKg() > targetWeightKg + WEIGHT_EPSILON) {
       await clearRowBucketSelection(rowData, rowIndex);
       toast.add({
         severity: 'warn',

@@ -204,15 +204,18 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-  const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
-  const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
-  const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
+// Tạm thời không kiểm tra chuyền, chỉ kiểm tra keo có khớp hay không.
+  // const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
+  // const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
+  // const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
 
   const lineChemicalMasterId = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId);
   const allocatedCompareValue = getAllocatedGlueCompareValue(allocatedGlueInfo.value);
   const isGlueMatched = !!lineChemicalMasterId && !!allocatedCompareValue && lineChemicalMasterId === allocatedCompareValue;
 
-  return isProductLineMatched && isGlueMatched;
+  return isGlueMatched; // Check mỗi Keo có khớp hay không
+  // Check cả Chuyền và Keo thì mở ở dưới
+  // return isProductLineMatched && isGlueMatched;
 });
 
 const isAllocatedGlueExpired = computed(() => {
@@ -224,7 +227,7 @@ const allocatedExpiredMessage = computed(() => {
 });
 
 const isConfirmButtonDisabled = computed(() => {
-  return isConfirmReturnCompleted.value || !isFirstTwoQrMatched.value || isAllocatedGlueExpired.value || isLoadingLineQr.value || isLoadingAllocatedQr.value || isConfirmingReturn.value;
+  return !isFirstTwoQrMatched.value || isAllocatedGlueExpired.value || isLoadingLineQr.value || isLoadingAllocatedQr.value || isConfirmingReturn.value;
 });
 
 const statusMessage = computed(() => {
@@ -642,8 +645,9 @@ async function handleConfirmReturn() {
         confirmedAt: new Date().toISOString(),
       });
 
-      isConfirmReturnCompleted.value = true;
       showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      resetAllocatedQrField();
+      resetLineQrField();
       return;
     }
 
@@ -669,8 +673,9 @@ async function handleConfirmReturn() {
         confirmedAt: new Date().toISOString(),
       });
 
-      isConfirmReturnCompleted.value = true;
       showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
+      resetAllocatedQrField();
+      resetLineQrField();
     } finally {
       console.groupEnd();
     }

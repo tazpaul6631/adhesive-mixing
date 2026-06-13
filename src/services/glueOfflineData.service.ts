@@ -238,7 +238,8 @@ function parseGlueQrText(qrText: string): ParsedGlueQr | null {
     .map((part) => part.trim())
     .filter(Boolean);
 
-  const startIndex = parts[0]?.toLowerCase() === 's' ? 1 : 0;
+  const scanPathIndex = parts.findIndex((part) => part.toLowerCase() === 's');
+  const startIndex = scanPathIndex >= 0 ? scanPathIndex + 1 : 0;
   const qrCode = normalizeValue(parts[startIndex]).toLowerCase();
   const factoryId = normalizeValue(parts[startIndex + 1]);
   const itemId = normalizeValue(parts[startIndex + 2]);
