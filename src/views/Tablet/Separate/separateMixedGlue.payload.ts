@@ -39,12 +39,14 @@ const buildSeparateGluePayloadItem = (
   glueId: unknown,
   recordStatus: string,
   defaultTime: string,
+  seq: number,
   forceRecordStatus?: string
 ) => ({
   glueId: toApiId(glueId),
   bucketId: toApiId(item.selectedBucketId ?? item.bucketId),
   recordStatus: forceRecordStatus ?? (item.recordStatus ? item.recordStatus : recordStatus),
   confirmDate: item.confirmDate || defaultTime,
+  seq,
   requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
 });
 
@@ -53,8 +55,9 @@ const buildMixSeparateGluePayloadItem = (
   mixGlueMasterId: string,
   recordStatus: string,
   defaultTime: string,
+  seq: number,
   forceRecordStatus?: string
-) => buildSeparateGluePayloadItem(item, mixGlueMasterId, recordStatus, defaultTime, forceRecordStatus);
+) => buildSeparateGluePayloadItem(item, mixGlueMasterId, recordStatus, defaultTime, seq, forceRecordStatus);
 
 const collectChietModalRequestDetailIds = (
   extraChietList: any[],
@@ -78,7 +81,8 @@ const CHIET_EXTRA_RECORD_STATUS = '1';
 
 const normalizeApiNoSeparateGlueItem = (
   item: any,
-  defaultTime?: string
+  defaultTime?: string,
+  seq?: number
 ): Record<string, unknown> => {
   const normalized: Record<string, unknown> = {
     materialCode: toApiId(item.materialCode),
@@ -93,6 +97,11 @@ const normalizeApiNoSeparateGlueItem = (
 
   if (item.noSeparateGlueId != null) {
     normalized.noSeparateGlueId = toApiId(item.noSeparateGlueId);
+  }
+
+  const resolvedSeq = seq ?? item.seq;
+  if (resolvedSeq != null && resolvedSeq !== '') {
+    normalized.seq = Number(resolvedSeq) || resolvedSeq;
   }
 
   return normalized;
@@ -116,7 +125,7 @@ const buildNoMixSeparateTableGlues = (
 
   return (ctx.noMixSeparateGlueDetails || [])
     .filter(isSeparateGlueRowReady)
-    .map((item) => {
+    .map((item, index) => {
       const payload: Record<string, unknown> = {
         materialCode: toApiId(materialCode),
         glueWeight,
@@ -125,6 +134,7 @@ const buildNoMixSeparateTableGlues = (
         glueExtra: !!noMixChemical.glueExtra,
         recordStatus: item.recordStatus || NO_CHIET_RECORD_STATUS,
         confirmDate: item.confirmDate || defaultTime,
+        seq: index + 1,
         requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
       };
       if (item.noSeparateGlueId != null && String(item.noSeparateGlueId) !== '') {
@@ -258,6 +268,7 @@ const buildNoSeparateGlues = (
           glueExtra: !!item.glueExtra,
           recordStatus: forceRecordStatus ?? NO_CHIET_RECORD_STATUS,
           confirmDate,
+          seq: 1,
           requestDetailIds: [],
         });
         return;
@@ -271,13 +282,14 @@ const buildNoSeparateGlues = (
         glueExtra: !!item.glueExtra,
         recordStatus: forceRecordStatus ?? (item.recordStatus || CHIET_MAIN_RECORD_STATUS),
         confirmDate,
+        seq: 1,
         requestDetailIds: collectChietModalRequestDetailIds(ctx.extraChietList, materialCode),
       });
 
       ctx.extraChietList
         .filter(extra => String(extra.glueId) === String(materialCode))
         .filter(isSeparateGlueRowReady)
-        .forEach((extra) => {
+        .forEach((extra, extraIndex) => {
           result.push({
             materialCode: toApiId(materialCode),
             glueWeight,
@@ -286,6 +298,7 @@ const buildNoSeparateGlues = (
             glueExtra: extra.glueExtra != null ? !!extra.glueExtra : !!item.glueExtra,
             recordStatus: forceRecordStatus ?? (extra.recordStatus || CHIET_EXTRA_RECORD_STATUS),
             confirmDate: extra.confirmDate || defaultTime,
+            seq: extraIndex + 2,
             requestDetailIds: toApiRequestDetailIds(
               extra.selectedRequestDetailIds ?? extra.requestDetailIds
             ),
@@ -313,20 +326,22 @@ export const buildSeparateGlueCommandPayload = (
   const baseSeparateGlues = [
     ...mixSeparateRows
       .filter(isSeparateGlueRowReady)
-      .map((item) => buildMixSeparateGluePayloadItem(
+      .map((item, index) => buildMixSeparateGluePayloadItem(
         item,
         ctx.mixGlueMasterId,
         recordStatus,
         defaultTime,
+        index + 1,
         forceRecordStatus
       )),
     ...noMixSeparateRows
       .filter(isSeparateGlueRowReady)
-      .map((item) => buildSeparateGluePayloadItem(
+      .map((item, index) => buildSeparateGluePayloadItem(
         item,
         item.glueId || defaultNoMixGlueId,
         recordStatus,
         defaultTime,
+        index + 1,
         forceRecordStatus
       )),
   ];
