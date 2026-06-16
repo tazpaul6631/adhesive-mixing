@@ -34,8 +34,10 @@
           <div class="overflow-x-auto border-round-bottom-xl">
             <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
               scrollHeight="520px" stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;"
-              @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[5, 10, 20, 50]"
-              selectionMode="single" v-model:selection="selectedItem" dataKey="workOrderMasterId">
+              @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]"
+              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}" selectionMode="single"
+              v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
                 <div style="text-align: center; height: 440px; align-content: center;">
@@ -262,7 +264,7 @@ const isLoadingLine = ref(true);
 const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(5);
+const rowsPerPage = ref(10);
 
 const showConfirmColumn = computed(() =>
   isLoadingLine.value || lineDetails.value.some(row => shouldShowConfirmActions(row))
