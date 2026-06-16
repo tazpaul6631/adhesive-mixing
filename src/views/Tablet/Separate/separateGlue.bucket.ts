@@ -167,6 +167,53 @@ export const hasMeaningfulFractionalKg = (kg: number): boolean => {
   return frac > WEIGHT_EPSILON && frac < 1 - WEIGHT_EPSILON;
 };
 
+/** Gram phần lẻ của một giá trị kg (0–999). */
+export const getWeightFractionalGrams = (kg: number): number => {
+  if (kg <= WEIGHT_EPSILON) return 0;
+  const floorKg = Math.floor(kg + WEIGHT_EPSILON);
+  return Math.round((kg - floorKg) * 1000);
+};
+
+/** Gram phần lẻ sau phần kg nguyên của TL thực (0–999). VD 1.050 kg → 50 g. */
+export const getActualFractionalGrams = (actualKg: number): number =>
+  getWeightFractionalGrams(actualKg);
+
+/** Phần lẻ >= 50 g trên TL thực — gợi ý cần thêm thùng. */
+export const needsChietHalfKgBucket = (actualKg: number): boolean =>
+  getActualFractionalGrams(actualKg) >= 50;
+
+/**
+ * Gram chưa phủ = max(0, TL thực − tổng thùng đã chọn).
+ * VD TL 2.510, đã chọn 2.500 → 10 g.
+ */
+export const getChietUncoveredRemainderGrams = (
+  actualKg: number,
+  selectedTotalKg: number
+): number => {
+  const remainderKg = Math.max(0, actualKg - selectedTotalKg);
+  return Math.round(remainderKg * 1000);
+};
+
+/**
+ * Đủ để submit / không thêm dòng:
+ * tổng >= TL thực HOẶC phần dư còn lại < 50 g.
+ * VD 2.510 + 2.00+0.50=2.500 → dư 10 g → submit OK.
+ */
+export const isChietBucketSelectionComplete = (
+  actualKg: number,
+  selectedTotalKg: number
+): boolean => {
+  if (actualKg <= WEIGHT_EPSILON) return true;
+  if (selectedTotalKg >= actualKg - WEIGHT_EPSILON) return true;
+  return getChietUncoveredRemainderGrams(actualKg, selectedTotalKg) < 50;
+};
+
+/** Cần chọn thêm thùng khi phần dư >= 50 g. */
+export const needsMoreChietBuckets = (
+  actualKg: number,
+  selectedTotalKg: number
+): boolean => !isChietBucketSelectionComplete(actualKg, selectedTotalKg);
+
 export const getFilledBucketRows = (orderDetails: any[]) =>
   orderDetails.filter((row) => getRowActiveBucketId(row) != null);
 
@@ -194,7 +241,7 @@ export const hasBucketCapacityExceedingActual = (
   });
 };
 
-/** Tổng dung tích thùng đã chọn vượt TL thực tế. */
+/** Tổng thùng đã vượt TL thực (chặn thêm dòng khi đã phủ đủ). */
 export const hasChietTotalExceededActual = (
   orderDetails: any[],
   bucketList: BucketOption[],
@@ -209,8 +256,7 @@ export const hasChietTotalExceededActual = (
 };
 
 /**
- * Không cho add-row khi: tổng thùng đã vượt TL thực tế, hoặc đã khớp TL chiết.
- * Chọn thùng vẫn được phép kể cả khi tổng sẽ vượt — chỉ chặn lúc bấm +.
+ * Không cho add-row khi: dòng chưa chọn thùng, đã phủ đủ (dư < 50 g), hoặc tổng > TL thực.
  */
 export const shouldBlockChietAddRow = (
   orderDetails: any[],
@@ -222,12 +268,14 @@ export const shouldBlockChietAddRow = (
   if (rows.length === 0) return false;
   if (rows.some((row) => getRowActiveBucketId(row) == null)) return false;
 
+  const actualKg = getActualWeighedKg(targetWeight, targetWeightUnit);
+  const totalKg = sumSelectedBucketCapacityKg(rows, bucketList);
+
   if (hasChietTotalExceededActual(rows, bucketList, targetWeight, targetWeightUnit)) {
     return true;
   }
 
-  const totalKg = sumSelectedBucketCapacityKg(rows, bucketList);
-  return isChietCapacityComplete(totalKg, targetWeight, targetWeightUnit);
+  return isChietBucketSelectionComplete(actualKg, totalKg);
 };
 
 /**
@@ -246,7 +294,7 @@ export const validateChietFirstBucketFloorChoice = (
   }
 
   const totalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList);
-  if (totalKg >= actualKg - WEIGHT_EPSILON) {
+  if (isChietBucketSelectionComplete(actualKg, totalKg)) {
     return { ok: true };
   }
 
@@ -392,8 +440,8 @@ export const getNearestBucketCapacityCoveringActual = (
 };
 
 /**
- * Chiết: dropdown từ thùng nhỏ nhất → thùng gần nhất phủ **phần còn lại** (TL thực − đã chọn).
- * VD TL 4.200: đã chọn 3.00 → còn 1.2 → hiện đến 2.00; đã chọn 4.00 → còn 0.2 → hiện đến 0.50.
+ * Chiết: dropdown theo phần TL thực còn thiếu.
+ * VD 2.510 đã chọn 2.00 → còn 0.510 kg → hiện 0.50; sau 2.00+0.50 dư 10 g → không thêm dòng.
  */
 export const filterChietBucketOptionsForRow = (
   bucketList: BucketOption[],
@@ -405,8 +453,18 @@ export const filterChietBucketOptionsForRow = (
 
   const selectedTotalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList, currentRow);
   const remainingActualKg = Math.max(0, actualKg - selectedTotalKg);
-  const capTargetKg = remainingActualKg > WEIGHT_EPSILON ? remainingActualKg : actualKg;
-  const maxCapKg = getNearestBucketCapacityCoveringActual(bucketList, capTargetKg);
+  const remainderGrams = getChietUncoveredRemainderGrams(actualKg, selectedTotalKg);
+
+  let maxCapKg: number | null = null;
+
+  if (remainingActualKg <= WEIGHT_EPSILON) {
+    maxCapKg = getNearestBucketCapacityCoveringActual(bucketList, actualKg);
+  } else if (remainderGrams >= 50) {
+    const nearestCovering = getNearestBucketCapacityCoveringActual(bucketList, remainingActualKg);
+    maxCapKg = nearestCovering ?? remainingActualKg;
+  } else {
+    maxCapKg = remainingActualKg;
+  }
 
   if (maxCapKg == null) {
     return sortBucketsByCapacityAsc(bucketList);
@@ -417,9 +475,16 @@ export const filterChietBucketOptionsForRow = (
     ? findBucketOptionById(bucketList, selectedId)
     : undefined;
 
-  let options = bucketList.filter((bucket) =>
-    getBucketCapacityKg(bucket) <= maxCapKg + WEIGHT_EPSILON
-  );
+  let options = bucketList.filter((bucket) => {
+    const cap = getBucketCapacityKg(bucket);
+    if (cap <= maxCapKg! + WEIGHT_EPSILON) return true;
+    if (remainderGrams >= 50) {
+      const nearestCovering = getNearestBucketCapacityCoveringActual(bucketList, remainingActualKg);
+      return nearestCovering != null
+        && Math.abs(cap - nearestCovering) <= WEIGHT_EPSILON;
+    }
+    return false;
+  });
   options = sortBucketsByCapacityAsc(options);
 
   if (
@@ -507,14 +572,29 @@ export const validateChietBucketCapacity = (
   targetWeightUnit = 'Kg'
 ): { ok: boolean; totalKg: number; message?: string } => {
   const actualKg = getActualWeighedKg(targetWeight, targetWeightUnit);
-  const expectedKg = resolveChietTargetCapacityKg(targetWeight, targetWeightUnit);
-  const targetLabel = formatEffectiveChietTargetLabel(targetWeight, targetWeightUnit);
+  const actualLabel = formatTargetWeightLabel(targetWeight, targetWeightUnit || 'Kg');
   const totalKg = sumSelectedBucketCapacityKg(orderDetails, bucketList);
 
-  if (expectedKg <= 0) {
+  if (actualKg <= 0) {
     return { ok: true, totalKg };
   }
 
+  if (getFilledBucketRows(orderDetails).length === 0) {
+    return {
+      ok: false,
+      totalKg,
+      message: t('separateMixedGlue.validation.capacityShortageWeighed', {
+        total: formatWeightKg(totalKg),
+        target: actualLabel,
+      }),
+    };
+  }
+
+  if (isChietBucketSelectionComplete(actualKg, totalKg)) {
+    return { ok: true, totalKg };
+  }
+
+  const remainderGrams = getChietUncoveredRemainderGrams(actualKg, totalKg);
   const floorChoice = validateChietFirstBucketFloorChoice(
     orderDetails,
     bucketList,
@@ -525,31 +605,12 @@ export const validateChietBucketCapacity = (
     return { ok: false, totalKg, message: floorChoice.message };
   }
 
-  if (totalKg >= actualKg - WEIGHT_EPSILON) {
-    return { ok: true, totalKg };
-  }
-
-  if (isChietCapacityComplete(totalKg, targetWeight, targetWeightUnit)) {
-    return { ok: true, totalKg };
-  }
-
-  if (totalKg > expectedKg + WEIGHT_EPSILON) {
-    return {
-      ok: false,
-      totalKg,
-      message: t('separateMixedGlue.validation.capacityExceedsWeighed', {
-        total: formatWeightKg(totalKg),
-        target: targetLabel,
-      }),
-    };
-  }
-
   return {
     ok: false,
     totalKg,
     message: t('separateMixedGlue.validation.capacityShortageWeighed', {
       total: formatWeightKg(totalKg),
-      target: targetLabel,
+      target: `${actualLabel} (còn ${remainderGrams} g)`,
     }),
   };
 };
