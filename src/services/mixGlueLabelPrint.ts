@@ -41,8 +41,10 @@ const USE_TSPL_BOLD_FONT_FILE = false;
 const TSPL_FONT_BOLD = '3';
 const TSPL_TEXT_XMUL = 12;
 const TSPL_TEXT_YMUL = 12;
-const TSPL_TEXT_DATE_XMUL = 15;
-const TSPL_TEXT_DATE_YMUL = 15;
+const TSPL_TEXT_DATE_XMUL = 12;
+const TSPL_TEXT_DATE_YMUL = 12;
+const TSPL_TEXT_TIME_XMUL = 20;
+const TSPL_TEXT_TIME_YMUL = 20;
 const TSPL_BOLD_SIM_OFFSET_DOTS = 2;
 const TSPL_LINE_HEIGHT = 40;
 const TSPL_LEFT_X = 15;
@@ -90,6 +92,27 @@ const tsplBoldText = (
   text: string,
   xMul = TSPL_TEXT_XMUL,
   yMul = TSPL_TEXT_YMUL,
+  rotation = 0
+) => {
+  const inner = tsplEscapeForQuote(text);
+  const font = USE_TSPL_BOLD_FONT_FILE ? TSPL_FONT_BOLD : TSPL_FONT_REGULAR;
+  const line = `TEXT ${x},${y},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`;
+  if (USE_TSPL_BOLD_FONT_FILE) {
+    return line;
+  }
+  const { x: x2, y: y2 } = tsplBoldSimCoords(x, y, rotation, TSPL_BOLD_SIM_OFFSET_DOTS);
+  return (
+    line +
+    `TEXT ${x2},${y2},"${font}",${rotation},${xMul},${yMul},"${inner}"\n`
+  );
+};
+
+const tsplBoldTime = (
+  x: number,
+  y: number,
+  text: string,
+  xMul = TSPL_TEXT_TIME_XMUL,
+  yMul = TSPL_TEXT_TIME_YMUL,
   rotation = 0
 ) => {
   const inner = tsplEscapeForQuote(text);
@@ -290,7 +313,7 @@ export async function buildMixGlueLabelTspl(
     return null;
   }
 
-  const { glueName, startDate, endDate, action, productLineName, pasteQrCode, glueWeight } = response.data.data;
+  const { glueName, startHour, startDay, endHour, endDay, action, productLineName, pasteQrCode, glueWeight } = response.data.data;
 
   let tspl = `
 SIZE 69 mm, 49 mm
@@ -303,9 +326,11 @@ QRCODE 15,20,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);
-  tspl += tsplBoldDate(230, 36, `${startDate}`);
+  tspl += tsplBoldTime(230, 25, `${startHour}`);
+  tspl += tsplBoldDate(370, 40, `${startDay}`);
   tspl += tsplBoldText(180, 100, `Đến:`);
-  tspl += tsplBoldDate(250, 96, `${endDate}`);
+  tspl += tsplBoldTime(250, 85, `${endHour}`);
+  tspl += tsplBoldDate(390, 100, `${endDay}`);
   tspl = appendPasteQrCodeTspl(tspl, pasteQrCode);
 
   const styleBlock = appendTsplLabeledBlock(
