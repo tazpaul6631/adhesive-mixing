@@ -18,6 +18,10 @@ export interface SeparateLabelDto {
   separateGlueId?: string | number;
   noSeparateGlueId?: string | number;
   glueWeight?: string;
+  startHour?: string;
+  startDay?: string;
+  endHour?: string;
+  endDay?: string;
 }
 
 export interface SeparatePrintItem {
@@ -31,6 +35,10 @@ export interface SeparatePrintItem {
   isSeparateGlue: boolean;
   glueId: string;
   qrPath: string;
+  startHour?: string;
+  startDay?: string;
+  endHour?: string;
+  endDay?: string;
   labelDto: SeparateLabelDto;
 }
 
@@ -79,8 +87,10 @@ export interface FetchSeparatePrintBatchOptions {
 const TSPL_FONT_REGULAR = '3';
 const TSPL_TEXT_XMUL = 12;
 const TSPL_TEXT_YMUL = 12;
-const TSPL_TEXT_DATE_XMUL = 15;
-const TSPL_TEXT_DATE_YMUL = 15;
+const TSPL_TEXT_DATE_XMUL = 12;
+const TSPL_TEXT_DATE_YMUL = 12;
+const TSPL_TEXT_TIME_XMUL = 20;
+const TSPL_TEXT_TIME_YMUL = 20;
 const TSPL_BOLD_SIM_OFFSET_DOTS = 2;
 const TSPL_LINE_HEIGHT = 40;
 const TSPL_LEFT_X = 15;
@@ -132,6 +142,23 @@ const tsplBoldDate = (
   text: string,
   xMul = TSPL_TEXT_DATE_XMUL,
   yMul = TSPL_TEXT_DATE_YMUL,
+  rotation = 0
+) => {
+  const inner = tsplEscape(text);
+  const line = `TEXT ${x},${y},"${TSPL_FONT_REGULAR}",${rotation},${xMul},${yMul},"${inner}"\n`;
+  const { x: x2, y: y2 } = tsplBoldSimCoords(x, y, rotation, TSPL_BOLD_SIM_OFFSET_DOTS);
+  return (
+    line +
+    `TEXT ${x2},${y2},"${TSPL_FONT_REGULAR}",${rotation},${xMul},${yMul},"${inner}"\n`
+  );
+};
+
+const tsplBoldTime = (
+  x: number,
+  y: number,
+  text: string,
+  xMul = TSPL_TEXT_TIME_XMUL,
+  yMul = TSPL_TEXT_TIME_YMUL,
   rotation = 0
 ) => {
   const inner = tsplEscape(text);
@@ -490,9 +517,7 @@ export async function fetchSeparatePrintBatchFromWorkOrder(
 export function buildSeparateLabelTspl(item: SeparatePrintItem): string | null {
   const dto = item.labelDto;
   if (!dto?.action || !item.qrPath) return null;
-
-  const formattedStart = dto.startDate || '';
-  const formattedEnd = dto.endDate || '';
+  const { startHour, startDay, endHour, endDay } = dto;
   const qrPayload = `${dto.action}/${item.qrPath}`;
 
   let tspl = `
@@ -506,9 +531,11 @@ QRCODE 15,20,H,5,A,0,"${tsplEscape(qrPayload)}"
 QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
 `;
   tspl += tsplBoldText(180, 40, `Từ:`);
-  tspl += tsplBoldDate(230, 36, `${formattedStart}`);
+  tspl += tsplBoldTime(230, 25, `${startHour}`);
+  tspl += tsplBoldDate(370, 40, `${startDay}`);
   tspl += tsplBoldText(180, 100, `Đến:`);
-  tspl += tsplBoldDate(250, 96, `${formattedEnd}`);
+  tspl += tsplBoldTime(250, 85, `${endHour}`);
+  tspl += tsplBoldDate(390, 100, `${endDay}`);
   tspl = appendPasteQrCodeTspl(tspl, dto.pasteQrCode);
 
   const styleBlock = appendTsplLabeledBlock(
