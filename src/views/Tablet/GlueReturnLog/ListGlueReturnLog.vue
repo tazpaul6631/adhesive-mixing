@@ -46,8 +46,9 @@
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
               scrollable scrollHeight="430px" stripedRows class="modern-table auto-columns-table"
               tableStyle="width: 100%;" selectionMode="single" :paginator="true" :rows="rowsPerPage"
-              :rowsPerPageOptions="[5, 10, 20, 50]" dataKey="glueReturnLogId" @page="onPageLine"
-              @row-click="onRowClick">
+              :rowsPerPageOptions="[10, 20, 50]" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
+              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}">
               <template #empty>
                 <div style="text-align: center; height: 340px; align-content: center;">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -178,7 +179,7 @@ const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(5);
+const rowsPerPage = ref(10);
 const isLoadingLine = ref(true);
 const isConfirming = ref(false);
 const submittingRowId = ref('');
