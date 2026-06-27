@@ -63,6 +63,8 @@ const SAVED_MAC_CONNECT_TIMEOUT_MS = 6000;
 const INIT_RETRY_DELAYS_MS = [0, 400, 900, 1500];
 
 let connectFlowPromise: Promise<void> | null = null;
+/** User đã hủy/ngắt — không tự quét lại cho đến refresh hoặc in. */
+let autoConnectSuppressed = false;
 
 const scanningLabel = computed(() =>
   scanPhase.value === 'saved-mac'
@@ -439,6 +441,7 @@ const startBluetoothAutoFlow = (
 };
 
 const refreshScan = () => {
+  autoConnectSuppressed = false;
   scanAborted = false;
   void startBluetoothAutoFlow(undefined, { force: true });
 };
@@ -448,30 +451,39 @@ const turnOnAndScan = () => {
   const bt = getBluetooth();
   if (!bt) return console.error('Plugin bluetoothSerial chưa load.');
 
+  autoConnectSuppressed = false;
   scanAborted = false;
   void startBluetoothAutoFlow(() => bt.showBluetoothSettings?.(), { force: true });
 };
 
+const stopAutoReconnectWatchdog = () => {
+  if (autoReconnectInterval) {
+    clearInterval(autoReconnectInterval);
+    autoReconnectInterval = null;
+  }
+};
+
 const cancelConnection = () => {
+  autoConnectSuppressed = true;
   scanAborted = true;
+  stopAutoReconnectWatchdog();
   status.value = 'disconnected';
 
   const bt = getBluetooth();
   if (bt) {
-    bt.disconnect(() => console.log('Đã hủy kết nối/quét.'));
+    bt.disconnect(() => console.log('Đã hủy kết nối/quét.'), () => undefined);
   }
 };
 
 // --- Cơ chế theo dõi và tự động kết nối lại ---
 const startAutoReconnectWatchdog = () => {
-  if (autoReconnectInterval) {
-    clearInterval(autoReconnectInterval);
-    autoReconnectInterval = null;
-  }
+  if (autoConnectSuppressed) return;
+
+  stopAutoReconnectWatchdog();
 
   autoReconnectInterval = setInterval(() => {
     const bt = getBluetooth();
-    if (!bt) return;
+    if (!bt || scanAborted || autoConnectSuppressed) return;
 
     // Kiểm tra xem máy in thực tế còn kết nối không
     bt.isConnected(
@@ -487,7 +499,7 @@ const startAutoReconnectWatchdog = () => {
         }
 
         // Tự động thử kết nối lại nếu đang ngắt và Bluetooth đang bật
-        if (status.value === 'disconnected') {
+        if (status.value === 'disconnected' && !scanAborted && !autoConnectSuppressed) {
           bt.isEnabled(
             () => {
               void (async () => {
@@ -545,8 +557,6 @@ const runConnectWithRetry = async () => {
 const initBluetooth = async () => {
   if (!autoEnableOnEnter) return;
 
-  scanAborted = false;
-
   if (pendingInitTimer) {
     clearTimeout(pendingInitTimer);
     pendingInitTimer = null;
@@ -557,16 +567,33 @@ const initBluetooth = async () => {
     selectedMac.value = savedMac;
   }
 
+  if (await syncStatusFromHardware()) {
+    return;
+  }
+
+  if (autoConnectSuppressed) {
+    status.value = 'disconnected';
+    return;
+  }
+
+  scanAborted = false;
   void runConnectWithRetry();
 };
 
 // --- 4. Ngắt kết nối thủ công ---
 const disconnect = () => {
+  autoConnectSuppressed = true;
+  scanAborted = true;
+  stopAutoReconnectWatchdog();
+
   const bt = getBluetooth();
+  status.value = 'disconnected';
   if (bt) {
     bt.disconnect(() => {
       status.value = 'disconnected';
       console.log('Đã ngắt kết nối.');
+    }, () => {
+      status.value = 'disconnected';
     });
   }
 };
@@ -579,10 +606,7 @@ const pauseBluetooth = () => {
     clearTimeout(pendingInitTimer);
     pendingInitTimer = null;
   }
-  if (autoReconnectInterval) {
-    clearInterval(autoReconnectInterval);
-    autoReconnectInterval = null;
-  }
+  stopAutoReconnectWatchdog();
 };
 
 // --- Rời page: mặc định chỉ pause; hard disconnect khi unmount hoặc disconnectOnLeave=true ---
@@ -775,9 +799,16 @@ const appendTsplLabeledBlock = (
 
 // --- 6. Logic In TSPL ---
 const printLabel = async () => {
+  if (!props.printData) return alert("Không tìm thấy dữ liệu để in!");
+
+  if (status.value !== 'connected') {
+    autoConnectSuppressed = false;
+    scanAborted = false;
+    await startBluetoothAutoFlow(undefined, { force: true });
+  }
+
   const bt = getBluetooth();
   if (!bt || status.value !== 'connected') return alert("Máy in chưa sẵn sàng!");
-  if (!props.printData) return alert("Không tìm thấy dữ liệu để in!");
 
   isPrinting.value = true;
   let tspl = '';

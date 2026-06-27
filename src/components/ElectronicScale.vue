@@ -5,11 +5,8 @@
       <span v-if="isConnected" class="text-green-500 font-normal text-sm ml-2">
         <i class="pi pi-check-circle"></i> {{ t('electronicScale.connected') }}
       </span>
-      <span v-else-if="isConnecting" class="text-orange-500 font-normal text-sm ml-2">
-        <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.connecting') }}
-      </span>
-      <span v-else class="text-red-500 font-normal text-sm fade-blink ml-2">
-        <i class="pi pi-spin pi-spinner"></i> {{ t('electronicScale.searching') }}
+      <span v-else class="text-red-500 font-normal text-sm ml-2">
+        <i class="pi pi-times-circle"></i> {{ t('electronicScale.disconnected') }}
       </span>
     </label>
 
@@ -199,7 +196,6 @@ const {
   globalWeight,
   isGlobalConnected,
   isGlobalStable,
-  isScaleConnecting,
   startAutoConnect,
   stopAutoConnect,
 } = useScaleManager();
@@ -209,15 +205,8 @@ const beginScaleSession = () => {
   startAutoConnect(scaleSessionId);
 };
 
-const endScaleSession = () => {
-  stopAutoConnect(scaleSessionId);
-  resetDisplayedWeight();
-  emit('connection-status', false);
-};
-
 // Đồng bộ trạng thái kết nối ra UI — chỉ "đã kết nối" khi thực sự nhận được dữ liệu cân
 const isConnected = computed(() => isGlobalConnected.value);
-const isConnecting = computed(() => isScaleConnecting.value);
 const isStable = computed(() => isGlobalStable.value);
 
 // --- LOGIC KIỂM TRA & XÁC NHẬN ---
@@ -365,7 +354,7 @@ const confirmWeight = () => {
 // --- LIFECYCLE ---
 // Ionic cache page → dùng activated/deactivated; session owner tránh page cũ vẫn auto-connect.
 onMounted(() => {
-  setTimeout(() => beginScaleSession(), 500);
+  beginScaleSession();
 });
 
 onActivated(() => {
@@ -373,31 +362,15 @@ onActivated(() => {
 });
 
 onDeactivated(() => {
-  endScaleSession();
+  stopAutoConnect(scaleSessionId);
 });
 
 onUnmounted(() => {
-  endScaleSession();
+  stopAutoConnect(scaleSessionId);
 });
 </script>
 
 <style scoped>
-.fade-blink {
-  animation: fadeBlink 1.5s infinite;
-}
-
-@keyframes fadeBlink {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
 .border-green-500 {
   border-color: #22c55e !important;
   transition: border-color 0.3s ease;

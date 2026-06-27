@@ -18,7 +18,7 @@
 
       <div class="main-container max-w-full mx-auto">
         <!-- Thông tin header -->
-        <div class="surface-card p-3 shadow-1 border-round-xl">
+        <div class="surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
             <div class="col-12 lg:col-3">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.workOrder') }}</label>
@@ -39,8 +39,7 @@
             </div>
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
-                <Button :disabled="isNoMixGlue ? isNoMixGlueOperationLocked : separateGlueComplete"
-                  icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
+                <Button icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -53,9 +52,9 @@
             </span>
           </div>
           <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails"
-            :disabled="separateGlueComplete" :disable-add-row="separateGlueComplete" :request-details="requestDetails"
+            :disabled="false" :disable-add-row="false" :request-details="requestDetails"
             :target-weight="mixSeparateTargetWeight" target-weight-unit="Kg" use-chiet-capacity-validation
-            @update-bucket="saveDraftToStoreOnly" @add-row="handleAddSeparateGlueRow"
+            @update-bucket="handleMixSeparateBucketUpdate" @add-row="handleAddSeparateGlueRow"
             @delete-row="handleDeleteSeparateGlueRow" />
         </div>
 
@@ -66,8 +65,7 @@
             </span>
           </div>
           <SeparateGlue :is-loading="isLoadingLine" :order-details="noMixGlueTableDetails"
-            :disabled="isNoMixGlue ? isNoMixGlueOperationLocked : separateGlueComplete"
-            :disable-add-row="isNoMixGlue ? isNoMixGlueOperationLocked : separateGlueComplete"
+            :disabled="false" :disable-add-row="false"
             :request-details="requestDetails" :target-weight="noMixSeparateTargetWeight" target-weight-unit="Kg"
             use-chiet-capacity-validation @update-bucket="handleNoMixSeparateBucketUpdate"
             @add-row="handleAddNoMixSeparateGlueRow" @delete-row="handleDeleteNoMixSeparateGlueRow" />
@@ -101,12 +99,11 @@ const {
   hasMixChemicals,
   hasNoMixChemicals,
   requestDetails,
-  separateGlueComplete,
   isNoMixGlue,
-  isNoMixGlueOperationLocked,
   saveDraftToStoreOnly,
   handleAddSeparateGlueRow,
   handleDeleteSeparateGlueRow,
+  handleMixSeparateBucketUpdate,
   handleAddNoMixSeparateGlueRow,
   handleNoMixSeparateBucketUpdate,
   handleDeleteNoMixSeparateGlueRow,

@@ -10,14 +10,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted, onActivated } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useScaleManager } from '@/composables/useScaleManager';
 import { useAppLocale } from '@/composables/useAppLocale';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   sessionId: string | number | symbol;
-}>();
+  /** false = chỉ hiển thị dropdown, không tự kết nối (tránh 2 picker cùng session race). */
+  autoConnect?: boolean;
+}>(), {
+  autoConnect: true,
+});
 
 const toast = useToast();
 const { t } = useAppLocale(() => 'tablet');
@@ -29,6 +33,8 @@ const {
   getSessionSelectedDeviceId,
   isScaleConnecting,
   connectedScaleDeviceId,
+  isGlobalConnected,
+  ensureSessionReady,
 } = useScaleManager();
 
 const selectedScaleDeviceId = ref<string | null>(null);
@@ -71,6 +77,36 @@ watch(
   syncSelectedFromSession,
   { immediate: true, deep: true }
 );
+
+const ensureScaleConnected = async () => {
+  syncSelectedFromSession();
+
+  if (!props.autoConnect) return;
+
+  await ensureSessionReady(props.sessionId);
+  syncSelectedFromSession();
+
+  const deviceId = selectedScaleDeviceId.value;
+  if (!deviceId || isBusy.value) return;
+  if (isGlobalConnected.value && connectedScaleDeviceId.value === deviceId) return;
+
+  isScaleSelectConnecting.value = true;
+  try {
+    await selectScaleDevice(props.sessionId, deviceId);
+  } catch (error) {
+    console.error('[ScaleDevicePicker] auto reconnect failed:', error);
+  } finally {
+    isScaleSelectConnecting.value = false;
+  }
+};
+
+onMounted(() => {
+  void ensureScaleConnected();
+});
+
+onActivated(() => {
+  void ensureScaleConnected();
+});
 
 const handleScaleSelect = async () => {
   if (!selectedScaleDeviceId.value || isBusy.value || isSingleScale.value) return;

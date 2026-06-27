@@ -32,7 +32,7 @@ export interface SeparatePrintItem {
   separateGlueId?: string;
   noSeparateGlueId?: string;
   labelIndex: number;
-  isSeparateGlue: boolean;
+  isNoMixGlue: boolean;
   glueId: string;
   qrPath: string;
   startHour?: string;
@@ -77,12 +77,15 @@ const getLabelPrintSettleMs = (batchSize: number) =>
 
 export interface FetchSeparatePrintBatchOptions {
   workOrderMasterId: string;
-  isSeparateGlue: boolean;
+  isNoMixGlue: boolean;
   confirmBy: string;
   factoryId: string;
   workOrderMasterName?: string;
   chemicalMasterName?: string;
 }
+
+/** true = in tem keo trộn chiết (SG); false = keo không trộn (NSG). */
+export const isSgSeparatePrintFlow = (isNoMixGlue: boolean) => !isNoMixGlue;
 
 const TSPL_FONT_REGULAR = '3';
 const TSPL_TEXT_XMUL = 12;
@@ -295,10 +298,10 @@ const isValidGlueId = (value: unknown) => {
 
 export function parseSeparateGlueIdsFromWorkOrder(
   respData: any,
-  isSeparateGlue: boolean,
+  isNoMixGlue: boolean,
   factoryId: string
 ): Array<{ factoryId: string; separateGlueId?: string | number; noSeparateGlueId?: string | number }> {
-  if (isSeparateGlue) {
+  if (isSgSeparatePrintFlow(isNoMixGlue)) {
     const source = Array.isArray(respData?.separateGlues) ? respData.separateGlues : [];
     return source
       .map((item: any) => {
@@ -329,7 +332,7 @@ export function parseSeparateGlueIdsFromWorkOrder(
 /** Lọc items từ postSGQueryResult / postNSGQueryResult theo WO đang in. */
 export function parseSeparateGlueIdsFromQueryItems(
   items: any[],
-  isSeparateGlue: boolean,
+  isNoMixGlue: boolean,
   factoryId: string,
   workOrderMasterId: string,
   workOrderMasterName?: string
@@ -346,7 +349,7 @@ export function parseSeparateGlueIdsFromQueryItems(
 
   const filtered = (Array.isArray(items) ? items : []).filter(matchesWorkOrder);
 
-  if (isSeparateGlue) {
+  if (isSgSeparatePrintFlow(isNoMixGlue)) {
     return filtered
       .map((item: any) => {
         const separateGlueId = item?.separateGlueId;
@@ -377,7 +380,8 @@ const QUERY_MAX_PAGES = 50;
 async function fetchAllSeparateQueryItems(
   options: FetchSeparatePrintBatchOptions
 ): Promise<any[]> {
-  const { factoryId, workOrderMasterId, isSeparateGlue } = options;
+  const { factoryId, workOrderMasterId, isNoMixGlue } = options;
+  const isSg = isSgSeparatePrintFlow(isNoMixGlue);
   const allItems: any[] = [];
   let page = 1;
 
@@ -389,7 +393,7 @@ async function fetchAllSeparateQueryItems(
       pageSize: QUERY_PAGE_SIZE,
     };
 
-    const response = isSeparateGlue
+    const response = isSg
       ? await separateApi.postSGQueryResult(payload)
       : await separateApi.postNSGQueryResult(payload);
 
@@ -415,11 +419,12 @@ function mapConfirmResponseToPrintQueue(
   glueEntries: Array<{ factoryId: string; separateGlueId?: string | number; noSeparateGlueId?: string | number }>,
   labelRows: SeparateLabelDto[]
 ): SeparatePrintItem[] {
-  const { workOrderMasterId, isSeparateGlue, factoryId, workOrderMasterName, chemicalMasterName } = options;
+  const { workOrderMasterId, isNoMixGlue, factoryId, workOrderMasterName, chemicalMasterName } = options;
+  const isSg = isSgSeparatePrintFlow(isNoMixGlue);
 
   return glueEntries.map((entry, index) => {
     const glueId = String(
-      isSeparateGlue
+      isSg
         ? entry.separateGlueId ?? labelRows[index]?.separateGlueId
         : entry.noSeparateGlueId ?? labelRows[index]?.noSeparateGlueId
     );
@@ -431,16 +436,16 @@ function mapConfirmResponseToPrintQueue(
       workOrderMasterId,
       workOrderMasterName,
       chemicalMasterName,
-      separateGlueId: isSeparateGlue ? glueId : undefined,
-      noSeparateGlueId: isSeparateGlue ? undefined : glueId,
+      separateGlueId: isSg ? glueId : undefined,
+      noSeparateGlueId: isSg ? undefined : glueId,
       labelIndex: index + 1,
-      isSeparateGlue,
+      isNoMixGlue,
       glueId,
       qrPath,
       labelDto: {
         ...labelDto,
-        separateGlueId: isSeparateGlue ? glueId : labelDto.separateGlueId,
-        noSeparateGlueId: isSeparateGlue ? labelDto.noSeparateGlueId : glueId,
+        separateGlueId: isSg ? glueId : labelDto.separateGlueId,
+        noSeparateGlueId: isSg ? labelDto.noSeparateGlueId : glueId,
       },
     };
   });
@@ -449,13 +454,14 @@ function mapConfirmResponseToPrintQueue(
 export async function fetchSeparatePrintBatchFromWorkOrder(
   options: FetchSeparatePrintBatchOptions
 ): Promise<SeparatePrintItem[]> {
-  const { workOrderMasterId, isSeparateGlue, confirmBy, factoryId, workOrderMasterName } = options;
+  const { workOrderMasterId, isNoMixGlue, confirmBy, factoryId, workOrderMasterName } = options;
+  const isSg = isSgSeparatePrintFlow(isNoMixGlue);
 
   const queryItems = await fetchAllSeparateQueryItems(options);
 
   const glueEntries = parseSeparateGlueIdsFromQueryItems(
     queryItems,
-    isSeparateGlue,
+    isNoMixGlue,
     factoryId,
     workOrderMasterId,
     workOrderMasterName
@@ -465,7 +471,7 @@ export async function fetchSeparatePrintBatchFromWorkOrder(
     return [];
   }
 
-  const confirmPayload = isSeparateGlue
+  const confirmPayload = isSg
     ? {
       confirmBy,
       separateGlues: glueEntries.map((entry) => ({
@@ -481,7 +487,7 @@ export async function fetchSeparatePrintBatchFromWorkOrder(
       })),
     };
 
-  const confirmResponse = isSeparateGlue
+  const confirmResponse = isSg
     ? await separateApi.postConfirmSG(confirmPayload)
     : await separateApi.postConfirmNSG(confirmPayload);
 

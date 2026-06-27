@@ -1,5 +1,9 @@
 <template>
   <ion-page :class="{ 'list-mix-glue--scanning': isScanning }">
+    <div class="no-mix-icon-preload" aria-hidden="true">
+      <BsPaintBucket />
+      <BsBucket />
+    </div>
     <ion-header class="header-container">
       <ion-toolbar color="primary" style="padding: 0px !important;">
         <ion-buttons slot="start">
@@ -15,13 +19,21 @@
     </ion-header>
 
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto" :class="{ 'list-mix-glue-layer--hidden': isScanning }">
-        <div class="surface-card p-0 shadow-1 border-round-xl">
-          <div class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-2">
-            <span class="font-bold text-700 text-lg">
+      <div class="main-container max-w-full mx-auto list-mix-glue-page"
+        :class="[pageClass, { 'list-mix-glue-layer--hidden': isScanning }]">
+        <div class="surface-card p-0 shadow-1 border-round-xl list-mix-glue-card">
+          <div
+            class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-mix-glue-card-head">
+            <span class="list-mix-glue-section-title">
               <i class="pi pi-list mr-2"></i>{{ t('listMixGlue.sectionTitle') }}
             </span>
             <div class="flex align-items-center gap-2">
+              <IconField class="list-mix-glue-filter">
+                <InputIcon class="pi pi-search" />
+                <InputText v-model="chemicalMasterNameFilter" type="search"
+                  :placeholder="t('listMixGlue.filter.gluePlaceholder')"
+                  :aria-label="t('listMixGlue.filter.gluePlaceholder')" fluid />
+              </IconField>
               <Button v-if="hasPendingPrint" icon="pi pi-exclamation-triangle" severity="warn" outlined size="large"
                 :badge="String(pendingCount)" badgeSeverity="danger"
                 :title="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
@@ -31,16 +43,17 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto border-round-bottom-xl">
-            <DataTable :value="lineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              scrollHeight="520px" stripedRows class="modern-table auto-columns-table" tableStyle="width: 100%;"
-              @row-click="onRowClick" :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]"
+          <div class="overflow-x-auto border-round-bottom-xl list-mix-glue-table-wrap">
+            <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
+              :scrollHeight="tableScrollHeight" stripedRows class="modern-table auto-columns-table"
+              tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick" :paginator="true" :rows="rowsPerPage"
+              :rowsPerPageOptions="[10, 20, 50]"
               paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
               currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}" selectionMode="single"
               v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
-                <div style="text-align: center; height: 440px; align-content: center;">
+                <div style="text-align: center; align-content: center;" :style="{ minHeight: emptyStateMinHeight }">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
                 </div>
@@ -87,7 +100,7 @@
                 </template>
               </Column>
 
-              <Column v-if="showConfirmColumn" :header="t('listMixGlue.columns.glueConfirm')" :exportable="false"
+              <Column :header="t('listMixGlue.columns.glueConfirm')" :exportable="false"
                 headerClass="dt-col-action-glue" bodyClass="dt-col-action-glue">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
@@ -100,16 +113,35 @@
                 </template>
               </Column>
 
-              <Column v-if="showConfirmColumn" :header="t('listMixGlue.columns.qipConfirm')" :exportable="false"
-                headerClass="dt-col-action-qip" bodyClass="dt-col-action-qip">
+              <Column :header="t('listMixGlue.columns.qipConfirm')" :exportable="false" headerClass="dt-col-action-qip"
+                bodyClass="dt-col-action-qip">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <div v-else-if="shouldShowConfirmActions(data)" class="flex justify-content-center">
-                    <Button
-                      :disabled="data.mixGlueStep !== '3' || !canPrintRow(data) || isRowProcessing(data.workOrderMasterId)"
-                      icon="pi pi-print" severity="success" class="button-lg"
+                  <div v-else class="flex justify-content-center">
+                    <Button :disabled="isPrintRowDisabled(data)" icon="pi pi-print"
+                      :severity="getPrintButtonSeverity(data)" class="button-lg"
                       :title="t('listMixGlue.columns.qipConfirm')" :aria-label="t('listMixGlue.columns.qipConfirm')"
                       @click.stop="handlePrint(data)" />
+                  </div>
+                </template>
+              </Column>
+
+              <Column :header="t('listMixGlue.columns.noMixConfirm')" :exportable="false"
+                headerClass="dt-col-action-glue" bodyClass="dt-col-action-glue">
+                <template #body="{ data }">
+                  <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
+                  <div v-else class="flex justify-content-center">
+                    <Button :severity="getNoMixConfirmSeverity(data)"
+                      :disabled="!canClickNoMixConfirmRow(data) || isRowProcessing(data.workOrderMasterId)"
+                      class="button-lg no-mix-confirm-btn" :title="getNoMixConfirmTitle(data)"
+                      :aria-label="getNoMixConfirmTitle(data)" @click.stop="handleNoMixConfirm(data)">
+                      <template #icon>
+                        <span class="no-mix-confirm-btn__icon">
+                          <BsPaintBucket v-show="isNoMixConfirmGreen(data)" />
+                          <BsBucket v-show="!isNoMixConfirmGreen(data)" />
+                        </span>
+                      </template>
+                    </Button>
                   </div>
                 </template>
               </Column>
@@ -162,7 +194,7 @@ import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
 import { useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import mixGlueApi from '@/api/mixGlue';
 import employeeApi from '@/api/employee';
@@ -172,46 +204,187 @@ import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
 import { parsePrintQueueFromBe } from '@/services/mixGlueLabelPrint';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
+import { useSeparateLabelBatchPrint } from '@/composables/useSeparateLabelBatchPrint';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import { useListTableFetch } from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
+import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
+import { BsBucket, BsPaintBucket } from '@kalimahapps/vue-icons/bs';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { t } = useAppLocale(() => 'tablet');
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 
+const {
+  pageClass,
+  tableScrollHeight,
+  emptyStateMinHeight,
+} = useTabletPageLayout({ listPage: true });
+
 const selectedItem = ref<any>(null);
-const toast = useToast();
+const { showToast } = useAppToast();
 const draftStore = useMixGlueDraftStore();
 const bluetoothRef = ref<any>(null);
 const printingWorkOrderId = ref<string | null>(null);
 const showRetryDialog = ref(false);
 const lastPrintTotal = ref(0);
+const printFlowKind = ref<'mix' | 'separate' | null>(null);
+/** Giữ trạng thái đã in trong session — không phụ thuộc BE trả qipConfirm ngay sau in. */
+const printedWorkOrderIds = ref<Set<string>>(new Set());
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
 
 const {
-  isPrinting,
-  progress,
-  failedItems,
-  printJobContext,
-  hasPendingPrint,
-  pendingCount,
-  clearFailedItems,
-  restorePendingFromStorage,
-  startPrint,
-  retryFailed,
+  isPrinting: isMixPrinting,
+  progress: mixProgress,
+  failedItems: mixFailedItems,
+  printJobContext: mixPrintJobContext,
+  hasPendingPrint: hasMixPendingPrint,
+  pendingCount: mixPendingCount,
+  clearFailedItems: clearMixFailedItems,
+  restorePendingFromStorage: restoreMixPendingFromStorage,
+  startPrint: startMixPrint,
+  retryFailed: retryMixFailed,
 } = useMixGlueLabelBatchPrint();
+
+const {
+  isPrinting: isSeparatePrinting,
+  progress: separateProgress,
+  failedItems: separateFailedItems,
+  printJobContext: separatePrintJobContext,
+  hasPendingPrint: hasSeparatePendingPrint,
+  pendingCount: separatePendingCount,
+  clearFailedItems: clearSeparateFailedItems,
+  restorePendingFromStorage: restoreSeparatePendingFromStorage,
+  preparePrintBatch,
+  startPrint: startSeparatePrint,
+  retryFailed: retrySeparateFailed,
+} = useSeparateLabelBatchPrint();
+
+const isPrinting = computed(() => isMixPrinting.value || isSeparatePrinting.value);
+const progress = computed(() =>
+  printFlowKind.value === 'separate' ? separateProgress.value : mixProgress.value);
+const failedItems = computed(() =>
+  printFlowKind.value === 'separate' ? separateFailedItems.value : mixFailedItems.value);
+const printJobContext = computed(() =>
+  printFlowKind.value === 'separate' ? separatePrintJobContext.value : mixPrintJobContext.value);
+const hasPendingPrint = computed(() => hasMixPendingPrint.value || hasSeparatePendingPrint.value);
+const pendingCount = computed(() => {
+  if (printFlowKind.value === 'separate' || hasSeparatePendingPrint.value) {
+    return separatePendingCount.value;
+  }
+  return mixPendingCount.value;
+});
 
 const canPrintRow = (row: Partial<WorkOrderMaster>) =>
   row.mixGlueComplete === true && row.mixGlueConfirm === true;
 
+const resolveIsSeparateGlue = (row: Partial<WorkOrderMaster>) => {
+  if (row.isSeparateGlue === true) return true;
+  if (row.isSeparateGlue === false) return false;
+  return true;
+};
+
+/** isSeparateGlue = true → xanh (chiết); false → đỏ (không chiết). */
+const isNoMixConfirmGreen = (row: Partial<WorkOrderMaster>) => resolveIsSeparateGlue(row);
+
+const mapWorkOrderListItem = (item: Record<string, unknown>): Partial<WorkOrderMaster> => {
+  const raw = item.isSeparateGlue ?? item.IsSeparateGlue;
+  let isSeparateGlue: boolean | undefined;
+  if (raw === true || raw === 'true') isSeparateGlue = true;
+  else if (raw === false || raw === 'false') isSeparateGlue = false;
+  else isSeparateGlue = true;
+
+  const rawQipConfirm = item.qipConfirm ?? item.QipConfirm;
+  const qipConfirm = rawQipConfirm === true || rawQipConfirm === 'true';
+
+  return {
+    ...(item as Partial<WorkOrderMaster>),
+    isSeparateGlue,
+    qipConfirm,
+  };
+};
+
+const canClickNoMixConfirmRow = (row: Partial<WorkOrderMaster>) => row.mixGlueStep === '3';
+
+const getNoMixConfirmSeverity = (row: Partial<WorkOrderMaster>) =>
+  isNoMixConfirmGreen(row) ? 'success' : 'danger';
+
+const getNoMixConfirmTitle = (row: Partial<WorkOrderMaster>) =>
+  isNoMixConfirmGreen(row)
+    ? t('listMixGlue.columns.separateConfirm')
+    : t('listMixGlue.columns.noSeparateConfirm');
+
+const isPrintRowDisabled = (row: Partial<WorkOrderMaster>) => {
+  if (isRowPrintProcessing(row.workOrderMasterId)) {
+    return true;
+  }
+  if (isRowQipPrinted(row)) {
+    return false;
+  }
+  if (row.mixGlueStep !== '3' || !canPrintRow(row)) {
+    return true;
+  }
+  if (row.isNoMixGlue === true && isNoMixConfirmGreen(row)) {
+    return true;
+  }
+  return false;
+};
+
+const isRowQipPrinted = (row: Partial<WorkOrderMaster>) =>
+  row.qipConfirm === true ||
+  Boolean(row.workOrderMasterId && printedWorkOrderIds.value.has(row.workOrderMasterId));
+
+/** qipConfirm = false → xanh; true → vàng. */
+const getPrintButtonSeverity = (row: Partial<WorkOrderMaster>) =>
+  row.qipConfirm === true ? 'warn' : 'success';
+
+const rememberPrintedWorkOrder = (workOrderMasterId: string) => {
+  const next = new Set(printedWorkOrderIds.value);
+  next.add(workOrderMasterId);
+  printedWorkOrderIds.value = next;
+};
+
+const markRowQipPrinted = (workOrderMasterId: string) => {
+  rememberPrintedWorkOrder(workOrderMasterId);
+  const index = lineDetails.value.findIndex((item) => item.workOrderMasterId === workOrderMasterId);
+  if (index < 0) return;
+  lineDetails.value[index] = {
+    ...lineDetails.value[index],
+    qipConfirm: true,
+  };
+};
+
+const applyPrintedStateToListItem = (item: Partial<WorkOrderMaster>): Partial<WorkOrderMaster> => {
+  if (!item.workOrderMasterId) return item;
+  if (item.qipConfirm === true) {
+    rememberPrintedWorkOrder(item.workOrderMasterId);
+  }
+  if (printedWorkOrderIds.value.has(item.workOrderMasterId)) {
+    return { ...item, qipConfirm: true };
+  }
+  return item;
+};
+
+const showAlreadyPrintedToast = (row: Partial<WorkOrderMaster>) => {
+  showToast({
+    severity: 'warn',
+    summary: t('listMixGlue.toast.warning'),
+    detail: t('listMixGlue.toast.alreadyPrinted', { name: row.chemicalMasterName }),
+    life: 6000,
+  });
+};
+
 const shouldShowConfirmActions = (row: Partial<WorkOrderMaster>) => row.isNoMixGlue !== true;
 
-const isRowProcessing = (workOrderMasterId?: string) =>
-  isScanning.value ||
-  isPrinting.value ||
+const isRowPrintProcessing = (workOrderMasterId?: string) =>
+  isMixPrinting.value ||
+  isSeparatePrinting.value ||
   (workOrderMasterId != null && printingWorkOrderId.value === workOrderMasterId);
+
+const isRowProcessing = (workOrderMasterId?: string) =>
+  isScanning.value || isRowPrintProcessing(workOrderMasterId);
 
 useBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
@@ -242,6 +415,7 @@ export interface WorkOrderMaster {
   qipConfirm: boolean;
   mixGlueConfirm: boolean;
   mixGlueStep?: string;
+  isSeparateGlue?: boolean;
 }
 
 export interface PagedResult<T> {
@@ -265,14 +439,26 @@ const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
+const chemicalMasterNameFilter = ref('');
+const { startRequest, isStaleRequest, shouldSkipDuplicatePageLoad } = useListTableFetch();
 
-const showConfirmColumn = computed(() =>
-  isLoadingLine.value || lineDetails.value.some(row => shouldShowConfirmActions(row))
-);
+const hasLoadedWorkOrderRows = () =>
+  lineDetails.value.some((row) => row.workOrderMasterId != null && row.workOrderMasterId !== '');
 
-// const showActionColumn = computed(() =>
-//   lineDetails.value.some((row) => row.mixGlueStep === '2' || row.mixGlueStep === '3')
-// );
+const filteredLineDetails = computed(() => {
+  if (isLoadingLine.value) {
+    return lineDetails.value;
+  }
+
+  const query = chemicalMasterNameFilter.value.trim().toLowerCase();
+  if (!query) {
+    return lineDetails.value;
+  }
+
+  return lineDetails.value.filter((row) =>
+    String(row.chemicalMasterName ?? '').toLowerCase().includes(query)
+  );
+});
 
 const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
@@ -292,7 +478,7 @@ const handleConfirm = async (workOrderMasterId: string) => {
   const draftData = draftStore.getDraft(workOrderMasterId);
 
   if (!draftData) {
-    toast.add({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.draftNotFound'), life: 3000 });
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.draftNotFound'), life: 6000 });
     return;
   }
 
@@ -306,12 +492,82 @@ const handleConfirm = async (workOrderMasterId: string) => {
     }
     await mixGlueApi.postMGMConfirmComplete(payload);
 
-    toast.add({ severity: 'success', summary: t('listMixGlue.toast.success'), detail: t('listMixGlue.toast.confirmSuccess'), life: 3000 });
+    showToast({ severity: 'success', summary: t('listMixGlue.toast.success'), detail: t('listMixGlue.toast.confirmSuccess'), life: 3000 });
     fetchWorkOrders(currentPage.value, rowsPerPage.value);
   } catch (error) {
     if (notifyOfflineFromError(error)) return;
     console.error(error);
-    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.confirmFailed'), life: 3000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.confirmFailed'), life: 6000 });
+  }
+};
+
+const toggleNoMixConfirmRowState = (workOrderMasterId: string) => {
+  const index = lineDetails.value.findIndex((item) => item.workOrderMasterId === workOrderMasterId);
+  if (index < 0) return;
+  const current = lineDetails.value[index];
+  lineDetails.value[index] = {
+    ...current,
+    isSeparateGlue: !resolveIsSeparateGlue(current),
+  };
+};
+
+const handleNoMixConfirm = async (row: Partial<WorkOrderMaster>) => {
+  const workOrderMasterId = row.workOrderMasterId;
+  if (!workOrderMasterId || !canClickNoMixConfirmRow(row)) return;
+
+  const factoryId = authStore.user?.factoryId;
+  const updaterId = authStore.user?.employeeId?.trim() || '';
+
+  if (!factoryId) {
+    showToast({
+      severity: 'error',
+      summary: t('listMixGlue.toast.error'),
+      detail: t('listMixGlue.toast.factoryNotFound'),
+    });
+    return;
+  }
+
+  if (!updaterId) {
+    showToast({
+      severity: 'error',
+      summary: t('listMixGlue.toast.error'),
+      detail: t('listMixGlue.toast.scanFailed'),
+    });
+    return;
+  }
+
+  if (!(await requireOnline())) return;
+
+  const wasGreen = isNoMixConfirmGreen(row);
+
+  try {
+    const payload = {
+      factoryId,
+      workOrderMasterId,
+      updaterId,
+    };
+    const { data } = await workOrder.postConfirmNoSeparate(payload);
+
+    if (data?.success === false) {
+      throw new Error(data?.message || t('listMixGlue.toast.noMixConfirmFailed'));
+    }
+
+    toggleNoMixConfirmRowState(workOrderMasterId);
+    showToast({
+      severity: 'success',
+      summary: t('listMixGlue.toast.success'),
+      detail: wasGreen
+        ? t('listMixGlue.toast.noMixConfirmSuccess')
+        : t('listMixGlue.toast.separateConfirmSuccess'),
+    });
+  } catch (error) {
+    if (notifyOfflineFromError(error)) return;
+    console.error(error);
+    showToast({
+      severity: 'error',
+      summary: t('listMixGlue.toast.error'),
+      detail: t('listMixGlue.toast.noMixConfirmFailed'),
+    });
   }
 };
 
@@ -331,22 +587,25 @@ const hasPrintFailures = (
 ) => !result.ok || result.failedItems.length > 0 || result.printedCount < total;
 
 const ensurePrinterReady = async () => {
-  const ready = await bluetoothRef.value?.verifyHardwareConnected?.();
-  return ready === true;
+  if (await bluetoothRef.value?.verifyHardwareConnected?.()) {
+    return true;
+  }
+  await bluetoothRef.value?.connectForPrint?.();
+  return (await bluetoothRef.value?.verifyHardwareConnected?.()) === true;
 };
 
 const showPrintResultToast = (printedCount: number, total: number, hasFailures: boolean) => {
   if (!hasFailures) {
-    toast.add({
+    showToast({
       severity: 'success',
       summary: t('listMixGlue.toast.success'),
       detail: t('listMixGlue.toast.printSuccess', { count: printedCount }),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
 
-  toast.add({
+  showToast({
     severity: printedCount > 0 ? 'warn' : 'error',
     summary: t('listMixGlue.toast.warning'),
     detail: printedCount > 0
@@ -357,18 +616,221 @@ const showPrintResultToast = (printedCount: number, total: number, hasFailures: 
 };
 
 const openPendingPrintDialog = () => {
+  if (hasSeparatePendingPrint.value) {
+    printFlowKind.value = 'separate';
+  } else if (hasMixPendingPrint.value) {
+    printFlowKind.value = 'mix';
+  }
   if (hasPendingPrint.value) {
     showRetryDialog.value = true;
   }
 };
 
+const resolvePrintEmployeeId = async (factoryId: string): Promise<string | null> => {
+  if (authStore.user?.isQip) {
+    const employeeId = authStore.user?.employeeId?.trim() || '';
+    if (!employeeId) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: t('listMixGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      return null;
+    }
+    return employeeId;
+  }
+
+  const scannedEmployeeId = await scanOnce({
+    title: t('login.scanOverlayTitle'),
+    note: t('listMixGlue.scan.employeeNote'),
+  });
+
+  if (!scannedEmployeeId?.trim()) {
+    showToast({
+      severity: 'warn',
+      summary: t('listMixGlue.toast.warning'),
+      detail: t('listMixGlue.toast.scanFailed'),
+      life: 6000,
+    });
+    return null;
+  }
+
+  const employeeId = scannedEmployeeId.trim();
+
+  try {
+    const validateResponse = await employeeApi.postValidateQIP({
+      factoryId,
+      employeeId,
+    });
+    const validateData = validateResponse.data;
+
+    if (validateData?.success !== true) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: t('listMixGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      return null;
+    }
+  } catch (error: any) {
+    console.error(error);
+    showToast({
+      severity: 'error',
+      summary: t('listMixGlue.toast.error'),
+      detail: t('listMixGlue.toast.invalidEmployeeCard'),
+      life: 6000,
+    });
+    return null;
+  }
+
+  return employeeId;
+};
+
+const warnPendingPrintReplaced = (workOrderMasterId: string) => {
+  const activeContext = separatePrintJobContext.value ?? mixPrintJobContext.value;
+  if (
+    hasPendingPrint.value &&
+    activeContext?.workOrderMasterId &&
+    activeContext.workOrderMasterId !== workOrderMasterId
+  ) {
+    showToast({
+      severity: 'warn',
+      summary: t('listMixGlue.toast.warning'),
+      detail: t('listMixGlue.toast.pendingReplaced'),
+      life: 6000,
+    });
+  }
+};
+
+const handleSeparateNoMixPrint = async (
+  row: Partial<WorkOrderMaster>,
+  factoryId: string,
+  employeeId: string
+) => {
+  printFlowKind.value = 'separate';
+  warnPendingPrintReplaced(row.workOrderMasterId!);
+  printingWorkOrderId.value = row.workOrderMasterId!;
+  showRetryDialog.value = false;
+  await clearSeparateFailedItems();
+
+  const queue = await preparePrintBatch({
+    workOrderMasterId: row.workOrderMasterId!,
+    isNoMixGlue: true,
+    confirmBy: employeeId,
+    factoryId,
+    workOrderMasterName: row.workOrderMasterName,
+    chemicalMasterName: row.chemicalMasterName,
+  });
+
+  if (!queue.length) {
+    showToast({
+      severity: 'warn',
+      summary: t('listMixGlue.toast.warning'),
+      detail: t('listMixGlue.toast.noLabels'),
+      life: 6000,
+    });
+    return;
+  }
+
+  lastPrintTotal.value = queue.length;
+  const result = await startSeparatePrint(queue, createWriteFn(), factoryId, {
+    workOrderMasterId: row.workOrderMasterId!,
+    workOrderMasterName: row.workOrderMasterName,
+    confirmBy: employeeId,
+    isNoMixGlue: true,
+    lastPrintTotal: queue.length,
+  }, createPrintRuntimeOptions());
+
+  const printFailed = hasPrintFailures(result, queue.length);
+  showPrintResultToast(result.printedCount, queue.length, printFailed);
+
+  if (printFailed) {
+    showRetryDialog.value = true;
+    return;
+  }
+
+  markRowQipPrinted(row.workOrderMasterId!);
+};
+
+const handleMixGluePrint = async (
+  row: Partial<WorkOrderMaster>,
+  factoryId: string,
+  employeeId: string
+) => {
+  printFlowKind.value = 'mix';
+  warnPendingPrintReplaced(row.workOrderMasterId!);
+  printingWorkOrderId.value = row.workOrderMasterId!;
+  showRetryDialog.value = false;
+  await clearMixFailedItems();
+
+  const { data: woResponse } = await workOrder.getWorkOrder(factoryId, row.workOrderMasterId!, 2);
+  if (!woResponse?.success || !woResponse?.data) {
+    showToast({
+      severity: 'error',
+      summary: t('listMixGlue.toast.error'),
+      detail: woResponse?.message || t('listMixGlue.toast.loadOrderFailed'),
+      life: 6000,
+    });
+    return;
+  }
+
+  const respData = woResponse.data;
+  const mixGlueMasterId = respData.mixGlueMasterId;
+  if (!mixGlueMasterId) {
+    showToast({
+      severity: 'error',
+      summary: t('listMixGlue.toast.error'),
+      detail: t('listMixGlue.toast.mixGlueIdNotFound'),
+      life: 6000,
+    });
+    return;
+  }
+
+  const queue = buildPrintQueue(respData, row);
+
+  if (!queue.length) {
+    showToast({
+      severity: 'warn',
+      summary: t('listMixGlue.toast.warning'),
+      detail: t('listMixGlue.toast.noLabels'),
+      life: 6000,
+    });
+    return;
+  }
+
+  lastPrintTotal.value = queue.length;
+  const result = await startMixPrint(queue, createWriteFn(), factoryId, {
+    workOrderMasterId: row.workOrderMasterId!,
+    workOrderMasterName: row.workOrderMasterName,
+    confirmBy: employeeId,
+    lastPrintTotal: queue.length,
+  }, createPrintRuntimeOptions());
+
+  const printFailed = hasPrintFailures(result, queue.length);
+  showPrintResultToast(result.printedCount, queue.length, printFailed);
+
+  if (printFailed) {
+    showRetryDialog.value = true;
+    return;
+  }
+
+  markRowQipPrinted(row.workOrderMasterId!);
+};
+
 const handlePrint = async (row: Partial<WorkOrderMaster>) => {
-  if (!canPrintRow(row) || !row.workOrderMasterId) return;
-  if (isRowProcessing(row.workOrderMasterId)) return;
+  if (!row.workOrderMasterId) return;
+  if (isRowQipPrinted(row)) {
+    showAlreadyPrintedToast(row);
+    return;
+  }
+  if (!canPrintRow(row)) return;
+  if (isRowPrintProcessing(row.workOrderMasterId)) return;
 
   const factoryId = authStore.user?.factoryId;
   if (!factoryId) {
-    toast.add({
+    showToast({
       severity: 'error',
       summary: t('listMixGlue.toast.error'),
       detail: t('listMixGlue.toast.factoryNotFound'),
@@ -378,7 +840,7 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
   }
 
   if (!(await ensurePrinterReady())) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('listMixGlue.toast.warning'),
       detail: t('listMixGlue.toast.printerNotConnected'),
@@ -389,142 +851,21 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
 
   if (!(await requireOnline())) return;
 
-  let employeeId: string;
-
-  if (authStore.user?.isQip) {
-    employeeId = authStore.user?.employeeId?.trim() || '';
-    if (!employeeId) {
-      toast.add({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: t('listMixGlue.toast.invalidEmployeeCard'),
-        life: 6000,
-      });
-      return;
-    }
-  } else {
-    const scannedEmployeeId = await scanOnce({
-      title: t('login.scanOverlayTitle'),
-      note: t('listMixGlue.scan.employeeNote'),
-    });
-
-    if (!scannedEmployeeId?.trim()) {
-      toast.add({
-        severity: 'warn',
-        summary: t('listMixGlue.toast.warning'),
-        detail: t('listMixGlue.toast.scanFailed'),
-        life: 6000,
-      });
-      return;
-    }
-
-    employeeId = scannedEmployeeId.trim();
-
-    try {
-      const validateResponse = await employeeApi.postValidateQIP({
-        factoryId,
-        employeeId,
-      });
-      const validateData = validateResponse.data;
-
-      if (validateData?.success !== true) {
-        toast.add({
-          severity: 'error',
-          summary: t('listMixGlue.toast.error'),
-          detail: t('listMixGlue.toast.invalidEmployeeCard'),
-          life: 6000,
-        });
-        return;
-      }
-    } catch (error: any) {
-      console.error(error);
-      toast.add({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: t('listMixGlue.toast.invalidEmployeeCard'),
-        life: 6000,
-      });
-      return;
-    }
-  }
+  const employeeId = await resolvePrintEmployeeId(factoryId);
+  if (!employeeId) return;
 
   try {
-    if (
-      hasPendingPrint.value &&
-      printJobContext.value?.workOrderMasterId &&
-      printJobContext.value.workOrderMasterId !== row.workOrderMasterId
-    ) {
-      toast.add({
-        severity: 'warn',
-        summary: t('listMixGlue.toast.warning'),
-        detail: t('listMixGlue.toast.pendingReplaced'),
-        life: 6000,
-      });
+    if (row.isNoMixGlue === true) {
+      await handleSeparateNoMixPrint(row, factoryId, employeeId);
+    } else {
+      await handleMixGluePrint(row, factoryId, employeeId);
     }
-
-    printingWorkOrderId.value = row.workOrderMasterId;
-    showRetryDialog.value = false;
-    await clearFailedItems();
-
-    const { data: woResponse } = await workOrder.getWorkOrder(factoryId, row.workOrderMasterId, 2);
-    if (!woResponse?.success || !woResponse?.data) {
-      toast.add({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: woResponse?.message || t('listMixGlue.toast.loadOrderFailed'),
-        life: 6000,
-      });
-      return;
-    }
-
-    const respData = woResponse.data;
-    const mixGlueMasterId = respData.mixGlueMasterId;
-    if (!mixGlueMasterId) {
-      toast.add({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: t('listMixGlue.toast.mixGlueIdNotFound'),
-        life: 6000,
-      });
-      return;
-    }
-
-    const queue = buildPrintQueue(respData, row);
-
-    if (!queue.length) {
-      toast.add({
-        severity: 'warn',
-        summary: t('listMixGlue.toast.warning'),
-        detail: t('listMixGlue.toast.noLabels'),
-        life: 6000,
-      });
-      return;
-    }
-
-    lastPrintTotal.value = queue.length;
-    const result = await startPrint(queue, createWriteFn(), factoryId, {
-      workOrderMasterId: row.workOrderMasterId,
-      workOrderMasterName: row.workOrderMasterName,
-      confirmBy: employeeId,
-      lastPrintTotal: queue.length,
-    }, createPrintRuntimeOptions());
-
-    const printFailed = hasPrintFailures(result, queue.length);
-    showPrintResultToast(result.printedCount, queue.length, printFailed);
-
-    if (printFailed) {
-      showRetryDialog.value = true;
-      return;
-    }
-
-    await draftStore.clearDraft(row.workOrderMasterId);
-    fetchWorkOrders(currentPage.value, rowsPerPage.value);
   } catch (error: any) {
     console.error(error);
-    toast.add({
+    showToast({
       severity: 'error',
       summary: t('listMixGlue.toast.error'),
-      detail: error?.response?.data?.message || t('listMixGlue.toast.printFailed'),
+      detail: error?.response?.data?.message || error?.message || t('listMixGlue.toast.printFailed'),
       life: 6000,
     });
   } finally {
@@ -537,7 +878,7 @@ const handleRetryPrint = async () => {
   if (!factoryId) return;
 
   if (!(await ensurePrinterReady())) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('listMixGlue.toast.warning'),
       detail: t('listMixGlue.toast.printerNotConnected'),
@@ -546,12 +887,17 @@ const handleRetryPrint = async () => {
     return;
   }
 
-  printingWorkOrderId.value = printJobContext.value?.workOrderMasterId ?? null;
-  const workOrderMasterId = printJobContext.value?.workOrderMasterId;
+  const flow = printFlowKind.value ?? (hasSeparatePendingPrint.value ? 'separate' : 'mix');
+  const activeContext = flow === 'separate' ? separatePrintJobContext.value : mixPrintJobContext.value;
+
+  printingWorkOrderId.value = activeContext?.workOrderMasterId ?? null;
+  const workOrderMasterId = activeContext?.workOrderMasterId;
 
   try {
-    const result = await retryFailed(createWriteFn(), factoryId, createPrintRuntimeOptions());
-    const total = printJobContext.value?.lastPrintTotal ?? lastPrintTotal.value;
+    const result = flow === 'separate'
+      ? await retrySeparateFailed(createWriteFn(), factoryId, createPrintRuntimeOptions())
+      : await retryMixFailed(createWriteFn(), factoryId, createPrintRuntimeOptions());
+    const total = activeContext?.lastPrintTotal ?? lastPrintTotal.value;
     const printFailed = hasPrintFailures(result, total);
     showPrintResultToast(result.printedCount, total, printFailed);
 
@@ -559,8 +905,7 @@ const handleRetryPrint = async () => {
       showRetryDialog.value = false;
       lastPrintTotal.value = 0;
       if (workOrderMasterId) {
-        await draftStore.clearDraft(workOrderMasterId);
-        fetchWorkOrders(currentPage.value, rowsPerPage.value);
+        markRowQipPrinted(workOrderMasterId);
       }
     } else {
       showRetryDialog.value = true;
@@ -571,20 +916,36 @@ const handleRetryPrint = async () => {
 };
 
 const restorePendingPrintJob = async () => {
-  const restored = await restorePendingFromStorage();
-  if (!restored) return;
+  const mixRestored = await restoreMixPendingFromStorage();
+  if (mixRestored) {
+    printFlowKind.value = 'mix';
+    lastPrintTotal.value = mixRestored.lastPrintTotal;
+    showRetryDialog.value = true;
+    showToast({
+      severity: 'info',
+      summary: t('listMixGlue.toast.warning'),
+      detail: t('listMixGlue.toast.pendingRestored', { count: mixRestored.failedItems.length }),
+      life: 6000,
+    });
+    return;
+  }
 
-  lastPrintTotal.value = restored.lastPrintTotal;
+  const separateRestored = await restoreSeparatePendingFromStorage();
+  if (!separateRestored) return;
+
+  printFlowKind.value = 'separate';
+  lastPrintTotal.value = separateRestored.lastPrintTotal;
   showRetryDialog.value = true;
-  toast.add({
+  showToast({
     severity: 'info',
     summary: t('listMixGlue.toast.warning'),
-    detail: t('listMixGlue.toast.pendingRestored', { count: restored.failedItems.length }),
+    detail: t('listMixGlue.toast.pendingRestored', { count: separateRestored.failedItems.length }),
     life: 6000,
   });
 };
 
 const fetchWorkOrders = async (page: number, pageSize: number) => {
+  const requestId = startRequest();
   isLoadingLine.value = true;
   lineDetails.value = Array.from({ length: pageSize }).map(() => ({}));
 
@@ -598,10 +959,14 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
     };
 
     const response = await workOrder.postWorkOrderList(payload);
+    if (isStaleRequest(requestId)) return;
+
     const resData = response.data as ApiResponse<WorkOrderMaster>;
 
     if (resData && resData.success) {
-      lineDetails.value = resData.data.items;
+      lineDetails.value = resData.data.items
+        .map((item) => mapWorkOrderListItem(item as unknown as Record<string, unknown>))
+        .map((item) => applyPrintedStateToListItem(item));
       totalRecords.value = Number(resData.data.totalCount) || 0;
     } else {
       console.error("Lấy dữ liệu thất bại:", resData?.message);
@@ -609,25 +974,39 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
       totalRecords.value = 0;
     }
   } catch (error) {
+    if (isStaleRequest(requestId)) return;
     console.error("Lỗi gọi API getWorkOrderList:", error);
     lineDetails.value = [];
     totalRecords.value = 0;
   } finally {
-    isLoadingLine.value = false;
+    if (!isStaleRequest(requestId)) {
+      isLoadingLine.value = false;
+    }
   }
 };
 
-const onPageLine = (event: any) => {
+const onPageLine = (event: { page: number; rows: number }) => {
+  if (shouldSkipDuplicatePageLoad({
+    eventPage: event.page,
+    eventRows: event.rows,
+    currentPage: currentPage.value,
+    rowsPerPage: rowsPerPage.value,
+    isLoading: isLoadingLine.value,
+    hasData: hasLoadedWorkOrderRows(),
+  })) {
+    return;
+  }
+
   currentPage.value = event.page + 1;
   rowsPerPage.value = event.rows;
-  fetchWorkOrders(currentPage.value, rowsPerPage.value);
+  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
 };
 
 const goBack = () => router.push('/app-menu');
 
-onIonViewWillEnter(async () => {
-  await restorePendingPrintJob();
-  fetchWorkOrders(currentPage.value, rowsPerPage.value);
+onIonViewWillEnter(() => {
+  void restorePendingPrintJob();
+  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
 });
 
 onIonViewDidEnter(async () => {
@@ -652,6 +1031,53 @@ onIonViewDidLeave(() => {
 
 .list-mix-glue-layer--hidden {
   visibility: hidden;
+}
+
+.list-mix-glue-page {
+  width: 100%;
+}
+
+.list-mix-glue-section-title {
+  font-weight: 700;
+  color: var(--text-color-secondary);
+  font-size: 1.2rem;
+}
+
+.list-mix-glue-table-wrap {
+  width: 100%;
+  max-width: 100%;
+}
+
+.tablet-page--inch87.list-mix-glue-page {
+  padding: 0.5rem 0.625rem;
+}
+
+.tablet-page--inch87 .list-mix-glue-card-head {
+  padding: 0.5rem 0.75rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.list-mix-glue-filter {
+  min-width: 10rem;
+  max-width: 14rem;
+}
+
+.tablet-page--inch11 .list-mix-glue-filter {
+  min-width: 12rem;
+  max-width: 18rem;
+}
+
+.tablet-page--inch11.list-mix-glue-page {
+  padding: 0.875rem 1.125rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tablet-page--inch11 .list-mix-glue-card-head {
+  padding: 0.875rem 1rem;
+  gap: 0.75rem;
 }
 </style>
 
@@ -826,5 +1252,28 @@ body.barcode-scanner-active .list-mix-glue-content {
 
 .button-lg .pi {
   font-size: 1.5rem;
+}
+
+.no-mix-icon-preload {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.no-mix-confirm-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  font-size: 2rem;
+}
+
+.no-mix-confirm-btn :deep(svg) {
+  width: 1.85rem;
+  height: 1.85rem;
 }
 </style>

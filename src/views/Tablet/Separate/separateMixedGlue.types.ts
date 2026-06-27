@@ -56,5 +56,7 @@ export type PayloadBuildContext = {
   noMixComponents: any[];
   isNoMixGlue?: boolean;
   apiNoSeparateGlues?: any[];
+  apiSeparateGlues?: any[];
+  cancelledSeparateGlueDetails?: any[];
   totalNoMixGlueWeight?: string;
 };

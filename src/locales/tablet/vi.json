@@ -33,6 +33,9 @@
   "listMixGlue": {
     "sectionTitle": "Danh sách trộn keo",
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
+    "filter": {
+      "gluePlaceholder": "Lọc theo tên keo"
+    },
     "columns": {
       "workOrder": "Đơn điều công",
       "glue": "Keo trộn",
@@ -40,6 +43,9 @@
       "updater": "Nhân viên điều công",
       "updateDate": "Ngày điều công",
       "glueConfirm": "Xác nhận trộn xong",
+      "noMixConfirm": "Xác nhận chiết keo",
+      "separateConfirm": "Xác nhận chiết keo",
+      "noSeparateConfirm": "Không chiết",
       "qipConfirm": "QIP xác nhận",
       "confirm": "Xác nhận QIP"
     },
@@ -70,6 +76,9 @@
       "draftNotFound": "Không tìm thấy bản nháp đơn điều công.",
       "confirmSuccess": "Đã xác nhận đơn điều công!",
       "confirmFailed": "Xác nhận thất bại!",
+      "noMixConfirmSuccess": "Đã xác nhận không chiết!",
+      "separateConfirmSuccess": "Đã xác nhận chiết!",
+      "noMixConfirmFailed": "Xác nhận không chiết thất bại!",
       "factoryNotFound": "Không tìm thấy thông tin bộ phận SX.",
       "printerNotConnected": "Chưa kết nối máy in.",
       "scanFailed": "Không quét được thẻ nhân viên hoặc đã hủy quét.",
@@ -82,6 +91,7 @@
       "printFailStage": "In tem thất bại ({stage}).",
       "printFailed": "In tem thất bại!",
       "printPartial": "In một phần ({printed}/{total}).",
+      "alreadyPrinted": "{name} đã in tem rồi.",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
       "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới."
     }
@@ -117,6 +127,9 @@
   "listSeparateMixedGlue": {
     "pageTitle": "Danh sách chiết keo trộn hỗn hợp",
     "sectionTitle": "Danh sách chiết keo trộn hỗn hợp",
+    "filter": {
+      "gluePlaceholder": "Lọc theo tên keo"
+    },
     "scan": {
       "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
     },
@@ -204,6 +217,9 @@
       "locked": "Không thể chỉnh sửa",
       "completeFirst": "Đơn điều công này đã hoàn thành chiết, không thể thêm hoặc xóa.",
       "noMixAlreadySubmitted": "Keo không trộn đã gửi xác nhận, không thể chỉnh sửa thêm.",
+      "noMixAddRowRequired": "Keo không trộn: vui lòng thêm dòng và chọn thùng chứa trước khi xác nhận.",
+      "noMixNoChangesToSubmit": "Không có thay đổi thêm dòng, chọn thùng hoặc xóa dòng. Không cần gửi lại.",
+      "separateNoChangesToSubmit": "Không có thay đổi thêm dòng, chọn thùng hoặc xóa dòng. Không cần gửi lại.",
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
       "completeFailed": "Không thể xác nhận hoàn thành",
@@ -278,6 +294,7 @@
     "refreshTitle": "Kết nối lại cân (dùng khi đổi cân trên hub hoặc cân không phản hồi)",
     "refreshAriaLabel": "Kết nối lại cân",
     "connected": "Đã kết nối cân điện tử",
+    "disconnected": "Chưa kết nối cân điện tử",
     "connecting": "Đang kết nối cân điện tử...",
     "searching": "Đang tìm kết nối...",
     "selectScale": "Chọn cân USB",
@@ -355,6 +372,35 @@
       "title": "Xác nhận xóa",
       "componentLabel": "Thành phần: {name}",
       "message": "Bạn có chắc muốn xóa thành phần này?"
+    },
+    "dataValidation": {
+      "orderDetails": {
+        "message": "Không tìm thấy thông tin chi tiết đơn điều công. Vui lòng kiểm tra lại dữ liệu ở các mục sau:",
+        "items": [
+          "Đơn điều công",
+          "Đơn yêu cầu"
+        ]
+      },
+      "mixChemicals": {
+        "message": "Không tìm thấy thông tin thành phần keo trộn. Vui lòng kiểm tra lại dữ liệu ở các mục sau:",
+        "items": [
+          "Đơn điều công",
+          "Đơn yêu cầu",
+          "Keo chuyền",
+          "Hình thể",
+          "Công thức trộn keo"
+        ]
+      },
+      "noMixChemicals": {
+        "message": "Không tìm thấy thông tin thành phần keo không trộn. Vui lòng kiểm tra lại dữ liệu ở các mục sau:",
+        "items": [
+          "Đơn điều công",
+          "Đơn yêu cầu",
+          "Keo chuyền",
+          "Hình thể",
+          "Công thức trộn keo"
+        ]
+      }
     },
     "exitAlert": {
       "header": "Chưa lưu",

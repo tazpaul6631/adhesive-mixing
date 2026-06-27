@@ -16,6 +16,7 @@ type ScaleSizeKey = 'small' | 'large';
 type ScaleLabelRegistry = Record<string, ScaleSizeKey>;
 
 const SCALE_LABEL_REGISTRY_KEY = 'scale-device-labels';
+const LAST_SELECTED_SCALE_DEVICE_KEY = 'last-selected-scale-device-id';
 const SCALE_LABELS: Record<ScaleSizeKey, string> = {
   small: 'Cân Nhỏ',
   large: 'Cân Lớn',
@@ -31,6 +32,7 @@ class SerialScaleWeb extends WebPlugin {
   private reader: any = null;
   private readLoopActive = false;
   private grantedPorts: any[] = [];
+  private connectedDeviceId: string | null = null;
 
   private buildWebPortId(port: any, index: number) {
     const info = port?.getInfo?.() ?? {};
@@ -63,17 +65,37 @@ class SerialScaleWeb extends WebPlugin {
     return { devices };
   }
 
-  async connect(options?: ConnectOptions) {
-    await this.disconnect();
+  async requestPermissions() {
+    const { devices } = await this.listDevices();
+    return { requested: 0, total: devices.length, granted: devices.length };
+  }
 
+  async connect(options?: ConnectOptions) {
     const nav = (navigator as any).serial;
     if (!nav) {
       throw new Error('Web Serial API không được hỗ trợ trên trình duyệt này');
     }
 
+    let targetDeviceId = options?.deviceId ?? '';
+
     if (options?.pickPort) {
+      await this.disconnect();
       this.port = await nav.requestPort();
+      const ports = await nav.getPorts();
+      this.grantedPorts = ports;
+      const matchedIndex = ports.findIndex((port: any) => port === this.port);
+      targetDeviceId = matchedIndex >= 0 ? this.buildWebPortId(this.port, matchedIndex) : '0';
     } else if (options?.deviceId != null && options.deviceId !== '') {
+      targetDeviceId = options.deviceId;
+      if (
+        this.port
+        && this.connectedDeviceId === targetDeviceId
+        && this.readLoopActive
+      ) {
+        return { deviceId: targetDeviceId, value: 'connected' };
+      }
+
+      await this.disconnect();
       const ports = await nav.getPorts();
       this.grantedPorts = ports;
       const matchedIndex = ports.findIndex((port: any, index: number) =>
@@ -85,17 +107,20 @@ class SerialScaleWeb extends WebPlugin {
         throw new Error('Không tìm thấy cân đã chọn. Hãy refresh danh sách USB.');
       }
     } else {
+      await this.disconnect();
       const ports = await nav.getPorts();
       this.grantedPorts = ports;
       if (ports.length !== 1) {
         throw new Error('Vui lòng chọn cân USB trước khi kết nối.');
       }
       this.port = ports[0];
+      targetDeviceId = this.buildWebPortId(this.port, 0);
     }
 
     await this.port.open({ baudRate: 9600 });
+    this.connectedDeviceId = targetDeviceId;
     void this.readLoop();
-    return { deviceId: options?.deviceId ?? '0', value: 'connected' };
+    return { deviceId: targetDeviceId, value: 'connected' };
   }
 
   async readLoop() {
@@ -138,6 +163,8 @@ class SerialScaleWeb extends WebPlugin {
       await this.port.close().catch(() => { });
       this.port = null;
     }
+
+    this.connectedDeviceId = null;
   }
 }
 
@@ -154,9 +181,10 @@ const pendingSelectionSessionId = ref<string | number | symbol | null>(null);
 const activeScaleSessionId = ref<string | number | symbol | null>(null);
 const connectedScaleDeviceId = ref<string | null>(null);
 
-const DATA_WATCHDOG_MS = 4000;
-const PORT_HANDSHAKE_MS = 6000;
-const AUTO_RETRY_MS = 3000;
+const DATA_WATCHDOG_MS = 15000;
+const PORT_HANDSHAKE_MS = 10000;
+const AUTO_RETRY_MS = 4000;
+const DEVICE_SWITCH_DELAY_MS = 600;
 
 let dataListener: any = null;
 let errorListener: any = null;
@@ -166,8 +194,26 @@ let autoConnectInterval: ReturnType<typeof setInterval> | null = null;
 let connectInProgress = false;
 let dataBuffer = '';
 let lastDataAt = 0;
+let connectMutex: Promise<void> = Promise.resolve();
+let sessionReadyPromise: Promise<void> | null = null;
 
 const sessionDeviceIds = new Map<string | number | symbol, string>();
+let lastSelectedDeviceId: string | null = null;
+let lastSelectedDeviceLoaded = false;
+
+const loadLastSelectedDeviceId = async (): Promise<string | null> => {
+  if (lastSelectedDeviceLoaded) return lastSelectedDeviceId;
+  const { value } = await Preferences.get({ key: LAST_SELECTED_SCALE_DEVICE_KEY });
+  lastSelectedDeviceId = value || null;
+  lastSelectedDeviceLoaded = true;
+  return lastSelectedDeviceId;
+};
+
+const saveLastSelectedDeviceId = async (deviceId: string) => {
+  lastSelectedDeviceId = deviceId;
+  lastSelectedDeviceLoaded = true;
+  await Preferences.set({ key: LAST_SELECTED_SCALE_DEVICE_KEY, value: deviceId });
+};
 
 const loadScaleLabelRegistry = async (): Promise<ScaleLabelRegistry> => {
   const { value } = await Preferences.get({ key: SCALE_LABEL_REGISTRY_KEY });
@@ -240,7 +286,29 @@ const disconnectHardware = async () => {
 };
 
 const handleStaleConnection = async () => {
+  if (staleReconnectHandler) {
+    await staleReconnectHandler();
+    return;
+  }
   await disconnectHardware();
+};
+
+let staleReconnectHandler: (() => Promise<void>) | null = null;
+
+const withConnectLock = <T>(fn: () => Promise<T>): Promise<T> => {
+  const next = connectMutex.then(fn, fn);
+  connectMutex = next.then(() => undefined, () => undefined);
+  return next;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const requestAllUsbPermissions = async () => {
+  try {
+    await SerialScale.requestPermissions?.();
+  } catch (e) {
+    console.warn('Không thể xin quyền USB cho cân:', e);
+  }
 };
 
 const clearWatchdog = () => {
@@ -314,6 +382,7 @@ const parseScalePayload = (raw: string) => {
 
 const fetchAvailableScales = async (): Promise<ScaleDevice[]> => {
   try {
+    await requestAllUsbPermissions();
     const result = await SerialScale.listDevices();
     const raw = Array.isArray(result?.devices) ? result.devices : [];
     const devices = await applyScaleLabels(raw);
@@ -336,11 +405,16 @@ const resolveDeviceIdForSession = (
 
   if (devices.length === 1) {
     sessionDeviceIds.set(sessionId, devices[0].id);
+    void saveLastSelectedDeviceId(devices[0].id);
     return devices[0].id;
   }
 
-  const preferred = explicitDeviceId || sessionDeviceIds.get(sessionId);
+  const preferred = explicitDeviceId
+    || sessionDeviceIds.get(sessionId)
+    || lastSelectedDeviceId
+    || connectedScaleDeviceId.value;
   if (preferred && devices.some((device) => device.id === preferred)) {
+    sessionDeviceIds.set(sessionId, preferred);
     return preferred;
   }
 
@@ -356,17 +430,30 @@ export function useScaleManager() {
     await disconnectHardware();
   };
 
-  const internalStop = async () => {
+  const pauseMonitoring = () => {
     if (autoConnectInterval) {
       clearInterval(autoConnectInterval);
       autoConnectInterval = null;
     }
-    pendingSelectionSessionId.value = null;
     activeScaleSessionId.value = null;
+  };
+
+  const internalStop = async () => {
+    pauseMonitoring();
+    pendingSelectionSessionId.value = null;
     await disconnectHardware();
   };
 
-  const connectHardware = async (deviceId: string) => {
+  const ensureHardwareListeners = async () => {
+    if (dataListener) {
+      await dataListener.remove();
+      dataListener = null;
+    }
+    if (errorListener) {
+      await errorListener.remove();
+      errorListener = null;
+    }
+
     errorListener = await SerialScale.addListener('onScaleError', () => {
       void handleStaleConnection();
     });
@@ -374,6 +461,10 @@ export function useScaleManager() {
     dataListener = await SerialScale.addListener('onScaleData', (result: any) => {
       parseScalePayload(String(result?.data ?? ''));
     });
+  };
+
+  const connectHardware = async (deviceId: string) => {
+    await ensureHardwareListeners();
 
     const result = await SerialScale.connect({ deviceId });
     connectedScaleDeviceId.value = result?.deviceId ?? deviceId;
@@ -386,7 +477,7 @@ export function useScaleManager() {
     }, PORT_HANDSHAKE_MS);
   };
 
-  const connectToScale = async (options?: {
+  const runConnectToScale = async (options?: {
     force?: boolean;
     pickPort?: boolean;
     deviceId?: string;
@@ -397,19 +488,28 @@ export function useScaleManager() {
 
     const force = options?.force ?? false;
 
-    if (connectInProgress) return;
-    if (isGlobalConnected.value && !force && pendingSelectionSessionId.value === null) return;
+    await loadLastSelectedDeviceId();
+
+    if (
+      isGlobalConnected.value
+      && !force
+      && pendingSelectionSessionId.value === null
+      && connectedScaleDeviceId.value
+    ) {
+      sessionDeviceIds.set(sessionId, connectedScaleDeviceId.value);
+      return;
+    }
 
     connectInProgress = true;
     isScaleConnecting.value = true;
 
     try {
-      if (force || dataListener || errorListener) {
-        await forceDisconnect();
-        await new Promise((resolve) => setTimeout(resolve, 350));
-      }
-
       if (options?.pickPort) {
+        if (force || dataListener || errorListener) {
+          await forceDisconnect();
+          await sleep(DEVICE_SWITCH_DELAY_MS);
+        }
+
         pendingSelectionSessionId.value = null;
         await connectHardware('');
         return;
@@ -429,16 +529,58 @@ export function useScaleManager() {
         return;
       }
 
+      if (
+        isGlobalConnected.value
+        && connectedScaleDeviceId.value === deviceId
+        && !force
+      ) {
+        pendingSelectionSessionId.value = null;
+        sessionDeviceIds.set(sessionId, deviceId);
+        return;
+      }
+
+      if (force || dataListener || errorListener) {
+        await forceDisconnect();
+        await sleep(DEVICE_SWITCH_DELAY_MS);
+      }
+
       pendingSelectionSessionId.value = null;
       sessionDeviceIds.set(sessionId, deviceId);
+      await saveLastSelectedDeviceId(deviceId);
       await connectHardware(deviceId);
     } catch (e) {
       console.error('Lỗi kết nối cân:', e);
       await forceDisconnect();
+      throw e;
     } finally {
       connectInProgress = false;
       isScaleConnecting.value = false;
     }
+  };
+
+  const connectToScale = (options?: {
+    force?: boolean;
+    pickPort?: boolean;
+    deviceId?: string;
+    sessionId?: string | number | symbol;
+  }) => withConnectLock(() => runConnectToScale(options));
+
+  staleReconnectHandler = async () => {
+    const sessionId = activeScaleSessionId.value;
+    const deviceId = connectedScaleDeviceId.value
+      || lastSelectedDeviceId
+      || (sessionId != null ? sessionDeviceIds.get(sessionId) : null);
+
+    if (sessionId && deviceId) {
+      isGlobalConnected.value = false;
+      isGlobalStable.value = false;
+      lastDataAt = 0;
+      clearWatchdog();
+      await connectToScale({ sessionId, deviceId, force: true });
+      return;
+    }
+
+    await disconnectHardware();
   };
 
   const selectScaleDevice = async (
@@ -450,6 +592,12 @@ export function useScaleManager() {
     activeScaleSessionId.value = sessionId;
     sessionDeviceIds.set(sessionId, deviceId);
     pendingSelectionSessionId.value = null;
+    await saveLastSelectedDeviceId(deviceId);
+
+    if (isGlobalConnected.value && connectedScaleDeviceId.value === deviceId) {
+      return;
+    }
+
     globalWeight.value = '0.000';
     await connectToScale({ sessionId, deviceId, force: true });
   };
@@ -485,8 +633,9 @@ export function useScaleManager() {
     globalWeight.value = '0.000';
 
     await forceDisconnect();
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await sleep(DEVICE_SWITCH_DELAY_MS);
 
+    await requestAllUsbPermissions();
     const devices = await fetchAvailableScales();
     const saved = sessionDeviceIds.get(sessionId);
 
@@ -507,28 +656,57 @@ export function useScaleManager() {
     return { devices, connected: true, needsSelection: false, deviceId };
   };
 
-  const startAutoConnect = (sessionId: string | number | symbol) => {
-    if (activeScaleSessionId.value !== null && activeScaleSessionId.value !== sessionId) {
-      void internalStop();
-    }
+  const startAutoConnectInterval = () => {
+    if (autoConnectInterval) return;
 
+    autoConnectInterval = setInterval(() => {
+      if (activeScaleSessionId.value === null || connectInProgress) return;
+      if (pendingSelectionSessionId.value !== null) return;
+
+      const stale = isGlobalConnected.value
+        && lastDataAt > 0
+        && Date.now() - lastDataAt > DATA_WATCHDOG_MS;
+
+      if (!isGlobalConnected.value || stale) {
+        void connectToScale({
+          sessionId: activeScaleSessionId.value!,
+          force: stale,
+        });
+      }
+    }, AUTO_RETRY_MS);
+  };
+
+  const ensureSessionReady = (sessionId: string | number | symbol): Promise<void> => {
     activeScaleSessionId.value = sessionId;
-    void connectToScale({ sessionId });
 
-    if (!autoConnectInterval) {
-      autoConnectInterval = setInterval(() => {
-        if (activeScaleSessionId.value === null || connectInProgress) return;
-        if (pendingSelectionSessionId.value !== null) return;
+    if (!sessionReadyPromise) {
+      sessionReadyPromise = withConnectLock(async () => {
+        await loadLastSelectedDeviceId();
+        await fetchAvailableScales();
 
-        const stale = isGlobalConnected.value
-          && lastDataAt > 0
-          && Date.now() - lastDataAt > DATA_WATCHDOG_MS;
-
-        if (!isGlobalConnected.value || stale) {
-          void connectToScale({ sessionId: activeScaleSessionId.value!, force: stale });
+        if (isGlobalConnected.value && connectedScaleDeviceId.value) {
+          sessionDeviceIds.set(sessionId, connectedScaleDeviceId.value);
+          return;
         }
-      }, AUTO_RETRY_MS);
+
+        const deviceId = resolveDeviceIdForSession(sessionId, availableScales.value);
+        if (deviceId) {
+          await runConnectToScale({ sessionId, deviceId });
+          return;
+        }
+
+        pendingSelectionSessionId.value = sessionId;
+      }).finally(() => {
+        sessionReadyPromise = null;
+        startAutoConnectInterval();
+      });
     }
+
+    return sessionReadyPromise;
+  };
+
+  const startAutoConnect = (sessionId: string | number | symbol) => {
+    void ensureSessionReady(sessionId);
   };
 
   const stopAutoConnect = (sessionId: string | number | symbol) => {
@@ -538,14 +716,12 @@ export function useScaleManager() {
       pendingSelectionSessionId.value = null;
     }
 
-    activeScaleSessionId.value = null;
-    void internalStop();
+    pauseMonitoring();
   };
 
   const releaseScaleConnection = () => {
     pendingSelectionSessionId.value = null;
-    activeScaleSessionId.value = null;
-    void internalStop();
+    pauseMonitoring();
   };
 
   const isSessionPendingSelection = (sessionId: string | number | symbol) =>
@@ -566,6 +742,7 @@ export function useScaleManager() {
     pendingSelectionSessionId,
     activeScaleSessionId,
     connectedScaleDeviceId,
+    ensureSessionReady,
     startAutoConnect,
     stopAutoConnect,
     releaseScaleConnection,

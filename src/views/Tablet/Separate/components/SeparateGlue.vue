@@ -81,7 +81,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
@@ -129,7 +129,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
 
-const toast = useToast();
+const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(1).fill({}));
 const authStore = useAuthStore();
@@ -335,7 +335,7 @@ const handleAddRow = () => {
   if (props.useChietCapacityValidation && rows.length > 0) {
     const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
     if (incompleteIndex !== -1) {
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
@@ -353,7 +353,7 @@ const handleAddRow = () => {
         props.targetWeight,
         props.targetWeightUnit || 'Kg'
       );
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.allocationComplete'),
         detail: exceeded
@@ -394,7 +394,7 @@ const fetchBucketList = async () => {
     } catch (error) {
       console.error('Lỗi khi tải danh sách thùng chứa', error);
       bucketList.value = [];
-      toast.add({
+      showToast({
         severity: 'error',
         summary: t('listMixGlue.toast.error'),
         detail: t('common.checkNetwork'),
@@ -435,7 +435,7 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
     const targetWeightKg = getEffectiveTargetWeightKg();
     if (targetWeightKg > 0 && getSelectedBucketTotalKg() > targetWeightKg + WEIGHT_EPSILON) {
       await clearRowBucketSelection(rowData, rowIndex);
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.weightExceeded'),
         detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getTargetWeightLabel() }),

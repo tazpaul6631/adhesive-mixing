@@ -33,6 +33,9 @@
   "listMixGlue": {
     "sectionTitle": "Mix glue list",
     "empty": "No data to display at the moment.",
+    "filter": {
+      "gluePlaceholder": "Filter by glue name"
+    },
     "columns": {
       "workOrder": "Work order",
       "glue": "Mix glue product",
@@ -40,6 +43,9 @@
       "updater": "Glue updater",
       "updateDate": "Glue update date",
       "glueConfirm": "Confirm mixed glue",
+      "noMixConfirm": "Confirm decant",
+      "separateConfirm": "Confirm decant",
+      "noSeparateConfirm": "No decant",
       "qipConfirm": "QIP confirm",
       "confirm": "QIP confirm"
     },
@@ -70,6 +76,9 @@
       "draftNotFound": "Work order draft not found.",
       "confirmSuccess": "Work order confirmed!",
       "confirmFailed": "Confirmation failed!",
+      "noMixConfirmSuccess": "No-decant confirmation completed.",
+      "separateConfirmSuccess": "Decant confirmation completed.",
+      "noMixConfirmFailed": "No-decant confirmation failed.",
       "factoryNotFound": "Business division information not found.",
       "printerNotConnected": "Printer is not connected.",
       "scanFailed": "Could not scan employee card or scan was cancelled.",
@@ -82,6 +91,7 @@
       "printFailStage": "Label printing failed ({stage}).",
       "printFailed": "Label printing failed!",
       "printPartial": "Partial print ({printed}/{total}).",
+      "alreadyPrinted": "{name} has already been printed.",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
       "pendingReplaced": "Replaced the pending label queue with the new order."
     }
@@ -117,6 +127,9 @@
   "listSeparateMixedGlue": {
     "pageTitle": "Mixed glue repackaging list",
     "sectionTitle": "Mixed glue repackaging list",
+    "filter": {
+      "gluePlaceholder": "Filter by glue name"
+    },
     "scan": {
       "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"
     },
@@ -204,6 +217,9 @@
       "locked": "Cannot edit",
       "completeFirst": "This work order repackaging is complete. Adding or deleting is not allowed.",
       "noMixAlreadySubmitted": "Non-mixed glue has already been submitted. Further edits are not allowed.",
+      "noMixAddRowRequired": "Non-mixed glue: add at least one row and select buckets before confirming.",
+      "noMixNoChangesToSubmit": "No add-row, bucket change, or delete since the last submit. Nothing to send.",
+      "separateNoChangesToSubmit": "No add-row, bucket change, or delete since the last submit. Nothing to send.",
       "completeSuccess": "Completed",
       "completeSuccessDetail": "Data submitted successfully",
       "completeFailed": "Could not confirm completion",
@@ -277,7 +293,8 @@
     "label": "Actual weighing",
     "refreshTitle": "Reconnect scale (use when switching scales on the hub or when the scale is unresponsive)",
     "refreshAriaLabel": "Reconnect scale",
-    "connected": "Scale connected",
+    "connected": "Connected",
+    "disconnected": "Not connected",
     "connecting": "Connecting to scale...",
     "searching": "Searching for connection...",
     "selectScale": "Select USB scale",
@@ -355,6 +372,35 @@
       "title": "Confirm delete",
       "componentLabel": "Component: {name}",
       "message": "Are you sure you want to delete this component?"
+    },
+    "dataValidation": {
+      "orderDetails": {
+        "message": "Work order detail information could not be found. Please check the data in the following items:",
+        "items": [
+          "Work Order Detail",
+          "Request Form"
+        ]
+      },
+      "mixChemicals": {
+        "message": "Glue mixing composition information could not be found. Please check the data in the following items:",
+        "items": [
+          "Work Order",
+          "Work Order Detail",
+          "Line Chemical",
+          "Style",
+          "Chemical Master"
+        ]
+      },
+      "noMixChemicals": {
+        "message": "Non-mixed glue composition information could not be found. Please check the data in the following items:",
+        "items": [
+          "Work Order",
+          "Work Order Detail",
+          "Line Chemical",
+          "Style",
+          "Chemical Master"
+        ]
+      }
     },
     "exitAlert": {
       "header": "Unsaved",

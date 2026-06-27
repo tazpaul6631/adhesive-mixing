@@ -27,6 +27,20 @@ export const normalizeNewNoMixSeparateAddRow = (row: any, noMixGlueId: string) =
   isNewAddRow: true,
 });
 
+export const isNewMixSeparateAddRow = (row: any): boolean => {
+  if (row?.isNewAddRow === true) return true;
+  const id = row?.separateGlueId;
+  return id == null || id === '' || String(id) === NEW_NO_SEPARATE_GLUE_ID;
+};
+
+export const normalizeNewMixSeparateAddRow = (row: any, mixGlueMasterId: string) => ({
+  ...row,
+  glueId: row?.glueId || mixGlueMasterId,
+  separateGlueId: NEW_NO_SEPARATE_GLUE_ID,
+  recordStatus: ACTIVE_RECORD_STATUS,
+  isNewAddRow: true,
+});
+
 const parseTimeMs = (value: unknown): number | null => {
   if (value === undefined || value === null || value === '') return null;
   const parsed = dayjs(String(value));
@@ -107,7 +121,6 @@ const mergeTableRowWithApiItem = (row: any, apiItem: any, apiIndex: number) => {
   const rowConfirmDate = row?.confirmDate || apiConfirmDate;
   const rowBucket = row?.selectedBucketId ?? row?.bucketId;
   const apiBucket = apiItem?.bucketId ?? apiItem?.selectedBucketId;
-  const bucketChanged = rowBucket != null && String(rowBucket) !== String(apiBucket ?? '');
 
   return {
     ...row,
@@ -119,9 +132,7 @@ const mergeTableRowWithApiItem = (row: any, apiItem: any, apiIndex: number) => {
       : (Array.isArray(apiItem?.requestDetailIds) ? apiItem.requestDetailIds.map(String) : []),
     confirmDate: rowConfirmDate,
     confirmTime: row?.confirmTime ?? (rowConfirmDate ? format.formatDate(rowConfirmDate) : null),
-    recordStatus: bucketChanged
-      ? ACTIVE_RECORD_STATUS
-      : (row?.recordStatus ?? (isRecordStatusCancelled(apiItem?.recordStatus) ? ACTIVE_RECORD_STATUS : apiItem?.recordStatus)),
+    recordStatus: row?.recordStatus ?? apiItem?.recordStatus,
     apiCreateDate: apiItem?.createDate ?? row?.apiCreateDate ?? null,
     _matchedApiKey: getApiItemKey(apiItem),
     _matchedApiIndex: apiIndex,
@@ -131,8 +142,6 @@ const mergeTableRowWithApiItem = (row: any, apiItem: any, apiIndex: number) => {
 const applyTableRowToApiItem = (apiItem: any, row: any) => {
   const bucketId = row?.selectedBucketId ?? row?.bucketId;
   const confirmDate = row?.confirmDate || apiItem?.confirmDate || apiItem?.createDate;
-  const bucketChanged = bucketId != null
-    && String(bucketId) !== String(apiItem?.bucketId ?? apiItem?.selectedBucketId ?? '');
 
   return {
     ...apiItem,
@@ -143,7 +152,7 @@ const applyTableRowToApiItem = (apiItem: any, row: any) => {
       : apiItem?.requestDetailIds,
     recordStatus: isRecordStatusCancelled(apiItem?.recordStatus)
       ? CANCELLED_RECORD_STATUS
-      : (bucketChanged ? '1' : (row?.recordStatus ?? apiItem?.recordStatus)),
+      : (row?.recordStatus ?? apiItem?.recordStatus),
   };
 };
 
@@ -202,6 +211,37 @@ export const syncNoMixSeparateGlueState = (
   });
 
   return { tableRows: syncedRows, apiItems: nextApiItems };
+};
+
+/** delete-row keo trộn: tìm object API khớp và đánh dấu recordStatus = C. */
+export const markApiSeparateGlueCancelledByRow = (
+  apiItems: any[],
+  row: any
+): any[] => {
+  const next = (apiItems || []).map((item) => ({ ...item }));
+  if (isNewMixSeparateAddRow(row)) return next;
+
+  const separateGlueId = row?.separateGlueId;
+  if (separateGlueId != null && separateGlueId !== '' && String(separateGlueId) !== NEW_NO_SEPARATE_GLUE_ID) {
+    const byId = next.findIndex((item) => String(item?.separateGlueId) === String(separateGlueId));
+    if (byId >= 0) {
+      next[byId] = { ...next[byId], recordStatus: CANCELLED_RECORD_STATUS };
+      return next;
+    }
+  }
+
+  const bucketId = row?.selectedBucketId ?? row?.bucketId;
+  if (bucketId != null) {
+    const byBucket = next.findIndex(
+      (item) => String(item?.bucketId ?? item?.selectedBucketId) === String(bucketId)
+        && !isRecordStatusCancelled(item?.recordStatus)
+    );
+    if (byBucket >= 0) {
+      next[byBucket] = { ...next[byBucket], recordStatus: CANCELLED_RECORD_STATUS };
+    }
+  }
+
+  return next;
 };
 
 /** delete-row: tìm object API khớp và đánh dấu recordStatus = C. */

@@ -33,6 +33,9 @@
   "listMixGlue": {
     "sectionTitle": "調膠清單",
     "empty": "目前沒有可顯示的資料。",
+    "filter": {
+      "gluePlaceholder": "依膠水名稱篩選"
+    },
     "columns": {
       "workOrder": "派工單",
       "glue": "調膠品",
@@ -40,6 +43,9 @@
       "updater": "派工人員",
       "updateDate": "派工日期",
       "glueConfirm": "完成攪拌",
+      "noMixConfirm": "確認分裝",
+      "separateConfirm": "確認分裝",
+      "noSeparateConfirm": "不分裝",
       "qipConfirm": "QIP確認",
       "confirm": "QIP確認"
     },
@@ -70,6 +76,9 @@
       "draftNotFound": "找不到派工單草稿。",
       "confirmSuccess": "已確認派工單！",
       "confirmFailed": "確認失敗！",
+      "noMixConfirmSuccess": "已確認無分裝！",
+      "separateConfirmSuccess": "已確認分裝！",
+      "noMixConfirmFailed": "確認無分裝失敗！",
       "factoryNotFound": "找不到事業部資訊。",
       "printerNotConnected": "尚未連接印表機。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
@@ -82,6 +91,7 @@
       "printFailStage": "標籤列印失敗 ({stage})。",
       "printFailed": "標籤列印失敗！",
       "printPartial": "部分列印 ({printed}/{total})。",
+      "alreadyPrinted": "{name} 已列印標籤。",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
       "pendingReplaced": "已以新訂單取代待列印清單。"
     }
@@ -117,6 +127,9 @@
   "listSeparateMixedGlue": {
     "pageTitle": "混合膠水分裝清單",
     "sectionTitle": "混合膠水分裝清單",
+    "filter": {
+      "gluePlaceholder": "依膠水名稱篩選"
+    },
     "scan": {
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
     },
@@ -237,7 +250,10 @@
       "chietRequired": "膠水 {name} 已秤重但尚未確認分裝。請開啟視窗並確認。",
       "chietSelectBucket": "膠水 {name} 分裝第 {row} 列：請選擇容器。",
       "chietPrefix": "膠水 {name} 分裝：{message}",
-      "noMixAlreadySubmitted": "非混合膠已提交確認，無法再編輯。"
+      "noMixAlreadySubmitted": "非混合膠已提交確認，無法再編輯。",
+      "noMixAddRowRequired": "非混合膠：請先新增列並選擇桶槽後再確認。",
+      "noMixNoChangesToSubmit": "自上次提交後沒有新增、變更桶槽或刪除列，無需再次送出。",
+      "separateNoChangesToSubmit": "自上次提交後沒有新增、變更桶槽或刪除列，無需再次送出。"
     },
     "confirmDelete": {
       "title": "確認刪除",
@@ -277,7 +293,8 @@
     "label": "實際秤重",
     "refreshTitle": "重新連接電子秤（更換 hub 上的電子秤或電子秤無回應時使用）",
     "refreshAriaLabel": "重新連接電子秤",
-    "connected": "已連接電子秤",
+    "connected": "已連接",
+    "disconnected": "未連接",
     "connecting": "正在連接電子秤...",
     "searching": "正在搜尋連線...",
     "selectScale": "選擇 USB 電子秤",
@@ -355,6 +372,35 @@
       "title": "確認刪除",
       "componentLabel": "成分：{name}",
       "message": "確定要刪除此成分嗎？"
+    },
+    "dataValidation": {
+      "orderDetails": {
+        "message": "找不到調工作業單的詳細資料。請檢查以下項目的資料：",
+        "items": [
+          "調工作業單明細",
+          "申請單"
+        ]
+      },
+      "mixChemicals": {
+        "message": "找不到混膠成分資料。請檢查以下項目的資料：",
+        "items": [
+          "調工作業單",
+          "申請單",
+          "線別膠料",
+          "型體",
+          "混膠配方"
+        ]
+      },
+      "noMixChemicals": {
+        "message": "找不到非混膠成分資料。請檢查以下項目的資料：",
+        "items": [
+          "調工作業單",
+          "申請單",
+          "線別膠料",
+          "型體",
+          "混膠配方"
+        ]
+      }
     },
     "exitAlert": {
       "header": "尚未儲存",

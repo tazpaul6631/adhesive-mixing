@@ -132,7 +132,7 @@ const buildNoMixSeparateTableGlues = (
         glueWeightUnit,
         bucketId: toApiId(item.selectedBucketId ?? item.bucketId),
         glueExtra: !!noMixChemical.glueExtra,
-        recordStatus: item.recordStatus || NO_CHIET_RECORD_STATUS,
+        recordStatus: NO_CHIET_RECORD_STATUS,
         confirmDate: item.confirmDate || defaultTime,
         seq: index + 1,
         requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
@@ -316,12 +316,14 @@ export const buildSeparateGlueCommandPayload = (
 ) => {
   const defaultTime = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
   const forceRecordStatus = options?.forceAllRecordStatus;
-  const isNoMixGlueComplete = Boolean(ctx.isNoMixGlue && options?.forComplete && !forceRecordStatus);
+  const isCompleteSubmit = Boolean(options?.forComplete && !forceRecordStatus);
+  const activeForceRecordStatus = isCompleteSubmit ? NO_CHIET_RECORD_STATUS : forceRecordStatus;
 
   const mixSeparateRows = ctx.mixChemicals.length > 0 ? ctx.separateGlueDetails : [];
   const includeNoMixInSeparateGlues = ctx.noMixChemicals.length > 0 && !ctx.isNoMixGlue;
   const noMixSeparateRows = includeNoMixInSeparateGlues ? (ctx.noMixSeparateGlueDetails || []) : [];
   const defaultNoMixGlueId = String(ctx.noMixChemicals[0]?.materialCode ?? '');
+  const isNoMixGlueComplete = Boolean(ctx.isNoMixGlue && options?.forComplete && !forceRecordStatus);
 
   const baseSeparateGlues = [
     ...mixSeparateRows
@@ -332,7 +334,7 @@ export const buildSeparateGlueCommandPayload = (
         recordStatus,
         defaultTime,
         index + 1,
-        forceRecordStatus
+        activeForceRecordStatus
       )),
     ...noMixSeparateRows
       .filter(isSeparateGlueRowReady)
@@ -341,10 +343,24 @@ export const buildSeparateGlueCommandPayload = (
         item.glueId || defaultNoMixGlueId,
         recordStatus,
         defaultTime,
-        index + 1,
-        forceRecordStatus
+        mixSeparateRows.filter(isSeparateGlueRowReady).length + index + 1,
+        activeForceRecordStatus
       )),
   ];
+
+  let nextSeq = baseSeparateGlues.length;
+  (ctx.cancelledSeparateGlueDetails || []).forEach((item) => {
+    nextSeq += 1;
+    const glueId = item.glueId || ctx.mixGlueMasterId || defaultNoMixGlueId;
+    baseSeparateGlues.push(buildSeparateGluePayloadItem(
+      item,
+      glueId,
+      recordStatus,
+      defaultTime,
+      nextSeq,
+      CHIET_MAIN_RECORD_STATUS
+    ));
+  });
 
   const finalSeparateGlues = baseSeparateGlues;
   const noSeparateGlues = isNoMixGlueComplete
