@@ -137,11 +137,30 @@ const buildNoMixSeparateTableGlues = (
         seq: index + 1,
         requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
       };
-      if (item.noSeparateGlueId != null && String(item.noSeparateGlueId) !== '') {
+      if (
+        item.noSeparateGlueId != null
+        && String(item.noSeparateGlueId) !== ''
+        && String(item.noSeparateGlueId) !== '0'
+      ) {
         payload.noSeparateGlueId = toApiId(item.noSeparateGlueId);
       }
       return payload;
     });
+};
+
+const getNoSeparateGluePayloadDedupeKey = (item: Record<string, unknown>): string => {
+  const id = item.noSeparateGlueId != null ? String(item.noSeparateGlueId) : '';
+  if (id && id !== '0') return `id:${id}`;
+  return [
+    'bucket',
+    item.bucketId ?? '',
+    'seq',
+    item.seq ?? '',
+    'status',
+    item.recordStatus ?? '',
+    'weight',
+    item.glueWeight ?? '',
+  ].join(':');
 };
 
 const mergeCancelledApiNoSeparateGlues = (
@@ -150,29 +169,21 @@ const mergeCancelledApiNoSeparateGlues = (
   defaultTime: string
 ): Array<Record<string, unknown>> => {
   const merged = [...items];
-  const existingIds = new Set(
-    merged
-      .map((item) => item.noSeparateGlueId)
-      .filter((id) => id != null && id !== '')
-      .map(String)
-  );
+  const existingKeys = new Set(merged.map((item) => getNoSeparateGluePayloadDedupeKey(item)));
 
   (ctx.apiNoSeparateGlues || [])
     .filter((item) => isRecordStatusCancelled(item?.recordStatus))
     .forEach((item) => {
       const normalized = normalizeApiNoSeparateGlueItem(item, defaultTime);
       normalized.recordStatus = CHIET_MAIN_RECORD_STATUS;
-      const id = normalized.noSeparateGlueId != null ? String(normalized.noSeparateGlueId) : '';
-      if (id && existingIds.has(id)) return;
-      if (id) existingIds.add(id);
+      const key = getNoSeparateGluePayloadDedupeKey(normalized);
+      if (existingKeys.has(key)) return;
+      existingKeys.add(key);
       merged.push(normalized);
     });
 
   return merged;
 };
-
-const isRecordStatus = (value: unknown, status: string) =>
-  String(value ?? '').toUpperCase() === status.toUpperCase();
 
 const withRecordStatus = (
   item: any,
@@ -189,47 +200,14 @@ const buildIsNoMixGlueCompleteNoSeparateGlues = (
   defaultTime: string
 ): Array<Record<string, unknown>> => {
   const apiItems = ctx.apiNoSeparateGlues || [];
-  const hasAddRow = (ctx.noMixSeparateGlueDetails || []).length > 0;
   const tableRows = buildNoMixSeparateTableGlues(ctx, defaultTime);
-  const first = apiItems[0];
-  const rest = apiItems.slice(1).map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime));
+  const hasTableRows = tableRows.length > 0;
 
-  if (!first) {
-    return mergeCancelledApiNoSeparateGlues(hasAddRow ? tableRows : [], ctx, defaultTime);
+  if (!hasTableRows && apiItems.length === 0) {
+    return [];
   }
 
-  const firstIsC = isRecordStatus(first.recordStatus, CHIET_MAIN_RECORD_STATUS);
-  const firstIs1 = isRecordStatus(first.recordStatus, NO_CHIET_RECORD_STATUS);
-
-  // Trường hợp 1: object đầu tiên recordStatus = C
-  if (firstIsC) {
-    if (!hasAddRow) {
-      return mergeCancelledApiNoSeparateGlues(
-        [withRecordStatus(first, NO_CHIET_RECORD_STATUS, defaultTime), ...rest],
-        ctx,
-        defaultTime
-      );
-    }
-    return mergeCancelledApiNoSeparateGlues(tableRows, ctx, defaultTime);
-  }
-
-  // Trường hợp 2: object đầu tiên recordStatus = 1
-  if (firstIs1) {
-    if (!hasAddRow) {
-      return mergeCancelledApiNoSeparateGlues(
-        apiItems.map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime)),
-        ctx,
-        defaultTime
-      );
-    }
-    return mergeCancelledApiNoSeparateGlues(
-      [withRecordStatus(first, CHIET_MAIN_RECORD_STATUS, defaultTime), ...rest, ...tableRows],
-      ctx,
-      defaultTime
-    );
-  }
-
-  if (!hasAddRow) {
+  if (!hasTableRows) {
     return mergeCancelledApiNoSeparateGlues(
       apiItems.map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime)),
       ctx,
@@ -237,8 +215,13 @@ const buildIsNoMixGlueCompleteNoSeparateGlues = (
     );
   }
 
+  // Re-submit: hủy toàn bộ object API đang active (C) + gửi dòng bảng hiện tại (1).
+  const cancelledPrevious = apiItems
+    .filter((item) => !isRecordStatusCancelled(item?.recordStatus))
+    .map((item) => withRecordStatus(item, CHIET_MAIN_RECORD_STATUS, defaultTime));
+
   return mergeCancelledApiNoSeparateGlues(
-    [...apiItems.map((item) => normalizeApiNoSeparateGlueItem(item, defaultTime)), ...tableRows],
+    [...cancelledPrevious, ...tableRows],
     ctx,
     defaultTime
   );

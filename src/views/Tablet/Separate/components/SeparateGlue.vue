@@ -43,7 +43,7 @@
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
             :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets" filter
-            @show="handleBucketSelectShow" @change="handleBucketChange(data, index)" />
+            @show="() => handleBucketSelectShow(data, index)" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
@@ -127,7 +127,11 @@ const props = defineProps<{
   useChietCapacityValidation?: boolean;
 }>();
 
-const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
+const emit = defineEmits<{
+  'update-bucket': [payload: { row: any; previousBucketId: string | number | null; newBucketId: string | number | null }];
+  'add-row': [];
+  'delete-row': [row: any];
+}>();
 
 const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
@@ -137,6 +141,7 @@ const bucketList = ref<BucketOption[]>([]);
 const isLoadingBuckets = ref(false);
 let bucketLoadPromise: Promise<void> | null = null;
 const bucketSelectResetKeys = ref<Record<number, number>>({});
+const bucketBeforeChangeByIndex = ref<Record<number, string | number | null>>({});
 const tableWrapperRef = ref<HTMLElement | null>(null);
 
 const { markPendingScrollToNewRow } = useScrollToNewTableRow(
@@ -419,7 +424,8 @@ watch(
   { immediate: true }
 );
 
-const handleBucketSelectShow = () => {
+const handleBucketSelectShow = (rowData: any, rowIndex: number) => {
+  bucketBeforeChangeByIndex.value[rowIndex] = rowData?.selectedBucketId ?? rowData?.bucketId ?? null;
   if (props.isViewMode || props.disabled || isLoadingBuckets.value) return;
   void fetchBucketList();
 };
@@ -446,7 +452,11 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
   }
 
   updateRowCompletionInfo(rowData);
-  emit('update-bucket');
+  const newBucketId = rowData.selectedBucketId ?? rowData.bucketId ?? null;
+  const previousBucketId = bucketBeforeChangeByIndex.value[rowIndex]
+    ?? rowData._lastSubmittedBucketId
+    ?? null;
+  emit('update-bucket', { row: rowData, previousBucketId, newBucketId });
 };
 
 defineExpose({

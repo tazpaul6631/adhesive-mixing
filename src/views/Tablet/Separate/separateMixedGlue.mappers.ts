@@ -63,17 +63,22 @@ export const normalizeRequestDetails = (respData: any): RequestDetailOption[] =>
 };
 
 const mapSeparateGlueRows = (rows: any[], mixGlueMasterId: string): SeparateGlueRow[] =>
-  (rows || []).map((row) => ({
-    ...createDefaultSeparateGlueRow(mixGlueMasterId),
-    ...row,
-    glueId: mixGlueMasterId || String(row.glueId ?? ''),
-    selectedBucketId: row.selectedBucketId ?? row.bucketId ?? null,
-    selectedRequestDetailIds: row.selectedRequestDetailIds
-      ?? (Array.isArray(row.requestDetailIds) ? row.requestDetailIds.map(String) : [])
-      ?? (row.requestDetailId ? [String(row.requestDetailId)] : []),
-    confirmTime: row.confirmTime ?? (row.confirmDate ? format.formatDate(row.confirmDate) : null),
-    confirmDate: row.confirmDate ?? null,
-  }));
+  (rows || []).map((row) => {
+    const activeBucketId = row.selectedBucketId ?? row.bucketId ?? null;
+    const fromApi = row?.isNewAddRow !== true && activeBucketId != null && activeBucketId !== '';
+    return {
+      ...createDefaultSeparateGlueRow(mixGlueMasterId),
+      ...row,
+      glueId: mixGlueMasterId || String(row.glueId ?? ''),
+      selectedBucketId: activeBucketId,
+      selectedRequestDetailIds: row.selectedRequestDetailIds
+        ?? (Array.isArray(row.requestDetailIds) ? row.requestDetailIds.map(String) : [])
+        ?? (row.requestDetailId ? [String(row.requestDetailId)] : []),
+      confirmTime: row.confirmTime ?? (row.confirmDate ? format.formatDate(row.confirmDate) : null),
+      confirmDate: row.confirmDate ?? null,
+      _lastSubmittedBucketId: row._lastSubmittedBucketId ?? (fromApi ? activeBucketId : null),
+    };
+  });
 
 export const resolveSeparateGlueDetails = (
   existingDraft: any,

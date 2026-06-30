@@ -97,11 +97,12 @@ const findApiIndexByRow = (row: any, apiItems: any[]): number => {
 
 const mapApiItemToTableRow = (apiItem: any, noMixGlueId: string, apiIndex: number) => {
   const confirmDate = apiItem?.confirmDate || apiItem?.createDate || null;
+  const bucketId = apiItem?.bucketId ?? apiItem?.selectedBucketId ?? null;
   return {
     ...createDefaultSeparateGlueRow(noMixGlueId),
     glueId: noMixGlueId || String(apiItem?.materialCode ?? ''),
     noSeparateGlueId: apiItem?.noSeparateGlueId,
-    selectedBucketId: apiItem?.bucketId ?? apiItem?.selectedBucketId ?? null,
+    selectedBucketId: bucketId,
     selectedRequestDetailIds: Array.isArray(apiItem?.requestDetailIds)
       ? apiItem.requestDetailIds.map(String)
       : [],
@@ -113,6 +114,7 @@ const mapApiItemToTableRow = (apiItem: any, noMixGlueId: string, apiIndex: numbe
     apiCreateDate: apiItem?.createDate ?? null,
     _matchedApiKey: getApiItemKey(apiItem),
     _matchedApiIndex: apiIndex,
+    _lastSubmittedBucketId: bucketId,
   };
 };
 
@@ -140,12 +142,10 @@ const mergeTableRowWithApiItem = (row: any, apiItem: any, apiIndex: number) => {
 };
 
 const applyTableRowToApiItem = (apiItem: any, row: any) => {
-  const bucketId = row?.selectedBucketId ?? row?.bucketId;
   const confirmDate = row?.confirmDate || apiItem?.confirmDate || apiItem?.createDate;
 
   return {
     ...apiItem,
-    bucketId: bucketId ?? apiItem?.bucketId,
     confirmDate,
     requestDetailIds: row?.selectedRequestDetailIds?.length
       ? row.selectedRequestDetailIds
@@ -158,6 +158,82 @@ const applyTableRowToApiItem = (apiItem: any, row: any) => {
 
 export const isRecordStatusCancelled = (value: unknown) =>
   String(value ?? '').toUpperCase() === CANCELLED_RECORD_STATUS;
+
+export type SeparateBucketUpdatePayload = {
+  row: any;
+  previousBucketId: string | number | null;
+  newBucketId: string | number | null;
+};
+
+const normalizeBucketId = (value: unknown): string =>
+  value == null || value === '' ? '' : String(value);
+
+export const hasPersistedSeparateRowIdentity = (row: any): boolean => {
+  const sgId = row?.separateGlueId;
+  if (sgId != null && sgId !== '' && String(sgId) !== NEW_NO_SEPARATE_GLUE_ID) return true;
+  const nsgId = row?.noSeparateGlueId;
+  if (nsgId != null && nsgId !== '' && String(nsgId) !== NEW_NO_SEPARATE_GLUE_ID) return true;
+  return row?._lastSubmittedBucketId != null;
+};
+
+/** Chỉ hủy thùng cũ khi dòng đã từng gán thùng lên BE (hoặc load từ API) và đổi sang thùng khác. */
+export const shouldCancelPreviousBucketOnUpdate = (
+  row: any,
+  previousBucketId: unknown,
+  newBucketId: unknown
+): boolean => {
+  const prev = normalizeBucketId(previousBucketId);
+  const next = normalizeBucketId(newBucketId);
+  if (!prev || !next || prev === next) return false;
+  if (row?.isNewAddRow === true && !hasPersistedSeparateRowIdentity(row)) return false;
+  return hasPersistedSeparateRowIdentity(row);
+};
+
+export const stampSubmittedSeparateRowBuckets = (rows: any[]) => {
+  (rows || []).forEach((row) => {
+    const bucketId = row?.selectedBucketId ?? row?.bucketId;
+    if (bucketId != null && bucketId !== '') {
+      row._lastSubmittedBucketId = bucketId;
+    }
+    delete row.isNewAddRow;
+  });
+};
+
+/** Snapshot dòng với thùng cũ — dùng khi update-bucket trên dòng đã lưu BE. */
+export const buildCancelledBucketRowSnapshot = (row: any, previousBucketId: unknown) => ({
+  ...row,
+  selectedBucketId: previousBucketId,
+  bucketId: previousBucketId,
+  recordStatus: CANCELLED_RECORD_STATUS,
+});
+
+export const getCancelledSeparateGlueDetailKey = (item: any): string => {
+  const bucketId = normalizeBucketId(item?.selectedBucketId ?? item?.bucketId);
+  const lineId = item?.separateGlueId ?? item?.noSeparateGlueId ?? '';
+  const glueId = item?.glueId ?? '';
+  return `${glueId}|${lineId}|${bucketId}`;
+};
+
+export const appendCancelledSeparateGlueDetail = (
+  cancelledList: any[],
+  snapshot: any
+): any[] => {
+  const key = getCancelledSeparateGlueDetailKey(snapshot);
+  if (cancelledList.some((item) => getCancelledSeparateGlueDetailKey(item) === key)) {
+    return cancelledList;
+  }
+  return [...cancelledList, snapshot];
+};
+
+/** Ngắt liên kết API cũ — dòng active gửi lên như gán thùng mới (recordStatus = 1). */
+export const resetNoMixRowForNewBucketAssignment = (row: any) => {
+  row.noSeparateGlueId = NEW_NO_SEPARATE_GLUE_ID;
+  row.isNewAddRow = true;
+  row.recordStatus = ACTIVE_RECORD_STATUS;
+  delete row._matchedApiKey;
+  delete row._matchedApiIndex;
+  return row;
+};
 
 /** Ghép dòng bảng noMix với apiNoSeparateGlues theo confirmDate ≈ createDate. */
 export const syncNoMixSeparateGlueState = (
