@@ -44,8 +44,8 @@
               @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" stripedRows
               class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
               :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]"
-              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-              currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}" selectionMode="single"
+              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink RowsPerPageDropdown"
+              currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
               v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
@@ -161,7 +161,7 @@ import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
 import BatchPrintProgressOverlay from '@/components/BatchPrintProgressOverlay.vue';
 import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
-import { useListTableFetch } from '@/composables/useListTableFetch';
+import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useSeparateLabelBatchPrint } from '@/composables/useSeparateLabelBatchPrint';
 import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
@@ -230,10 +230,8 @@ export interface WorkOrderMaster {
 
 export interface PagedResult<T> {
   items: T[];
-  totalCount: string;
   page: string;
   pageSize: string;
-  totalPage: string;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
@@ -249,6 +247,7 @@ const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
+const hasNextPage = ref(false);
 const chemicalMasterNameFilter = ref('');
 const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const { startRequest, isStaleRequest, shouldSkipDuplicatePageLoad } = useListTableFetch();
@@ -283,16 +282,21 @@ const removePrintedRowFromList = (workOrderMasterId: string) => {
   if (!hadRow) return;
 
   lineDetails.value = lineDetails.value.filter((item) => String(item.workOrderMasterId) !== key);
-  if (totalRecords.value > 0) {
-    totalRecords.value -= 1;
-  }
   if (String(selectedItem.value?.workOrderMasterId) === key) {
     selectedItem.value = null;
   }
 
-  if (lineDetails.value.length === 0 && totalRecords.value > 0) {
+  if (lineDetails.value.length === 0) {
     void fetchWorkOrders(currentPage.value, rowsPerPage.value);
+    return;
   }
+
+  totalRecords.value = computeLazyTableTotalRecords(
+    currentPage.value,
+    rowsPerPage.value,
+    lineDetails.value.length,
+    hasNextPage.value
+  );
 };
 
 const finishSeparatePrintSuccess = async (workOrderMasterId: string) => {
@@ -360,8 +364,18 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
 
     if (resData && resData.success) {
       printedWorkOrderIds.value = new Set();
-      lineDetails.value = resData.data.items;
-      totalRecords.value = Number(resData.data.totalCount) || 0;
+      const items = resData.data.items;
+      const meta = parseCursorPagedMeta(resData.data, page, pageSize);
+      lineDetails.value = items;
+      currentPage.value = meta.page;
+      rowsPerPage.value = meta.pageSize;
+      hasNextPage.value = meta.hasNextPage;
+      totalRecords.value = computeLazyTableTotalRecords(
+        meta.page,
+        meta.pageSize,
+        items.length,
+        meta.hasNextPage
+      );
     } else {
       console.error("Lấy dữ liệu thất bại:", resData?.message);
       lineDetails.value = [];
@@ -665,8 +679,9 @@ const restorePendingPrintJob = async () => {
 };
 
 onIonViewWillEnter(() => {
+  currentPage.value = 1;
   void restorePendingPrintJob();
-  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
+  void fetchWorkOrders(1, rowsPerPage.value);
 });
 
 onIonViewDidEnter(async () => {

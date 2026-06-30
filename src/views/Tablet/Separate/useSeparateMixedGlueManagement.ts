@@ -43,14 +43,23 @@ import {
   markApiSeparateGlueCancelledByRow,
   normalizeNewMixSeparateAddRow,
   normalizeNewNoMixSeparateAddRow,
-  syncNoMixSeparateGlueState,
   shouldCancelPreviousBucketOnUpdate,
   buildCancelledBucketRowSnapshot,
   appendCancelledSeparateGlueDetail,
   resetNoMixRowForNewBucketAssignment,
   stampSubmittedSeparateRowBuckets,
+  shouldPersistCancelledSeparateRow,
   type SeparateBucketUpdatePayload,
 } from './noSeparateGlueSync';
+import {
+  mapMixSeparateRowsWithApiBySeq,
+  mapNoMixSeparateRowsWithApiBySeq,
+  resolveNoMixApiItemsForSeqMap,
+  resolveMixApiItemsForSeqMap,
+  filterMixApiSeparateGlues,
+  getNextSeparateTableSeq,
+  resetMixRowForNewBucketAssignment,
+} from './separateGlueSeqSync';
 
 dayjs.extend(customParseFormat);
 
@@ -157,27 +166,34 @@ export function useSeparateMixedGlueManagement() {
       isNoMixGlue
     );
 
-    separateGlueDetails.value = syncSeparateGlueRowGlueIds(mixRows, mixGlueMasterId.value);
-    noMixSeparateGlueDetails.value = noMixRows.map((row) => ({
+    const mixApiForSeqMap = resolveMixApiItemsForSeqMap(respData, mixGlueMasterId.value);
+    const mixApiSource = mixApiForSeqMap.length > 0
+      ? mixApiForSeqMap
+      : filterMixApiSeparateGlues(
+        apiSeparateGlues.value.filter((item) => !isRecordStatusCancelled(item?.recordStatus)),
+        mixGlueMasterId.value
+      );
+
+    let mappedMixRows = syncSeparateGlueRowGlueIds(mixRows, mixGlueMasterId.value);
+    if (mappedMixRows.length > 0 && mixApiSource.length > 0) {
+      mappedMixRows = mapMixSeparateRowsWithApiBySeq(mappedMixRows, mixApiSource);
+    }
+
+    const noMixApiForSeqMap = resolveNoMixApiItemsForSeqMap(respData, getNoMixGlueId(), isNoMixGlue);
+    const noMixApiSource = noMixApiForSeqMap.length > 0
+      ? noMixApiForSeqMap
+      : apiNoSeparateGlues.value.filter((item) => !isRecordStatusCancelled(item?.recordStatus));
+
+    let mappedNoMixRows = noMixRows.map((row) => ({
       ...row,
       glueId: getNoMixGlueId() || row.glueId,
     }));
-
-    if (isNoMixGlue) {
-      applyNoMixGlueApiSync();
+    if (mappedNoMixRows.length > 0 && noMixApiSource.length > 0) {
+      mappedNoMixRows = mapNoMixSeparateRowsWithApiBySeq(mappedNoMixRows, noMixApiSource);
     }
-  };
 
-  const applyNoMixGlueApiSync = () => {
-    if (!headerInfo.value.isNoMixGlue) return;
-
-    const synced = syncNoMixSeparateGlueState(
-      noMixSeparateGlueDetails.value,
-      apiNoSeparateGlues.value,
-      getNoMixGlueId()
-    );
-    noMixSeparateGlueDetails.value = synced.tableRows;
-    apiNoSeparateGlues.value = synced.apiItems;
+    separateGlueDetails.value = mappedMixRows;
+    noMixSeparateGlueDetails.value = mappedNoMixRows;
   };
 
   // --- Tab keo không trộn (bảng 2) ---
@@ -549,6 +565,7 @@ export function useSeparateMixedGlueManagement() {
       await nextTick();
       isDirty.value = false;
       syncSeparateChangeTrackingAfterLoad();
+      logSeparateTableStoreState('enter-page');
     }
   };
 
@@ -665,6 +682,51 @@ export function useSeparateMixedGlueManagement() {
     return null;
   };
 
+  const cloneForDebugLog = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+  const logSeparateTableStoreState = (source: string) => {
+    console.group(`[SeparateMixedGlue][${source}] store bảng keo trộn & keo không trộn`);
+    console.log('workOrderMasterId:', currentWorkOrderId.value);
+    console.log('isNoMixGlue:', headerInfo.value.isNoMixGlue);
+    console.log('hasMixChemicals:', hasMixChemicals.value, '| hasNoMixChemicals:', hasNoMixChemicals.value);
+    console.log('separateChangedSinceLastSubmit:', separateChangedSinceLastSubmit.value);
+    console.log('--- keo trộn (separateGlueDetails) ---', cloneForDebugLog(separateGlueDetails.value));
+    console.log('--- keo không trộn (noMixSeparateGlueDetails) ---', cloneForDebugLog(noMixSeparateGlueDetails.value));
+    console.log('--- cancelledSeparateGlueDetails ---', cloneForDebugLog(cancelledSeparateGlueDetails.value));
+    console.log('--- apiSeparateGlues ---', cloneForDebugLog(apiSeparateGlues.value));
+    console.log('--- apiNoSeparateGlues ---', cloneForDebugLog(apiNoSeparateGlues.value));
+    console.log('--- draft snapshot (mixGlueDraft store) ---', cloneForDebugLog(buildDraftSnapshot()));
+    console.groupEnd();
+  };
+
+  const logSeparateSubmitPayload = (payload: ReturnType<typeof buildSeparateGlueCommandPayload>) => {
+    const separateGlues = payload.separateGlues || [];
+    const noSeparateGlues = payload.noSeparateGlues || [];
+    const isRecordC = (item: Record<string, unknown>) => String(item.recordStatus ?? '').toUpperCase() === 'C';
+    const isRecord1 = (item: Record<string, unknown>) => String(item.recordStatus ?? '').toUpperCase() === '1';
+
+    console.group('[SeparateMixedGlue][submit] payload debug');
+    console.log('isNoMixGlue:', headerInfo.value.isNoMixGlue);
+    console.log('hasMixChemicals:', hasMixChemicals.value, '| hasNoMixChemicals:', hasNoMixChemicals.value);
+    console.log('--- store trước submit ---');
+    console.log('cancelledSeparateGlueDetails:', cloneForDebugLog(cancelledSeparateGlueDetails.value));
+    console.log('apiSeparateGlues:', cloneForDebugLog(apiSeparateGlues.value));
+    console.log('apiNoSeparateGlues:', cloneForDebugLog(apiNoSeparateGlues.value));
+    console.log('separateGlueDetails (keo trộn bảng):', cloneForDebugLog(separateGlueDetails.value));
+    console.log('noMixSeparateGlueDetails (keo không trộn bảng):', cloneForDebugLog(noMixSeparateGlueDetails.value));
+    console.log('--- separateGlues gửi BE (keo trộn + noMix trong đơn mix) ---');
+    console.log(`tổng ${separateGlues.length} object (active 1: ${separateGlues.filter(isRecord1).length}, C: ${separateGlues.filter(isRecordC).length})`);
+    console.log('recordStatus=1:', separateGlues.filter(isRecord1));
+    console.log('recordStatus=C:', separateGlues.filter(isRecordC));
+    console.log('full separateGlues:', separateGlues);
+    console.log('--- noSeparateGlues gửi BE (đơn keo không trộn thuần) ---');
+    console.log('recordStatus=1:', noSeparateGlues.filter(isRecord1));
+    console.log('recordStatus=C:', noSeparateGlues.filter(isRecordC));
+    console.log('full noSeparateGlues:', noSeparateGlues);
+    console.log('--- full payload ---', payload);
+    console.groupEnd();
+  };
+
   const handleComplete = async () => {
     if (blockIfNoChangesOnResubmit()) return;
 
@@ -683,6 +745,7 @@ export function useSeparateMixedGlueManagement() {
 
     try {
       const payload = buildSeparateGlueCommandPayload(getPayloadContext(), '1', { forComplete: true });
+      logSeparateSubmitPayload(payload);
       await separateGlue.postSeparateGlueCommand(payload);
 
       stampSubmittedSeparateRowBuckets(separateGlueDetails.value);
@@ -924,6 +987,7 @@ export function useSeparateMixedGlueManagement() {
         {
           ...createDefaultSeparateGlueRow(mixGlueMasterId.value),
           glueId: mixGlueMasterId.value,
+          seq: getNextSeparateTableSeq(separateGlueDetails.value),
         },
         mixGlueMasterId.value
       )
@@ -933,15 +997,22 @@ export function useSeparateMixedGlueManagement() {
   };
 
   const handleDeleteSeparateGlueRow = async (rowToDelete: any) => {
-    if (!rowToDelete?.isNewAddRow) {
-      cancelledSeparateGlueDetails.value.push({
-        ...rowToDelete,
-        recordStatus: 'C',
-      });
+    if (shouldPersistCancelledSeparateRow(rowToDelete)) {
+      cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
+        cancelledSeparateGlueDetails.value,
+        {
+          ...rowToDelete,
+          recordStatus: 'C',
+        }
+      );
       apiSeparateGlues.value = markApiSeparateGlueCancelledByRow(
         apiSeparateGlues.value,
         rowToDelete
       );
+      console.log('[SeparateMixedGlue][delete-row][mix] đã push C', {
+        rowToDelete,
+        cancelledSeparateGlueDetails: cloneForDebugLog(cancelledSeparateGlueDetails.value),
+      });
     }
 
     separateGlueDetails.value = separateGlueDetails.value.filter(item => item !== rowToDelete);
@@ -967,7 +1038,21 @@ export function useSeparateMixedGlueManagement() {
         apiSeparateGlues.value,
         snapshot
       );
-      payload.row.recordStatus = '1';
+      resetMixRowForNewBucketAssignment(payload.row);
+      payload.row.selectedBucketId = payload.newBucketId;
+      payload.row.bucketId = payload.newBucketId;
+      console.log('[SeparateMixedGlue][update-bucket][mix] đã push C', {
+        previousBucketId: payload.previousBucketId,
+        newBucketId: payload.newBucketId,
+        cancelledSnapshot: snapshot,
+        cancelledSeparateGlueDetails: JSON.parse(JSON.stringify(cancelledSeparateGlueDetails.value)),
+      });
+    } else if (payload) {
+      console.log('[SeparateMixedGlue][update-bucket][mix] không push C', {
+        previousBucketId: payload.previousBucketId,
+        newBucketId: payload.newBucketId,
+        row: payload.row,
+      });
     }
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
@@ -979,6 +1064,7 @@ export function useSeparateMixedGlueManagement() {
         {
           ...createDefaultSeparateGlueRow(getNoMixGlueId()),
           glueId: getNoMixGlueId(),
+          seq: getNextSeparateTableSeq(noMixSeparateGlueDetails.value),
         },
         getNoMixGlueId()
       )
@@ -999,7 +1085,21 @@ export function useSeparateMixedGlueManagement() {
       const snapshot = buildCancelledBucketRowSnapshot(payload.row, payload.previousBucketId);
 
       if (headerInfo.value.isNoMixGlue) {
+        if (shouldPersistCancelledSeparateRow(payload.row)) {
+          apiNoSeparateGlues.value = markApiNoSeparateGlueCancelledByRow(
+            apiNoSeparateGlues.value,
+            snapshot
+          );
+        }
         resetNoMixRowForNewBucketAssignment(payload.row);
+        payload.row.selectedBucketId = payload.newBucketId;
+        payload.row.bucketId = payload.newBucketId;
+        console.log('[SeparateMixedGlue][update-bucket][noMix-pure] đổi thùng — C qua noSeparateGlues khi submit', {
+          previousBucketId: payload.previousBucketId,
+          newBucketId: payload.newBucketId,
+          rowAfterReset: payload.row,
+          apiNoSeparateGlues: JSON.parse(JSON.stringify(apiNoSeparateGlues.value)),
+        });
       } else {
         cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
           cancelledSeparateGlueDetails.value,
@@ -1012,8 +1112,23 @@ export function useSeparateMixedGlueManagement() {
           apiSeparateGlues.value,
           snapshot
         );
-        payload.row.recordStatus = '1';
+        resetNoMixRowForNewBucketAssignment(payload.row);
+        payload.row.selectedBucketId = payload.newBucketId;
+        payload.row.bucketId = payload.newBucketId;
+        console.log('[SeparateMixedGlue][update-bucket][noMix-in-mix] đã push C vào separateGlues', {
+          previousBucketId: payload.previousBucketId,
+          newBucketId: payload.newBucketId,
+          cancelledSnapshot: snapshot,
+          cancelledSeparateGlueDetails: JSON.parse(JSON.stringify(cancelledSeparateGlueDetails.value)),
+        });
       }
+    } else if (payload) {
+      console.log('[SeparateMixedGlue][update-bucket][noMix] không push C', {
+        isNoMixGlue: headerInfo.value.isNoMixGlue,
+        previousBucketId: payload.previousBucketId,
+        newBucketId: payload.newBucketId,
+        row: payload.row,
+      });
     }
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
@@ -1021,16 +1136,25 @@ export function useSeparateMixedGlueManagement() {
 
   const handleDeleteNoMixSeparateGlueRow = async (rowToDelete: any) => {
     if (headerInfo.value.isNoMixGlue) {
-      apiNoSeparateGlues.value = markApiNoSeparateGlueCancelledByRow(
-        apiNoSeparateGlues.value,
+      if (shouldPersistCancelledSeparateRow(rowToDelete)) {
+        apiNoSeparateGlues.value = markApiNoSeparateGlueCancelledByRow(
+          apiNoSeparateGlues.value,
+          { ...rowToDelete, recordStatus: 'C' }
+        );
+      }
+    } else if (shouldPersistCancelledSeparateRow(rowToDelete)) {
+      cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
+        cancelledSeparateGlueDetails.value,
+        {
+          ...rowToDelete,
+          glueId: getNoMixGlueId() || rowToDelete.glueId,
+          recordStatus: 'C',
+        }
+      );
+      apiSeparateGlues.value = markApiSeparateGlueCancelledByRow(
+        apiSeparateGlues.value,
         rowToDelete
       );
-    } else if (!rowToDelete?.isNewAddRow) {
-      cancelledSeparateGlueDetails.value.push({
-        ...rowToDelete,
-        glueId: getNoMixGlueId() || rowToDelete.glueId,
-        recordStatus: 'C',
-      });
     }
 
     noMixSeparateGlueDetails.value = noMixSeparateGlueDetails.value.filter(item => item !== rowToDelete);

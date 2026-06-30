@@ -44,11 +44,12 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-glue-return-table-wrap">
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
-              scrollable :scrollHeight="tableScrollHeight" stripedRows class="modern-table auto-columns-table"
-              tableStyle="width: 100%; min-width: 0;" selectionMode="single" :paginator="true" :rows="rowsPerPage"
-              :rowsPerPageOptions="[10, 20, 50]" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
-              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-              currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}">
+              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" stripedRows
+              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" selectionMode="single"
+              :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]" dataKey="glueReturnLogId"
+              @page="onPageLine" @row-click="onRowClick"
+              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink RowsPerPageDropdown"
+              currentPageReportTemplate="Hiển thị {first} đến {last}">
               <template #empty>
                 <div style="text-align: center; align-content: center;" :style="{ minHeight: emptyStateMinHeight }">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -125,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
@@ -134,7 +135,7 @@ import {
 } from '@ionic/vue';
 import { useAppToast } from '@/composables/useAppToast';
 import dayjs from 'dayjs';
-import { useListTableFetch } from '@/composables/useListTableFetch';
+import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
@@ -188,6 +189,7 @@ const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
+const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const isLoadingLine = ref(true);
 const isConfirming = ref(false);
 const submittingRowId = ref('');
@@ -303,20 +305,32 @@ const normalizeGlueReturnLogItem = (item: GlueReturnLogItem): GlueReturnLogItem 
   };
 };
 
-const parseListResponse = (resData: any): { items: GlueReturnLogItem[]; totalCount: number } => {
+const parseListResponse = (
+  resData: any,
+  fallbackPage: number,
+  fallbackPageSize: number
+): { items: GlueReturnLogItem[]; page: number; pageSize: number; hasNextPage: boolean } => {
   if (!resData?.success) {
-    return { items: [], totalCount: 0 };
+    return { items: [], page: fallbackPage, pageSize: fallbackPageSize, hasNextPage: false };
   }
 
   const payload = resData.data;
   if (Array.isArray(payload)) {
-    return { items: payload, totalCount: payload.length };
+    return {
+      items: payload,
+      page: fallbackPage,
+      pageSize: fallbackPageSize,
+      hasNextPage: false,
+    };
   }
 
   const items = Array.isArray(payload?.items) ? payload.items : [];
+  const meta = parseCursorPagedMeta(payload, fallbackPage, fallbackPageSize);
   return {
     items,
-    totalCount: Number(payload?.totalCount) || items.length,
+    page: meta.page,
+    pageSize: meta.pageSize,
+    hasNextPage: meta.hasNextPage,
   };
 };
 
@@ -348,7 +362,11 @@ const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
     ]);
     if (isStaleRequest(requestId)) return;
 
-    const { items, totalCount } = parseListResponse(response.data);
+    const { items, page: responsePage, pageSize: responsePageSize, hasNextPage } = parseListResponse(
+      response.data,
+      page,
+      pageSize
+    );
     lineDetails.value = items.map(mergePendingIntoItem);
     items.forEach((item) => {
       const normalized = normalizeGlueReturnLogItem(item);
@@ -356,7 +374,14 @@ const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
         void pendingStore.clearPending(String(item.glueReturnLogId));
       }
     });
-    totalRecords.value = totalCount;
+    currentPage.value = responsePage;
+    rowsPerPage.value = responsePageSize;
+    totalRecords.value = computeLazyTableTotalRecords(
+      responsePage,
+      responsePageSize,
+      items.length,
+      hasNextPage
+    );
     syncSelectedItem();
   } catch (error) {
     if (isStaleRequest(requestId)) return;
@@ -500,8 +525,9 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
 };
 
 onIonViewWillEnter(() => {
+  currentPage.value = 1;
   startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void fetchGlueReturnLogs(currentPage.value, rowsPerPage.value);
+  void fetchGlueReturnLogs(1, rowsPerPage.value);
 });
 
 onIonViewWillLeave(() => {

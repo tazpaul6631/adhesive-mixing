@@ -44,12 +44,12 @@
           </div>
 
           <div class="overflow-x-auto border-round-bottom-xl list-mix-glue-table-wrap">
-            <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" @page="onPageLine" scrollable
-              :scrollHeight="tableScrollHeight" stripedRows class="modern-table auto-columns-table"
-              tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick" :paginator="true" :rows="rowsPerPage"
-              :rowsPerPageOptions="[10, 20, 50]"
-              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-              currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}" selectionMode="single"
+            <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
+              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" stripedRows
+              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
+              :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]"
+              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink RowsPerPageDropdown"
+              currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
               v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
               <template #empty>
@@ -206,7 +206,7 @@ import { parsePrintQueueFromBe } from '@/services/mixGlueLabelPrint';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
 import { useSeparateLabelBatchPrint } from '@/composables/useSeparateLabelBatchPrint';
 import LocaleSelect from '@/components/LocaleSelect.vue';
-import { useListTableFetch } from '@/composables/useListTableFetch';
+import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
@@ -420,10 +420,8 @@ export interface WorkOrderMaster {
 
 export interface PagedResult<T> {
   items: T[];
-  totalCount: string;
   page: string;
   pageSize: string;
-  totalPage: string;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
@@ -439,6 +437,7 @@ const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
+const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const chemicalMasterNameFilter = ref('');
 const { startRequest, isStaleRequest, shouldSkipDuplicatePageLoad } = useListTableFetch();
 
@@ -964,10 +963,19 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
     const resData = response.data as ApiResponse<WorkOrderMaster>;
 
     if (resData && resData.success) {
-      lineDetails.value = resData.data.items
+      const items = resData.data.items
         .map((item) => mapWorkOrderListItem(item as unknown as Record<string, unknown>))
         .map((item) => applyPrintedStateToListItem(item));
-      totalRecords.value = Number(resData.data.totalCount) || 0;
+      const meta = parseCursorPagedMeta(resData.data, page, pageSize);
+      lineDetails.value = items;
+      currentPage.value = meta.page;
+      rowsPerPage.value = meta.pageSize;
+      totalRecords.value = computeLazyTableTotalRecords(
+        meta.page,
+        meta.pageSize,
+        items.length,
+        meta.hasNextPage
+      );
     } else {
       console.error("Lấy dữ liệu thất bại:", resData?.message);
       lineDetails.value = [];
@@ -1005,8 +1013,9 @@ const onPageLine = (event: { page: number; rows: number }) => {
 const goBack = () => router.push('/app-menu');
 
 onIonViewWillEnter(() => {
+  currentPage.value = 1;
   void restorePendingPrintJob();
-  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
+  void fetchWorkOrders(1, rowsPerPage.value);
 });
 
 onIonViewDidEnter(async () => {

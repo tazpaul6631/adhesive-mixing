@@ -1,6 +1,7 @@
 import format from '@/mixins/format';
 import type { HeaderInfo, RequestDetailOption, SeparateGlueRow } from './separateMixedGlue.types';
 import { buildNoMixTableRowsFromApiItems } from './noSeparateGlueSync';
+import { normalizeRowSeq } from './separateGlueSeqSync';
 
 const formatGlueWeightDisplay = (weight: unknown): string | null => {
   if (weight === undefined || weight === null || weight === '') return null;
@@ -76,6 +77,7 @@ const mapSeparateGlueRows = (rows: any[], mixGlueMasterId: string): SeparateGlue
         ?? (row.requestDetailId ? [String(row.requestDetailId)] : []),
       confirmTime: row.confirmTime ?? (row.confirmDate ? format.formatDate(row.confirmDate) : null),
       confirmDate: row.confirmDate ?? null,
+      seq: normalizeRowSeq(row?.seq) ?? undefined,
       _lastSubmittedBucketId: row._lastSubmittedBucketId ?? (fromApi ? activeBucketId : null),
     };
   });
@@ -194,6 +196,9 @@ export const resolveSplitSeparateGlueDetails = (
       const draftApi = existingDraft?.apiNoSeparateGlues;
       if (Array.isArray(draftApi) && draftApi.length > 0) {
         return buildNoMixTableRowsFromApiItems(draftApi, noMixGlueId);
+      }
+      if (Array.isArray(respData?.noSeparateGlues) && respData.noSeparateGlues.length > 0) {
+        return buildNoMixTableRowsFromApiItems(respData.noSeparateGlues, noMixGlueId);
       }
       return [];
     }

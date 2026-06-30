@@ -3,12 +3,19 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 import format from '@/mixins/format';
 import { createDefaultSeparateGlueRow } from './separateMixedGlue.mappers';
+import { normalizeRowSeq } from './separateGlueSeqSync';
 
 dayjs.extend(customParseFormat);
 
 const CANCELLED_RECORD_STATUS = 'C';
 const NEW_NO_SEPARATE_GLUE_ID = '0';
 const ACTIVE_RECORD_STATUS = '1';
+
+export const isRecordStatusCancelled = (value: unknown) =>
+  String(value ?? '').toUpperCase() === CANCELLED_RECORD_STATUS;
+
+export const isRecordStatusActive = (value: unknown) =>
+  String(value ?? '').toUpperCase() === ACTIVE_RECORD_STATUS;
 
 export const isNewNoMixSeparateAddRow = (row: any): boolean => {
   if (row?.isNewAddRow === true) return true;
@@ -25,6 +32,7 @@ export const normalizeNewNoMixSeparateAddRow = (row: any, noMixGlueId: string) =
   noSeparateGlueId: NEW_NO_SEPARATE_GLUE_ID,
   recordStatus: ACTIVE_RECORD_STATUS,
   isNewAddRow: true,
+  seq: row?.seq ?? undefined,
 });
 
 export const isNewMixSeparateAddRow = (row: any): boolean => {
@@ -39,6 +47,7 @@ export const normalizeNewMixSeparateAddRow = (row: any, mixGlueMasterId: string)
   separateGlueId: NEW_NO_SEPARATE_GLUE_ID,
   recordStatus: ACTIVE_RECORD_STATUS,
   isNewAddRow: true,
+  seq: row?.seq ?? undefined,
 });
 
 const parseTimeMs = (value: unknown): number | null => {
@@ -66,9 +75,22 @@ const findApiIndexByRow = (row: any, apiItems: any[]): number => {
 
   if (hasPersistedNoSeparateGlueId(row?.noSeparateGlueId)) {
     const byId = apiItems.findIndex(
-      (item) => String(item?.noSeparateGlueId) === String(row.noSeparateGlueId)
+      (item) => isRecordStatusActive(item?.recordStatus)
+        && String(item?.noSeparateGlueId) === String(row.noSeparateGlueId)
     );
     if (byId >= 0) return byId;
+  }
+
+  const rowSeq = normalizeRowSeq(row?.seq);
+  if (rowSeq != null) {
+    const rowBucket = row?.selectedBucketId ?? row?.bucketId;
+    const bySeq = apiItems.findIndex((item) => {
+      if (!isRecordStatusActive(item?.recordStatus)) return false;
+      if (normalizeRowSeq(item?.seq) !== rowSeq) return false;
+      if (rowBucket == null || rowBucket === '') return true;
+      return String(item?.bucketId ?? item?.selectedBucketId) === String(rowBucket);
+    });
+    if (bySeq >= 0) return bySeq;
   }
 
   if (row?._matchedApiKey) {
@@ -102,6 +124,7 @@ const mapApiItemToTableRow = (apiItem: any, noMixGlueId: string, apiIndex: numbe
     ...createDefaultSeparateGlueRow(noMixGlueId),
     glueId: noMixGlueId || String(apiItem?.materialCode ?? ''),
     noSeparateGlueId: apiItem?.noSeparateGlueId,
+    seq: normalizeRowSeq(apiItem?.seq) ?? undefined,
     selectedBucketId: bucketId,
     selectedRequestDetailIds: Array.isArray(apiItem?.requestDetailIds)
       ? apiItem.requestDetailIds.map(String)
@@ -156,9 +179,6 @@ const applyTableRowToApiItem = (apiItem: any, row: any) => {
   };
 };
 
-export const isRecordStatusCancelled = (value: unknown) =>
-  String(value ?? '').toUpperCase() === CANCELLED_RECORD_STATUS;
-
 export type SeparateBucketUpdatePayload = {
   row: any;
   previousBucketId: string | number | null;
@@ -174,6 +194,69 @@ export const hasPersistedSeparateRowIdentity = (row: any): boolean => {
   const nsgId = row?.noSeparateGlueId;
   if (nsgId != null && nsgId !== '' && String(nsgId) !== NEW_NO_SEPARATE_GLUE_ID) return true;
   return row?._lastSubmittedBucketId != null;
+};
+
+/** Dòng đã từng gửi BE — cần push recordStatus C khi delete / update-bucket. */
+export const shouldPersistCancelledSeparateRow = (row: any): boolean => {
+  if (row?.isNewAddRow === true && !hasPersistedSeparateRowIdentity(row)) return false;
+  return hasPersistedSeparateRowIdentity(row);
+};
+
+const matchApiSeparateGlueItemByRow = (item: any, row: any): boolean => {
+  if (isRecordStatusCancelled(item?.recordStatus)) return false;
+
+  const rowGlueId = row?.glueId;
+  if (rowGlueId != null && rowGlueId !== '') {
+    const itemGlueId = item?.glueId ?? item?.materialCode ?? '';
+    if (String(itemGlueId) !== String(rowGlueId)) return false;
+  }
+
+  const separateGlueId = row?.separateGlueId;
+  if (
+    separateGlueId != null
+    && separateGlueId !== ''
+    && String(separateGlueId) !== NEW_NO_SEPARATE_GLUE_ID
+    && String(item?.separateGlueId) === String(separateGlueId)
+    && isRecordStatusActive(item?.recordStatus)
+  ) {
+    return true;
+  }
+
+  const noSeparateGlueId = row?.noSeparateGlueId;
+  if (
+    noSeparateGlueId != null
+    && noSeparateGlueId !== ''
+    && String(noSeparateGlueId) !== NEW_NO_SEPARATE_GLUE_ID
+    && String(item?.noSeparateGlueId) === String(noSeparateGlueId)
+    && isRecordStatusActive(item?.recordStatus)
+  ) {
+    return true;
+  }
+
+  const rowSeq = normalizeRowSeq(row?.seq);
+  const itemSeq = normalizeRowSeq(item?.seq);
+  if (
+    rowSeq != null
+    && itemSeq != null
+    && rowSeq === itemSeq
+    && isRecordStatusActive(item?.recordStatus)
+  ) {
+    const bucketId = row?.selectedBucketId ?? row?.bucketId;
+    if (bucketId == null) return true;
+    return String(item?.bucketId ?? item?.selectedBucketId) === String(bucketId);
+  }
+
+  const bucketId = row?.selectedBucketId ?? row?.bucketId;
+  if (bucketId == null || String(item?.bucketId ?? item?.selectedBucketId) !== String(bucketId)) {
+    return false;
+  }
+
+  const rowConfirm = row?.confirmDate;
+  if (rowConfirm != null && rowConfirm !== '') {
+    return String(item?.confirmDate ?? '') === String(rowConfirm);
+  }
+
+  return true;
 };
 
 /** Chỉ hủy thùng cũ khi dòng đã từng gán thùng lên BE (hoặc load từ API) và đổi sang thùng khác. */
@@ -208,10 +291,18 @@ export const buildCancelledBucketRowSnapshot = (row: any, previousBucketId: unkn
 });
 
 export const getCancelledSeparateGlueDetailKey = (item: any): string => {
+  const sgId = item?.separateGlueId;
+  if (sgId != null && String(sgId) !== '' && String(sgId) !== NEW_NO_SEPARATE_GLUE_ID) {
+    return `sg:${sgId}|${normalizeBucketId(item?.selectedBucketId ?? item?.bucketId)}`;
+  }
+  const nsgId = item?.noSeparateGlueId;
+  if (nsgId != null && String(nsgId) !== '' && String(nsgId) !== NEW_NO_SEPARATE_GLUE_ID) {
+    return `nsg:${nsgId}|${normalizeBucketId(item?.selectedBucketId ?? item?.bucketId)}`;
+  }
+  const seq = normalizeRowSeq(item?.seq);
   const bucketId = normalizeBucketId(item?.selectedBucketId ?? item?.bucketId);
-  const lineId = item?.separateGlueId ?? item?.noSeparateGlueId ?? '';
   const glueId = item?.glueId ?? '';
-  return `${glueId}|${lineId}|${bucketId}`;
+  return `seq:${glueId}|${seq ?? ''}|${bucketId}`;
 };
 
 export const appendCancelledSeparateGlueDetail = (
@@ -295,28 +386,15 @@ export const markApiSeparateGlueCancelledByRow = (
   row: any
 ): any[] => {
   const next = (apiItems || []).map((item) => ({ ...item }));
-  if (isNewMixSeparateAddRow(row)) return next;
+  if (!shouldPersistCancelledSeparateRow(row)) return next;
 
-  const separateGlueId = row?.separateGlueId;
-  if (separateGlueId != null && separateGlueId !== '' && String(separateGlueId) !== NEW_NO_SEPARATE_GLUE_ID) {
-    const byId = next.findIndex((item) => String(item?.separateGlueId) === String(separateGlueId));
-    if (byId >= 0) {
-      next[byId] = { ...next[byId], recordStatus: CANCELLED_RECORD_STATUS };
-      return next;
-    }
-  }
+  const apiIndex = next.findIndex((item) => matchApiSeparateGlueItemByRow(item, row));
+  if (apiIndex < 0) return next;
 
-  const bucketId = row?.selectedBucketId ?? row?.bucketId;
-  if (bucketId != null) {
-    const byBucket = next.findIndex(
-      (item) => String(item?.bucketId ?? item?.selectedBucketId) === String(bucketId)
-        && !isRecordStatusCancelled(item?.recordStatus)
-    );
-    if (byBucket >= 0) {
-      next[byBucket] = { ...next[byBucket], recordStatus: CANCELLED_RECORD_STATUS };
-    }
-  }
-
+  next[apiIndex] = {
+    ...next[apiIndex],
+    recordStatus: CANCELLED_RECORD_STATUS,
+  };
   return next;
 };
 
@@ -326,6 +404,8 @@ export const markApiNoSeparateGlueCancelledByRow = (
   row: any
 ): any[] => {
   const next = (apiItems || []).map((item) => ({ ...item }));
+  if (!shouldPersistCancelledSeparateRow(row)) return next;
+
   const apiIndex = findApiIndexByRow(row, next);
   if (apiIndex < 0) return next;
 
@@ -342,6 +422,6 @@ export const buildNoMixTableRowsFromApiItems = (
   noMixGlueId: string
 ): any[] =>
   (apiItems || [])
-    .filter((item) => !isRecordStatusCancelled(item?.recordStatus))
+    .filter((item) => isRecordStatusActive(item?.recordStatus))
     .filter((item) => item?.bucketId != null && String(item.bucketId) !== '0')
     .map((item, index) => mapApiItemToTableRow(item, noMixGlueId, index));

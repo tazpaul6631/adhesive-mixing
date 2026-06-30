@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import type { PayloadBuildContext } from './separateMixedGlue.types';
-import { isRecordStatusCancelled } from './noSeparateGlueSync';
+import { isRecordStatusCancelled, isRecordStatusActive } from './noSeparateGlueSync';
+import { filterMixApiSeparateGlues, filterNoMixInMixApiSeparateGlues } from './separateGlueSeqSync';
 
 /** Giữ precision cho snowflake ID (> MAX_SAFE_INTEGER) — gửi string, còn lại gửi number. */
 export const toApiId = (value: unknown, fallback: string | number = 0): string | number => {
@@ -41,14 +42,38 @@ const buildSeparateGluePayloadItem = (
   defaultTime: string,
   seq: number,
   forceRecordStatus?: string
-) => ({
-  glueId: toApiId(glueId),
-  bucketId: toApiId(item.selectedBucketId ?? item.bucketId),
-  recordStatus: forceRecordStatus ?? (item.recordStatus ? item.recordStatus : recordStatus),
-  confirmDate: item.confirmDate || defaultTime,
-  seq,
-  requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
-});
+) => {
+  const payload: Record<string, unknown> = {
+    glueId: toApiId(glueId),
+    bucketId: toApiId(item.selectedBucketId ?? item.bucketId),
+    recordStatus: forceRecordStatus ?? (item.recordStatus ? item.recordStatus : recordStatus),
+    confirmDate: item.confirmDate || defaultTime,
+    seq: Number(item?.seq) || seq,
+    requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
+  };
+
+  if (
+    item.separateGlueId != null
+    && String(item.separateGlueId) !== ''
+    && String(item.separateGlueId) !== '0'
+  ) {
+    payload.separateGlueId = toApiId(item.separateGlueId);
+  }
+
+  if (
+    item.noSeparateGlueId != null
+    && String(item.noSeparateGlueId) !== ''
+    && String(item.noSeparateGlueId) !== '0'
+  ) {
+    payload.noSeparateGlueId = toApiId(item.noSeparateGlueId);
+  }
+
+  return payload;
+};
+
+const NO_CHIET_RECORD_STATUS = '1';
+const CHIET_MAIN_RECORD_STATUS = 'C';
+const CHIET_EXTRA_RECORD_STATUS = '1';
 
 const buildMixSeparateGluePayloadItem = (
   item: any,
@@ -58,6 +83,189 @@ const buildMixSeparateGluePayloadItem = (
   seq: number,
   forceRecordStatus?: string
 ) => buildSeparateGluePayloadItem(item, mixGlueMasterId, recordStatus, defaultTime, seq, forceRecordStatus);
+
+const getMixSeparateGluePayloadDedupeKey = (item: Record<string, unknown>): string => {
+  const id = item.separateGlueId != null ? String(item.separateGlueId) : '';
+  if (id && id !== '0') {
+    return `sg:${id}|${item.bucketId ?? ''}|${item.recordStatus ?? ''}`;
+  }
+  return [
+    'glue',
+    item.glueId ?? '',
+    'bucket',
+    item.bucketId ?? '',
+    'seq',
+    item.seq ?? '',
+    'status',
+    item.recordStatus ?? '',
+  ].join(':');
+};
+
+const apiItemToMixSeparateGluePayload = (
+  item: any,
+  glueId: string,
+  defaultTime: string,
+  forceRecordStatus: string
+) => buildSeparateGluePayloadItem(
+  {
+    ...item,
+    selectedBucketId: item.bucketId ?? item.selectedBucketId,
+    selectedRequestDetailIds: item.requestDetailIds,
+    separateGlueId: item.separateGlueId,
+    noSeparateGlueId: item.noSeparateGlueId,
+  },
+  glueId,
+  '1',
+  defaultTime,
+  Number(item?.seq) || 1,
+  forceRecordStatus
+);
+
+const mergeCancelledMixApiSeparateGlues = (
+  items: Array<Record<string, unknown>>,
+  ctx: PayloadBuildContext,
+  defaultTime: string,
+  glueId: string
+): Array<Record<string, unknown>> => {
+  const merged = [...items];
+  const existingKeys = new Set(merged.map((item) => getMixSeparateGluePayloadDedupeKey(item)));
+
+  filterMixApiSeparateGlues(ctx.apiSeparateGlues || [], glueId)
+    .filter((item) => isRecordStatusCancelled(item?.recordStatus))
+    .forEach((item) => {
+      const normalized = apiItemToMixSeparateGluePayload(item, glueId, defaultTime, CHIET_MAIN_RECORD_STATUS);
+      const key = getMixSeparateGluePayloadDedupeKey(normalized);
+      if (existingKeys.has(key)) return;
+      existingKeys.add(key);
+      merged.push(normalized);
+    });
+
+  (ctx.cancelledSeparateGlueDetails || [])
+    .filter((item) => String(item?.glueId ?? glueId) === String(glueId))
+    .forEach((item) => {
+      const normalized = buildSeparateGluePayloadItem(
+        item,
+        item.glueId || glueId,
+        '1',
+        defaultTime,
+        Number(item?.seq) || merged.length + 1,
+        CHIET_MAIN_RECORD_STATUS
+      );
+      const key = getMixSeparateGluePayloadDedupeKey(normalized);
+      if (existingKeys.has(key)) return;
+      existingKeys.add(key);
+      merged.push(normalized);
+    });
+
+  return merged;
+};
+
+/** Re-submit đơn có keo trộn: hủy toàn bộ API mix active (C) + gửi dòng bảng hiện tại (1). */
+const buildMixCompleteSeparateGlues = (
+  ctx: PayloadBuildContext,
+  defaultTime: string,
+  activeForceRecordStatus?: string
+): Array<Record<string, unknown>> => {
+  const mixApiItems = filterMixApiSeparateGlues(ctx.apiSeparateGlues || [], ctx.mixGlueMasterId);
+  const tableRows = (ctx.separateGlueDetails || [])
+    .filter(isSeparateGlueRowReady)
+    .map((item, index) => buildMixSeparateGluePayloadItem(
+      item,
+      ctx.mixGlueMasterId,
+      '1',
+      defaultTime,
+      Number(item?.seq) || index + 1,
+      activeForceRecordStatus
+    ));
+
+  if (tableRows.length === 0 && mixApiItems.length === 0) {
+    return [];
+  }
+
+  if (tableRows.length === 0) {
+    return mergeCancelledMixApiSeparateGlues(
+      mixApiItems.map((item) => apiItemToMixSeparateGluePayload(
+        item,
+        ctx.mixGlueMasterId,
+        defaultTime,
+        String(item.recordStatus ?? NO_CHIET_RECORD_STATUS)
+      )),
+      ctx,
+      defaultTime,
+      ctx.mixGlueMasterId
+    );
+  }
+
+  const cancelledPrevious = mixApiItems
+    .filter((item) => isRecordStatusActive(item?.recordStatus))
+    .map((item) => apiItemToMixSeparateGluePayload(
+      item,
+      ctx.mixGlueMasterId,
+      defaultTime,
+      CHIET_MAIN_RECORD_STATUS
+    ));
+
+  return mergeCancelledMixApiSeparateGlues(
+    [...cancelledPrevious, ...tableRows],
+    ctx,
+    defaultTime,
+    ctx.mixGlueMasterId
+  );
+};
+
+/** Re-submit keo không trộn trong đơn mix (nằm trong separateGlues). */
+const buildNoMixInMixCompleteSeparateGlues = (
+  ctx: PayloadBuildContext,
+  defaultTime: string,
+  activeForceRecordStatus?: string
+): Array<Record<string, unknown>> => {
+  const noMixGlueId = String(ctx.noMixChemicals[0]?.materialCode ?? '');
+  const noMixApiItems = filterNoMixInMixApiSeparateGlues(ctx.apiSeparateGlues || [], noMixGlueId);
+  const tableRows = (ctx.noMixSeparateGlueDetails || [])
+    .filter(isSeparateGlueRowReady)
+    .map((item, index) => buildSeparateGluePayloadItem(
+      item,
+      item.glueId || noMixGlueId,
+      '1',
+      defaultTime,
+      Number(item?.seq) || index + 1,
+      activeForceRecordStatus
+    ));
+
+  if (tableRows.length === 0 && noMixApiItems.length === 0) {
+    return [];
+  }
+
+  if (tableRows.length === 0) {
+    return mergeCancelledMixApiSeparateGlues(
+      noMixApiItems.map((item) => apiItemToMixSeparateGluePayload(
+        item,
+        noMixGlueId,
+        defaultTime,
+        String(item.recordStatus ?? NO_CHIET_RECORD_STATUS)
+      )),
+      ctx,
+      defaultTime,
+      noMixGlueId
+    );
+  }
+
+  const cancelledPrevious = noMixApiItems
+    .filter((item) => isRecordStatusActive(item?.recordStatus))
+    .map((item) => apiItemToMixSeparateGluePayload(
+      item,
+      noMixGlueId,
+      defaultTime,
+      CHIET_MAIN_RECORD_STATUS
+    ));
+
+  return mergeCancelledMixApiSeparateGlues(
+    [...cancelledPrevious, ...tableRows],
+    ctx,
+    defaultTime,
+    noMixGlueId
+  );
+};
 
 const collectChietModalRequestDetailIds = (
   extraChietList: any[],
@@ -74,10 +282,6 @@ const collectChietModalRequestDetailIds = (
 
   return [...ids].map((id) => toApiId(id));
 };
-
-const NO_CHIET_RECORD_STATUS = '1';
-const CHIET_MAIN_RECORD_STATUS = 'C';
-const CHIET_EXTRA_RECORD_STATUS = '1';
 
 const normalizeApiNoSeparateGlueItem = (
   item: any,
@@ -134,7 +338,7 @@ const buildNoMixSeparateTableGlues = (
         glueExtra: !!noMixChemical.glueExtra,
         recordStatus: NO_CHIET_RECORD_STATUS,
         confirmDate: item.confirmDate || defaultTime,
-        seq: index + 1,
+        seq: Number(item?.seq) || index + 1,
         requestDetailIds: toApiRequestDetailIds(item.selectedRequestDetailIds ?? item.requestDetailIds),
       };
       if (
@@ -150,17 +354,34 @@ const buildNoMixSeparateTableGlues = (
 
 const getNoSeparateGluePayloadDedupeKey = (item: Record<string, unknown>): string => {
   const id = item.noSeparateGlueId != null ? String(item.noSeparateGlueId) : '';
-  if (id && id !== '0') return `id:${id}`;
+  const status = String(item.recordStatus ?? '').toUpperCase();
+  const bucket = item.bucketId ?? '';
+  const seq = item.seq ?? '';
+  if (id && id !== '0') {
+    return `id:${id}|${status}|${bucket}`;
+  }
   return [
     'bucket',
-    item.bucketId ?? '',
+    bucket,
     'seq',
-    item.seq ?? '',
+    seq,
     'status',
-    item.recordStatus ?? '',
+    status,
     'weight',
     item.glueWeight ?? '',
   ].join(':');
+};
+
+const dedupeNoSeparateGluePayload = (
+  items: Array<Record<string, unknown>>
+): Array<Record<string, unknown>> => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = getNoSeparateGluePayloadDedupeKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };
 
 const mergeCancelledApiNoSeparateGlues = (
@@ -215,15 +436,17 @@ const buildIsNoMixGlueCompleteNoSeparateGlues = (
     );
   }
 
-  // Re-submit: hủy toàn bộ object API đang active (C) + gửi dòng bảng hiện tại (1).
+  // Re-submit: hủy toàn bộ object API active (recordStatus = 1) → C + gửi dòng bảng hiện tại (1).
   const cancelledPrevious = apiItems
-    .filter((item) => !isRecordStatusCancelled(item?.recordStatus))
+    .filter((item) => isRecordStatusActive(item?.recordStatus))
     .map((item) => withRecordStatus(item, CHIET_MAIN_RECORD_STATUS, defaultTime));
 
-  return mergeCancelledApiNoSeparateGlues(
-    [...cancelledPrevious, ...tableRows],
-    ctx,
-    defaultTime
+  return dedupeNoSeparateGluePayload(
+    mergeCancelledApiNoSeparateGlues(
+      [...cancelledPrevious, ...tableRows],
+      ctx,
+      defaultTime
+    )
   );
 };
 
@@ -307,43 +530,58 @@ export const buildSeparateGlueCommandPayload = (
   const noMixSeparateRows = includeNoMixInSeparateGlues ? (ctx.noMixSeparateGlueDetails || []) : [];
   const defaultNoMixGlueId = String(ctx.noMixChemicals[0]?.materialCode ?? '');
   const isNoMixGlueComplete = Boolean(ctx.isNoMixGlue && options?.forComplete && !forceRecordStatus);
+  const useMixOrderCompleteResubmit = Boolean(
+    isCompleteSubmit && !ctx.isNoMixGlue && ctx.mixChemicals.length > 0
+  );
 
-  const baseSeparateGlues = [
-    ...mixSeparateRows
-      .filter(isSeparateGlueRowReady)
-      .map((item, index) => buildMixSeparateGluePayloadItem(
+  let baseSeparateGlues: Array<Record<string, unknown>>;
+
+  if (useMixOrderCompleteResubmit) {
+    baseSeparateGlues = buildMixCompleteSeparateGlues(ctx, defaultTime, activeForceRecordStatus);
+    if (includeNoMixInSeparateGlues) {
+      baseSeparateGlues = [
+        ...baseSeparateGlues,
+        ...buildNoMixInMixCompleteSeparateGlues(ctx, defaultTime, activeForceRecordStatus),
+      ];
+    }
+  } else {
+    baseSeparateGlues = [
+      ...mixSeparateRows
+        .filter(isSeparateGlueRowReady)
+        .map((item, index) => buildMixSeparateGluePayloadItem(
+          item,
+          ctx.mixGlueMasterId,
+          recordStatus,
+          defaultTime,
+          index + 1,
+          activeForceRecordStatus
+        )),
+      ...noMixSeparateRows
+        .filter(isSeparateGlueRowReady)
+        .map((item, index) => buildSeparateGluePayloadItem(
+          item,
+          item.glueId || defaultNoMixGlueId,
+          recordStatus,
+          defaultTime,
+          mixSeparateRows.filter(isSeparateGlueRowReady).length + index + 1,
+          activeForceRecordStatus
+        )),
+    ];
+
+    let nextSeq = baseSeparateGlues.length;
+    (ctx.cancelledSeparateGlueDetails || []).forEach((item) => {
+      nextSeq += 1;
+      const glueId = item.glueId || ctx.mixGlueMasterId || defaultNoMixGlueId;
+      baseSeparateGlues.push(buildSeparateGluePayloadItem(
         item,
-        ctx.mixGlueMasterId,
+        glueId,
         recordStatus,
         defaultTime,
-        index + 1,
-        activeForceRecordStatus
-      )),
-    ...noMixSeparateRows
-      .filter(isSeparateGlueRowReady)
-      .map((item, index) => buildSeparateGluePayloadItem(
-        item,
-        item.glueId || defaultNoMixGlueId,
-        recordStatus,
-        defaultTime,
-        mixSeparateRows.filter(isSeparateGlueRowReady).length + index + 1,
-        activeForceRecordStatus
-      )),
-  ];
-
-  let nextSeq = baseSeparateGlues.length;
-  (ctx.cancelledSeparateGlueDetails || []).forEach((item) => {
-    nextSeq += 1;
-    const glueId = item.glueId || ctx.mixGlueMasterId || defaultNoMixGlueId;
-    baseSeparateGlues.push(buildSeparateGluePayloadItem(
-      item,
-      glueId,
-      recordStatus,
-      defaultTime,
-      nextSeq,
-      CHIET_MAIN_RECORD_STATUS
-    ));
-  });
+        nextSeq,
+        CHIET_MAIN_RECORD_STATUS
+      ));
+    });
+  }
 
   const finalSeparateGlues = baseSeparateGlues;
   const noSeparateGlues = isNoMixGlueComplete
