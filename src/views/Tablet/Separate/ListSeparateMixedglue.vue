@@ -43,8 +43,7 @@
             <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
               @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" stripedRows
               class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
-              :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]"
-              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink RowsPerPageDropdown"
+              :paginator="true" :rows="rowsPerPage" paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
               v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
@@ -246,7 +245,7 @@ const isLoadingLine = ref(true);
 const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(10);
+const rowsPerPage = ref(50);
 const hasNextPage = ref(false);
 const chemicalMasterNameFilter = ref('');
 const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);

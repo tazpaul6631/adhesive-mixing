@@ -200,7 +200,7 @@ export const hasPersistedSeparateRowIdentity = (row: any): boolean => {
   return row?._lastSubmittedBucketId != null;
 };
 
-/** Dòng đã từng gửi BE — cần push recordStatus C khi delete / update-bucket. */
+/** Dòng đã từng gửi BE — cần push recordStatus C khi delete-row. */
 export const shouldPersistCancelledSeparateRow = (row: any): boolean => {
   if (row?.isNewAddRow === true && !hasPersistedSeparateRowIdentity(row)) return false;
   return hasPersistedSeparateRowIdentity(row);
@@ -266,17 +266,106 @@ const matchApiSeparateGlueItemByRow = (item: any, row: any): boolean => {
   return true;
 };
 
-/** Chỉ hủy thùng cũ khi dòng đã từng gán thùng lên BE (hoặc load từ API) và đổi sang thùng khác. */
-export const shouldCancelPreviousBucketOnUpdate = (
+const findApiIndexByRowForBucketSync = (row: any, apiItems: any[]): number => {
+  if (hasPersistedNoSeparateGlueId(row?.noSeparateGlueId)) {
+    const rowId = String(row.noSeparateGlueId);
+    const byNoMixId = apiItems.findIndex(
+      (item) => isRecordStatusActive(item?.recordStatus)
+        && (
+          String(item?.noSeparateGlueId) === rowId
+          || String(item?.separateGlueId) === rowId
+        )
+    );
+    if (byNoMixId >= 0) return byNoMixId;
+  }
+
+  const separateGlueId = row?.separateGlueId;
+  if (
+    separateGlueId != null
+    && separateGlueId !== ''
+    && String(separateGlueId) !== NEW_NO_SEPARATE_GLUE_ID
+  ) {
+    const byMixId = apiItems.findIndex(
+      (item) => isRecordStatusActive(item?.recordStatus)
+        && String(item?.separateGlueId) === String(separateGlueId)
+    );
+    if (byMixId >= 0) return byMixId;
+  }
+
+  const rowSeq = normalizeRowSeq(row?.seq);
+  if (rowSeq == null) return -1;
+
+  return apiItems.findIndex(
+    (item) => isRecordStatusActive(item?.recordStatus)
+      && normalizeRowSeq(item?.seq) === rowSeq
+  );
+};
+
+/** update-bucket: giữ separateGlueId/noSeparateGlueId, chỉ đổi bucketId, recordStatus = 1. */
+export const applyInPlaceSeparateRowBucketUpdate = (
   row: any,
-  previousBucketId: unknown,
+  newBucketId: string | number | null
+): void => {
+  if (newBucketId != null && newBucketId !== '') {
+    row.selectedBucketId = newBucketId;
+    row.bucketId = newBucketId;
+  }
+  row.recordStatus = ACTIVE_RECORD_STATUS;
+  if (hasPersistedSeparateRowIdentity(row)) {
+    delete row.isNewAddRow;
+  }
+};
+
+export const syncApiSeparateGlueBucketByRow = (
+  apiItems: any[],
+  row: any,
   newBucketId: unknown
-): boolean => {
-  const prev = normalizeBucketId(previousBucketId);
-  const next = normalizeBucketId(newBucketId);
-  if (!prev || !next || prev === next) return false;
-  if (row?.isNewAddRow === true && !hasPersistedSeparateRowIdentity(row)) return false;
-  return hasPersistedSeparateRowIdentity(row);
+): any[] => {
+  const next = (apiItems || []).map((item) => ({ ...item }));
+  if (!hasPersistedSeparateRowIdentity(row)) return next;
+
+  const apiIndex = findApiIndexByRowForBucketSync(row, next);
+  if (apiIndex < 0) return next;
+
+  next[apiIndex] = {
+    ...next[apiIndex],
+    bucketId: newBucketId,
+    recordStatus: ACTIVE_RECORD_STATUS,
+  };
+  return next;
+};
+
+export const syncNoMixSeparateGlueBucketInApi = (
+  apiNoSeparateGlues: any[],
+  apiSeparateGlues: any[],
+  row: any,
+  newBucketId: unknown
+): { apiNoSeparateGlues: any[]; apiSeparateGlues: any[] } => {
+  if (!hasPersistedSeparateRowIdentity(row)) {
+    return { apiNoSeparateGlues, apiSeparateGlues };
+  }
+
+  const patchBucket = (item: any) => ({
+    ...item,
+    bucketId: newBucketId,
+    recordStatus: ACTIVE_RECORD_STATUS,
+  });
+
+  const nextNoMix = (apiNoSeparateGlues || []).map((item) => ({ ...item }));
+  const noMixIndex = findApiIndexByRowForBucketSync(row, nextNoMix);
+  if (noMixIndex >= 0) {
+    nextNoMix[noMixIndex] = patchBucket(nextNoMix[noMixIndex]);
+    return { apiNoSeparateGlues: nextNoMix, apiSeparateGlues };
+  }
+
+  const nextMix = (apiSeparateGlues || []).map((item) => ({ ...item }));
+  const mixIndex = findApiIndexByRowForBucketSync(row, nextMix);
+  if (mixIndex < 0) {
+    return { apiNoSeparateGlues, apiSeparateGlues };
+  }
+
+  nextMix[mixIndex] = patchBucket(nextMix[mixIndex]);
+  return { apiNoSeparateGlues, apiSeparateGlues: nextMix };
 };
 
 export const stampSubmittedSeparateRowBuckets = (rows: any[]) => {
@@ -289,7 +378,7 @@ export const stampSubmittedSeparateRowBuckets = (rows: any[]) => {
   });
 };
 
-/** Snapshot dòng với thùng cũ — dùng khi update-bucket trên dòng đã lưu BE. */
+/** @deprecated update-bucket in-place — không còn tạo snapshot C cho thùng cũ. */
 export const buildCancelledBucketRowSnapshot = (row: any, previousBucketId: unknown) => ({
   ...row,
   selectedBucketId: previousBucketId,
@@ -323,7 +412,7 @@ export const appendCancelledSeparateGlueDetail = (
   return [...cancelledList, snapshot];
 };
 
-/** Ngắt liên kết API cũ — dòng active gửi lên như gán thùng mới (recordStatus = 1). */
+/** @deprecated update-bucket giữ id — không reset về dòng mới. */
 export const resetNoMixRowForNewBucketAssignment = (row: any) => {
   row.noSeparateGlueId = NEW_NO_SEPARATE_GLUE_ID;
   row.isNewAddRow = true;

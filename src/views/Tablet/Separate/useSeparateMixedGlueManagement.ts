@@ -43,10 +43,10 @@ import {
   markApiSeparateGlueCancelledByRow,
   normalizeNewMixSeparateAddRow,
   normalizeNewNoMixSeparateAddRow,
-  shouldCancelPreviousBucketOnUpdate,
-  buildCancelledBucketRowSnapshot,
   appendCancelledSeparateGlueDetail,
-  resetNoMixRowForNewBucketAssignment,
+  applyInPlaceSeparateRowBucketUpdate,
+  syncApiSeparateGlueBucketByRow,
+  syncNoMixSeparateGlueBucketInApi,
   stampSubmittedSeparateRowBuckets,
   shouldPersistCancelledSeparateRow,
   type SeparateBucketUpdatePayload,
@@ -59,7 +59,6 @@ import {
   resolveMixApiItemsForSeqMap,
   filterMixApiSeparateGlues,
   getNextSeparateTableSeq,
-  resetMixRowForNewBucketAssignment,
 } from './separateGlueSeqSync';
 
 dayjs.extend(customParseFormat);
@@ -88,6 +87,7 @@ export function useSeparateMixedGlueManagement() {
   const noMixGlueSubmitLocked = ref(false);
   /** false sau submit/load đã submit; true khi có add/update/delete hoặc chưa từng submit. */
   const separateChangedSinceLastSubmit = ref(true);
+  const isCompleting = ref(false);
   const headerInfo = ref<HeaderInfo>({
     orderNo: '',
     glue: '',
@@ -117,6 +117,12 @@ export function useSeparateMixedGlueManagement() {
   const hasSeparateBeenSubmittedBefore = () =>
     separateGlueComplete.value
     || (headerInfo.value.isNoMixGlue && (noMixGlueSubmitLocked.value || separateGlueConfirm.value));
+
+  const isCompleteButtonDisabled = computed(
+    () => isCompleting.value
+      || isNavigatingAway.value
+      || (hasSeparateBeenSubmittedBefore() && !separateChangedSinceLastSubmit.value)
+  );
 
   const markSeparateTableChanged = () => {
     separateChangedSinceLastSubmit.value = true;
@@ -240,6 +246,7 @@ export function useSeparateMixedGlueManagement() {
   const resetState = () => {
     isDirty.value = false;
     isNavigatingAway.value = false;
+    isCompleting.value = false;
     separateGlueComplete.value = false;
     separateGlueConfirm.value = false;
     noMixGlueSubmitLocked.value = false;
@@ -687,26 +694,8 @@ export function useSeparateMixedGlueManagement() {
     return null;
   };
 
-  const pickSeparateRowIds = (row: any) => ({
-    seq: row?.seq ?? null,
-    separateGlueId: row?.separateGlueId ?? null,
-    noSeparateGlueId: row?.noSeparateGlueId ?? null,
-    recordStatus: row?.recordStatus ?? null,
-  });
-
-  const logSeparateRowAction = (
-    action: 'add-row' | 'delete-row' | 'update-bucket',
-    table: 'mix' | 'noMix',
-    detail: { row?: any; cancelled?: any; rowAfter?: any }
-  ) => {
-    const output: Record<string, unknown> = {};
-    if (detail.row != null) output.row = pickSeparateRowIds(detail.row);
-    if (detail.cancelled != null) output.cancelled = pickSeparateRowIds(detail.cancelled);
-    if (detail.rowAfter != null) output.rowAfter = pickSeparateRowIds(detail.rowAfter);
-    console.log(`[SeparateMixedGlue][${action}][${table}]`, output);
-  };
-
   const handleComplete = async () => {
+    if (isCompleting.value || isNavigatingAway.value) return;
     if (blockIfNoChangesOnResubmit()) return;
 
     if (!(await requireOnline())) return;
@@ -722,11 +711,11 @@ export function useSeparateMixedGlueManagement() {
       return;
     }
 
+    isCompleting.value = true;
     try {
       const payload = buildSeparateGlueCommandPayload(getPayloadContext(), '1', { forComplete: true });
-      console.log(payload);
 
-      // await separateGlue.postSeparateGlueCommand(payload);
+      await separateGlue.postSeparateGlueCommand(payload);
 
       stampSubmittedSeparateRowBuckets(separateGlueDetails.value);
       stampSubmittedSeparateRowBuckets(noMixSeparateGlueDetails.value);
@@ -747,10 +736,14 @@ export function useSeparateMixedGlueManagement() {
       isNavigatingAway.value = true;
       isDirty.value = false;
       showToast({ severity: 'success', summary: t('separateMixedGlue.toast.completeSuccess'), detail: t('separateMixedGlue.toast.completeSuccessDetail'), life: 3000 });
-      router.push('/list-separate-mixed-glue-management');
+      await router.push('/list-separate-mixed-glue-management');
     } catch (error) {
-      if (notifyOfflineFromError(error)) return;
+      if (notifyOfflineFromError(error)) {
+        isCompleting.value = false;
+        return;
+      }
       showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.completeFailed'), life: 6000 });
+      isCompleting.value = false;
     }
   };
 
@@ -971,7 +964,6 @@ export function useSeparateMixedGlueManagement() {
       mixGlueMasterId.value
     );
     separateGlueDetails.value.push(newRow);
-    logSeparateRowAction('add-row', 'mix', { row: newRow });
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
   };
@@ -991,39 +983,23 @@ export function useSeparateMixedGlueManagement() {
     }
 
     separateGlueDetails.value = separateGlueDetails.value.filter(item => item !== rowToDelete);
-    logSeparateRowAction('delete-row', 'mix', { row: rowToDelete, cancelled });
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
   };
 
   const handleMixSeparateBucketUpdate = async (payload?: SeparateBucketUpdatePayload) => {
-    if (
-      payload
-      && shouldCancelPreviousBucketOnUpdate(
-        payload.row,
-        payload.previousBucketId,
-        payload.newBucketId
-      )
-    ) {
-      const snapshot = buildCancelledBucketRowSnapshot(payload.row, payload.previousBucketId);
-      cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
-        cancelledSeparateGlueDetails.value,
-        snapshot
-      );
-      apiSeparateGlues.value = markApiSeparateGlueCancelledByRow(
+    if (!payload?.row) return;
+
+    applyInPlaceSeparateRowBucketUpdate(payload.row, payload.newBucketId);
+
+    if (shouldPersistCancelledSeparateRow(payload.row)) {
+      apiSeparateGlues.value = syncApiSeparateGlueBucketByRow(
         apiSeparateGlues.value,
-        snapshot
+        payload.row,
+        payload.newBucketId
       );
-      resetMixRowForNewBucketAssignment(payload.row);
-      payload.row.selectedBucketId = payload.newBucketId;
-      payload.row.bucketId = payload.newBucketId;
-      logSeparateRowAction('update-bucket', 'mix', {
-        cancelled: snapshot,
-        rowAfter: payload.row,
-      });
-    } else if (payload) {
-      logSeparateRowAction('update-bucket', 'mix', { row: payload.row });
     }
+
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
   };
@@ -1038,52 +1014,26 @@ export function useSeparateMixedGlueManagement() {
       getNoMixGlueId()
     );
     noMixSeparateGlueDetails.value.push(newRow);
-    logSeparateRowAction('add-row', 'noMix', { row: newRow });
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
   };
 
   const handleNoMixSeparateBucketUpdate = async (payload?: SeparateBucketUpdatePayload) => {
-    if (
-      payload
-      && shouldCancelPreviousBucketOnUpdate(
+    if (!payload?.row) return;
+
+    applyInPlaceSeparateRowBucketUpdate(payload.row, payload.newBucketId);
+
+    if (shouldPersistCancelledSeparateRow(payload.row)) {
+      const synced = syncNoMixSeparateGlueBucketInApi(
+        apiNoSeparateGlues.value,
+        apiSeparateGlues.value,
         payload.row,
-        payload.previousBucketId,
         payload.newBucketId
-      )
-    ) {
-      const snapshot = buildCancelledBucketRowSnapshot(payload.row, payload.previousBucketId);
-
-      if (shouldPersistCancelledSeparateRow(payload.row)) {
-        const marked = markNoMixSeparateRowCancelledInApi(
-          apiNoSeparateGlues.value,
-          apiSeparateGlues.value,
-          snapshot
-        );
-        apiNoSeparateGlues.value = marked.apiNoSeparateGlues;
-        apiSeparateGlues.value = marked.apiSeparateGlues;
-
-        if (!headerInfo.value.isNoMixGlue) {
-          cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
-            cancelledSeparateGlueDetails.value,
-            {
-              ...snapshot,
-              glueId: getNoMixGlueId() || payload.row.glueId,
-            }
-          );
-        }
-      }
-
-      resetNoMixRowForNewBucketAssignment(payload.row);
-      payload.row.selectedBucketId = payload.newBucketId;
-      payload.row.bucketId = payload.newBucketId;
-      logSeparateRowAction('update-bucket', 'noMix', {
-        cancelled: snapshot,
-        rowAfter: payload.row,
-      });
-    } else if (payload) {
-      logSeparateRowAction('update-bucket', 'noMix', { row: payload.row });
+      );
+      apiNoSeparateGlues.value = synced.apiNoSeparateGlues;
+      apiSeparateGlues.value = synced.apiSeparateGlues;
     }
+
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
   };
@@ -1104,16 +1054,13 @@ export function useSeparateMixedGlueManagement() {
       apiNoSeparateGlues.value = marked.apiNoSeparateGlues;
       apiSeparateGlues.value = marked.apiSeparateGlues;
 
-      if (!headerInfo.value.isNoMixGlue) {
-        cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
-          cancelledSeparateGlueDetails.value,
-          cancelled
-        );
-      }
+      cancelledSeparateGlueDetails.value = appendCancelledSeparateGlueDetail(
+        cancelledSeparateGlueDetails.value,
+        cancelled
+      );
     }
 
     noMixSeparateGlueDetails.value = noMixSeparateGlueDetails.value.filter(item => item !== rowToDelete);
-    logSeparateRowAction('delete-row', 'noMix', { row: rowToDelete, cancelled });
     markSeparateTableChanged();
     await saveDraftToStoreOnly();
   };
@@ -1398,6 +1345,8 @@ export function useSeparateMixedGlueManagement() {
     handleNoMixSeparateBucketUpdate,
     handleDeleteNoMixSeparateGlueRow,
     handleComplete,
+    isCompleting,
+    isCompleteButtonDisabled,
     onRowClick,
     handleWeightChange,
     handleConnectionStatus,

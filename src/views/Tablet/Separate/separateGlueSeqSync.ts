@@ -224,7 +224,7 @@ export const filterNoMixInMixApiSeparateGlues = (apiItems: any[], noMixGlueId: s
     (item) => String(item?.glueId ?? item?.materialCode ?? '') === String(noMixGlueId)
   );
 
-/** Sau update-bucket: gán thùng mới như dòng mới (separateGlueId = 0). */
+/** @deprecated update-bucket giữ id — không reset về dòng mới. */
 export const resetMixRowForNewBucketAssignment = (row: any) => {
   row.separateGlueId = NEW_LINE_ID;
   row.isNewAddRow = true;

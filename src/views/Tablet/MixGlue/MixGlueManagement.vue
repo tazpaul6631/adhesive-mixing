@@ -34,15 +34,17 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-              }}</label>
+                }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
                 <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
-                <Button :disabled="mixGlueConfirm || hasWorkOrderDataErrors" icon="pi pi-check-circle"
-                  severity="success" class="button-lg" @click="handleComplete" />
+                <Button
+                  :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
+                  :loading="isCompleting"
+                  icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -82,7 +84,7 @@
                   <div class="grid formgrid align-items-end">
                     <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                       <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                        }}</label>
+                      }}</label>
                       <InputText v-model="mixingProcess.component" readonly
                         class="font-bold text-primary border-blue-200" style="width: 350px;" />
                     </div>
@@ -96,7 +98,7 @@
                       :enforce-tolerance="mixTargetWeight > 0"
                       :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
                       :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
-                      @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
+                      @confirm-weight="handleConfirmWeight" />
                   </div>
                 </div>
 
@@ -138,7 +140,7 @@
                   <div class="grid formgrid align-items-end">
                     <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                       <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                        }}</label>
+                      }}</label>
                       <InputText v-model="noMixMixingProcess.component" readonly
                         class="font-bold text-primary border-blue-200" style="width: 350px;" />
                     </div>
@@ -149,7 +151,7 @@
                       :enforce-tolerance="!!activeNoMixComponent && noMixTargetWeight > 0"
                       :locked-weight="activeNoMixComponent?.weighingTime ? (activeNoMixComponent?.actualWeight ?? '') : ''"
                       :disable-confirm="!!activeNoMixComponent?.weighingTime" @update:weight="handleNoMixWeightChange"
-                      @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmNoMixWeight" />
+                      @confirm-weight="handleConfirmNoMixWeight" />
                   </div>
                 </div>
 
@@ -314,6 +316,8 @@ const isLoadingComponent = ref(true);
 const hourlyValidity = ref<string>('0');
 const hidenTable1 = ref(false);
 const mixGlueConfirm = ref(false);
+const isCompleting = ref(false);
+const isNavigatingAway = ref(false);
 const isNoMixGlue = ref(false);
 const startDate = ref('');
 const endDate = ref('');
@@ -747,6 +751,7 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 };
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
+  if (isCompleting.value || isNavigatingAway.value) return;
   if (!(await requireOnline())) return;
 
   const validationError = await validateBeforeNoMixComplete();
@@ -760,6 +765,7 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
     return;
   }
 
+  isCompleting.value = true;
   try {
     const payload = source === 'chiet-row'
       ? buildSeparateGlueCommandPayload(getSeparatePayloadContext(), '1', {
@@ -769,6 +775,8 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       : buildSeparateGlueCommandPayload(getSeparatePayloadContext(), '1', { forComplete: true });
     await separateGlue.postSeparateGlueCommand(payload);
 
+    mixGlueConfirm.value = true;
+    isNavigatingAway.value = true;
     isDirty.value = false;
     showToast({
       severity: 'success',
@@ -776,17 +784,19 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       detail: t('separateMixedGlue.toast.completeSuccessDetail'),
       life: 3000,
     });
-    // await draftStore.clearDraft(currentWorkOrderId.value);
     if (source === 'chiet-row') {
-      router.replace({
+      await router.replace({
         path: '/separate-mixed-glue-management',
         query: { workOrderMasterId: currentWorkOrderId.value },
       });
     } else {
-      router.push('/list-mix-glue');
+      await router.push('/list-mix-glue');
     }
   } catch (error) {
-    if (notifyOfflineFromError(error)) return;
+    if (notifyOfflineFromError(error)) {
+      isCompleting.value = false;
+      return;
+    }
     console.error(error);
     showToast({
       severity: 'error',
@@ -794,12 +804,15 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       detail: t('separateMixedGlue.toast.completeFailed'),
       life: 6000,
     });
+    isCompleting.value = false;
   }
 };
 
 completeNoMixGlue = () => handleCompleteNoMixGlue('chiet-row');
 
 const handleCompleteMixGlue = async () => {
+  if (isCompleting.value || isNavigatingAway.value) return;
+
   const hasIncompleteRows = (rows: ComponentDetail[]) =>
     rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
 
@@ -815,11 +828,14 @@ const handleCompleteMixGlue = async () => {
 
   if (!(await requireOnline())) return;
 
+  isCompleting.value = true;
   try {
     const payloadToSubmit = buildPayload('1');
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
     await saveDraftSnapshot();
 
+    mixGlueConfirm.value = true;
+    isNavigatingAway.value = true;
     isDirty.value = false;
     showToast({
       severity: 'success',
@@ -828,15 +844,20 @@ const handleCompleteMixGlue = async () => {
       life: 3000,
     });
 
-    router.push('/list-mix-glue');
+    await router.push('/list-mix-glue');
   } catch (error) {
-    if (notifyOfflineFromError(error)) return;
+    if (notifyOfflineFromError(error)) {
+      isCompleting.value = false;
+      return;
+    }
     console.error(error);
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 6000 });
+    isCompleting.value = false;
   }
 };
 
 const handleComplete = async () => {
+  if (isCompleting.value || isNavigatingAway.value) return;
   if (isNoMixGlue.value) {
     await handleCompleteNoMixGlue();
     return;
@@ -940,10 +961,6 @@ const handleConfirmWeight = async (actualWeight: string) => {
     (item) => { selectedItem.value = item; },
     (name) => { mixingProcess.value.component = name; }
   );
-};
-
-const handleConnectionStatus = (status: boolean) => {
-  console.log(status ? "Cân đã kết nối!" : "Mất kết nối với cân!");
 };
 
 // ============================================================================
@@ -1182,6 +1199,8 @@ const resetState = () => {
   noMixMixingProcess.value = { component: '', weight: '' };
   isDirty.value = false;
   mixGlueConfirm.value = false;
+  isCompleting.value = false;
+  isNavigatingAway.value = false;
   isNoMixGlue.value = false;
   startDate.value = '';
   endDate.value = '';
@@ -1198,6 +1217,7 @@ onIonViewDidEnter(async () => {
 
 onIonViewWillLeave(async () => {
   stopAutoConnect(mixGlueScaleSessionId);
+  if (isNavigatingAway.value) return;
   if (currentWorkOrderId.value && isDirty.value) {
     await saveDraftSnapshot();
   }

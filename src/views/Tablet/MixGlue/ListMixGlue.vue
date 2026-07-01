@@ -47,8 +47,7 @@
             <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
               @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" stripedRows
               class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
-              :paginator="true" :rows="rowsPerPage" :rowsPerPageOptions="[10, 20, 50]"
-              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink RowsPerPageDropdown"
+              :paginator="true" :rows="rowsPerPage" paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
               v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
@@ -289,6 +288,15 @@ const resolveIsSeparateGlue = (row: Partial<WorkOrderMaster>) => {
 /** isSeparateGlue = true → xanh (chiết); false → đỏ (không chiết). */
 const isNoMixConfirmGreen = (row: Partial<WorkOrderMaster>) => resolveIsSeparateGlue(row);
 
+const parseQipConfirm = (value: unknown): boolean => {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1';
+  }
+  return false;
+};
+
 const mapWorkOrderListItem = (item: Record<string, unknown>): Partial<WorkOrderMaster> => {
   const raw = item.isSeparateGlue ?? item.IsSeparateGlue;
   let isSeparateGlue: boolean | undefined;
@@ -296,8 +304,9 @@ const mapWorkOrderListItem = (item: Record<string, unknown>): Partial<WorkOrderM
   else if (raw === false || raw === 'false') isSeparateGlue = false;
   else isSeparateGlue = true;
 
-  const rawQipConfirm = item.qipConfirm ?? item.QipConfirm;
-  const qipConfirm = rawQipConfirm === true || rawQipConfirm === 'true';
+  const qipConfirm = parseQipConfirm(
+    item.qipConfirm ?? item.QipConfirm ?? item.qipconfirm
+  );
 
   return {
     ...(item as Partial<WorkOrderMaster>),
@@ -321,24 +330,24 @@ const isPrintRowDisabled = (row: Partial<WorkOrderMaster>) => {
     return true;
   }
   if (isRowQipPrinted(row)) {
-    return false;
-  }
-  if (row.mixGlueStep !== '3' || !canPrintRow(row)) {
     return true;
   }
-  if (row.isNoMixGlue === true && isNoMixConfirmGreen(row)) {
+  if (row.mixGlueStep !== '3' || !canPrintRow(row)) {
     return true;
   }
   return false;
 };
 
-const isRowQipPrinted = (row: Partial<WorkOrderMaster>) =>
-  row.qipConfirm === true ||
-  Boolean(row.workOrderMasterId && printedWorkOrderIds.value.has(row.workOrderMasterId));
+const isRowQipPrinted = (row: Partial<WorkOrderMaster>) => {
+  if (row.qipConfirm === true) return true;
+  const id = row.workOrderMasterId;
+  if (!id) return false;
+  return printedWorkOrderIds.value.has(id) || printedWorkOrderIds.value.has(String(id));
+};
 
-/** qipConfirm = false → xanh; true → vàng. */
+/** Đã in QIP (BE hoặc session) → vàng; chưa in → xanh. */
 const getPrintButtonSeverity = (row: Partial<WorkOrderMaster>) =>
-  row.qipConfirm === true ? 'warn' : 'success';
+  isRowQipPrinted(row) ? 'warn' : 'success';
 
 const rememberPrintedWorkOrder = (workOrderMasterId: string) => {
   const next = new Set(printedWorkOrderIds.value);
@@ -356,15 +365,24 @@ const markRowQipPrinted = (workOrderMasterId: string) => {
   };
 };
 
+const forgetPrintedWorkOrder = (workOrderMasterId: string) => {
+  const next = new Set(printedWorkOrderIds.value);
+  next.delete(workOrderMasterId);
+  next.delete(String(workOrderMasterId));
+  printedWorkOrderIds.value = next;
+};
+
 const applyPrintedStateToListItem = (item: Partial<WorkOrderMaster>): Partial<WorkOrderMaster> => {
   if (!item.workOrderMasterId) return item;
+
   if (item.qipConfirm === true) {
     rememberPrintedWorkOrder(item.workOrderMasterId);
+    return item;
   }
-  if (printedWorkOrderIds.value.has(item.workOrderMasterId)) {
-    return { ...item, qipConfirm: true };
-  }
-  return item;
+
+  // BE qipconfirm=false — bỏ session cũ, không ép nút vàng/disabled.
+  forgetPrintedWorkOrder(item.workOrderMasterId);
+  return { ...item, qipConfirm: false };
 };
 
 const showAlreadyPrintedToast = (row: Partial<WorkOrderMaster>) => {
@@ -436,7 +454,7 @@ const isLoadingLine = ref(true);
 const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(10);
+const rowsPerPage = ref(50);
 const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const chemicalMasterNameFilter = ref('');
 const { startRequest, isStaleRequest, shouldSkipDuplicatePageLoad } = useListTableFetch();
@@ -915,8 +933,17 @@ const handleRetryPrint = async () => {
 };
 
 const restorePendingPrintJob = async () => {
+  const isAlreadyPrintedOnList = (workOrderMasterId: string) => {
+    const row = lineDetails.value.find((item) => item.workOrderMasterId === workOrderMasterId);
+    return row ? isRowQipPrinted(row) : false;
+  };
+
   const mixRestored = await restoreMixPendingFromStorage();
   if (mixRestored) {
+    if (isAlreadyPrintedOnList(mixRestored.workOrderMasterId)) {
+      await clearMixFailedItems();
+      return;
+    }
     printFlowKind.value = 'mix';
     lastPrintTotal.value = mixRestored.lastPrintTotal;
     showRetryDialog.value = true;
@@ -931,6 +958,11 @@ const restorePendingPrintJob = async () => {
 
   const separateRestored = await restoreSeparatePendingFromStorage();
   if (!separateRestored) return;
+
+  if (isAlreadyPrintedOnList(separateRestored.workOrderMasterId)) {
+    await clearSeparateFailedItems();
+    return;
+  }
 
   printFlowKind.value = 'separate';
   lastPrintTotal.value = separateRestored.lastPrintTotal;
@@ -1014,8 +1046,10 @@ const goBack = () => router.push('/app-menu');
 
 onIonViewWillEnter(() => {
   currentPage.value = 1;
-  void restorePendingPrintJob();
-  void fetchWorkOrders(1, rowsPerPage.value);
+  void (async () => {
+    await fetchWorkOrders(1, rowsPerPage.value);
+    await restorePendingPrintJob();
+  })();
 });
 
 onIonViewDidEnter(async () => {
