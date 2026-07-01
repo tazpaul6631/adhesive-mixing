@@ -528,7 +528,7 @@ export function buildSeparateLabelTspl(item: SeparatePrintItem): string | null {
 
   let tspl = `
 SIZE 69 mm, 49 mm
-GAP 0 mm, 0 mm
+GAP 3 mm, 0 mm
 REFERENCE 0,0
 DIRECTION 1
 CODEPAGE UTF-8

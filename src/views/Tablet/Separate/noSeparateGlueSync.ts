@@ -74,9 +74,13 @@ const findApiIndexByRow = (row: any, apiItems: any[]): number => {
   if (isNewNoMixSeparateAddRow(row)) return -1;
 
   if (hasPersistedNoSeparateGlueId(row?.noSeparateGlueId)) {
+    const rowId = String(row.noSeparateGlueId);
     const byId = apiItems.findIndex(
       (item) => isRecordStatusActive(item?.recordStatus)
-        && String(item?.noSeparateGlueId) === String(row.noSeparateGlueId)
+        && (
+          String(item?.noSeparateGlueId) === rowId
+          || String(item?.separateGlueId) === rowId
+        )
     );
     if (byId >= 0) return byId;
   }
@@ -123,7 +127,7 @@ const mapApiItemToTableRow = (apiItem: any, noMixGlueId: string, apiIndex: numbe
   return {
     ...createDefaultSeparateGlueRow(noMixGlueId),
     glueId: noMixGlueId || String(apiItem?.materialCode ?? ''),
-    noSeparateGlueId: apiItem?.noSeparateGlueId,
+    noSeparateGlueId: apiItem?.noSeparateGlueId ?? apiItem?.separateGlueId,
     seq: normalizeRowSeq(apiItem?.seq) ?? undefined,
     selectedBucketId: bucketId,
     selectedRequestDetailIds: Array.isArray(apiItem?.requestDetailIds)
@@ -211,23 +215,26 @@ const matchApiSeparateGlueItemByRow = (item: any, row: any): boolean => {
     if (String(itemGlueId) !== String(rowGlueId)) return false;
   }
 
+  const noSeparateGlueId = row?.noSeparateGlueId;
+  if (
+    noSeparateGlueId != null
+    && noSeparateGlueId !== ''
+    && String(noSeparateGlueId) !== NEW_NO_SEPARATE_GLUE_ID
+    && isRecordStatusActive(item?.recordStatus)
+    && (
+      String(item?.noSeparateGlueId) === String(noSeparateGlueId)
+      || String(item?.separateGlueId) === String(noSeparateGlueId)
+    )
+  ) {
+    return true;
+  }
+
   const separateGlueId = row?.separateGlueId;
   if (
     separateGlueId != null
     && separateGlueId !== ''
     && String(separateGlueId) !== NEW_NO_SEPARATE_GLUE_ID
     && String(item?.separateGlueId) === String(separateGlueId)
-    && isRecordStatusActive(item?.recordStatus)
-  ) {
-    return true;
-  }
-
-  const noSeparateGlueId = row?.noSeparateGlueId;
-  if (
-    noSeparateGlueId != null
-    && noSeparateGlueId !== ''
-    && String(noSeparateGlueId) !== NEW_NO_SEPARATE_GLUE_ID
-    && String(item?.noSeparateGlueId) === String(noSeparateGlueId)
     && isRecordStatusActive(item?.recordStatus)
   ) {
     return true;
@@ -414,6 +421,36 @@ export const markApiNoSeparateGlueCancelledByRow = (
     recordStatus: CANCELLED_RECORD_STATUS,
   };
   return next;
+};
+
+/** Đánh dấu C trên apiNoSeparateGlues hoặc apiSeparateGlues — dùng chung cho mọi bảng keo không trộn. */
+export const markNoMixSeparateRowCancelledInApi = (
+  apiNoSeparateGlues: any[],
+  apiSeparateGlues: any[],
+  row: any
+): { apiNoSeparateGlues: any[]; apiSeparateGlues: any[] } => {
+  if (!shouldPersistCancelledSeparateRow(row)) {
+    return { apiNoSeparateGlues, apiSeparateGlues };
+  }
+
+  if (findApiIndexByRow(row, apiNoSeparateGlues) >= 0) {
+    return {
+      apiNoSeparateGlues: markApiNoSeparateGlueCancelledByRow(apiNoSeparateGlues, row),
+      apiSeparateGlues,
+    };
+  }
+
+  const separateIndex = (apiSeparateGlues || []).findIndex(
+    (item) => matchApiSeparateGlueItemByRow(item, row)
+  );
+  if (separateIndex >= 0) {
+    return {
+      apiNoSeparateGlues,
+      apiSeparateGlues: markApiSeparateGlueCancelledByRow(apiSeparateGlues, row),
+    };
+  }
+
+  return { apiNoSeparateGlues, apiSeparateGlues };
 };
 
 /** Khởi tạo dòng bảng từ apiNoSeparateGlues (khi chưa có draft table). */

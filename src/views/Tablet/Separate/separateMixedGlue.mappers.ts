@@ -1,7 +1,7 @@
 import format from '@/mixins/format';
 import type { HeaderInfo, RequestDetailOption, SeparateGlueRow } from './separateMixedGlue.types';
 import { buildNoMixTableRowsFromApiItems } from './noSeparateGlueSync';
-import { normalizeRowSeq } from './separateGlueSeqSync';
+import { normalizeRowSeq, resolveNoMixApiItemsForSeqMap } from './separateGlueSeqSync';
 
 const formatGlueWeightDisplay = (weight: unknown): string | null => {
   if (weight === undefined || weight === null || weight === '') return null;
@@ -105,24 +105,18 @@ export const resolveSeparateGlueDetails = (
 export const resolveNoMixSeparateGlueDetails = (
   existingDraft: any,
   respData: any,
-  noMixGlueId: string,
-  isNoMixGlue = false
+  noMixGlueId: string
 ): SeparateGlueRow[] => {
-  let rows: any[] = [];
-
   if (Array.isArray(existingDraft?.noMixSeparateGlueDetails) && existingDraft.noMixSeparateGlueDetails.length > 0) {
-    rows = existingDraft.noMixSeparateGlueDetails;
-  } else if (
-    !isNoMixGlue
-    && Array.isArray(respData?.noSeparateGlues)
-    && respData.noSeparateGlues.length > 0
-  ) {
-    rows = respData.noSeparateGlues;
-  } else {
-    return [];
+    return mapSeparateGlueRows(existingDraft.noMixSeparateGlueDetails, noMixGlueId);
   }
 
-  return mapSeparateGlueRows(rows, noMixGlueId);
+  const apiItems = resolveNoMixApiItemsForSeqMap(respData, noMixGlueId);
+  if (apiItems.length > 0) {
+    return buildNoMixTableRowsFromApiItems(apiItems, noMixGlueId);
+  }
+
+  return [];
 };
 
 export const mapNoMixChemicalsFull = (mixChemicals: any[]) => {
@@ -181,7 +175,7 @@ export const resolveSplitSeparateGlueDetails = (
   isNoMixGlue = false
 ): { mixRows: SeparateGlueRow[]; noMixRows: SeparateGlueRow[] } => {
   const resolvedMix = resolveSeparateGlueDetails(existingDraft, respData, mixGlueMasterId);
-  const resolvedNoMix = resolveNoMixSeparateGlueDetails(existingDraft, respData, noMixGlueId, isNoMixGlue);
+  const resolvedNoMix = resolveNoMixSeparateGlueDetails(existingDraft, respData, noMixGlueId);
   const draftMix = Array.isArray(existingDraft?.separateGlueDetails) ? existingDraft.separateGlueDetails : [];
   const draftNoMix = Array.isArray(existingDraft?.noMixSeparateGlueDetails)
     ? existingDraft.noMixSeparateGlueDetails
@@ -192,16 +186,17 @@ export const resolveSplitSeparateGlueDetails = (
   );
   const pickNoMixRows = () => {
     if (draftNoMix.length > 0) return mapSeparateGlueRows(draftNoMix, noMixGlueId);
-    if (isNoMixGlue) {
-      const draftApi = existingDraft?.apiNoSeparateGlues;
-      if (Array.isArray(draftApi) && draftApi.length > 0) {
-        return buildNoMixTableRowsFromApiItems(draftApi, noMixGlueId);
-      }
-      if (Array.isArray(respData?.noSeparateGlues) && respData.noSeparateGlues.length > 0) {
-        return buildNoMixTableRowsFromApiItems(respData.noSeparateGlues, noMixGlueId);
-      }
-      return [];
+
+    const fromBe = resolveNoMixApiItemsForSeqMap(respData, noMixGlueId);
+    if (fromBe.length > 0) {
+      return buildNoMixTableRowsFromApiItems(fromBe, noMixGlueId);
     }
+
+    const draftApi = existingDraft?.apiNoSeparateGlues;
+    if (Array.isArray(draftApi) && draftApi.length > 0) {
+      return buildNoMixTableRowsFromApiItems(draftApi, noMixGlueId);
+    }
+
     return resolvedNoMix;
   };
 
