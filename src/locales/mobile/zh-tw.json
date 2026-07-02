@@ -193,6 +193,7 @@
       "notePlaceholder": "如有需要，請輸入備註",
       "cancelButton": "取消",
       "submitButton": "送出",
+      "SubmitRequired": "請先填寫問題備註再提交。",
       "messages": {
         "cameraPermission": "需要授予相機權限才能掃描檢查碼！",
         "invalidQr": "檢查碼無效或沒有資料！",

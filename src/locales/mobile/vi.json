@@ -203,6 +203,7 @@
       "notePlaceholder": "Nhập ghi chú nếu có",
       "cancelButton": "HỦY",
       "submitButton": "Submit",
+      "SubmitRequired": "Vui lòng nhập ghi chú trước khi gửi.",
       "messages": {
         "cameraPermission": "Cần cấp quyền camera để quét mã kiểm tra!",
         "invalidQr": "Mã kiểm tra không hợp lệ hoặc không có dữ liệu!",
