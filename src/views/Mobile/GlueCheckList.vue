@@ -78,6 +78,9 @@
                 :placeholder="t('mobile.glueCheckList.notePlaceholder')"
                 rows="3"
               ></textarea>
+              <p v-if="isIssueNoteRequired" class="check-form-dialog__note-message">
+                {{ t('mobile.glueCheckList.submitRequired') }}
+              </p>
             </div>
           </div>
 
@@ -85,7 +88,7 @@
             <ion-button fill="clear" color="medium" :disabled="isSubmittingForm" @click="cancelCheckForm">
               {{ t('mobile.glueCheckList.cancelButton') }}
             </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingForm" @click="submitCheckForm">
+            <ion-button fill="clear" color="primary" :disabled="isSubmittingForm || isIssueNoteRequired" @click="submitCheckForm">
               <ion-spinner v-if="isSubmittingForm" name="crescent"></ion-spinner>
               <span v-else>{{ t('mobile.glueCheckList.submitButton') }}</span>
             </ion-button>
@@ -154,6 +157,7 @@ const toastColor = ref<string | undefined>('success');
 const toastCssClass = ref('');
 
 const checkIssueName = computed(() => normalizeValue(scannedCheckItem.value?.checkListName));
+const isIssueNoteRequired = computed(() => !checkResult.value && !checkNote.value.trim());
 
 function normalizeValue(value: any) {
   if (value === null || value === undefined) {
@@ -553,15 +557,28 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     border: 1px solid #d5dbe6a8;
     border-radius: 12px;
     color: #081a36;
+    font-family: 'Inter', sans-serif !important;
     font-size: 14px !important;
     line-height: 1.45;
     outline: none;
     background: #ffffff;
 
+    &::placeholder {
+      font-family: 'Inter', sans-serif !important;
+    }
+
     &:focus {
       border-color: #0b72ed;
       box-shadow: 0 0 0 3px rgba(11, 114, 237, 0.12);
     }
+  }
+
+  &__note-message {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px !important;
+    font-weight: 600;
+    line-height: 1.4;
   }
 
   &__actions {
