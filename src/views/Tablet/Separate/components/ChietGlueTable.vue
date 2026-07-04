@@ -72,7 +72,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
@@ -105,7 +105,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
 
-const toast = useToast();
+const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
@@ -222,7 +222,7 @@ const handleAddRow = () => {
   if (rows.length > 0) {
     const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
     if (incompleteIndex !== -1) {
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
@@ -240,7 +240,7 @@ const handleAddRow = () => {
         props.weighedWeight,
         props.weighedWeightUnit || 'Kg'
       );
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.allocationComplete'),
         detail: exceeded

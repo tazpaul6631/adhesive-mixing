@@ -2,34 +2,35 @@
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary" style="padding: 0px !important;">
-        <ion-buttons slot="start">
-          <ion-button @click="goBack">
-            <i class="pi pi-angle-left text-xl mr-1"></i>
-          </ion-button>
-        </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title class="no-padding">{{ t('listGlueReturnLog.pageTitle') }}</ion-title>
+          <ion-buttons slot="start">
+            <ion-button @click="goBack">
+              <i class="pi pi-angle-left text-xl mr-1"></i>
+              <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
+              }}</ion-title>
+            </ion-button>
+          </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto">
-        <div class="surface-card p-0 shadow-1 border-round-xl">
+      <div class="main-container max-w-full mx-auto list-glue-return-page" :class="pageClass">
+        <div class="surface-card p-0 shadow-1 border-round-xl list-glue-return-card">
           <div
-            class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
-            <span class="font-bold text-700 text-lg">
+            class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-glue-return-card-head">
+            <span class="list-glue-return-section-title">
               <i class="pi pi-list mr-2"></i>{{ t('listGlueReturnLog.sectionTitle') }}
             </span>
             <ScaleDevicePicker :session-id="glueReturnLogScaleSessionId" />
           </div>
-          <div class="surface-100 px-3 pb-3">
+          <div class="surface-100 list-glue-return-toolbar">
             <div class="grid formgrid align-items-end">
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
                 <label class="text-800 font-medium mb-2 block">{{ t('listGlueReturnLog.selectedRow') }}</label>
                 <InputText :model-value="selectedItem?.lineChemicalName || t('listGlueReturnLog.selectRowHint')"
-                  readonly class="font-bold text-primary border-blue-200" style="width: 400px;" fluid />
+                  readonly class="font-bold text-primary border-blue-200 glue-return-selected-input" fluid />
               </div>
 
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
@@ -42,15 +43,15 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto border-round-bottom-xl">
+          <div class="overflow-x-auto border-round-bottom-xl list-glue-return-table-wrap">
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
-              scrollable scrollHeight="430px" stripedRows class="modern-table auto-columns-table"
-              tableStyle="width: 100%;" selectionMode="single" :paginator="true" :rows="rowsPerPage"
-              :rowsPerPageOptions="[10, 20, 50]" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
-              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-              currentPageReportTemplate="Hiển thị {first} đến {last} /tổng {totalRecords}">
+              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" stripedRows
+              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" selectionMode="single"
+              :paginator="true" :rows="rowsPerPage" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
+              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
+              currentPageReportTemplate="Hiển thị {first} đến {last}">
               <template #empty>
-                <div style="text-align: center; height: 340px; align-content: center;">
+                <div style="text-align: center; align-content: center;" :style="{ minHeight: emptyStateMinHeight }">
                   <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
                   <p style="margin: 0; color: #6b7280;">{{ t('listGlueReturnLog.empty') }}</p>
                 </div>
@@ -125,15 +126,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
   onIonViewWillEnter,
   onIonViewWillLeave,
 } from '@ionic/vue';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import dayjs from 'dayjs';
+import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
@@ -147,6 +149,7 @@ import {
 } from '@/store/glueReturnLogPending';
 import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
+import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
 
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
@@ -169,21 +172,32 @@ export interface GlueReturnLogItem {
 }
 
 const router = useRouter();
-const toast = useToast();
+const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const pendingStore = useGlueReturnLogPendingStore();
-const { startAutoConnect, releaseScaleConnection } = useScaleManager();
+const { startAutoConnect, stopAutoConnect } = useScaleManager();
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
+
+const {
+  pageClass,
+  tableScrollHeight,
+  emptyStateMinHeight,
+} = useTabletPageLayout({ listPageWithToolbar: true });
 
 const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(10);
+const rowsPerPage = ref(50);
+const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const isLoadingLine = ref(true);
 const isConfirming = ref(false);
 const submittingRowId = ref('');
 const selectedItem = ref<GlueReturnLogItem | null>(null);
+const { startRequest, isStaleRequest, shouldSkipDuplicatePageLoad } = useListTableFetch();
+
+const hasLoadedGlueReturnRows = () =>
+  lineDetails.value.some((row) => row.glueReturnLogId != null && row.glueReturnLogId !== '');
 
 const goBack = () => router.push('/app-menu');
 
@@ -291,20 +305,32 @@ const normalizeGlueReturnLogItem = (item: GlueReturnLogItem): GlueReturnLogItem 
   };
 };
 
-const parseListResponse = (resData: any): { items: GlueReturnLogItem[]; totalCount: number } => {
+const parseListResponse = (
+  resData: any,
+  fallbackPage: number,
+  fallbackPageSize: number
+): { items: GlueReturnLogItem[]; page: number; pageSize: number; hasNextPage: boolean } => {
   if (!resData?.success) {
-    return { items: [], totalCount: 0 };
+    return { items: [], page: fallbackPage, pageSize: fallbackPageSize, hasNextPage: false };
   }
 
   const payload = resData.data;
   if (Array.isArray(payload)) {
-    return { items: payload, totalCount: payload.length };
+    return {
+      items: payload,
+      page: fallbackPage,
+      pageSize: fallbackPageSize,
+      hasNextPage: false,
+    };
   }
 
   const items = Array.isArray(payload?.items) ? payload.items : [];
+  const meta = parseCursorPagedMeta(payload, fallbackPage, fallbackPageSize);
   return {
     items,
-    totalCount: Number(payload?.totalCount) || items.length,
+    page: meta.page,
+    pageSize: meta.pageSize,
+    hasNextPage: meta.hasNextPage,
   };
 };
 
@@ -318,6 +344,7 @@ const syncSelectedItem = () => {
 };
 
 const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
+  const requestId = startRequest();
   isLoadingLine.value = true;
   lineDetails.value = Array.from({ length: pageSize }).map(() => ({}));
 
@@ -329,10 +356,17 @@ const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
       pageSize,
     };
 
-    const response = await glueReturnLogApi.postListGlueReturnLog(payload);
-    const { items, totalCount } = parseListResponse(response.data);
+    const [response] = await Promise.all([
+      glueReturnLogApi.postListGlueReturnLog(payload),
+      pendingStore.ensureHydrated(),
+    ]);
+    if (isStaleRequest(requestId)) return;
 
-    await pendingStore.ensureHydrated();
+    const { items, page: responsePage, pageSize: responsePageSize, hasNextPage } = parseListResponse(
+      response.data,
+      page,
+      pageSize
+    );
     lineDetails.value = items.map(mergePendingIntoItem);
     items.forEach((item) => {
       const normalized = normalizeGlueReturnLogItem(item);
@@ -340,19 +374,40 @@ const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
         void pendingStore.clearPending(String(item.glueReturnLogId));
       }
     });
-    totalRecords.value = totalCount;
+    currentPage.value = responsePage;
+    rowsPerPage.value = responsePageSize;
+    totalRecords.value = computeLazyTableTotalRecords(
+      responsePage,
+      responsePageSize,
+      items.length,
+      hasNextPage
+    );
     syncSelectedItem();
   } catch (error) {
+    if (isStaleRequest(requestId)) return;
     console.error('Lỗi gọi API getqueryresult gluereturnlog:', error);
     lineDetails.value = [];
     totalRecords.value = 0;
     selectedItem.value = null;
   } finally {
-    isLoadingLine.value = false;
+    if (!isStaleRequest(requestId)) {
+      isLoadingLine.value = false;
+    }
   }
 };
 
 const onPageLine = (event: { page: number; rows: number }) => {
+  if (shouldSkipDuplicatePageLoad({
+    eventPage: event.page,
+    eventRows: event.rows,
+    currentPage: currentPage.value,
+    rowsPerPage: rowsPerPage.value,
+    isLoading: isLoadingLine.value,
+    hasData: hasLoadedGlueReturnRows(),
+  })) {
+    return;
+  }
+
   currentPage.value = event.page + 1;
   rowsPerPage.value = event.rows;
   void fetchGlueReturnLogs(currentPage.value, rowsPerPage.value);
@@ -365,7 +420,7 @@ const onRowClick = (event: { data: GlueReturnLogItem }) => {
 const handleScaleConfirmWeight = (actualWeight: string) => {
   const row = selectedItem.value;
   if (!row?.glueReturnLogId) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.selectRowFirst'),
@@ -397,7 +452,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
   applyRowPatch(row.glueReturnLogId, patch);
   void pendingStore.savePending(buildPendingEntry(row, patch));
 
-  // toast.add({
+  // showToast({
   //   severity: 'info',
   //   summary: t('listGlueReturnLog.toast.success'),
   //   detail: t('listGlueReturnLog.toast.scaleSaved'),
@@ -411,7 +466,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
   }
 
   if (!row.returnGlueId || !row.lineChemicalId) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.missingConfirmIds'),
@@ -448,16 +503,16 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
     await pendingStore.clearPending(row.glueReturnLogId);
     void fetchGlueReturnLogs(currentPage.value, rowsPerPage.value);
 
-    toast.add({
+    showToast({
       severity: 'success',
       summary: t('listGlueReturnLog.toast.success'),
       detail: t('listGlueReturnLog.toast.confirmSuccess'),
-      life: 6000,
+      life: 3000,
     });
   } catch (error) {
     if (notifyOfflineFromError(error)) return;
     console.error('Lỗi xác nhận cân trả keo:', error);
-    toast.add({
+    showToast({
       severity: 'error',
       summary: t('listGlueReturnLog.toast.error'),
       detail: t('listGlueReturnLog.toast.confirmFailed'),
@@ -470,13 +525,68 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
 };
 
 onIonViewWillEnter(() => {
+  currentPage.value = 1;
   startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void fetchGlueReturnLogs(currentPage.value, rowsPerPage.value);
+  void fetchGlueReturnLogs(1, rowsPerPage.value);
 });
 
 onIonViewWillLeave(() => {
-  releaseScaleConnection();
+  stopAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.list-glue-return-page {
+  width: 100%;
+}
+
+.list-glue-return-section-title {
+  font-weight: 700;
+  color: var(--text-color-secondary);
+  font-size: 1.2rem;
+}
+
+.glue-return-selected-input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.list-glue-return-table-wrap {
+  width: 100%;
+  max-width: 100%;
+}
+
+.tablet-page--inch87.list-glue-return-page {
+  padding: 0.5rem 0.625rem;
+}
+
+.tablet-page--inch87 .list-glue-return-card-head {
+  padding: 0.5rem 0.75rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tablet-page--inch87 .list-glue-return-toolbar {
+  padding: 0 0.75rem 0.625rem;
+}
+
+.tablet-page--inch11.list-glue-return-page {
+  padding: 0.875rem 1.125rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tablet-page--inch11 .list-glue-return-card-head {
+  padding: 0.875rem 1rem;
+  gap: 0.75rem;
+}
+
+.tablet-page--inch11 .list-glue-return-toolbar {
+  padding: 0 1rem 0.875rem;
+}
+
+.tablet-page--inch11 .glue-return-selected-input {
+  max-width: 400px;
+}
+</style>

@@ -37,6 +37,8 @@ let pendingInitTimer: ReturnType<typeof setTimeout> | null = null;
 let scanAborted = false;
 let connectFlowPromise: Promise<void> | null = null;
 let printInProgress = false;
+/** User đã hủy/ngắt — không tự quét lại cho đến refresh hoặc in. */
+let autoConnectSuppressed = false;
 
 const collectPrinterCandidates = (devices: any[], preferredMac?: string | null) => {
   const pool = (devices || []).filter((device) => {
@@ -336,6 +338,8 @@ const disableBluetoothAdapter = (): Promise<void> => {
 };
 
 const startAutoReconnectWatchdog = () => {
+  if (autoConnectSuppressed) return;
+
   if (autoReconnectInterval) {
     clearInterval(autoReconnectInterval);
     autoReconnectInterval = null;
@@ -343,7 +347,7 @@ const startAutoReconnectWatchdog = () => {
 
   autoReconnectInterval = setInterval(() => {
     const bt = getBluetooth();
-    if (!bt || printInProgress || scanAborted) return;
+    if (!bt || printInProgress || scanAborted || autoConnectSuppressed) return;
 
     bt.isConnected(
       () => {
@@ -354,7 +358,7 @@ const startAutoReconnectWatchdog = () => {
           status.value = 'disconnected';
         }
 
-        if (status.value === 'disconnected' && !scanAborted) {
+        if (status.value === 'disconnected' && !scanAborted && !autoConnectSuppressed) {
           bt.isEnabled(
             () => {
               void (async () => {
@@ -553,8 +557,6 @@ export function useBluetoothPrinter(options: UseBluetoothPrinterOptions = {}) {
   const initBluetooth = async () => {
     if (!autoEnableOnEnter) return;
 
-    scanAborted = false;
-
     if (pendingInitTimer) {
       clearTimeout(pendingInitTimer);
       pendingInitTimer = null;
@@ -565,24 +567,30 @@ export function useBluetoothPrinter(options: UseBluetoothPrinterOptions = {}) {
       selectedMac.value = savedMac;
     }
 
-    await syncStatusFromHardware();
-
-    if (status.value === 'connected') {
-      startAutoReconnectWatchdog();
+    if (await syncStatusFromHardware()) {
       return;
     }
 
-    if (scanAborted) return;
+    if (autoConnectSuppressed) {
+      status.value = 'disconnected';
+      return;
+    }
 
+    scanAborted = false;
     void runConnectWithRetry();
   };
 
   const refreshScan = () => {
+    autoConnectSuppressed = false;
     scanAborted = false;
     void startBluetoothAutoFlow(undefined, { force: true });
   };
 
   const disconnect = () => {
+    autoConnectSuppressed = true;
+    scanAborted = true;
+    stopAutoReconnectWatchdog();
+
     const bt = getBluetooth();
     status.value = 'disconnected';
     if (bt) {
@@ -595,13 +603,26 @@ export function useBluetoothPrinter(options: UseBluetoothPrinterOptions = {}) {
   };
 
   const cancelConnection = () => {
+    autoConnectSuppressed = true;
     scanAborted = true;
+    stopAutoReconnectWatchdog();
     status.value = 'disconnected';
 
     const bt = getBluetooth();
     if (bt) {
-      bt.disconnect(() => undefined);
+      bt.disconnect(() => undefined, () => undefined);
     }
+  };
+
+  const connectForPrint = async (): Promise<boolean> => {
+    if (await verifyHardwareConnected()) {
+      return true;
+    }
+
+    autoConnectSuppressed = false;
+    scanAborted = false;
+    await startBluetoothAutoFlow(undefined, { force: true });
+    return verifyHardwareConnected();
   };
 
   const pauseBluetooth = () => {
@@ -641,6 +662,7 @@ export function useBluetoothPrinter(options: UseBluetoothPrinterOptions = {}) {
     refreshScan,
     disconnect,
     cancelConnection,
+    connectForPrint,
     isConnected,
     verifyHardwareConnected,
     setPrintInProgress,

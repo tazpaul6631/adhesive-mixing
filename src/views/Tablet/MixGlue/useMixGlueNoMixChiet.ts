@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import dayjs from 'dayjs';
 
 import format from '@/mixins/format';
@@ -29,7 +29,7 @@ export function useMixGlueNoMixChiet(options: {
   saveDraftSnapshot: () => Promise<void>;
   completeNoMixGlue?: () => Promise<void>;
 }) {
-  const toast = useToast();
+  const { showToast } = useAppToast();
   const { t } = useAppLocale(() => 'tablet');
   const authStore = useAuthStore();
 
@@ -68,7 +68,7 @@ export function useMixGlueNoMixChiet(options: {
   const blockIfLocked = () => {
     if (!options.mixGlueConfirm.value) return false;
 
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('separateMixedGlue.toast.locked'),
       detail: t('separateMixedGlue.toast.completeFirst'),
@@ -164,7 +164,7 @@ export function useMixGlueNoMixChiet(options: {
 
     const unweighed = options.noMixComponents.value.find((item) => !isRowWeighed(item));
     if (unweighed) {
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.notWeighed'),
         detail: t('separateMixedGlue.toast.weighBeforeAdd', { name: unweighed.materialName }),
@@ -188,7 +188,7 @@ export function useMixGlueNoMixChiet(options: {
         );
       }
     } catch {
-      toast.add({
+      showToast({
         severity: 'error',
         summary: t('listMixGlue.toast.error'),
         detail: t('separateMixedGlue.toast.loadMaterialsFailed'),
@@ -239,11 +239,11 @@ export function useMixGlueNoMixChiet(options: {
     options.noMixMixingProcess.value.weight = '0.000';
 
     await options.saveDraftSnapshot();
-    toast.add({
+    showToast({
       severity: 'success',
       summary: t('separateMixedGlue.toast.addSuccess'),
       detail: t('separateMixedGlue.toast.addSuccessDetail'),
-      life: 6000,
+      life: 3000,
     });
   };
 
@@ -264,12 +264,12 @@ export function useMixGlueNoMixChiet(options: {
         extraChietList.value = extraChietList.value.filter(
           item => item.glueId !== rowToDelete.materialCode
         );
-        await options.saveDraftSnapshot();
-        toast.add({
+        // await options.saveDraftSnapshot();
+        showToast({
           severity: 'success',
           summary: t('separateMixedGlue.toast.deleteSuccess'),
           detail: t('separateMixedGlue.toast.deleteSuccessDetail'),
-          life: 6000,
+          life: 3000,
         });
       },
       undefined,
@@ -346,9 +346,9 @@ export function useMixGlueNoMixChiet(options: {
     void saveChietDraftToStoreOnly();
   };
 
-  const handleChietRow = (rowData: NoMixRow) => {
+  const handleChietRow = async (rowData: NoMixRow) => {
     if (!isRowWeighed(rowData)) {
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.notWeighed'),
         detail: t('separateMixedGlue.toast.weighBeforeChiet', { name: rowData.materialName || '' }),
@@ -356,6 +356,8 @@ export function useMixGlueNoMixChiet(options: {
       });
       return;
     }
+
+    await options.saveDraftSnapshot();
 
     if (options.isNoMixGlue.value) {
       void options.completeNoMixGlue?.();
@@ -429,11 +431,11 @@ export function useMixGlueNoMixChiet(options: {
 
     chietOrderDetails.value = [];
     await options.saveDraftSnapshot();
-    toast.add({
+    showToast({
       severity: 'success',
       summary: t('separateMixedGlue.toast.chietSaved'),
       detail: t('separateMixedGlue.toast.chietSavedDetail'),
-      life: 6000,
+      life: 3000,
     });
     chietDialog.value = false;
   };
@@ -488,7 +490,7 @@ export function useMixGlueNoMixChiet(options: {
       options.noMixMixingProcess.value.weight = '0.000';
     } else {
       options.activeNoMixComponent.value = { ...options.noMixComponents.value[index] };
-      // toast.add({
+      // showToast({
       //   severity: 'success',
       //   summary: t('separateMixedGlue.toast.weighingComplete'),
       //   detail: t('separateMixedGlue.toast.weighingCompleteDetail'),

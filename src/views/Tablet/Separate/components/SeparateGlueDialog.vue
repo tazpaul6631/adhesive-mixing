@@ -56,7 +56,7 @@ import { computed, ref } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import ChietGlueTable from '@/views/Tablet/Separate/components/ChietGlueTable.vue';
 import { formatTargetWeightLabel } from '@/views/Tablet/Separate/separateGlue.bucket';
 import { useAppLocale } from '@/composables/useAppLocale';
@@ -97,7 +97,7 @@ const emit = defineEmits<{
   (e: 'delete-row', row: OrderDetails): void;
 }>();
 
-const toast = useToast();
+const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const chietGlueTableRef = ref<InstanceType<typeof ChietGlueTable> | null>(null);
 
@@ -117,7 +117,7 @@ const handleConfirm = () => {
   const rows = props.orderDetails || [];
 
   if (rows.length === 0) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('separateMixedGlue.toast.incomplete'),
       detail: t('separateMixedGlue.toast.addRowMin'),
@@ -127,7 +127,7 @@ const handleConfirm = () => {
   }
 
   if (!targetWeight.value || Number(targetWeight.value) <= 0) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('separateMixedGlue.toast.notWeighed'),
       detail: t('separateMixedGlue.toast.notWeighedForChiet', { name: props.chemical?.materialName || '' }),
@@ -138,7 +138,7 @@ const handleConfirm = () => {
 
   const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
   if (incompleteIndex !== -1) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('separateMixedGlue.toast.incomplete'),
       detail: t('separateMixedGlue.toast.selectBucketRowShort', { row: incompleteIndex + 1 }),
@@ -149,7 +149,7 @@ const handleConfirm = () => {
 
   const allocationError = chietGlueTableRef.value?.validateAllocation?.();
   if (allocationError) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('separateMixedGlue.toast.invalid'),
       detail: allocationError,

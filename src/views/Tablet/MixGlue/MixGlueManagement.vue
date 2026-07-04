@@ -2,23 +2,24 @@
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary" style="padding: 0px !important;">
-        <ion-buttons slot="start">
-          <ion-button @click="goBack">
-            <i class="pi pi-angle-left text-xl mr-1"></i>
-          </ion-button>
-        </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title class="no-padding">{{ t('mixGlueManagement.pageTitle') }}</ion-title>
+          <ion-buttons slot="start">
+            <ion-button @click="goBack">
+              <i class="pi pi-angle-left text-xl mr-1"></i>
+              <ion-title class="no-padding" style="line-height: 50px;">{{ t('mixGlueManagement.pageTitle')
+                }}</ion-title>
+            </ion-button>
+          </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding" :scroll-events="true">
+    <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
 
-      <div class="main-container max-w-full mx-auto">
-        <!-- Thông tin header -->
-        <div class="surface-card p-3 shadow-1 border-round-xl">
+      <div class="mix-glue-layout main-container max-w-full mx-auto">
+        <!-- Thông tin header — cố định, không scroll -->
+        <div class="mix-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
             <div class="col-12 lg:col-3">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.workOrder') }}</label>
@@ -34,131 +35,172 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-              }}</label>
+                }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
                 <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
-                <Button :disabled="mixGlueConfirm" icon="pi pi-check-circle" severity="success" class="button-lg"
+                <Button :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
+                  :loading="isCompleting" icon="pi pi-check-circle" severity="success" class="button-lg"
                   @click="handleComplete" />
               </div>
             </div>
           </div>
         </div>
 
-        <!-- BẢNG 1 -->
-        <transition name="slide-fade">
-          <div v-show="hidenTable1" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl">
-              <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>{{
-                t('mixGlueManagement.sections.lineDetails') }}</span>
+        <!-- Vùng bảng — scroll khi nội dung dài -->
+        <div class="mix-glue-scroll-body">
+          <!-- BẢNG 1 -->
+          <transition name="slide-fade">
+            <div v-show="hidenTable1 && canShowTable1Content" class="surface-card p-0 shadow-1 border-round-xl">
+              <div class="surface-100 p-3 border-round-top-xl">
+                <span class="font-bold text-700 text-lg"><i class="pi pi-list mr-2"></i>{{
+                  t('mixGlueManagement.sections.lineDetails') }}</span>
+              </div>
+              <LineDetailsTable :is-loading="isLoadingLine" :line-details="lineDetails" />
             </div>
-            <LineDetailsTable :is-loading="isLoadingLine" :line-details="lineDetails" />
-          </div>
-        </transition>
+          </transition>
 
-        <!-- BẢNG 2: Keo trộn -->
-        <transition name="slide-fade">
-          <div v-if="hasMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div
-              class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
-              <span class="font-bold text-700 text-lg">
-                <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.mixingComponents') }}
-              </span>
-              <ScaleDevicePicker :session-id="mixGlueScaleSessionId" />
-            </div>
+          <!-- BẢNG 2: Keo trộn -->
+          <transition name="slide-fade">
+            <div v-if="canShowTable2Content" class="surface-card p-0 shadow-1 border-round-xl">
+              <div
+                class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
+                <span class="font-bold text-700 text-lg">
+                  <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.mixingComponents') }}
+                </span>
+                <div class="flex align-items-center gap-2">
+                  <div v-if="isPrinting" class="print-progress-chip">
+                    <i class="pi pi-spin pi-spinner" style="font-size:0.85rem"></i>
+                    <span>{{ progress.current }}/{{ progress.total }}</span>
+                  </div>
+                  <Button v-if="hasPendingPrint" icon="pi pi-exclamation-triangle" severity="warn" outlined size="large"
+                    :badge="String(pendingCount)" badgeSeverity="danger"
+                    :title="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
+                    :aria-label="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
+                    @click="openPendingPrintDialog" />
+                  <BluetoothPrinterStatus ref="bluetoothRef" />
+                  <span class="mx-2">|</span>
+                  <ScaleDevicePicker v-if="hasMixChemicals" :session-id="mixGlueScaleSessionId" />
+                </div>
+              </div>
 
-            <div class="md:p-2 surface-50 border-bottom-1 surface-border">
-              <div class="grid formgrid align-items-end">
-                <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
-                  <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                  }}</label>
-                  <InputText v-model="mixingProcess.component" readonly class="font-bold text-primary border-blue-200"
-                    style="width: 350px;" />
+              <div v-if="isLoadingComponent" class="border-round-bottom-xl">
+                <MixingComponentsTable :is-loading="true" :components="[]" :header-total-weight="headerInfo.totalWeight"
+                  v-model:selectedItem="selectedItem" :disabled="true" />
+              </div>
+
+              <template v-else-if="hasMixChemicals">
+                <div class="md:p-2 surface-50 border-bottom-1 surface-border">
+                  <div class="grid formgrid align-items-end">
+                    <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
+                      <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
+                      }}</label>
+                      <InputText v-model="mixingProcess.component" readonly
+                        class="font-bold text-primary border-blue-200" style="width: 350px;" />
+                    </div>
+
+                    <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
+                      :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
+                      :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
+                      :upper-tolerance="activeComponent?.upperTolerance ?? ''"
+                      :lower-tolerance-unit="activeComponent?.lowerToleranceUnit"
+                      :upper-tolerance-unit="activeComponent?.upperToleranceUnit"
+                      :enforce-tolerance="mixTargetWeight > 0"
+                      :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
+                      :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
+                      @confirm-weight="handleConfirmWeight" />
+                  </div>
                 </div>
 
-                <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
-                  :weight-unit="activeComponent?.weightUnit" :target-weight="mixTargetWeight"
-                  :lower-tolerance="activeComponent?.lowerTolerance ?? ''"
-                  :upper-tolerance="activeComponent?.upperTolerance ?? ''"
-                  :lower-tolerance-unit="activeComponent?.lowerToleranceUnit"
-                  :upper-tolerance-unit="activeComponent?.upperToleranceUnit" :enforce-tolerance="mixTargetWeight > 0"
-                  :locked-weight="activeComponent?.weighingTime ? (activeComponent?.actualWeight ?? '') : ''"
-                  :disable-confirm="!!activeComponent?.weighingTime" @update:weight="handleWeightChange"
-                  @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmWeight" />
+                <div class="border-round-bottom-xl">
+                  <div ref="table2Ref" class="table-wrapper">
+                    <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
+                      :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
+                      :disabled="mixGlueConfirm" :is-printing="isPrintingComponent"
+                      :printing-material-code="printingMaterialCode" @row-click="onRowClick"
+                      @open-new="openMixComponentDialog" @delete-row="handleDeleteComponent"
+                      @print-row="handlePrintComponent" />
+                  </div>
+
+                  <!-- MODAL THÊM THÀNH PHẦN -->
+                  <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
+                    :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
+                    @save="handleSaveNewComponent" />
+                </div>
+              </template>
+            </div>
+          </transition>
+
+          <!-- BẢNG 3: Keo không trộn -->
+          <transition name="slide-fade">
+            <div v-if="canShowTable3Content" class="surface-card p-0 shadow-1 border-round-xl">
+              <div
+                class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
+                <span class="font-bold text-700 text-lg">
+                  <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.noMixComponents') }}
+                </span>
+                <ScaleDevicePicker v-if="hasNoMixChemicals" :session-id="mixGlueScaleSessionId" :auto-connect="false" />
               </div>
-            </div>
 
-            <div class="border-round-bottom-xl">
-              <div ref="table2Ref" class="table-wrapper">
-                <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
-                  :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                  :disabled="mixGlueConfirm" @row-click="onRowClick" @open-new="openMixComponentDialog"
-                  @delete-row="handleDeleteComponent" />
+              <div v-if="isLoadingComponent" class="overflow-x-auto border-round-bottom-xl">
+                <NoSeparateGlue :is-loading="true" :no-mix-chemicals="[]" :header-total-weight="headerInfo.totalWeight"
+                  :disabled="true" :is-no-mix-glue="isNoMixGlue" v-model:selectedItem="selectedItemNoMix" />
               </div>
 
-              <!-- MODAL THÊM THÀNH PHẦN -->
-              <AddComponentDialog v-model:visible="productDialog" :materials-list="materialsList"
-                :is-loading-materials="isLoadingMaterials" @fetch-materials="fetchMaterials"
-                @save="handleSaveNewComponent" />
-            </div>
-          </div>
-        </transition>
+              <template v-else-if="hasNoMixChemicals">
+                <div class="md:p-2 surface-50 border-bottom-1 surface-border">
+                  <div class="grid formgrid align-items-end">
+                    <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
+                      <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
+                      }}</label>
+                      <InputText v-model="noMixMixingProcess.component" readonly
+                        class="font-bold text-primary border-blue-200" style="width: 350px;" />
+                    </div>
 
-        <!-- BẢNG 3: Keo không trộn (chỉ hiển thị khi API có dữ liệu) -->
-        <transition name="slide-fade">
-          <div v-if="hasNoMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div
-              class="surface-100 p-3 border-round-top-xl flex align-items-center justify-content-between gap-3 flex-wrap">
-              <span class="font-bold text-700 text-lg">
-                <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.noMixComponents') }}
-              </span>
-              <ScaleDevicePicker :session-id="mixGlueScaleSessionId" />
-            </div>
-
-            <div class="md:p-2 surface-50 border-bottom-1 surface-border">
-              <div class="grid formgrid align-items-end">
-                <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
-                  <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                  }}</label>
-                  <InputText v-model="noMixMixingProcess.component" readonly
-                    class="font-bold text-primary border-blue-200" style="width: 350px;" />
+                    <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
+                      :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
+                      :lower-tolerance="noMixScaleTolerance.lower" :upper-tolerance="noMixScaleTolerance.upper"
+                      :enforce-tolerance="!!activeNoMixComponent && noMixTargetWeight > 0"
+                      :locked-weight="activeNoMixComponent?.weighingTime ? (activeNoMixComponent?.actualWeight ?? '') : ''"
+                      :disable-confirm="!!activeNoMixComponent?.weighingTime" @update:weight="handleNoMixWeightChange"
+                      @confirm-weight="handleConfirmNoMixWeight" />
+                  </div>
                 </div>
 
-                <ElectronicScale :scale-session-id="mixGlueScaleSessionId" hide-scale-picker
-                  :weight-unit="activeNoMixComponent?.weightUnit" :target-weight="noMixTargetWeight"
-                  :lower-tolerance="noMixScaleTolerance.lower" :upper-tolerance="noMixScaleTolerance.upper"
-                  :enforce-tolerance="!!activeNoMixComponent && noMixTargetWeight > 0"
-                  :locked-weight="activeNoMixComponent?.weighingTime ? (activeNoMixComponent?.actualWeight ?? '') : ''"
-                  :disable-confirm="!!activeNoMixComponent?.weighingTime" @update:weight="handleNoMixWeightChange"
-                  @connection-status="handleConnectionStatus" @confirm-weight="handleConfirmNoMixWeight" />
-              </div>
+                <div class="overflow-x-auto border-round-bottom-xl">
+                  <div class="table-wrapper">
+                    <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
+                      :header-total-weight="headerInfo.totalWeight" :disabled="mixGlueConfirm"
+                      :is-no-mix-glue="isNoMixGlue" v-model:selectedItem="selectedItemNoMix"
+                      @row-click="onNoMixRowClick" @open-new="openNoMixComponentDialog"
+                      @delete-row="handleDeleteNoMixComponent" @chiet-row="handleChietRow" @view-row="handleViewRow" />
+                  </div>
+
+                  <SeparateAddComponentDialog v-model:visible="noMixProductDialog" :materials-list="noMixMaterialsList"
+                    :is-loading-materials="isLoadingNoMixMaterials" @fetch-materials="fetchNoMixMaterials"
+                    @save="handleSaveNewNoMixComponent" />
+
+                  <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
+                    :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
+                    @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet" @add-row="handleAddChietRow"
+                    @delete-row="handleDeleteChietRow" />
+                </div>
+              </template>
             </div>
+          </transition>
 
-            <div class="overflow-x-auto border-round-bottom-xl">
-              <div class="table-wrapper">
-                <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
-                  :header-total-weight="headerInfo.totalWeight" :disabled="mixGlueConfirm" :is-no-mix-glue="isNoMixGlue"
-                  v-model:selectedItem="selectedItemNoMix" @row-click="onNoMixRowClick"
-                  @open-new="openNoMixComponentDialog" @delete-row="handleDeleteNoMixComponent"
-                  @chiet-row="handleChietRow" @view-row="handleViewRow" />
-              </div>
-
-              <SeparateAddComponentDialog v-model:visible="noMixProductDialog" :materials-list="noMixMaterialsList"
-                :is-loading-materials="isLoadingNoMixMaterials" @fetch-materials="fetchNoMixMaterials"
-                @save="handleSaveNewNoMixComponent" />
-
-              <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
-                :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
-                @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet" @add-row="handleAddChietRow"
-                @delete-row="handleDeleteChietRow" />
-            </div>
+          <div v-if="firstDataValidationError" class="mix-glue-consolidated-validation">
+            <MixGlueDataValidationAlert :type="firstDataValidationError" />
           </div>
-        </transition>
+        </div>
       </div>
     </ion-content>
+
+    <BatchPrintRetryDialog v-model:visible="showRetryDialog" locale-scope="listMixGlue" :failed-items="failedItems"
+      :loading="isPrinting" @retry="handleRetryPrint" />
   </ion-page>
 </template>
 
@@ -170,7 +212,7 @@ import {
   IonTitle, onIonViewDidEnter, useBackButton, alertController,
   onIonViewWillEnter, onIonViewWillLeave
 } from '@ionic/vue';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import UI from '@/mixins/present';
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -188,26 +230,175 @@ import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separate
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
+import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
+import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable.vue';
+import MixGlueDataValidationAlert from '@/views/Tablet/MixGlue/components/MixGlueDataValidationAlert.vue';
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
 import NoSeparateGlue from '@/views/Tablet/Separate/components/NoSeparateGlue.vue';
 import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddComponentDialog.vue';
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
-import { useScaleManager } from '@/composables/useScaleManager';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
+import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
+import { buildComponentWeightLabelTspl } from '@/services/componentWeightLabelPrint';
+import { useLabelPrintGapConfirm } from '@/composables/useLabelPrintGapConfirm';
+import { ensureGapConfirmed, notifyPrintInterrupted } from '@/services/labelPrintSession';
 
 dayjs.extend(customParseFormat);
 
 const MIX_GLUE_SCALE_SESSION = 'mix-glue-scale-session';
 
-const { releaseScaleConnection } = useScaleManager();
 const mixGlueScaleSessionId = MIX_GLUE_SCALE_SESSION;
 const { t } = useAppLocale(() => 'tablet');
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
+useLabelPrintGapConfirm('listMixGlue');
+
+// ============================================================================
+// BLUETOOTH PRINTER
+// ============================================================================
+const bluetoothRef = ref<InstanceType<typeof BluetoothPrinterStatus> | null>(null);
+const showRetryDialog = ref(false);
+const lastPrintTotal = ref(0);
+
+const {
+  isPrinting,
+  progress,
+  failedItems,
+  printJobContext,
+  hasPendingPrint,
+  pendingCount,
+  clearFailedItems,
+  restorePendingFromStorage,
+  retryFailed,
+} = useMixGlueLabelBatchPrint();
+
+const createWriteFn = () =>
+  (tspl: string) => bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false);
+
+const createPrintRuntimeOptions = () => ({
+  isConnected: () => bluetoothRef.value?.isConnected?.() ?? false,
+});
+
+const openPendingPrintDialog = () => {
+  if (hasPendingPrint.value) showRetryDialog.value = true;
+};
+
+const handleRetryPrint = async () => {
+  const factoryId = authStore.user?.factoryId;
+  if (!factoryId) return;
+
+  if (!(await ensureGapConfirmed())) return;
+
+  if (!(await bluetoothRef.value?.verifyHardwareConnected?.())) {
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.printerNotConnected'), life: 6000 });
+    return;
+  }
+
+  const workOrderMasterId = printJobContext.value?.workOrderMasterId;
+  try {
+    const result = await retryFailed(createWriteFn(), factoryId, createPrintRuntimeOptions());
+    const total = printJobContext.value?.lastPrintTotal ?? lastPrintTotal.value;
+    const printFailed = !result.ok || result.failedItems.length > 0 || result.printedCount < total;
+
+    if (!printFailed) {
+      showRetryDialog.value = false;
+      lastPrintTotal.value = 0;
+      if (workOrderMasterId) {
+        showToast({ severity: 'success', summary: t('listMixGlue.toast.success'), detail: t('listMixGlue.toast.printSuccess', { count: result.printedCount }), life: 3000 });
+      }
+    } else {
+      showRetryDialog.value = true;
+    }
+  } catch (error) {
+    console.error(error);
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.printFailed'), life: 6000 });
+  }
+};
+
+// ============================================================================
+// IN TEM THÀNH PHẦN (component weight label)
+// ============================================================================
+const isPrintingComponent = ref(false);
+const printingMaterialCode = ref<string | null>(null);
+
+const ensurePrinterReady = async (): Promise<boolean> => {
+  if (await bluetoothRef.value?.verifyHardwareConnected?.()) return true;
+  await bluetoothRef.value?.connectForPrint?.();
+  return (await bluetoothRef.value?.verifyHardwareConnected?.()) === true;
+};
+
+const handlePrintComponent = async (row: any) => {
+  if (!row.weighingTime) {
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.notConfirmed'), life: 6000 });
+    return;
+  }
+  if (isPrintingComponent.value) return;
+
+  // Chỉ kết nối lại khi chưa connected — tránh verify gây re-render BluetoothPrinterStatus
+  if (!bluetoothRef.value?.isConnected?.()) {
+    const ready = await ensurePrinterReady();
+    if (!ready) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
+      return;
+    }
+  }
+
+  if (!(await ensureGapConfirmed())) return;
+
+  isPrintingComponent.value = true;
+  printingMaterialCode.value = row.materialCode ?? null;
+
+  try {
+    const tspl = buildComponentWeightLabelTspl({
+      workOrderMasterName: headerInfo.value.orderNo,
+      requestTime: lineDetails.value[0]?.requestTime,
+      glueName: headerInfo.value.glue,
+      materialName: row.materialName ?? '',
+      operatorName: row.operator ?? '',
+      actualWeight: row.actualWeight ?? '',
+      weightUnit: row.weightUnit ?? 'KG',
+      weighingTime: row.weighingTime ?? '',
+    });
+
+    const ok = await (bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false));
+
+    if (!ok) {
+      notifyPrintInterrupted();
+      await ensureGapConfirmed();
+    }
+
+    showToast({
+      severity: ok ? 'success' : 'error',
+      summary: ok ? t('listMixGlue.toast.success') : t('listMixGlue.toast.error'),
+      detail: ok ? t('listMixGlue.toast.componentLabel.printSuccess') : t('listMixGlue.toast.componentLabel.printFailed'),
+      life: ok ? 3000 : 6000,
+    });
+  } catch (error) {
+    console.error(error);
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.componentLabel.printFailed'), life: 6000 });
+  } finally {
+    isPrintingComponent.value = false;
+    printingMaterialCode.value = null;
+  }
+};
+
+const restorePendingPrintJob = async () => {
+  const restored = await restorePendingFromStorage();
+  if (!restored) return;
+
+  lastPrintTotal.value = restored.lastPrintTotal;
+  showRetryDialog.value = true;
+  showToast({
+    severity: 'info',
+    summary: t('listMixGlue.toast.warning'),
+    detail: t('listMixGlue.toast.pendingRestored', { count: restored.failedItems.length }),
+    life: 6000,
+  });
+};
 // ============================================================================
 // 1. INTERFACES & TYPES (Updated to match the new JSON structure)
 // ============================================================================
@@ -270,7 +461,7 @@ const activeNoMixComponent = ref<ComponentDetail | null>(null);
 // ============================================================================
 // 2. GLOBAL SETUP & REFS CHUNG
 // ============================================================================
-const toast = useToast();
+const { showToast } = useAppToast();
 const authStore = useAuthStore();
 const draftStore = useMixGlueDraftStore();
 const route = useRoute();
@@ -291,6 +482,8 @@ const isLoadingComponent = ref(true);
 const hourlyValidity = ref<string>('0');
 const hidenTable1 = ref(false);
 const mixGlueConfirm = ref(false);
+const isCompleting = ref(false);
+const isNavigatingAway = ref(false);
 const isNoMixGlue = ref(false);
 const startDate = ref('');
 const endDate = ref('');
@@ -306,6 +499,40 @@ watch(noMixComponents, () => {
 
 const hasMixChemicals = computed(() => componentDetailsFull.value.length > 0);
 const hasNoMixChemicals = computed(() => noMixComponents.value.length > 0);
+
+type DataValidationErrorType = 'orderDetails' | 'mixChemicals' | 'noMixChemicals';
+
+/** BE trả theo thứ tự orderDetails → mixChemicals → noMixChemicals; lỗi đầu tiên thì dừng. */
+const resolveFirstDataValidationError = (): DataValidationErrorType | null => {
+  if (isLoadingLine.value || isLoadingComponent.value) return null;
+  if (lineDetails.value.length === 0) return 'orderDetails';
+  if (!isNoMixGlue.value && componentDetailsFull.value.length === 0) return 'mixChemicals';
+  if (isNoMixGlue.value && noMixComponents.value.length === 0) return 'noMixChemicals';
+  return null;
+};
+
+const firstDataValidationError = computed(() => resolveFirstDataValidationError());
+
+const canShowTable1Content = computed(
+  () => firstDataValidationError.value !== 'orderDetails'
+);
+const canShowTable2Content = computed(
+  () =>
+    !isNoMixGlue.value &&
+    firstDataValidationError.value !== 'orderDetails' &&
+    firstDataValidationError.value !== 'mixChemicals' &&
+    (hasMixChemicals.value || isLoadingComponent.value)
+);
+const canShowTable3Content = computed(
+  () =>
+    isNoMixGlue.value &&
+    firstDataValidationError.value !== 'orderDetails' &&
+    firstDataValidationError.value !== 'mixChemicals' &&
+    firstDataValidationError.value !== 'noMixChemicals' &&
+    (hasNoMixChemicals.value || isLoadingComponent.value)
+);
+
+const hasWorkOrderDataErrors = computed(() => firstDataValidationError.value != null);
 
 const toKg = (weight: number, unit?: string) => {
   const normalizedUnit = (unit || 'Kg').toLowerCase();
@@ -543,7 +770,7 @@ const fetchWorkOrderDetail = async (id: string) => {
         }
       }
 
-      toast.add({
+      showToast({
         severity: 'info',
         summary: t('mixGlueManagement.toast.restore'),
         detail: t('mixGlueManagement.toast.restoreDetail'),
@@ -567,7 +794,7 @@ const fetchWorkOrderDetail = async (id: string) => {
     }
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu chi tiết:', error);
-    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadFailed'), life: 6000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadFailed'), life: 6000 });
   } finally {
     await finalizeLoading();
   }
@@ -690,11 +917,12 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 };
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
+  if (isCompleting.value || isNavigatingAway.value) return;
   if (!(await requireOnline())) return;
 
   const validationError = await validateBeforeNoMixComplete();
   if (validationError) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('separateMixedGlue.toast.incomplete'),
       detail: validationError,
@@ -703,6 +931,7 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
     return;
   }
 
+  isCompleting.value = true;
   try {
     const payload = source === 'chiet-row'
       ? buildSeparateGlueCommandPayload(getSeparatePayloadContext(), '1', {
@@ -712,74 +941,89 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       : buildSeparateGlueCommandPayload(getSeparatePayloadContext(), '1', { forComplete: true });
     await separateGlue.postSeparateGlueCommand(payload);
 
+    mixGlueConfirm.value = true;
+    isNavigatingAway.value = true;
     isDirty.value = false;
-    toast.add({
+    showToast({
       severity: 'success',
       summary: t('separateMixedGlue.toast.completeSuccess'),
       detail: t('separateMixedGlue.toast.completeSuccessDetail'),
-      life: 6000,
+      life: 3000,
     });
-    await draftStore.clearDraft(currentWorkOrderId.value);
     if (source === 'chiet-row') {
-      router.replace({
+      await router.replace({
         path: '/separate-mixed-glue-management',
         query: { workOrderMasterId: currentWorkOrderId.value },
       });
     } else {
-      router.push('/list-mix-glue');
+      await router.push('/list-mix-glue');
     }
   } catch (error) {
-    if (notifyOfflineFromError(error)) return;
+    if (notifyOfflineFromError(error)) {
+      isCompleting.value = false;
+      return;
+    }
     console.error(error);
-    toast.add({
+    showToast({
       severity: 'error',
       summary: t('listMixGlue.toast.error'),
       detail: t('separateMixedGlue.toast.completeFailed'),
       life: 6000,
     });
+    isCompleting.value = false;
   }
 };
 
 completeNoMixGlue = () => handleCompleteNoMixGlue('chiet-row');
 
 const handleCompleteMixGlue = async () => {
+  if (isCompleting.value || isNavigatingAway.value) return;
+
   const hasIncompleteRows = (rows: ComponentDetail[]) =>
     rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
 
   if (hasMixChemicals.value && hasIncompleteRows(componentDetailsFull.value)) {
-    toast.add({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
     return;
   }
 
   if (hasNoMixChemicals.value && hasIncompleteRows(noMixComponents.value)) {
-    toast.add({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
     return;
   }
 
   if (!(await requireOnline())) return;
 
+  isCompleting.value = true;
   try {
     const payloadToSubmit = buildPayload('1');
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
     await saveDraftSnapshot();
 
+    mixGlueConfirm.value = true;
+    isNavigatingAway.value = true;
     isDirty.value = false;
-    toast.add({
+    showToast({
       severity: 'success',
       summary: t('mixGlueManagement.toast.saveSuccess'),
       detail: t('mixGlueManagement.toast.saveSuccessDetail'),
-      life: 6000,
+      life: 3000,
     });
 
-    router.push('/list-mix-glue');
+    await router.push('/list-mix-glue');
   } catch (error) {
-    if (notifyOfflineFromError(error)) return;
+    if (notifyOfflineFromError(error)) {
+      isCompleting.value = false;
+      return;
+    }
     console.error(error);
-    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 6000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 6000 });
+    isCompleting.value = false;
   }
 };
 
 const handleComplete = async () => {
+  if (isCompleting.value || isNavigatingAway.value) return;
   if (isNoMixGlue.value) {
     await handleCompleteNoMixGlue();
     return;
@@ -862,7 +1106,7 @@ const confirmWeightForRows = async (
     await scrollToActiveRow(context);
   } else {
     setActiveRow({ ...rows[index] });
-    // toast.add({
+    // showToast({
     //   severity: 'success',
     //   summary: t('mixGlueManagement.toast.weighingComplete'),
     //   detail: t('mixGlueManagement.toast.weighingCompleteDetail'),
@@ -885,10 +1129,6 @@ const handleConfirmWeight = async (actualWeight: string) => {
   );
 };
 
-const handleConnectionStatus = (status: boolean) => {
-  console.log(status ? "Cân đã kết nối!" : "Mất kết nối với cân!");
-};
-
 // ============================================================================
 // 5. LOGIC MODAL THÊM THÀNH PHẦN
 // ============================================================================
@@ -902,7 +1142,7 @@ const isMixRowWeighed = (row: ComponentDetail) =>
 const openMixComponentDialog = () => {
   const unweighed = componentDetailsFull.value.find((item) => !isMixRowWeighed(item));
   if (unweighed) {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('listMixGlue.toast.warning'),
       detail: t('separateMixedGlue.toast.weighBeforeAdd', { name: unweighed.materialName }),
@@ -960,7 +1200,7 @@ const handleSaveNewComponent = async (newComponentData: {
   toleranceGrams: number;
 }) => {
   if (!componentDetailsFull.value.length) {
-    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 3000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 3000 });
     return;
   }
 
@@ -973,7 +1213,7 @@ const handleSaveNewComponent = async (newComponentData: {
 
   await saveDraftSnapshot();
 
-  toast.add({ severity: 'success', summary: t('mixGlueManagement.toast.addSuccess'), detail: t('mixGlueManagement.toast.addSuccessDetail'), life: 3000 });
+  showToast({ severity: 'success', summary: t('mixGlueManagement.toast.addSuccess'), detail: t('mixGlueManagement.toast.addSuccessDetail'), life: 3000 });
 };
 
 const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
@@ -989,7 +1229,7 @@ const handleDeleteComponent = async (rowToDelete: ComponentDetail) => {
 
       void saveDraftSnapshot();
 
-      toast.add({
+      showToast({
         severity: 'success',
         summary: t('mixGlueManagement.toast.deleteSuccess'),
         detail: t('mixGlueManagement.toast.deleteSuccessDetail', { name: rowToDelete.materialName ?? '' }),
@@ -1018,7 +1258,7 @@ const fetchMaterialsForRows = async (
       );
     }
   } catch (error) {
-    toast.add({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 3000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 3000 });
   } finally {
     loadingFlag.value = false;
   }
@@ -1036,7 +1276,21 @@ const table2Ref = ref<HTMLDivElement | null>(null);
 // ============================================================================
 // 7. NAVIGATION & GUARDS (CHẶN THOÁT)
 // ============================================================================
+const isPrintBusy = computed(() => isPrintingComponent.value || isPrinting.value);
+
+const blockBackIfPrinting = (): boolean => {
+  if (!isPrintBusy.value) return false;
+  showToast({
+    severity: 'warn',
+    summary: t('listMixGlue.toast.warning'),
+    detail: t('mixGlueManagement.toast.printBackBlocked'),
+    life: 6000,
+  });
+  return true;
+};
+
 const goBack = async () => {
+  if (blockBackIfPrinting()) return;
   if (isDirty.value) {
     const ok = await alertExitPage();
     if (ok) router.back();
@@ -1064,26 +1318,15 @@ const alertExitPage = (): Promise<boolean> =>
                   resolve(false);
                   return;
                 }
+                // Navigate ngay, không chờ API — tránh delay
+                isDirty.value = false;
+                resolve(true);
                 try {
                   const payload = buildPayload('C', { onlyProgressLines: true });
                   await mixGlueApi.postMixGlueCommand(payload);
                   await saveDraftSnapshot();
-                  // await draftStore.clearDraft(currentWorkOrderId.value);
-                  isDirty.value = false;
-                  resolve(true);
                 } catch (error) {
                   console.error(error);
-                  if (notifyOfflineFromError(error)) {
-                    resolve(false);
-                    return;
-                  }
-                  toast.add({
-                    severity: 'error',
-                    summary: t('listMixGlue.toast.error'),
-                    detail: t('mixGlueManagement.toast.progressSaveFailed'),
-                    life: 3500
-                  });
-                  resolve(false);
                 }
               })();
             }
@@ -1095,6 +1338,7 @@ const alertExitPage = (): Promise<boolean> =>
   });
 
 useBackButton(10, processNextHandler => {
+  if (blockBackIfPrinting()) return;
   if (!isDirty.value) {
     processNextHandler();
     return;
@@ -1105,6 +1349,7 @@ useBackButton(10, processNextHandler => {
 });
 
 onBeforeRouteLeave(async () => {
+  if (isPrintBusy.value) return false;
   if (!isDirty.value) return true;
   return await alertExitPage();
 });
@@ -1125,6 +1370,8 @@ const resetState = () => {
   noMixMixingProcess.value = { component: '', weight: '' };
   isDirty.value = false;
   mixGlueConfirm.value = false;
+  isCompleting.value = false;
+  isNavigatingAway.value = false;
   isNoMixGlue.value = false;
   startDate.value = '';
   endDate.value = '';
@@ -1137,16 +1384,18 @@ onIonViewDidEnter(async () => {
   if (table2Ref.value) {
     table2Ref.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  bluetoothRef.value?.initBluetooth?.();
 });
 
 onIonViewWillLeave(async () => {
-  releaseScaleConnection();
+  if (isNavigatingAway.value) return;
   if (currentWorkOrderId.value && isDirty.value) {
     await saveDraftSnapshot();
   }
 });
 
 onIonViewWillEnter(() => {
+  void restorePendingPrintJob();
   const workOrderMasterId = route.query.workOrderMasterId as string;
   if (workOrderMasterId) {
     // Mỗi khi vào màn hình này, nó sẽ lấy ID mới từ route và fetch lại
@@ -1159,6 +1408,37 @@ onIonViewWillEnter(() => {
 </script>
 
 <style scoped>
+.mix-glue-management-content {
+  --overflow: hidden;
+}
+
+.mix-glue-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.mix-glue-header-card {
+  flex-shrink: 0;
+}
+
+.mix-glue-scroll-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.mix-glue-consolidated-validation {
+  flex-shrink: 0;
+}
+
 /* Hiệu ứng transition cho bảng 1 */
 .slide-fade-enter-active {
   transition: all 0.4s ease-in-out;
@@ -1172,5 +1452,18 @@ onIonViewWillEnter(() => {
 .slide-fade-leave-to {
   transform: translateY(-15px);
   opacity: 0;
+}
+
+.print-progress-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 </style>

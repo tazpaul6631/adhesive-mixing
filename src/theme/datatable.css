@@ -83,3 +83,7 @@
   background-color: #fef9c3 !important;
   transition: background-color 0.25s ease;
 }
+
+.tablet-page .p-datatable-scrollable-body {
+  -webkit-overflow-scrolling: touch;
+}

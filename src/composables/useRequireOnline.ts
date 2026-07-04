@@ -1,6 +1,6 @@
-import { useToast } from 'primevue/usetoast';
 import { useAuthStore } from '@/store/auth';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { useAppToast } from '@/composables/useAppToast';
 
 const isAxiosNetworkError = (error: unknown): boolean => {
   const err = error as { response?: unknown; code?: string; message?: string };
@@ -16,15 +16,14 @@ const isAxiosNetworkError = (error: unknown): boolean => {
  */
 export function useRequireOnline() {
   const authStore = useAuthStore();
-  const toast = useToast();
+  const { showToast } = useAppToast();
   const { t } = useAppLocale(() => 'tablet');
 
   const showOfflineToast = () => {
-    toast.add({
+    showToast({
       severity: 'warn',
       summary: t('common.networkOffline'),
       detail: t('common.checkNetwork'),
-      life: 6000,
     });
   };
 
