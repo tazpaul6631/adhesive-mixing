@@ -2,13 +2,14 @@
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary" style="padding: 0px !important;">
-        <ion-buttons slot="start">
-          <ion-button @click="goBack">
-            <i class="pi pi-angle-left text-xl mr-1"></i>
-          </ion-button>
-        </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title class="no-padding">{{ t('mixGlueManagement.pageTitle') }}</ion-title>
+          <ion-buttons slot="start">
+            <ion-button @click="goBack">
+              <i class="pi pi-angle-left text-xl mr-1"></i>
+              <ion-title class="no-padding" style="line-height: 50px;">{{ t('mixGlueManagement.pageTitle')
+                }}</ion-title>
+            </ion-button>
+          </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>
@@ -41,10 +42,9 @@
               <div class="flex gap-2 justify-content-end">
                 <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
-                <Button
-                  :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
-                  :loading="isCompleting"
-                  icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
+                <Button :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
+                  :loading="isCompleting" icon="pi pi-check-circle" severity="success" class="button-lg"
+                  @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -71,7 +71,20 @@
                 <span class="font-bold text-700 text-lg">
                   <i class="pi pi-box mr-2"></i>{{ t('mixGlueManagement.sections.mixingComponents') }}
                 </span>
-                <ScaleDevicePicker v-if="hasMixChemicals" :session-id="mixGlueScaleSessionId" />
+                <div class="flex align-items-center gap-2">
+                  <div v-if="isPrinting" class="print-progress-chip">
+                    <i class="pi pi-spin pi-spinner" style="font-size:0.85rem"></i>
+                    <span>{{ progress.current }}/{{ progress.total }}</span>
+                  </div>
+                  <Button v-if="hasPendingPrint" icon="pi pi-exclamation-triangle" severity="warn" outlined size="large"
+                    :badge="String(pendingCount)" badgeSeverity="danger"
+                    :title="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
+                    :aria-label="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
+                    @click="openPendingPrintDialog" />
+                  <BluetoothPrinterStatus ref="bluetoothRef" />
+                  <span class="mx-2">|</span>
+                  <ScaleDevicePicker v-if="hasMixChemicals" :session-id="mixGlueScaleSessionId" />
+                </div>
               </div>
 
               <div v-if="isLoadingComponent" class="border-round-bottom-xl">
@@ -106,8 +119,10 @@
                   <div ref="table2Ref" class="table-wrapper">
                     <MixingComponentsTable :is-loading="isLoadingComponent" :components="componentDetailsFull"
                       :header-total-weight="headerInfo.totalWeight" v-model:selectedItem="selectedItem"
-                      :disabled="mixGlueConfirm" @row-click="onRowClick" @open-new="openMixComponentDialog"
-                      @delete-row="handleDeleteComponent" />
+                      :disabled="mixGlueConfirm" :is-printing="isPrintingComponent"
+                      :printing-material-code="printingMaterialCode" @row-click="onRowClick"
+                      @open-new="openMixComponentDialog" @delete-row="handleDeleteComponent"
+                      @print-row="handlePrintComponent" />
                   </div>
 
                   <!-- MODAL THÊM THÀNH PHẦN -->
@@ -183,6 +198,9 @@
         </div>
       </div>
     </ion-content>
+
+    <BatchPrintRetryDialog v-model:visible="showRetryDialog" locale-scope="listMixGlue" :failed-items="failedItems"
+      :loading="isPrinting" @retry="handleRetryPrint" />
   </ion-page>
 </template>
 
@@ -212,6 +230,8 @@ import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separate
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
+import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
+import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import LineDetailsTable from '@/views/Tablet/MixGlue/components/LineDetailsTable.vue';
 import MixGlueDataValidationAlert from '@/views/Tablet/MixGlue/components/MixGlueDataValidationAlert.vue';
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
@@ -220,19 +240,165 @@ import NoSeparateGlue from '@/views/Tablet/Separate/components/NoSeparateGlue.vu
 import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddComponentDialog.vue';
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
-import { useScaleManager } from '@/composables/useScaleManager';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
+import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
+import { buildComponentWeightLabelTspl } from '@/services/componentWeightLabelPrint';
+import { useLabelPrintGapConfirm } from '@/composables/useLabelPrintGapConfirm';
+import { ensureGapConfirmed, notifyPrintInterrupted } from '@/services/labelPrintSession';
 
 dayjs.extend(customParseFormat);
 
 const MIX_GLUE_SCALE_SESSION = 'mix-glue-scale-session';
 
-const { stopAutoConnect } = useScaleManager();
 const mixGlueScaleSessionId = MIX_GLUE_SCALE_SESSION;
 const { t } = useAppLocale(() => 'tablet');
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
+useLabelPrintGapConfirm('listMixGlue');
+
+// ============================================================================
+// BLUETOOTH PRINTER
+// ============================================================================
+const bluetoothRef = ref<InstanceType<typeof BluetoothPrinterStatus> | null>(null);
+const showRetryDialog = ref(false);
+const lastPrintTotal = ref(0);
+
+const {
+  isPrinting,
+  progress,
+  failedItems,
+  printJobContext,
+  hasPendingPrint,
+  pendingCount,
+  clearFailedItems,
+  restorePendingFromStorage,
+  retryFailed,
+} = useMixGlueLabelBatchPrint();
+
+const createWriteFn = () =>
+  (tspl: string) => bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false);
+
+const createPrintRuntimeOptions = () => ({
+  isConnected: () => bluetoothRef.value?.isConnected?.() ?? false,
+});
+
+const openPendingPrintDialog = () => {
+  if (hasPendingPrint.value) showRetryDialog.value = true;
+};
+
+const handleRetryPrint = async () => {
+  const factoryId = authStore.user?.factoryId;
+  if (!factoryId) return;
+
+  if (!(await ensureGapConfirmed())) return;
+
+  if (!(await bluetoothRef.value?.verifyHardwareConnected?.())) {
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.printerNotConnected'), life: 6000 });
+    return;
+  }
+
+  const workOrderMasterId = printJobContext.value?.workOrderMasterId;
+  try {
+    const result = await retryFailed(createWriteFn(), factoryId, createPrintRuntimeOptions());
+    const total = printJobContext.value?.lastPrintTotal ?? lastPrintTotal.value;
+    const printFailed = !result.ok || result.failedItems.length > 0 || result.printedCount < total;
+
+    if (!printFailed) {
+      showRetryDialog.value = false;
+      lastPrintTotal.value = 0;
+      if (workOrderMasterId) {
+        showToast({ severity: 'success', summary: t('listMixGlue.toast.success'), detail: t('listMixGlue.toast.printSuccess', { count: result.printedCount }), life: 3000 });
+      }
+    } else {
+      showRetryDialog.value = true;
+    }
+  } catch (error) {
+    console.error(error);
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.printFailed'), life: 6000 });
+  }
+};
+
+// ============================================================================
+// IN TEM THÀNH PHẦN (component weight label)
+// ============================================================================
+const isPrintingComponent = ref(false);
+const printingMaterialCode = ref<string | null>(null);
+
+const ensurePrinterReady = async (): Promise<boolean> => {
+  if (await bluetoothRef.value?.verifyHardwareConnected?.()) return true;
+  await bluetoothRef.value?.connectForPrint?.();
+  return (await bluetoothRef.value?.verifyHardwareConnected?.()) === true;
+};
+
+const handlePrintComponent = async (row: any) => {
+  if (!row.weighingTime) {
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.notConfirmed'), life: 6000 });
+    return;
+  }
+  if (isPrintingComponent.value) return;
+
+  // Chỉ kết nối lại khi chưa connected — tránh verify gây re-render BluetoothPrinterStatus
+  if (!bluetoothRef.value?.isConnected?.()) {
+    const ready = await ensurePrinterReady();
+    if (!ready) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
+      return;
+    }
+  }
+
+  if (!(await ensureGapConfirmed())) return;
+
+  isPrintingComponent.value = true;
+  printingMaterialCode.value = row.materialCode ?? null;
+
+  try {
+    const tspl = buildComponentWeightLabelTspl({
+      workOrderMasterName: headerInfo.value.orderNo,
+      requestTime: lineDetails.value[0]?.requestTime,
+      glueName: headerInfo.value.glue,
+      materialName: row.materialName ?? '',
+      operatorName: row.operator ?? '',
+      actualWeight: row.actualWeight ?? '',
+      weightUnit: row.weightUnit ?? 'KG',
+      weighingTime: row.weighingTime ?? '',
+    });
+
+    const ok = await (bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false));
+
+    if (!ok) {
+      notifyPrintInterrupted();
+      await ensureGapConfirmed();
+    }
+
+    showToast({
+      severity: ok ? 'success' : 'error',
+      summary: ok ? t('listMixGlue.toast.success') : t('listMixGlue.toast.error'),
+      detail: ok ? t('listMixGlue.toast.componentLabel.printSuccess') : t('listMixGlue.toast.componentLabel.printFailed'),
+      life: ok ? 3000 : 6000,
+    });
+  } catch (error) {
+    console.error(error);
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.componentLabel.printFailed'), life: 6000 });
+  } finally {
+    isPrintingComponent.value = false;
+    printingMaterialCode.value = null;
+  }
+};
+
+const restorePendingPrintJob = async () => {
+  const restored = await restorePendingFromStorage();
+  if (!restored) return;
+
+  lastPrintTotal.value = restored.lastPrintTotal;
+  showRetryDialog.value = true;
+  showToast({
+    severity: 'info',
+    summary: t('listMixGlue.toast.warning'),
+    detail: t('listMixGlue.toast.pendingRestored', { count: restored.failedItems.length }),
+    life: 6000,
+  });
+};
 // ============================================================================
 // 1. INTERFACES & TYPES (Updated to match the new JSON structure)
 // ============================================================================
@@ -1110,7 +1276,21 @@ const table2Ref = ref<HTMLDivElement | null>(null);
 // ============================================================================
 // 7. NAVIGATION & GUARDS (CHẶN THOÁT)
 // ============================================================================
+const isPrintBusy = computed(() => isPrintingComponent.value || isPrinting.value);
+
+const blockBackIfPrinting = (): boolean => {
+  if (!isPrintBusy.value) return false;
+  showToast({
+    severity: 'warn',
+    summary: t('listMixGlue.toast.warning'),
+    detail: t('mixGlueManagement.toast.printBackBlocked'),
+    life: 6000,
+  });
+  return true;
+};
+
 const goBack = async () => {
+  if (blockBackIfPrinting()) return;
   if (isDirty.value) {
     const ok = await alertExitPage();
     if (ok) router.back();
@@ -1138,26 +1318,15 @@ const alertExitPage = (): Promise<boolean> =>
                   resolve(false);
                   return;
                 }
+                // Navigate ngay, không chờ API — tránh delay
+                isDirty.value = false;
+                resolve(true);
                 try {
                   const payload = buildPayload('C', { onlyProgressLines: true });
                   await mixGlueApi.postMixGlueCommand(payload);
                   await saveDraftSnapshot();
-                  // await draftStore.clearDraft(currentWorkOrderId.value);
-                  isDirty.value = false;
-                  resolve(true);
                 } catch (error) {
                   console.error(error);
-                  if (notifyOfflineFromError(error)) {
-                    resolve(false);
-                    return;
-                  }
-                  showToast({
-                    severity: 'error',
-                    summary: t('listMixGlue.toast.error'),
-                    detail: t('mixGlueManagement.toast.progressSaveFailed'),
-                    life: 3500
-                  });
-                  resolve(false);
                 }
               })();
             }
@@ -1169,6 +1338,7 @@ const alertExitPage = (): Promise<boolean> =>
   });
 
 useBackButton(10, processNextHandler => {
+  if (blockBackIfPrinting()) return;
   if (!isDirty.value) {
     processNextHandler();
     return;
@@ -1179,6 +1349,7 @@ useBackButton(10, processNextHandler => {
 });
 
 onBeforeRouteLeave(async () => {
+  if (isPrintBusy.value) return false;
   if (!isDirty.value) return true;
   return await alertExitPage();
 });
@@ -1213,10 +1384,10 @@ onIonViewDidEnter(async () => {
   if (table2Ref.value) {
     table2Ref.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  bluetoothRef.value?.initBluetooth?.();
 });
 
 onIonViewWillLeave(async () => {
-  stopAutoConnect(mixGlueScaleSessionId);
   if (isNavigatingAway.value) return;
   if (currentWorkOrderId.value && isDirty.value) {
     await saveDraftSnapshot();
@@ -1224,6 +1395,7 @@ onIonViewWillLeave(async () => {
 });
 
 onIonViewWillEnter(() => {
+  void restorePendingPrintJob();
   const workOrderMasterId = route.query.workOrderMasterId as string;
   if (workOrderMasterId) {
     // Mỗi khi vào màn hình này, nó sẽ lấy ID mới từ route và fetch lại
@@ -1280,5 +1452,18 @@ onIonViewWillEnter(() => {
 .slide-fade-leave-to {
   transform: translateY(-15px);
   opacity: 0;
+}
+
+.print-progress-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 </style>

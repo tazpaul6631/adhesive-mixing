@@ -42,7 +42,7 @@
       "totalWeight": "需求總重量 (KG)",
       "updater": "派工人員",
       "updateDate": "派工日期",
-      "glueConfirm": "完成攪拌",
+      "glueConfirm": "調膠攪拌",
       "noMixConfirm": "確認分裝",
       "separateConfirm": "確認分裝",
       "noSeparateConfirm": "不分裝",
@@ -67,7 +67,11 @@
         "out_of_paper": "印表機缺紙",
         "tspl_build": "無法建立列印指令",
         "skipped_after_error": "因先前錯誤尚未列印"
-      }
+      },
+      "gapConfirmTitle": "對準紙張間隙",
+      "gapConfirmMessage": "請更換紙捲並手動對準間隙（第一張標籤貼齊列印頭）。確認後繼續列印 — 下一張標籤不會再送出 GAP 指令。",
+      "gapConfirmOk": "已對準間隙 — 繼續",
+      "gapConfirmCancel": "取消"
     },
     "toast": {
       "warning": "警告",
@@ -93,7 +97,17 @@
       "printPartial": "部分列印 ({printed}/{total})。",
       "alreadyPrinted": "{name} 已列印標籤。",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
-      "pendingReplaced": "已以新訂單取代待列印清單。"
+      "pendingReplaced": "已以新訂單取代待列印清單。",
+      "pendingExists": "有未處理的列印錯誤，請先處理後再繼續列印。",
+      "printQueueBackBlocked": "仍有 {count} 筆訂單待列印，請等待列印完成後再離開。",
+      "queuedTitle": "等待列印",
+      "componentLabel": {
+        "notConfirmed": "請先確認實際重量後再列印。",
+        "printSuccess": "已列印成分標籤。",
+        "printFailed": "標籤列印失敗！",
+        "printerNotConnected": "找不到印表機，請連接印表機。",
+        "printAriaLabel": "列印成分標籤"
+      }
     }
   },
   "listGlueReturnLog": {
@@ -149,7 +163,11 @@
         "out_of_paper": "印表機缺紙",
         "tspl_build": "無法建立列印指令",
         "skipped_after_error": "因先前錯誤尚未列印"
-      }
+      },
+      "gapConfirmTitle": "對準紙張間隙",
+      "gapConfirmMessage": "請更換紙捲並手動對準間隙（第一張標籤貼齊列印頭）。確認後繼續列印 — 下一張標籤不會再送出 GAP 指令。",
+      "gapConfirmOk": "已對準間隙 — 繼續",
+      "gapConfirmCancel": "取消"
     },
     "toast": {
       "warning": "警告",
@@ -165,7 +183,10 @@
       "printPartial": "部分列印 ({printed}/{total})。",
       "printFailed": "標籤列印失敗！",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
-      "pendingReplaced": "已使用新訂單取代待列印清單。"
+      "pendingReplaced": "已使用新訂單取代待列印清單。",
+      "pendingExists": "有未處理的列印錯誤，請先處理後再繼續列印。",
+      "printQueueBackBlocked": "仍有 {count} 筆訂單待列印，請等待列印完成後再離開。",
+      "queuedTitle": "等待列印"
     }
   },
   "separateMixedGlue": {
@@ -426,7 +447,8 @@
       "deleteSuccess": "已刪除",
       "deleteSuccessDetail": "成分刪除成功：{name}",
       "loadMaterialsFailed": "無法載入成分",
-      "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。"
+      "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。",
+      "printBackBlocked": "正在列印標籤，請等待列印完成後再離開。"
     }
   },
   "valid": {

@@ -42,7 +42,7 @@
       "totalWeight": "Tổng TL yêu cầu (KG)",
       "updater": "Nhân viên điều công",
       "updateDate": "Ngày điều công",
-      "glueConfirm": "Xác nhận trộn xong",
+      "glueConfirm": "Trộn keo hỗn hợp",
       "noMixConfirm": "Xác nhận chiết keo",
       "separateConfirm": "Xác nhận chiết keo",
       "noSeparateConfirm": "Không chiết",
@@ -67,7 +67,11 @@
         "out_of_paper": "Máy in hết giấy",
         "tspl_build": "Không thể tạo lệnh in",
         "skipped_after_error": "Chưa in do lỗi trước đó"
-      }
+      },
+      "gapConfirmTitle": "Căn gap giấy",
+      "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
+      "gapConfirmOk": "Đã căn gap — tiếp tục",
+      "gapConfirmCancel": "Hủy"
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -93,7 +97,17 @@
       "printPartial": "In một phần ({printed}/{total}).",
       "alreadyPrinted": "{name} đã in tem rồi.",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới."
+      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới.",
+      "pendingExists": "Có lỗi in chưa xử lý. Vui lòng xử lý lỗi trước khi in thêm.",
+      "printQueueBackBlocked": "Đang in {count} đơn còn lại. Vui lòng chờ in xong mới thoát.",
+      "queuedTitle": "Đang chờ in",
+      "componentLabel": {
+        "notConfirmed": "Vui lòng xác nhận trọng lượng thực tế trước khi in.",
+        "printSuccess": "Đã in tem thành phần.",
+        "printFailed": "In tem thất bại!",
+        "printerNotConnected": "Không tìm thấy máy in. Vui lòng kết nối máy in.",
+        "printAriaLabel": "In tem thành phần"
+      }
     }
   },
   "listGlueReturnLog": {
@@ -149,7 +163,11 @@
         "out_of_paper": "Máy in hết giấy",
         "tspl_build": "Không thể tạo lệnh in",
         "skipped_after_error": "Chưa in do lỗi trước đó"
-      }
+      },
+      "gapConfirmTitle": "Căn gap giấy",
+      "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
+      "gapConfirmOk": "Đã căn gap — tiếp tục",
+      "gapConfirmCancel": "Hủy"
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -165,7 +183,10 @@
       "printPartial": "In một phần ({printed}/{total}).",
       "printFailed": "In tem thất bại!",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới."
+      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới.",
+      "pendingExists": "Có lỗi in chưa xử lý. Vui lòng xử lý lỗi trước khi in thêm.",
+      "printQueueBackBlocked": "Đang in {count} đơn còn lại. Vui lòng chờ in xong mới thoát.",
+      "queuedTitle": "Đang chờ in"
     }
   },
   "separateMixedGlue": {
@@ -426,7 +447,8 @@
       "deleteSuccess": "Đã xóa",
       "deleteSuccessDetail": "Xóa thành phần thành công: {name}",
       "loadMaterialsFailed": "Không thể tải thành phần",
-      "progressSaveFailed": "Không thể gửi lưu tiến độ (C) lên server."
+      "progressSaveFailed": "Không thể gửi lưu tiến độ (C) lên server.",
+      "printBackBlocked": "Đang in tem. Vui lòng chờ in xong mới thoát."
     }
   },
   "valid": {

@@ -1,10 +1,10 @@
 <template>
-  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="380px" tableStyle="width: 100%;"
+  <div ref="tableWrapperRef" class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight" tableStyle="width: 100%;"
       stripedRows class="modern-table auto-columns-table">
 
       <template #empty>
-        <div style="text-align: center; height: 240px; align-content: center;">
+        <div class="separate-glue-empty" :style="{ minHeight: emptyStateMinHeight }">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
@@ -87,6 +87,7 @@ import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
+import { useAdaptiveTableScrollHeight } from '@/composables/useAdaptiveTableScrollHeight';
 import { useAppLocale } from '@/composables/useAppLocale';
 import {
   normalizeWeightToKg,
@@ -143,6 +144,12 @@ let bucketLoadPromise: Promise<void> | null = null;
 const bucketSelectResetKeys = ref<Record<number, number>>({});
 const bucketBeforeChangeByIndex = ref<Record<number, string | number | null>>({});
 const tableWrapperRef = ref<HTMLElement | null>(null);
+
+const { tableScrollHeight, emptyStateMinHeight } = useAdaptiveTableScrollHeight(tableWrapperRef, {
+  minPx: 140,
+  getReservedPx: () => (props.isViewMode ? 52 : 108),
+  fallbackViewportRatio: 0.38,
+});
 
 const { markPendingScrollToNewRow } = useScrollToNewTableRow(
   tableWrapperRef,
@@ -483,3 +490,20 @@ defineExpose({
   },
 });
 </script>
+
+<style scoped>
+.separate-glue-table-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.separate-glue-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+</style>

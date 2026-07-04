@@ -2,13 +2,14 @@
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary" style="padding: 0px !important;">
-        <ion-buttons slot="start">
-          <ion-button @click="goBack">
-            <i class="pi pi-angle-left text-xl mr-1"></i>
-          </ion-button>
-        </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title class="no-padding">{{ t('listGlueReturnLog.pageTitle') }}</ion-title>
+          <ion-buttons slot="start">
+            <ion-button @click="goBack">
+              <i class="pi pi-angle-left text-xl mr-1"></i>
+              <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
+              }}</ion-title>
+            </ion-button>
+          </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>

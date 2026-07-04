@@ -1,4 +1,5 @@
 import separateApi from '@/api/separate';
+import { notifyPrintInterrupted, takeTsplMediaPrefix } from '@/services/labelPrintSession';
 
 export type PrintFailureReason =
   | 'bluetooth_disconnect'
@@ -526,13 +527,8 @@ export function buildSeparateLabelTspl(item: SeparatePrintItem): string | null {
   const { startHour, startDay, endHour, endDay } = dto;
   const qrPayload = `${dto.action}/${item.qrPath}`;
 
-  let tspl = `
-SIZE 69 mm, 49 mm
-GAP 3 mm, 0 mm
-REFERENCE 0,0
-DIRECTION 1
-CODEPAGE UTF-8
-CLS
+  const mediaPrefix = takeTsplMediaPrefix();
+  let tspl = `${mediaPrefix}CLS
 QRCODE 15,20,H,5,A,0,"${tsplEscape(qrPayload)}"
 QRCODE 380,240,H,5,A,0,"${tsplEscape(qrPayload)}"
 `;
@@ -645,6 +641,7 @@ export async function printSeparateLabelsSequential(
         defaultFailureMessage.bluetooth_disconnect
       );
       onProgress?.(printedCount, total);
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,
@@ -663,6 +660,7 @@ export async function printSeparateLabelsSequential(
         defaultFailureMessage.tspl_build
       );
       onProgress?.(printedCount, total);
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,
@@ -681,6 +679,7 @@ export async function printSeparateLabelsSequential(
         defaultFailureMessage.bluetooth_disconnect
       );
       onProgress?.(printedCount, total);
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,

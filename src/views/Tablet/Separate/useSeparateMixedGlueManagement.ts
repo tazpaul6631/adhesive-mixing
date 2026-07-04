@@ -1236,25 +1236,14 @@ export function useSeparateMixedGlueManagement() {
                     resolve(false);
                     return;
                   }
+                  // Navigate ngay, không chờ API — tránh delay
+                  isDirty.value = false;
+                  resolve(true);
                   try {
                     const payload = buildSeparateGlueExitPayload(getPayloadContext());
                     await separateGlue.postSeparateGlueCommand(payload);
-                    // await draftStore.clearAll();
-                    isDirty.value = false;
-                    resolve(true);
                   } catch (error) {
                     console.error(error);
-                    if (notifyOfflineFromError(error)) {
-                      resolve(false);
-                      return;
-                    }
-                    showToast({
-                      severity: 'error',
-                      summary: t('listMixGlue.toast.error'),
-                      detail: t('separateMixedGlue.toast.progressSaveFailed'),
-                      life: 6000,
-                    });
-                    resolve(false);
                   }
                 })();
               },
@@ -1270,28 +1259,25 @@ export function useSeparateMixedGlueManagement() {
   };
 
   const goBack = async () => {
-    await persistDraftOnLeave();
-
     if (isDirty.value) {
       const canLeave = await alertExitPage();
       if (canLeave) navigateToSeparateList();
       return;
     }
+    // Không có dirty data — lưu draft background, navigate ngay
+    void persistDraftOnLeave();
     navigateToSeparateList();
   };
 
   useBackButton(10, () => {
-    void (async () => {
-      await persistDraftOnLeave();
-
-      if (!isDirty.value) {
-        navigateToSeparateList();
-        return;
-      }
-
-      const ok = await alertExitPage();
+    if (!isDirty.value) {
+      void persistDraftOnLeave();
+      navigateToSeparateList();
+      return;
+    }
+    void alertExitPage().then(ok => {
       if (ok) navigateToSeparateList();
-    })();
+    });
   });
 
   onBeforeRouteLeave(async () => {

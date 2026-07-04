@@ -42,7 +42,7 @@
       "totalWeight": "Required total weight (KG)",
       "updater": "Glue updater",
       "updateDate": "Glue update date",
-      "glueConfirm": "Confirm mixed glue",
+      "glueConfirm": "Mix glue",
       "noMixConfirm": "Confirm decant",
       "separateConfirm": "Confirm decant",
       "noSeparateConfirm": "No decant",
@@ -67,7 +67,11 @@
         "out_of_paper": "Printer out of paper",
         "tspl_build": "Failed to build print command",
         "skipped_after_error": "Not printed due to earlier error"
-      }
+      },
+      "gapConfirmTitle": "Align label gap",
+      "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
+      "gapConfirmOk": "Gap aligned — continue",
+      "gapConfirmCancel": "Cancel"
     },
     "toast": {
       "warning": "Warning",
@@ -93,7 +97,17 @@
       "printPartial": "Partial print ({printed}/{total}).",
       "alreadyPrinted": "{name} has already been printed.",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
-      "pendingReplaced": "Replaced the pending label queue with the new order."
+      "pendingReplaced": "Replaced the pending label queue with the new order.",
+      "pendingExists": "There are unresolved print errors. Please resolve them before printing more.",
+      "printQueueBackBlocked": "Still printing {count} order(s). Please wait until printing is complete before leaving.",
+      "queuedTitle": "Waiting to print",
+      "componentLabel": {
+        "notConfirmed": "Please confirm the actual weight before printing.",
+        "printSuccess": "Component label printed.",
+        "printFailed": "Label printing failed!",
+        "printerNotConnected": "Printer not found. Please connect a printer.",
+        "printAriaLabel": "Print component label"
+      }
     }
   },
   "listGlueReturnLog": {
@@ -149,7 +163,11 @@
         "out_of_paper": "Printer out of paper",
         "tspl_build": "Failed to build print command",
         "skipped_after_error": "Not printed due to earlier error"
-      }
+      },
+      "gapConfirmTitle": "Align label gap",
+      "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
+      "gapConfirmOk": "Gap aligned — continue",
+      "gapConfirmCancel": "Cancel"
     },
     "toast": {
       "warning": "Warning",
@@ -165,7 +183,10 @@
       "printPartial": "Partial print ({printed}/{total}).",
       "printFailed": "Label printing failed!",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
-      "pendingReplaced": "Replaced the pending label queue with the new order."
+      "pendingReplaced": "Replaced the pending label queue with the new order.",
+      "pendingExists": "There are unresolved print errors. Please resolve them before printing more.",
+      "printQueueBackBlocked": "Still printing {count} order(s). Please wait until printing is complete before leaving.",
+      "queuedTitle": "Waiting to print"
     }
   },
   "separateMixedGlue": {
@@ -426,7 +447,8 @@
       "deleteSuccess": "Deleted",
       "deleteSuccessDetail": "Component deleted successfully: {name}",
       "loadMaterialsFailed": "Could not load components",
-      "progressSaveFailed": "Could not send progress save (C) to the server."
+      "progressSaveFailed": "Could not send progress save (C) to the server.",
+      "printBackBlocked": "Printing in progress. Please wait until printing finishes before leaving."
     }
   },
   "valid": {

@@ -2,13 +2,14 @@
   <ion-page>
     <ion-header class="header-container">
       <ion-toolbar color="primary" style="padding: 0px !important;">
-        <ion-buttons slot="start">
-          <ion-button @click="goBack">
-            <i class="pi pi-angle-left text-xl mr-1"></i>
-          </ion-button>
-        </ion-buttons>
         <div class="flex align-items-center justify-content-between">
-          <ion-title class="no-padding">{{ t('separateMixedGlue.management.pageTitle') }}</ion-title>
+          <ion-buttons slot="start">
+            <ion-button @click="goBack">
+              <i class="pi pi-angle-left text-xl mr-1"></i>
+              <ion-title class="no-padding" style="line-height: 50px;">{{ t('separateMixedGlue.management.pageTitle')
+                }}</ion-title>
+            </ion-button>
+          </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
         </div>
       </ion-toolbar>
@@ -48,28 +49,32 @@
 
         <!-- Vùng bảng — scroll khi nội dung dài -->
         <div class="separate-mixed-glue-scroll-body">
-          <div v-if="hasMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl">
+          <div v-if="hasMixChemicals" class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
+            <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-list mr-2"></i>{{ t('separateMixedGlue.management.sections.mixedGlueBucket') }}
               </span>
             </div>
-            <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails" :disabled="false"
-              :disable-add-row="false" :request-details="requestDetails" :target-weight="mixSeparateTargetWeight"
-              target-weight-unit="Kg" use-chiet-capacity-validation @update-bucket="handleMixSeparateBucketUpdate"
-              @add-row="handleAddSeparateGlueRow" @delete-row="handleDeleteSeparateGlueRow" />
+            <div class="separate-mixed-glue-table-card__body">
+              <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails" :disabled="false"
+                :disable-add-row="false" :request-details="requestDetails" :target-weight="mixSeparateTargetWeight"
+                target-weight-unit="Kg" use-chiet-capacity-validation @update-bucket="handleMixSeparateBucketUpdate"
+                @add-row="handleAddSeparateGlueRow" @delete-row="handleDeleteSeparateGlueRow" />
+            </div>
           </div>
 
-          <div v-if="hasNoMixChemicals" class="surface-card p-0 shadow-1 border-round-xl">
-            <div class="surface-100 p-3 border-round-top-xl">
+          <div v-if="hasNoMixChemicals" class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
+            <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>{{ t('separateMixedGlue.management.sections.noMixGlue') }}
               </span>
             </div>
-            <SeparateGlue :is-loading="isLoadingLine" :order-details="noMixGlueTableDetails" :disabled="false"
-              :disable-add-row="false" :request-details="requestDetails" :target-weight="noMixSeparateTargetWeight"
-              target-weight-unit="Kg" use-chiet-capacity-validation @update-bucket="handleNoMixSeparateBucketUpdate"
-              @add-row="handleAddNoMixSeparateGlueRow" @delete-row="handleDeleteNoMixSeparateGlueRow" />
+            <div class="separate-mixed-glue-table-card__body">
+              <SeparateGlue :is-loading="isLoadingLine" :order-details="noMixGlueTableDetails" :disabled="false"
+                :disable-add-row="false" :request-details="requestDetails" :target-weight="noMixSeparateTargetWeight"
+                target-weight-unit="Kg" use-chiet-capacity-validation @update-bucket="handleNoMixSeparateBucketUpdate"
+                @add-row="handleAddNoMixSeparateGlueRow" @delete-row="handleDeleteNoMixSeparateGlueRow" />
+            </div>
           </div>
         </div>
       </div>
@@ -140,12 +145,28 @@ const {
 .separate-mixed-glue-scroll-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding-bottom: 0.5rem;
+}
+
+.separate-mixed-glue-table-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.separate-mixed-glue-table-card__title {
+  flex-shrink: 0;
+}
+
+.separate-mixed-glue-table-card__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 </style>

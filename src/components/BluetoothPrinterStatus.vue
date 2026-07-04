@@ -63,7 +63,7 @@ onActivated(() => {
 });
 
 onUnmounted(() => {
-  cleanupBluetooth(true);
+  cleanupBluetooth();
 });
 
 defineExpose({
