@@ -193,6 +193,7 @@
       "notePlaceholder": "Enter notes if any",
       "cancelButton": "CANCEL",
       "submitButton": "Submit",
+      "submitRequired": "Please enter a note before submitting.",
       "messages": {
         "cameraPermission": "Camera permission is required to scan the inspection code!",
         "invalidQr": "Invalid inspection code or no data found!",

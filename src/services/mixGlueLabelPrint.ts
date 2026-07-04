@@ -1,4 +1,5 @@
 import mixGlue from '@/api/mixGlue';
+import { notifyPrintInterrupted, takeTsplMediaPrefix } from '@/services/labelPrintSession';
 
 export interface MixGluePrintItem {
   id: string;
@@ -315,13 +316,8 @@ export async function buildMixGlueLabelTspl(
 
   const { glueName, startHour, startDay, endHour, endDay, action, productLineName, pasteQrCode, glueWeight } = response.data.data;
 
-  let tspl = `
-SIZE 69 mm, 49 mm
-GAP 3 mm, 0 mm
-REFERENCE 0,0
-DIRECTION 1
-CODEPAGE UTF-8
-CLS
+  const mediaPrefix = takeTsplMediaPrefix();
+  let tspl = `${mediaPrefix}CLS
 QRCODE 15,20,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
 `;
@@ -480,6 +476,7 @@ export async function printMixGlueBatch(
     const ok = await writeFn(batchResult.tspl);
     if (!ok) {
       console.error('[mixGlueLabelPrint] Bluetooth write fail', { chunk });
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,
@@ -553,6 +550,7 @@ export async function printMixGlueLabelsSequential(
         mixGlueFailureMessage.bluetooth_disconnect
       );
       onProgress?.(printedCount, total);
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,
@@ -572,6 +570,7 @@ export async function printMixGlueLabelsSequential(
         mixGlueFailureMessage.tspl_build
       );
       onProgress?.(printedCount, total);
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,
@@ -589,6 +588,7 @@ export async function printMixGlueLabelsSequential(
         mixGlueFailureMessage.bluetooth_disconnect
       );
       onProgress?.(printedCount, total);
+      notifyPrintInterrupted();
       return {
         ok: false,
         printedCount,

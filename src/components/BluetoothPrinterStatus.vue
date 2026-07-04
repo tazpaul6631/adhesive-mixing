@@ -41,6 +41,7 @@ const {
   refreshScan,
   disconnect,
   cancelConnection,
+  connectForPrint,
   isConnected,
   verifyHardwareConnected,
   setPrintInProgress,
@@ -62,7 +63,7 @@ onActivated(() => {
 });
 
 onUnmounted(() => {
-  cleanupBluetooth(true);
+  cleanupBluetooth();
 });
 
 defineExpose({
@@ -70,6 +71,7 @@ defineExpose({
   pauseBluetooth,
   cleanupBluetooth,
   refreshScan,
+  connectForPrint,
   isConnected,
   verifyHardwareConnected,
   setPrintInProgress,

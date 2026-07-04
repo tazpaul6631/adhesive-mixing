@@ -1,10 +1,10 @@
 <template>
-  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable scrollHeight="380px" tableStyle="width: 100%;"
+  <div ref="tableWrapperRef" class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight" tableStyle="width: 100%;"
       stripedRows class="modern-table auto-columns-table">
 
       <template #empty>
-        <div style="text-align: center; height: 240px; align-content: center;">
+        <div class="separate-glue-empty" :style="{ minHeight: emptyStateMinHeight }">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
         </div>
@@ -43,7 +43,7 @@
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
             :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets" filter
-            @show="handleBucketSelectShow" @change="handleBucketChange(data, index)" />
+            @show="() => handleBucketSelectShow(data, index)" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
@@ -81,12 +81,13 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
 import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
+import { useAdaptiveTableScrollHeight } from '@/composables/useAdaptiveTableScrollHeight';
 import { useAppLocale } from '@/composables/useAppLocale';
 import {
   normalizeWeightToKg,
@@ -127,9 +128,13 @@ const props = defineProps<{
   useChietCapacityValidation?: boolean;
 }>();
 
-const emit = defineEmits(['update-bucket', 'add-row', 'delete-row']);
+const emit = defineEmits<{
+  'update-bucket': [payload: { row: any; previousBucketId: string | number | null; newBucketId: string | number | null }];
+  'add-row': [];
+  'delete-row': [row: any];
+}>();
 
-const toast = useToast();
+const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(1).fill({}));
 const authStore = useAuthStore();
@@ -137,7 +142,14 @@ const bucketList = ref<BucketOption[]>([]);
 const isLoadingBuckets = ref(false);
 let bucketLoadPromise: Promise<void> | null = null;
 const bucketSelectResetKeys = ref<Record<number, number>>({});
+const bucketBeforeChangeByIndex = ref<Record<number, string | number | null>>({});
 const tableWrapperRef = ref<HTMLElement | null>(null);
+
+const { tableScrollHeight, emptyStateMinHeight } = useAdaptiveTableScrollHeight(tableWrapperRef, {
+  minPx: 140,
+  getReservedPx: () => (props.isViewMode ? 52 : 108),
+  fallbackViewportRatio: 0.38,
+});
 
 const { markPendingScrollToNewRow } = useScrollToNewTableRow(
   tableWrapperRef,
@@ -335,7 +347,7 @@ const handleAddRow = () => {
   if (props.useChietCapacityValidation && rows.length > 0) {
     const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
     if (incompleteIndex !== -1) {
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
@@ -353,7 +365,7 @@ const handleAddRow = () => {
         props.targetWeight,
         props.targetWeightUnit || 'Kg'
       );
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.allocationComplete'),
         detail: exceeded
@@ -394,7 +406,7 @@ const fetchBucketList = async () => {
     } catch (error) {
       console.error('Lỗi khi tải danh sách thùng chứa', error);
       bucketList.value = [];
-      toast.add({
+      showToast({
         severity: 'error',
         summary: t('listMixGlue.toast.error'),
         detail: t('common.checkNetwork'),
@@ -419,7 +431,8 @@ watch(
   { immediate: true }
 );
 
-const handleBucketSelectShow = () => {
+const handleBucketSelectShow = (rowData: any, rowIndex: number) => {
+  bucketBeforeChangeByIndex.value[rowIndex] = rowData?.selectedBucketId ?? rowData?.bucketId ?? null;
   if (props.isViewMode || props.disabled || isLoadingBuckets.value) return;
   void fetchBucketList();
 };
@@ -435,7 +448,7 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
     const targetWeightKg = getEffectiveTargetWeightKg();
     if (targetWeightKg > 0 && getSelectedBucketTotalKg() > targetWeightKg + WEIGHT_EPSILON) {
       await clearRowBucketSelection(rowData, rowIndex);
-      toast.add({
+      showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.weightExceeded'),
         detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getTargetWeightLabel() }),
@@ -446,7 +459,11 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
   }
 
   updateRowCompletionInfo(rowData);
-  emit('update-bucket');
+  const newBucketId = rowData.selectedBucketId ?? rowData.bucketId ?? null;
+  const previousBucketId = bucketBeforeChangeByIndex.value[rowIndex]
+    ?? rowData._lastSubmittedBucketId
+    ?? null;
+  emit('update-bucket', { row: rowData, previousBucketId, newBucketId });
 };
 
 defineExpose({
@@ -473,3 +490,20 @@ defineExpose({
   },
 });
 </script>
+
+<style scoped>
+.separate-glue-table-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.separate-glue-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+</style>

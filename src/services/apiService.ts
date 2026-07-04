@@ -4,9 +4,14 @@ import baseURLApi from '@/api/baseURLApi';
 
 const baseURL = baseURLApi.url;
 
+// Timeout mặc định 10s cho các API nhanh
+// Các list API nặng (WorkOrder, GlueReturnLog) sẽ override timeout riêng
+const DEFAULT_TIMEOUT = 10000;
+export const SLOW_API_TIMEOUT = 30000;
+
 const api = axios.create({
   baseURL,
-  timeout: 10000, // 10 giây
+  timeout: DEFAULT_TIMEOUT,
 });
 
 /**
@@ -14,8 +19,8 @@ const api = axios.create({
  */
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const authStore = useAuthStore(); // Pinia cho phép gọi store
-    const token = authStore.token; // Lấy token đã được Pinia tự động load từ Storage
+    const authStore = useAuthStore();
+    const token = authStore.token;
 
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -41,10 +46,20 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const authStore = useAuthStore();
 
-    // TH1: Lỗi mất kết nối hoàn toàn (Network Error / CORS / Server Down)
+    // TH1: Lỗi không có response (Network Error, Timeout, CORS, Server Down)
     if (!error.response) {
-      console.warn("Mất kết nối mạng hoặc Server không phản hồi. Chuyển sang Offline Mode.");
-      authStore.setNetworkStatus(false);
+      // Phân biệt timeout (server chậm) vs mất mạng thật sự
+      // Axios timeout → error.code = 'ECONNABORTED'
+      // Mất mạng thật  → error.code = 'ERR_NETWORK'
+      const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+      if (isTimeout) {
+        // Server đang chạy nhưng xử lý quá chậm → KHÔNG chuyển Offline
+        console.warn(`[API] Request timeout: ${error.config?.url}. Server đang xử lý chậm.`);
+      } else {
+        // Mất mạng thật sự
+        console.warn(`[API] Mất kết nối mạng: ${error.config?.url}. Chuyển sang Offline Mode.`);
+        authStore.setNetworkStatus(false);
+      }
       return Promise.reject(error);
     }
 
@@ -67,15 +82,24 @@ api.interceptors.response.use(
   }
 );
 
+export type RequestConfig = { timeout?: number };
+
 /**
  * 3. EXPORT WRAPPER: chạy bằng Axios
+ * config.timeout — override timeout cho request cụ thể
+ * Ví dụ: { timeout: SLOW_API_TIMEOUT } cho các list API nặng
  */
 const request = {
-  get: (url: string, params?: any) => api.get(url, { params }),
-  post: (url: string, data?: any) => api.post(url, data),
-  put: (url: string, data?: any) => api.put(url, data),
-  patch: (url: string, data?: any) => api.patch(url, data),
-  delete: (url: string) => api.delete(url),
+  get: (url: string, params?: any, config?: RequestConfig) =>
+    api.get(url, { params, ...config }),
+  post: (url: string, data?: any, config?: RequestConfig) =>
+    api.post(url, data, config),
+  put: (url: string, data?: any, config?: RequestConfig) =>
+    api.put(url, data, config),
+  patch: (url: string, data?: any, config?: RequestConfig) =>
+    api.patch(url, data, config),
+  delete: (url: string, config?: RequestConfig) =>
+    api.delete(url, config),
 };
 
 export default request;

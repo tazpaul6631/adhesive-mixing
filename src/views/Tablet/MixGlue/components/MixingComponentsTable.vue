@@ -74,7 +74,13 @@
       <Column :header="t('mixGlueManagement.componentsTable.columns.action')" :exportable="false"
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="slotProps">
-          <div class="flex justify-content-center">
+          <div class="flex justify-content-center gap-1">
+            <Button icon="pi pi-print" severity="success" class="button-lg"
+              :disabled="!slotProps.data.weighingTime || isPrinting"
+              :loading="isPrinting && printingMaterialCode === slotProps.data.materialCode"
+              :aria-label="t('listMixGlue.toast.componentLabel.printAriaLabel')"
+              :title="t('listMixGlue.toast.componentLabel.printAriaLabel')"
+              @click.stop="$emit('print-row', slotProps.data)" />
             <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
               text :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')" :disabled="disabled"
               class="button-lg" @click.stop="$emit('delete-row', slotProps.data)" />
@@ -97,9 +103,11 @@ const props = defineProps<{
   headerTotalWeight: string | number;
   selectedItem: any;
   disabled?: boolean;
+  isPrinting?: boolean;
+  printingMaterialCode?: string | null;
 }>();
 
-const emit = defineEmits(['row-click', 'open-new', 'delete-row', 'update:selectedItem']);
+const emit = defineEmits(['row-click', 'open-new', 'delete-row', 'update:selectedItem', 'print-row']);
 
 const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(5).fill({}));

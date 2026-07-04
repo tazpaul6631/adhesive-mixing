@@ -24,6 +24,7 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
     private UsbSerialPort usbPort;
     private SerialInputOutputManager ioManager;
     private UsbDeviceConnection usbConnection;
+    private String connectedDeviceId = null;
 
     private void internalDisconnect() {
         if (ioManager != null) {
@@ -43,6 +44,8 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
             usbConnection.close();
             usbConnection = null;
         }
+
+        connectedDeviceId = null;
     }
 
     private List<UsbSerialDriver> findAllDrivers() {
@@ -132,6 +135,30 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
     }
 
     @PluginMethod
+    public void requestPermissions(PluginCall call) {
+        UsbManager manager = (UsbManager) getContext().getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = findAllDrivers();
+        int requested = 0;
+        int granted = 0;
+
+        for (UsbSerialDriver driver : availableDrivers) {
+            UsbDevice device = driver.getDevice();
+            if (manager.hasPermission(device)) {
+                granted++;
+                continue;
+            }
+            ensureUsbPermission(manager, device);
+            requested++;
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("requested", requested);
+        ret.put("granted", granted);
+        ret.put("total", availableDrivers.size());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void disconnect(PluginCall call) {
         internalDisconnect();
         call.resolve();
@@ -139,6 +166,19 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
 
     @PluginMethod
     public void connect(PluginCall call) {
+        String deviceId = call.getString("deviceId");
+
+        if (deviceId != null
+            && !deviceId.isEmpty()
+            && deviceId.equals(connectedDeviceId)
+            && usbPort != null
+            && ioManager != null) {
+            JSObject ret = new JSObject();
+            ret.put("deviceId", connectedDeviceId);
+            call.resolve(ret);
+            return;
+        }
+
         internalDisconnect();
 
         UsbManager manager = (UsbManager) getContext().getSystemService(Context.USB_SERVICE);
@@ -149,7 +189,6 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
             return;
         }
 
-        String deviceId = call.getString("deviceId");
         UsbSerialDriver driver = findDriverById(deviceId);
         if (driver == null) {
             call.reject("Không tìm thấy cân đã chọn. Hãy bấm refresh để quét lại USB.");
@@ -174,8 +213,10 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
             ioManager = new SerialInputOutputManager(usbPort, this);
             ioManager.start();
 
+            connectedDeviceId = getDeviceStableId(device);
+
             JSObject ret = new JSObject();
-            ret.put("deviceId", getDeviceStableId(device));
+            ret.put("deviceId", connectedDeviceId);
             call.resolve(ret);
         } catch (IOException e) {
             internalDisconnect();

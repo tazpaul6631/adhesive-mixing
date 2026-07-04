@@ -19,7 +19,7 @@ export interface PrintJobContext {
   workOrderMasterId: string;
   workOrderMasterName?: string;
   confirmBy: string;
-  isSeparateGlue: boolean;
+  isNoMixGlue: boolean;
   lastPrintTotal: number;
 }
 
@@ -54,7 +54,7 @@ export function useSeparateLabelBatchPrint() {
       workOrderMasterId: ctx.workOrderMasterId,
       workOrderMasterName: ctx.workOrderMasterName,
       confirmBy: ctx.confirmBy,
-      isSeparateGlue: ctx.isSeparateGlue,
+      isNoMixGlue: ctx.isNoMixGlue,
       failedItems: failedItems.value,
       lastPrintTotal: ctx.lastPrintTotal,
       updatedAt: new Date().toISOString(),
@@ -91,7 +91,7 @@ export function useSeparateLabelBatchPrint() {
       workOrderMasterId: saved.workOrderMasterId,
       workOrderMasterName: saved.workOrderMasterName,
       confirmBy: saved.confirmBy,
-      isSeparateGlue: saved.isSeparateGlue,
+      isNoMixGlue: saved.isNoMixGlue,
       lastPrintTotal: saved.lastPrintTotal,
     };
     lastErrorReason.value = saved.failedItems[0]?.reason ?? null;

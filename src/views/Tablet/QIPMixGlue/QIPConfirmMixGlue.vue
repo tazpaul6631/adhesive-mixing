@@ -126,7 +126,7 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
+import { useAppToast } from '@/composables/useAppToast';
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton,
   IonTitle, onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave
@@ -161,7 +161,7 @@ interface HeaderInfo {
 // --- STATE ---
 const router = useRouter();
 const route = useRoute();
-const toast = useToast();
+const { showToast } = useAppToast();
 const authStore = useAuthStore();
 const contentRef = ref<any>(null);
 const isLoadingLine = ref(true);
@@ -226,11 +226,11 @@ const fetchWorkOrderDetail = async (id: string) => {
     }
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu chi tiết:', error);
-    toast.add({
+    showToast({
       severity: 'error',
       summary: 'Lỗi hệ thống',
       detail: 'Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau.',
-      life: 3000
+      life: 6000
     });
   } finally {
     isLoadingLine.value = false;

@@ -95,6 +95,7 @@ import UserAvatar from '@/components/UserAvatar.vue';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
+import { useListTableFetch } from '@/composables/useListTableFetch';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -144,6 +145,10 @@ const lineDetails = ref<Partial<WorkOrderMaster>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
 const rowsPerPage = ref(5);
+const { startRequest, isStaleRequest, shouldSkipDuplicatePageLoad } = useListTableFetch();
+
+const hasLoadedWorkOrderRows = () =>
+  lineDetails.value.some((row) => row.workOrderMasterId != null && row.workOrderMasterId !== '');
 
 const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
@@ -158,6 +163,7 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
 };
 
 const fetchWorkOrders = async (page: number, pageSize: number) => {
+  const requestId = startRequest();
   isLoadingLine.value = true;
   lineDetails.value = Array.from({ length: pageSize }).map(() => ({}));
 
@@ -171,6 +177,8 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
     };
 
     const response = await workOrder.postWorkOrderList(payload);
+    if (isStaleRequest(requestId)) return;
+
     const resData = response.data as ApiResponse<WorkOrderMaster>;
 
     if (resData && resData.success) {
@@ -182,25 +190,39 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
       totalRecords.value = 0;
     }
   } catch (error) {
+    if (isStaleRequest(requestId)) return;
     console.error("Lỗi gọi API getWorkOrderList:", error);
     lineDetails.value = [];
     totalRecords.value = 0;
   } finally {
-    isLoadingLine.value = false;
+    if (!isStaleRequest(requestId)) {
+      isLoadingLine.value = false;
+    }
   }
 };
 
-const onPageLine = (event: any) => {
+const onPageLine = (event: { page: number; rows: number }) => {
+  if (shouldSkipDuplicatePageLoad({
+    eventPage: event.page,
+    eventRows: event.rows,
+    currentPage: currentPage.value,
+    rowsPerPage: rowsPerPage.value,
+    isLoading: isLoadingLine.value,
+    hasData: hasLoadedWorkOrderRows(),
+  })) {
+    return;
+  }
+
   currentPage.value = event.page + 1;
   rowsPerPage.value = event.rows;
-  fetchWorkOrders(currentPage.value, rowsPerPage.value);
+  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
 };
 
 const goBack = () => router.push('/app-menu');
 
 onIonViewWillEnter(() => {
-  fetchWorkOrders(currentPage.value, rowsPerPage.value);
-})
+  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
+});
 </script>
 
 <style scoped>
