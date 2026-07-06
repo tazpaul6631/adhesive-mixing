@@ -49,6 +49,7 @@
     "offlineDownloadNote": "請稍候，QR 資料正在儲存以供離線使用。",
     "offlineLoginBlocked": "裝置目前離線。請先連線後再登入。",
     "offlineFactoryMissing": "找不到使用者的工廠代碼，請聯絡 IT。",
+    "offlineDepartmentMissing": "找不到使用者的部門代碼，請聯絡 IT。",
     "offlineDownloadFailed": "無法下載離線資料，請檢查網路連線後再試。",
     "offlineSyncTitle": "正在同步資料",
     "offlineSyncNote": "請稍候，離線資料正在上傳至系統。",

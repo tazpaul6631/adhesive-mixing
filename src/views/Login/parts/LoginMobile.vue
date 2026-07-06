@@ -480,6 +480,20 @@ const resolveLoginFactoryId = (userData: any, fallbackFactoryId = '') => {
   return candidates.map(normalizeLoginValue).find(Boolean) || '';
 };
 
+const resolveLoginDepartmentId = (userData: any) => {
+  const candidates = [
+    userData?.departmentId,
+    userData?.departmentID,
+    userData?.departmentCode,
+    userData?.department,
+    getNestedValue(userData, ['department', 'departmentId']),
+    getNestedValue(userData, ['employee', 'departmentId']),
+    getNestedValue(userData, ['user', 'departmentId']),
+  ];
+
+  return candidates.map(normalizeLoginValue).find(Boolean) || '';
+};
+
 const getCurrentNetworkStatus = async () => {
   try {
     const status = await Network.getStatus();
@@ -535,13 +549,18 @@ const syncPendingOfflineDataAfterLogin = async () => {
 
 const downloadOfflineDataAfterLogin = async (userData: any, fallbackFactoryId = '') => {
   const factoryId = resolveLoginFactoryId(userData, fallbackFactoryId);
+  const departmentId = resolveLoginDepartmentId(userData);
 
   if (!factoryId) {
     throw new Error(t('login.offlineFactoryMissing'));
   }
 
+  if (!departmentId) {
+    throw new Error(t('login.offlineDepartmentMissing'));
+  }
+
   offlineStore.resetDownloadState();
-  await offlineStore.downloadOfflineQrData(factoryId);
+  await offlineStore.downloadOfflineQrData(factoryId, departmentId);
 };
 
 const getLoginErrorMessage = (error: any, fallback: string) => {
