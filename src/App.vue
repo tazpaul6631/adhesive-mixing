@@ -100,6 +100,21 @@ const resolveCurrentFactoryId = () => {
   return candidates.map(normalizeAppValue).find(Boolean) || '';
 };
 
+const resolveCurrentDepartmentId = () => {
+  const userData = authStore.user;
+  const candidates = [
+    userData?.departmentId,
+    userData?.departmentID,
+    userData?.departmentCode,
+    userData?.department,
+    getNestedValue(userData, ['department', 'departmentId']),
+    getNestedValue(userData, ['employee', 'departmentId']),
+    getNestedValue(userData, ['user', 'departmentId']),
+  ];
+
+  return candidates.map(normalizeAppValue).find(Boolean) || '';
+};
+
 let activeReconnectRefreshPromise: Promise<void> | null = null;
 
 const startMobileOfflineRefreshAfterReconnect = async () => {
@@ -120,13 +135,19 @@ const startMobileOfflineRefreshAfterReconnect = async () => {
     }
 
     const factoryId = resolveCurrentFactoryId();
+    const departmentId = resolveCurrentDepartmentId();
     if (!factoryId) {
       console.warn('Không tìm thấy factoryId để tải lại dữ liệu offline sau khi có mạng.');
       return;
     }
 
+    if (!departmentId) {
+      console.warn('Không tìm thấy departmentId để tải lại dữ liệu offline sau khi có mạng.');
+      return;
+    }
+
     offlineStore.resetDownloadState();
-    await offlineStore.downloadOfflineQrData(factoryId);
+    await offlineStore.downloadOfflineQrData(factoryId, departmentId);
   })()
     .catch((error) => {
       console.error('Không thể đồng bộ hoặc tải lại dữ liệu offline:', error);

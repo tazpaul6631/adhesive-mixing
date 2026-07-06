@@ -5,16 +5,22 @@ export default {
     return request.get(`api/mobile/offline/lcqrdata/${encodeURIComponent(factoryId)}`);
   },
 
-  getMixGlueQrData(factoryId: string) {
-    return request.get(`api/mobile/offline/mgmqrdata/${encodeURIComponent(factoryId)}`);
+  getMixGlueQrData(factoryId: string, departmentId: string) {
+    return request.get(
+      `api/mobile/offline/mgmqrdata/${encodeURIComponent(factoryId)}/${encodeURIComponent(departmentId)}`
+    );
   },
 
-  getSeparateGlueQrData(factoryId: string) {
-    return request.get(`api/mobile/offline/sgqrdata/${encodeURIComponent(factoryId)}`);
+  getSeparateGlueQrData(factoryId: string, departmentId: string) {
+    return request.get(
+      `api/mobile/offline/sgqrdata/${encodeURIComponent(factoryId)}/${encodeURIComponent(departmentId)}`
+    );
   },
 
-  getNoSeparateGlueQrData(factoryId: string) {
-    return request.get(`api/mobile/offline/nsgqrdata/${encodeURIComponent(factoryId)}`);
+  getNoSeparateGlueQrData(factoryId: string, departmentId: string) {
+    return request.get(
+      `api/mobile/offline/nsgqrdata/${encodeURIComponent(factoryId)}/${encodeURIComponent(departmentId)}`
+    );
   },
 
   getCheckListQrData(factoryId: string) {

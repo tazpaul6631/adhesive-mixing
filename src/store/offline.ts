@@ -85,7 +85,7 @@ export const useOfflineStore = defineStore('offline', {
       this.syncMessage = progress.type || '';
     },
 
-    async downloadOfflineQrData(factoryId: string) {
+    async downloadOfflineQrData(factoryId: string, departmentId: string) {
       this.isDownloadingOfflineData = true;
       this.downloadError = '';
       this.downloadCurrent = 0;
@@ -93,7 +93,7 @@ export const useOfflineStore = defineStore('offline', {
       this.lastDownloadCounts = null;
 
       try {
-        this.lastDownloadCounts = await downloadAndSaveGlueOfflineData(factoryId, (progress) => {
+        this.lastDownloadCounts = await downloadAndSaveGlueOfflineData(factoryId, departmentId, (progress) => {
           this.setDownloadProgress(progress);
         });
 
