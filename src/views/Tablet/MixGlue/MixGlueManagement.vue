@@ -247,6 +247,8 @@ import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPri
 import { buildComponentWeightLabelTspl } from '@/services/componentWeightLabelPrint';
 import { useLabelPrintGapConfirm } from '@/composables/useLabelPrintGapConfirm';
 import { ensureGapConfirmed, notifyPrintInterrupted } from '@/services/labelPrintSession';
+import { normalizeWeightUnit, toKilograms } from '@/utils/weightUnit';
+import format from '@/mixins/format';
 
 dayjs.extend(customParseFormat);
 
@@ -360,7 +362,7 @@ const handlePrintComponent = async (row: any) => {
       materialName: row.materialName ?? '',
       operatorName: row.operator ?? '',
       actualWeight: row.actualWeight ?? '',
-      weightUnit: row.weightUnit ?? 'KG',
+      weightUnit: normalizeWeightUnit(row.weightUnit),
       weighingTime: row.weighingTime ?? '',
     });
 
@@ -534,10 +536,7 @@ const canShowTable3Content = computed(
 
 const hasWorkOrderDataErrors = computed(() => firstDataValidationError.value != null);
 
-const toKg = (weight: number, unit?: string) => {
-  const normalizedUnit = (unit || 'Kg').toLowerCase();
-  return normalizedUnit === 'g' ? weight / 1000 : weight;
-};
+const toKg = (weight: number, unit?: string) => toKilograms(weight, unit);
 
 const sumActualWeightsKg = (rows: ComponentDetail[]) =>
   rows.reduce((sum, row) => {
@@ -600,7 +599,7 @@ const mapMixChemicals = (items: any[] = []): ComponentDetail[] =>
   items.map((item: any) => ({
     ...item,
     materialCode: item.materialCode || '0',
-    weightUnit: item.weightUnit || 'Kg',
+    weightUnit: normalizeWeightUnit(item.weightUnit),
     glueWeight: item.glueWeight ?? item.requiredWeight ?? '',
     requiredWeight: item.requiredWeight || item.glueWeight || '',
     actualWeight: item.actualWeight || '',
@@ -829,7 +828,7 @@ const buildPayload = (recordStatus: string, opts?: BuildPayloadOpts) => {
       factoryId: factoryId,
       materialCode: item.materialCode || 0,
       mixGlueWeight: Number(item.actualWeight) || 0,
-      mixGlueWeightUnit: item.weightUnit || 'Kg',
+      mixGlueWeightUnit: normalizeWeightUnit(item.weightUnit),
       glueExtra: item.glueExtra || false,
       recordStatus: recordStatus,
       createrId: item.operatorId || employeeId,
@@ -905,7 +904,7 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
       requestDetails.value,
       bucketList,
       row.actualWeight,
-      row.weightUnit || 'Kg',
+      normalizeWeightUnit(row.weightUnit),
       { requireAllRequestDetails: false }
     );
     if (chietAllocationError) {
@@ -1164,8 +1163,8 @@ const buildExtraComponent = (
   flags: { mixGlue: boolean; noMixGlue: boolean }
 ): ComponentDetail => {
   const enteredWeight = Number(newComponentData.percentage ?? 0);
-  const weightUnit = newComponentData.weightUnit || 'Kg';
-  const weightStr = enteredWeight.toFixed(3);
+  const weightUnit = normalizeWeightUnit(newComponentData.weightUnit);
+  const weightStr = format.formatDisplayWeight(enteredWeight) || '0';
   // Cũ: sai số = 5% trọng lượng — const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
   const deviationGrams = Number(newComponentData.toleranceGrams);
   const toleranceStr = String(deviationGrams);
@@ -1253,9 +1252,12 @@ const fetchMaterialsForRows = async (
     if (data?.success) {
       const existingCodes = rows.map(item => String(item.materialCode));
 
-      targetList.value = (data.data || []).filter(
-        (item: any) => !existingCodes.includes(String(item.materialCode))
-      );
+      targetList.value = (data.data || [])
+        .filter((item: any) => !existingCodes.includes(String(item.materialCode)))
+        .map((item: any) => ({
+          ...item,
+          weightUnit: normalizeWeightUnit(item.weightUnit),
+        }));
     }
   } catch (error) {
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 3000 });

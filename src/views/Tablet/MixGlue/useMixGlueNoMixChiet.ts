@@ -13,6 +13,7 @@ import {
   mapNoMixChemicalsFull,
   normalizeRequestDetails,
 } from '@/views/Tablet/Separate/separateMixedGlue.mappers';
+import { isGramUnit, normalizeWeightUnit } from '@/utils/weightUnit';
 
 type NoMixRow = Record<string, any>;
 
@@ -154,8 +155,7 @@ export function useMixGlueNoMixChiet(options: {
   };
 
   const calcToleranceGrams = (weight: number, weightUnit: string) => {
-    const unit = weightUnit.toLowerCase();
-    const weightInGrams = unit === 'kg' ? weight * 1000 : weight;
+    const weightInGrams = isGramUnit(weightUnit) ? weight : weight * 1000;
     return Number((weightInGrams * 0.05).toFixed(3));
   };
 
@@ -183,9 +183,12 @@ export function useMixGlueNoMixChiet(options: {
         const existingCodes = new Set(
           options.noMixComponents.value.map(item => String(item.materialCode))
         );
-        noMixMaterialsList.value = (data.data || []).filter(
-          (item: any) => !existingCodes.has(String(item.materialCode))
-        );
+        noMixMaterialsList.value = (data.data || [])
+          .filter((item: any) => !existingCodes.has(String(item.materialCode)))
+          .map((item: any) => ({
+            ...item,
+            weightUnit: normalizeWeightUnit(item.weightUnit),
+          }));
       }
     } catch {
       showToast({
@@ -208,15 +211,16 @@ export function useMixGlueNoMixChiet(options: {
     if (blockIfLocked()) return;
 
     const enteredWeight = Number(newComponentData.percentage ?? 0);
-    const weightUnit = newComponentData.weightUnit || 'Kg';
+    const weightUnit = normalizeWeightUnit(newComponentData.weightUnit);
     const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
+    const weightStr = format.formatDisplayWeight(enteredWeight) || '0';
 
     const newComponent = {
       materialName: newComponentData.name,
       materialCode: newComponentData.materialCode,
       weightUnit,
-      glueWeight: enteredWeight.toFixed(3),
-      requiredWeight: enteredWeight.toFixed(3),
+      glueWeight: weightStr,
+      requiredWeight: weightStr,
       actualWeight: '',
       operator: '',
       operatorId: '',

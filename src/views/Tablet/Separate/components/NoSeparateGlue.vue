@@ -32,7 +32,7 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ data.glueWeight || '' }} {{ data.weightUnit }}</span>
+          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
         </template>
       </Column>
 
@@ -41,7 +41,7 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else>
-            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${data.weightUnit}` : '' }}
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}
           </span>
         </template>
       </Column>
@@ -86,6 +86,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import format from '@/mixins/format';
+import { normalizeWeightUnit } from '@/utils/weightUnit';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAppLocale } from '@/composables/useAppLocale';
 

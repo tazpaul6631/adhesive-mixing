@@ -105,12 +105,15 @@
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex gap-2 justify-content-center">
-                    <Button icon="pi pi-print" severity="success" class="button-lg" :disabled="isRowPrintDisabled(data)"
-                      :loading="isRowPrinting(data.workOrderMasterId)"
+                    <Button severity="success" class="button-lg" :disabled="isRowPrintDisabled(data)"
+                      :loading="isPrintRowLoading(data.workOrderMasterId)"
                       :title="isRowQueued(data.workOrderMasterId) ? t('listSeparateMixedGlue.print.queuedTitle') : undefined"
                       @click.stop="handlePrint(data)">
-                      <template v-if="isRowQueued(data.workOrderMasterId)" #icon>
+                      <template v-if="isRowQueued(data.workOrderMasterId) && !isPrintRowLoading(data.workOrderMasterId)" #icon>
                         <i class="pi pi-clock" />
+                      </template>
+                      <template v-else-if="!isPrintRowLoading(data.workOrderMasterId)" #icon>
+                        <i class="pi pi-print" />
                       </template>
                     </Button>
                   </div>
@@ -177,6 +180,7 @@ import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
+import { useRowActionLock } from '@/composables/useRowActionLock';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -198,6 +202,7 @@ const showRetryDialog = ref(false);
 const lastPrintTotal = ref(0);
 
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
+const { isRowActionBusy, isAnyRowBusy, lockRow, unlockRow } = useRowActionLock();
 
 const {
   isPrinting,
@@ -458,13 +463,18 @@ const goBack = () => {
   router.push('/app-menu');
 };
 
-const isRowPrinting = (workOrderMasterId?: string) =>
+const isPrintRowLoading = (workOrderMasterId?: string) =>
+  isRowActionBusy(workOrderMasterId, 'print') ||
   Boolean(workOrderMasterId && printingWorkOrderId.value === workOrderMasterId && isPrinting.value);
+
+const isRowPrintProcessing = (workOrderMasterId?: string) =>
+  isRowActionBusy(workOrderMasterId, 'print') ||
+  (workOrderMasterId != null && printingWorkOrderId.value === workOrderMasterId);
 
 const isRowProcessing = (workOrderMasterId?: string) =>
   isScanning.value ||
-  isRowPrinting(workOrderMasterId) ||
-  Boolean(workOrderMasterId && printingWorkOrderId.value === workOrderMasterId && !isPrinting.value);
+  isRowPrintProcessing(workOrderMasterId) ||
+  isAnyRowBusy();
 
 const isRowPrintDisabled = (row: Partial<WorkOrderMaster>): boolean => {
   if (row.separateGlueComplete === false && row.isNoMixGlue === true) return true;
@@ -627,30 +637,41 @@ const handlePrint = async (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
-  const factoryId = authStore.user?.factoryId;
-  if (!factoryId) {
-    showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: t('listSeparateMixedGlue.toast.factoryNotFound'), life: 6000 });
-    return;
-  }
+  if (!lockRow(row.workOrderMasterId, 'print')) return;
+  printingWorkOrderId.value = row.workOrderMasterId;
 
-  if (!(await ensurePrinterReady())) {
-    showToast({ severity: 'warn', summary: t('listSeparateMixedGlue.toast.warning'), detail: t('listSeparateMixedGlue.toast.printerNotConnected'), life: 6000 });
-    return;
-  }
+  let enqueued = false;
+  try {
+    const factoryId = authStore.user?.factoryId;
+    if (!factoryId) {
+      showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: t('listSeparateMixedGlue.toast.factoryNotFound'), life: 6000 });
+      return;
+    }
 
-  if (!(await requireOnline())) return;
+    if (!(await ensurePrinterReady())) {
+      showToast({ severity: 'warn', summary: t('listSeparateMixedGlue.toast.warning'), detail: t('listSeparateMixedGlue.toast.printerNotConnected'), life: 6000 });
+      return;
+    }
 
-  const employeeId = await resolveEmployeeId(factoryId);
-  if (!employeeId) return;
+    if (!(await requireOnline())) return;
 
-  // Gắn employeeId vào row tạm để executePrintJob dùng
-  const rowWithEmployee = { ...row, _resolvedEmployeeId: employeeId };
+    const employeeId = await resolveEmployeeId(factoryId);
+    if (!employeeId) return;
 
-  const isFirstJob = !isPrinting.value && !isRowPrintActive(row.workOrderMasterId);
-  enqueuePrintRow(rowWithEmployee as Partial<WorkOrderMaster>);
+    const rowWithEmployee = { ...row, _resolvedEmployeeId: employeeId };
 
-  if (isFirstJob) {
-    void runNextPrintJob(executePrintJob);
+    const isFirstJob = !isPrinting.value && !isRowPrintActive(row.workOrderMasterId);
+    enqueuePrintRow(rowWithEmployee as Partial<WorkOrderMaster>);
+    enqueued = true;
+
+    if (isFirstJob) {
+      void runNextPrintJob(executePrintJob);
+    }
+  } finally {
+    unlockRow();
+    if (!enqueued) {
+      printingWorkOrderId.value = null;
+    }
   }
 };
 

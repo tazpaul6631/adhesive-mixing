@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { normalizeWeightUnit, weightUnitInputSuffix } from '@/utils/weightUnit';
 
 const props = defineProps<{
   visible: boolean;
@@ -49,8 +50,8 @@ const selectedMaterial = ref<any>(null);
 const percentage = ref<number | null>(null);
 const submitted = ref(false);
 
-const selectedWeightUnit = computed(() => selectedMaterial.value?.weightUnit || 'Kg');
-const weightUnitSuffix = computed(() => ` ${selectedWeightUnit.value}`);
+const selectedWeightUnit = computed(() => normalizeWeightUnit(selectedMaterial.value?.weightUnit));
+const weightUnitSuffix = computed(() => weightUnitInputSuffix(selectedMaterial.value?.weightUnit));
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {

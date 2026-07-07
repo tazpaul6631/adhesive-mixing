@@ -111,6 +111,7 @@
                   <div v-else-if="shouldShowConfirmActions(data)" class="flex justify-content-center">
                     <Button
                       :disabled="data.mixGlueComplete === true || isConfirmButtonDisabled(data) || isRowProcessing(data.workOrderMasterId)"
+                      :loading="isRowActionBusy(data.workOrderMasterId, 'confirm')"
                       :icon="data.mixGlueComplete === true ? 'pi pi-check-circle' : data.mixStartComplete === true ? 'pi pi-pause' : 'pi pi-play'"
                       severity="success" class="button-lg" :title="t('listMixGlue.columns.glueConfirm')"
                       :aria-label="t('listMixGlue.columns.glueConfirm')" @click.stop="handleConfirm(data)" />
@@ -123,14 +124,15 @@
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex justify-content-center">
-                    <Button :disabled="isPrintRowDisabled(data) || isMixRowQueued(data.workOrderMasterId)"
+                    <Button :disabled="isPrintRowDisabled(data)"
+                      :loading="isPrintRowLoading(data.workOrderMasterId)"
                       :severity="getPrintButtonSeverity(data)" class="button-lg"
                       :title="isMixRowQueued(data.workOrderMasterId) ? t('listMixGlue.print.queuedTitle') : t('listMixGlue.columns.qipConfirm')"
                       :aria-label="t('listMixGlue.columns.qipConfirm')" @click.stop="handlePrint(data)">
-                      <template v-if="isMixRowQueued(data.workOrderMasterId)" #icon>
+                      <template v-if="isMixRowQueued(data.workOrderMasterId) && !isPrintRowLoading(data.workOrderMasterId)" #icon>
                         <i class="pi pi-clock" />
                       </template>
-                      <template v-else #icon>
+                      <template v-else-if="!isPrintRowLoading(data.workOrderMasterId)" #icon>
                         <i class="pi pi-print" />
                       </template>
                     </Button>
@@ -145,6 +147,7 @@
                   <div v-else class="flex justify-content-center">
                     <Button :severity="getNoMixConfirmSeverity(data)"
                       :disabled="!canClickNoMixConfirmRow(data) || isRowProcessing(data.workOrderMasterId)"
+                      :loading="isRowActionBusy(data.workOrderMasterId, 'noMix')"
                       class="button-lg no-mix-confirm-btn" :title="getNoMixConfirmTitle(data)"
                       :aria-label="getNoMixConfirmTitle(data)" @click.stop="handleNoMixConfirm(data)">
                       <template #icon>
@@ -221,6 +224,7 @@ import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch }
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
+import { useRowActionLock } from '@/composables/useRowActionLock';
 import { BsBucket, BsPaintBucket } from '@kalimahapps/vue-icons/bs';
 
 const router = useRouter();
@@ -246,6 +250,7 @@ const printFlowKind = ref<'mix' | 'separate' | null>(null);
 /** Giữ trạng thái đã in trong session — không phụ thuộc BE trả qipConfirm ngay sau in. */
 const printedWorkOrderIds = ref<Set<string>>(new Set());
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
+const { isRowActionBusy, isAnyRowBusy, lockRow, unlockRow } = useRowActionLock();
 
 const {
   isPrinting: isMixPrinting,
@@ -343,15 +348,10 @@ const getNoMixConfirmTitle = (row: Partial<WorkOrderMaster>) =>
     : t('listMixGlue.columns.noSeparateConfirm');
 
 const isPrintRowDisabled = (row: Partial<WorkOrderMaster>) => {
-  if (isRowPrintProcessing(row.workOrderMasterId)) {
-    return true;
-  }
-  if (isRowQipPrinted(row)) {
-    return true;
-  }
-  if (row.mixGlueStep !== '3' || !canPrintRow(row)) {
-    return true;
-  }
+  if (isRowPrintProcessing(row.workOrderMasterId)) return true;
+  if (isMixRowQueued(row.workOrderMasterId)) return true;
+  if (isRowQipPrinted(row)) return true;
+  if (row.mixGlueStep !== '3' || !canPrintRow(row)) return true;
   return false;
 };
 
@@ -439,12 +439,15 @@ const mixPrintQueueCount = computed(() =>
 );
 
 const isRowPrintProcessing = (workOrderMasterId?: string) =>
-  isMixPrinting.value ||
-  isSeparatePrinting.value ||
+  isRowActionBusy(workOrderMasterId, 'print') ||
   (workOrderMasterId != null && printingWorkOrderId.value === workOrderMasterId);
 
+const isPrintRowLoading = (workOrderMasterId?: string) =>
+  isRowActionBusy(workOrderMasterId, 'print') ||
+  Boolean(workOrderMasterId && isMixRowPrintActive(workOrderMasterId) && isPrinting.value);
+
 const isRowProcessing = (workOrderMasterId?: string) =>
-  isScanning.value || isRowPrintProcessing(workOrderMasterId);
+  isScanning.value || isRowPrintProcessing(workOrderMasterId) || isAnyRowBusy();
 
 useBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
@@ -553,15 +556,21 @@ const handleConfirm = async (row: Partial<WorkOrderMaster>) => {
   const type = resolveConfirmType(row);
   if (!type) return;
 
+  if (!lockRow(workOrderMasterId, 'confirm')) return;
+
   await draftStore.ensureHydrated();
   const draftData = draftStore.getDraft(workOrderMasterId);
 
   if (!draftData) {
     showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.draftNotFound'), life: 6000 });
+    unlockRow();
     return;
   }
 
-  if (!(await requireOnline())) return;
+  if (!(await requireOnline())) {
+    unlockRow();
+    return;
+  }
 
   try {
     const payload = {
@@ -578,6 +587,8 @@ const handleConfirm = async (row: Partial<WorkOrderMaster>) => {
     if (notifyOfflineFromError(error)) return;
     console.error(error);
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.confirmFailed'), life: 6000 });
+  } finally {
+    unlockRow();
   }
 };
 
@@ -595,6 +606,8 @@ const handleNoMixConfirm = async (row: Partial<WorkOrderMaster>) => {
   const workOrderMasterId = row.workOrderMasterId;
   if (!workOrderMasterId || !canClickNoMixConfirmRow(row)) return;
 
+  if (!lockRow(workOrderMasterId, 'noMix')) return;
+
   const factoryId = authStore.user?.factoryId;
   const updaterId = authStore.user?.employeeId?.trim() || '';
 
@@ -604,6 +617,7 @@ const handleNoMixConfirm = async (row: Partial<WorkOrderMaster>) => {
       summary: t('listMixGlue.toast.error'),
       detail: t('listMixGlue.toast.factoryNotFound'),
     });
+    unlockRow();
     return;
   }
 
@@ -613,10 +627,14 @@ const handleNoMixConfirm = async (row: Partial<WorkOrderMaster>) => {
       summary: t('listMixGlue.toast.error'),
       detail: t('listMixGlue.toast.scanFailed'),
     });
+    unlockRow();
     return;
   }
 
-  if (!(await requireOnline())) return;
+  if (!(await requireOnline())) {
+    unlockRow();
+    return;
+  }
 
   const wasGreen = isNoMixConfirmGreen(row);
 
@@ -648,6 +666,8 @@ const handleNoMixConfirm = async (row: Partial<WorkOrderMaster>) => {
       summary: t('listMixGlue.toast.error'),
       detail: t('listMixGlue.toast.noMixConfirmFailed'),
     });
+  } finally {
+    unlockRow();
   }
 };
 
@@ -890,37 +910,42 @@ const executeMixPrintJob = async (entry: PrintQueueEntry<Partial<WorkOrderMaster
 
 const handlePrint = async (row: Partial<WorkOrderMaster>) => {
   if (!row.workOrderMasterId) return;
+  if (isPrintRowDisabled(row)) return;
   if (isRowQipPrinted(row)) { showAlreadyPrintedToast(row); return; }
-  if (!canPrintRow(row)) return;
-  if (isMixRowQueued(row.workOrderMasterId) || isMixRowPrintActive(row.workOrderMasterId)) return;
 
   if (hasPendingPrint.value) {
     showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.print.busyPendingToast'), life: 5000 });
     return;
   }
 
-  const factoryId = authStore.user?.factoryId;
-  if (!factoryId) {
-    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.factoryNotFound'), life: 6000 });
-    return;
-  }
+  if (!lockRow(row.workOrderMasterId, 'print')) return;
 
-  if (!(await ensurePrinterReady())) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.printerNotConnected'), life: 6000 });
-    return;
-  }
+  try {
+    const factoryId = authStore.user?.factoryId;
+    if (!factoryId) {
+      showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.factoryNotFound'), life: 6000 });
+      return;
+    }
 
-  if (!(await requireOnline())) return;
+    if (!(await ensurePrinterReady())) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.printerNotConnected'), life: 6000 });
+      return;
+    }
 
-  const employeeId = await resolvePrintEmployeeId(factoryId);
-  if (!employeeId) return;
+    if (!(await requireOnline())) return;
 
-  const rowWithEmployee = { ...row, _resolvedEmployeeId: employeeId };
-  const isFirstJob = !isPrinting.value;
-  enqueueMixPrintRow(rowWithEmployee as Partial<WorkOrderMaster>);
+    const employeeId = await resolvePrintEmployeeId(factoryId);
+    if (!employeeId) return;
 
-  if (isFirstJob) {
-    void runNextMixPrintJob(executeMixPrintJob);
+    const rowWithEmployee = { ...row, _resolvedEmployeeId: employeeId };
+    const isFirstJob = !isPrinting.value && !isMixRowPrintActive(row.workOrderMasterId);
+    enqueueMixPrintRow(rowWithEmployee as Partial<WorkOrderMaster>);
+
+    if (isFirstJob) {
+      void runNextMixPrintJob(executeMixPrintJob);
+    }
+  } finally {
+    unlockRow();
   }
 };
 
