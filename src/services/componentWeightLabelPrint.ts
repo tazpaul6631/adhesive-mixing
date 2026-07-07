@@ -1,4 +1,5 @@
 import format from '@/mixins/format';
+import { normalizeWeightUnit } from '@/utils/weightUnit';
 import { takeTsplMediaPrefix } from '@/services/labelPrintSession';
 
 const TSPL_FONT = '5';
@@ -73,7 +74,7 @@ export function buildComponentWeightLabelTspl(data: ComponentWeightLabelData): s
 
   const requestTimeDisplay = formatLabelTime(requestTime);
   const weightDisplay = actualWeight
-    ? `${format.formatDisplayWeight(actualWeight)} ${weightUnit || 'KG'}`.trim()
+    ? `${format.formatDisplayWeight(actualWeight)} ${normalizeWeightUnit(weightUnit)}`.trim()
     : '';
   const weighingTimeDisplay = formatLabelTime(weighingTime);
 

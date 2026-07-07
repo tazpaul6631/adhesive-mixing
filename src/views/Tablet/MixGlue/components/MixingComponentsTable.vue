@@ -38,7 +38,7 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <span v-else>{{ data.glueWeight || '' }} {{ data.weightUnit }}</span>
+          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
         </template>
       </Column>
 
@@ -47,7 +47,7 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else>
-            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${data.weightUnit}` : '' }}
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}
           </span>
         </template>
       </Column>
@@ -75,7 +75,7 @@
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="slotProps">
           <div class="flex justify-content-center gap-1">
-            <Button icon="pi pi-print" severity="success" class="button-lg"
+            <Button v-if="slotProps.data.actualWeight" icon="pi pi-print" severity="success" class="button-lg"
               :disabled="!slotProps.data.weighingTime || isPrinting"
               :loading="isPrinting && printingMaterialCode === slotProps.data.materialCode"
               :aria-label="t('listMixGlue.toast.componentLabel.printAriaLabel')"
@@ -94,6 +94,7 @@
 <script setup lang="ts">
 import format from '@/mixins/format';
 import { ref } from 'vue';
+import { normalizeWeightUnit } from '@/utils/weightUnit';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAppLocale } from '@/composables/useAppLocale';
 
