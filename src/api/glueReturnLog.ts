@@ -7,7 +7,4 @@ export default {
     postConfirmGlueReturnLog(data: any) {
         return request.post(`api/mobile/gluereturnlog/confirmgrl`, data);
     },
-    getOneGlueReturnLog(factoryId: string, grlId: string, rgId: string) {
-        return request.get(`api/mobile/gluereturnlog/getone/${factoryId}/${grlId}/${rgId}`);
-    }
 };

@@ -19,10 +19,6 @@ export const useLineChemicalStore = defineStore('lineChemicalSession', {
     confirmedAt: null as string | number | null,
   }),
 
-  getters: {
-    hasActiveLineChemical: (state) => Boolean(state.lineChemicalId && String(state.lineChemicalId).trim()),
-  },
-
   actions: {
     setLineChemicalSession(data: LineChemicalSessionData) {
       this.lineChemicalId = data.lineChemicalId !== null && data.lineChemicalId !== undefined
@@ -33,15 +29,6 @@ export const useLineChemicalStore = defineStore('lineChemicalSession', {
       this.productLineName = data.productLineName ?? null;
       this.glueName = data.glueName ?? null;
       this.confirmedAt = data.confirmedAt ?? null;
-    },
-
-    clearLineChemicalSession() {
-      this.lineChemicalId = null;
-      this.productLineId = null;
-      this.factoryId = null;
-      this.productLineName = null;
-      this.glueName = null;
-      this.confirmedAt = null;
     },
   },
 });

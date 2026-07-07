@@ -67,8 +67,5 @@ export function useRequireOnline() {
   return {
     requireOnline,
     notifyOfflineFromError,
-    isAxiosNetworkError,
-    showOfflineToast,
-    syncNetworkFromDevice,
   };
 }

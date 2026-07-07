@@ -17,7 +17,8 @@
 
     <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
 
-      <div class="mix-glue-layout main-container max-w-full mx-auto">
+      <div class="mix-glue-layout main-container max-w-full mx-auto page-content-loading-host">
+        <PageContentLoadingOverlay :visible="isPageDataLoading" />
         <!-- Thông tin header — cố định, không scroll -->
         <div class="mix-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -241,6 +242,7 @@ import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddCo
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
@@ -481,6 +483,7 @@ const componentDetailsFull = ref<ComponentDetail[]>([]);
 const noMixComponents = ref<ComponentDetail[]>([]);
 const isLoadingLine = ref(true);
 const isLoadingComponent = ref(true);
+const isPageDataLoading = computed(() => isLoadingLine.value || isLoadingComponent.value);
 const hourlyValidity = ref<string>('0');
 const hidenTable1 = ref(false);
 const mixGlueConfirm = ref(false);
@@ -1412,6 +1415,11 @@ onIonViewWillEnter(() => {
 <style scoped>
 .mix-glue-management-content {
   --overflow: hidden;
+}
+
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
 }
 
 .mix-glue-layout {

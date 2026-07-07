@@ -17,7 +17,8 @@
 
     <ion-content class="ion-padding separate-mixed-glue-content" :scroll-y="false">
 
-      <div class="separate-mixed-glue-layout main-container max-w-full mx-auto">
+      <div class="separate-mixed-glue-layout main-container max-w-full mx-auto page-content-loading-host">
+        <PageContentLoadingOverlay :visible="isLoadingLine" />
         <!-- Thông tin header — cố định, không scroll -->
         <div class="separate-mixed-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -89,6 +90,7 @@ import {
 } from '@ionic/vue';
 
 import SeparateGlue from '@/views/Tablet/Separate/components/SeparateGlue.vue';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useSeparateMixedGlueManagement } from './useSeparateMixedGlueManagement';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
@@ -128,6 +130,11 @@ const {
 
 .separate-mixed-glue-content {
   --overflow: hidden;
+}
+
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
 }
 
 .separate-mixed-glue-layout {

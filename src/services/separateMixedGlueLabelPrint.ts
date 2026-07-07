@@ -297,39 +297,6 @@ const isValidGlueId = (value: unknown) => {
   return normalized !== '' && normalized !== '0';
 };
 
-export function parseSeparateGlueIdsFromWorkOrder(
-  respData: any,
-  isNoMixGlue: boolean,
-  factoryId: string
-): Array<{ factoryId: string; separateGlueId?: string | number; noSeparateGlueId?: string | number }> {
-  if (isSgSeparatePrintFlow(isNoMixGlue)) {
-    const source = Array.isArray(respData?.separateGlues) ? respData.separateGlues : [];
-    return source
-      .map((item: any) => {
-        const separateGlueId =
-          item?.separateGlueId ?? item?.glueId ?? item?.mixGlueMasterId ?? item?.id;
-        if (!isValidGlueId(separateGlueId)) return null;
-        return {
-          factoryId: String(item?.factoryId || factoryId),
-          separateGlueId,
-        };
-      })
-      .filter(Boolean) as Array<{ factoryId: string; separateGlueId: string | number }>;
-  }
-
-  const source = Array.isArray(respData?.noSeparateGlues) ? respData.noSeparateGlues : [];
-  return source
-    .map((item: any) => {
-      const noSeparateGlueId = item?.noSeparateGlueId ?? item?.glueId ?? item?.id;
-      if (!isValidGlueId(noSeparateGlueId)) return null;
-      return {
-        factoryId: String(item?.factoryId || factoryId),
-        noSeparateGlueId,
-      };
-    })
-    .filter(Boolean) as Array<{ factoryId: string; noSeparateGlueId: string | number }>;
-}
-
 /** Lọc items từ postSGQueryResult / postNSGQueryResult theo WO đang in. */
 export function parseSeparateGlueIdsFromQueryItems(
   items: any[],

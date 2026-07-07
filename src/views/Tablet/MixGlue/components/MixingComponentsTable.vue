@@ -1,6 +1,6 @@
 <template>
   <div ref="tableWrapperRef" class="border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : components" scrollable scrollHeight="290px" stripedRows
+    <DataTable :value="isLoading ? skeletons : components" scrollable scrollHeight="290px"
       class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
       selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">

@@ -1,14 +1,10 @@
 {
   "common": {
-    "welcome": "Welcome",
     "save": "Save",
     "cancel": "Cancel",
     "loading": "Loading...",
     "networkOffline": "No network",
     "checkNetwork": "Please check your network connection and try again."
-  },
-  "home": {
-    "title": "Home"
   },
   "appMenu": {
     "title": "Home",
@@ -46,15 +42,12 @@
       "noMixConfirm": "Confirm decant",
       "separateConfirm": "Confirm decant",
       "noSeparateConfirm": "No decant",
-      "qipConfirm": "QIP confirm",
-      "confirm": "QIP confirm"
+      "qipConfirm": "QIP confirm"
     },
     "scan": {
       "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"
     },
     "print": {
-      "overlayTitle": "Printing labels",
-      "overlayProgress": "Printing {current}/{total}",
       "retryTitle": "Label print failed",
       "retryMessage": "{count} label(s) were not printed successfully. Retry printing?",
       "retryConfirm": "Retry print",
@@ -71,7 +64,8 @@
       "gapConfirmTitle": "Align label gap",
       "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
       "gapConfirmOk": "Gap aligned — continue",
-      "gapConfirmCancel": "Cancel"
+      "gapConfirmCancel": "Cancel",
+      "queuedTitle": "Waiting to print"
     },
     "toast": {
       "warning": "Warning",
@@ -91,16 +85,12 @@
       "mixGlueIdNotFound": "Mix glue ID not found.",
       "noLabels": "No labels to print.",
       "printSuccess": "Printed {count} label(s).",
-      "printFailPartial": "Label printing failed ({printed}/{total}).",
-      "printFailStage": "Label printing failed ({stage}).",
       "printFailed": "Label printing failed!",
       "printPartial": "Partial print ({printed}/{total}).",
       "alreadyPrinted": "{name} has already been printed.",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
       "pendingReplaced": "Replaced the pending label queue with the new order.",
-      "pendingExists": "There are unresolved print errors. Please resolve them before printing more.",
       "printQueueBackBlocked": "Still printing {count} order(s). Please wait until printing is complete before leaving.",
-      "queuedTitle": "Waiting to print",
       "componentLabel": {
         "notConfirmed": "Please confirm the actual weight before printing.",
         "printSuccess": "Component label printed.",
@@ -116,16 +106,13 @@
     "empty": "No data to display at the moment.",
     "selectedRow": "Selected glue",
     "selectRowHint": "Select the glue to weigh in the table",
-    "weighed": "Actual weighing",
     "columns": {
       "seq": "No.",
       "lineChemical": "Glue / production line",
       "returnWeight": "Scrap weight",
       "operator": "Operator",
       "weighTime": "Weighing time",
-      "confirm": "Weighing personnel confirm",
-      "updater": "Weighing operator",
-      "updateDate": "Weighing date"
+      "confirm": "Weighing personnel confirm"
     },
     "toast": {
       "warning": "Warning",
@@ -148,8 +135,6 @@
       "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"
     },
     "print": {
-      "overlayTitle": "Printing labels",
-      "overlayProgress": "Printing {current}/{total}",
       "retryTitle": "Label print failed",
       "retryMessage": "{count} label(s) were not printed successfully. Retry printing?",
       "retryConfirm": "Retry print",
@@ -167,7 +152,8 @@
       "gapConfirmTitle": "Align label gap",
       "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
       "gapConfirmOk": "Gap aligned — continue",
-      "gapConfirmCancel": "Cancel"
+      "gapConfirmCancel": "Cancel",
+      "queuedTitle": "Waiting to print"
     },
     "toast": {
       "warning": "Warning",
@@ -177,16 +163,13 @@
       "printerNotConnected": "Printer is not connected.",
       "scanFailed": "Could not scan employee card or scan was cancelled.",
       "invalidEmployeeCard": "Verification failed. You are not QIP. Please contact Admin for verification.",
-      "loadOrderFailed": "Could not load order details.",
       "noLabels": "No labels to print.",
       "printSuccess": "Printed {count} label(s).",
       "printPartial": "Partial print ({printed}/{total}).",
       "printFailed": "Label printing failed!",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
-      "pendingReplaced": "Replaced the pending label queue with the new order.",
       "pendingExists": "There are unresolved print errors. Please resolve them before printing more.",
-      "printQueueBackBlocked": "Still printing {count} order(s). Please wait until printing is complete before leaving.",
-      "queuedTitle": "Waiting to print"
+      "printQueueBackBlocked": "Still printing {count} order(s). Please wait until printing is complete before leaving."
     }
   },
   "separateMixedGlue": {
@@ -237,9 +220,7 @@
       "incomplete": "Incomplete",
       "locked": "Cannot edit",
       "completeFirst": "This work order repackaging is complete. Adding or deleting is not allowed.",
-      "noMixAlreadySubmitted": "Non-mixed glue has already been submitted. Further edits are not allowed.",
       "noMixAddRowRequired": "Non-mixed glue: add at least one row and select buckets before confirming.",
-      "noMixNoChangesToSubmit": "No add-row, bucket change, or delete since the last submit. Nothing to send.",
       "separateNoChangesToSubmit": "No add-row, bucket change, or delete since the last submit. Nothing to send.",
       "completeSuccess": "Completed",
       "completeSuccessDetail": "Data submitted successfully",
@@ -256,11 +237,9 @@
       "weighBeforeChiet": "Please weigh glue {name} before repackaging.",
       "chietSaved": "Repackaging saved",
       "chietSavedDetail": "Repackaging information temporarily saved",
-      "progressSaveFailed": "Could not send progress save (C) to the server.",
       "selectBucketRow": "Please select a container on row {row} before adding a new row.",
       "selectBucketRowShort": "Please select a container on row {row}.",
       "allocationComplete": "Repackaging complete",
-      "allocationCompleteDetail": "Total container weight has been reached; no need to add more.",
       "weightExceeded": "Weight exceeded",
       "bucketCapacityExceeded": "Total container weight exceeds {label}. Please choose a more suitable container.",
       "addRowMin": "Please add at least one row and select a container.",
@@ -271,8 +250,6 @@
       "noMixSelectBucket": "Non-mixed glue row {row}: please select a container.",
       "noMixPrefix": "Non-mixed glue: {message}",
       "noMixWeighFirst": "Non-mixed glue {name}: please complete weighing first.",
-      "pendingChietModal": "Repackaging information is not confirmed. Please complete the repackaging dialog.",
-      "chietRequired": "Glue {name} has been weighed but repackaging is not confirmed. Please open the dialog and confirm.",
       "chietSelectBucket": "Glue {name} repackaging row {row}: please select a container.",
       "chietPrefix": "Glue {name} repackaging: {message}"
     },
@@ -292,11 +269,8 @@
       "capacityMismatchWeighed": "Total container weight does not match weighed weight.",
       "capacityExceedsRequired": "Total container weight ({total} KG) exceeds required weight ({target}).",
       "capacityBelowRequired": "Total container weight ({total} KG) is below required weight ({target}).",
-      "capacityExceedsWeighed": "Total container weight ({total} KG) exceeds weighed weight ({target}).",
       "capacityShortageWeighed": "Total container weight ({total} KG) does not match target decant weight ({target}). Please choose a suitable container.",
-      "capacityMismatchWeighedGeneric": "Total container weight ({total} KG) does not match weighed weight ({target}).",
       "chietCapacityBlock": "Total container weight matches target decant weight {label}. No need to add a new row.",
-      "chietOversizedBucketBlock": "Selected container exceeds actual weight ({label}). Cannot add more rows.",
       "chietTotalExceededBlock": "Total container weight ({total} Kg) exceeds actual weight ({target}). Cannot add more rows.",
       "chietChooseClosestBucket": "Please choose the container closest to the remaining quantity ({remaining} Kg). For example, with actual weight 12.1–12.9 Kg you cannot select a 12 Kg container first."
     }
@@ -316,11 +290,7 @@
     "refreshAriaLabel": "Reconnect scale",
     "connected": "Connected",
     "disconnected": "Not connected",
-    "connecting": "Connecting to scale...",
-    "searching": "Searching for connection...",
-    "selectScale": "Select USB scale",
     "selectScalePlaceholder": "Choose a scale to connect",
-    "selectScaleHint": "Multiple scales detected — please select one before weighing.",
     "confirm": "Confirm",
     "toast": {
       "reconnecting": "Reconnecting",
@@ -357,7 +327,6 @@
     },
     "lineDetailsTable": {
       "columns": {
-        "workshop": "Workshop",
         "requestOrder": "Request order",
         "style": "Style",
         "line": "Production line",
@@ -381,8 +350,6 @@
       "nameLabel": "Component name",
       "namePlaceholder": "Select component",
       "nameRequired": "Component name is required.",
-      "percentageLabel": "Percentage (%)",
-      "percentageRequired": "Please enter a percentage.",
       "weightLabel": "Weight ({unit})",
       "weightRequired": "Please enter weight ({unit})",
       "toleranceGramsLabel": "Tolerance (g)",
@@ -441,25 +408,13 @@
       "weighingComplete": "Completed",
       "weighingCompleteDetail": "All components have been weighed.",
       "baseNotFound": "Base mix glue product not found",
-      "weighBaseFirst": "Please weigh the base component before adding a component",
       "addSuccess": "Success",
       "addSuccessDetail": "Component added",
       "deleteSuccess": "Deleted",
       "deleteSuccessDetail": "Component deleted successfully: {name}",
       "loadMaterialsFailed": "Could not load components",
-      "progressSaveFailed": "Could not send progress save (C) to the server.",
       "printBackBlocked": "Printing in progress. Please wait until printing finishes before leaving."
     }
-  },
-  "valid": {
-    "required": "This field is required",
-    "min_reason": "Please select at least {n} reason(s)",
-    "max_reason": "At most {n} reason(s) allowed",
-    "rating_required": "Please rate this item"
-  },
-  "messages": {
-    "notifi": "Notification!",
-    "submitted": "Submitted successfully. Thank you!"
   },
   "login": {
     "hello": "Hello!",

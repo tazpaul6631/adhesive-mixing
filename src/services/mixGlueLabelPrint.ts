@@ -29,14 +29,6 @@ export interface MixGluePrintSequentialResult {
   stoppedReason?: MixGluePrintFailureReason;
 }
 
-export interface MixGluePrintBatchResult {
-  ok: boolean;
-  printedCount: number;
-  errorStage?: 'empty' | 'tspl' | 'bluetooth';
-  errorMessage?: string;
-  failedItem?: MixGluePrintItem;
-}
-
 const TSPL_FONT_REGULAR = '3';
 const USE_TSPL_BOLD_FONT_FILE = false;
 const TSPL_FONT_BOLD = '3';
@@ -52,7 +44,6 @@ const TSPL_LEFT_X = 15;
 const TSPL_TEXT_MAX_Y = 370;
 const TSPL_MAX_CHARS_FIRST_LINE = 24;
 const TSPL_MAX_CHARS_CONTINUATION = 26;
-const BATCH_CHUNK_SIZE = 10;
 const LABEL_PRINT_SETTLE_MS = 1200;
 const LABEL_PRINT_SETTLE_LARGE_BATCH_MS = 1500;
 const LARGE_LABEL_BATCH_THRESHOLD = 15;
@@ -371,28 +362,6 @@ QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
   return tspl;
 }
 
-export async function buildMixGlueBatchTspl(
-  items: MixGluePrintItem[],
-  factoryId: string,
-  confirmBy: string
-): Promise<{ tspl: string | null; failedItem?: MixGluePrintItem; errorMessage?: string }> {
-  const parts: string[] = [];
-
-  for (const item of items) {
-    const tspl = await buildMixGlueLabelTspl(item, factoryId, confirmBy);
-    if (!tspl) {
-      return {
-        tspl: null,
-        failedItem: item,
-        errorMessage: 'postMGMQIPConfirm không trả dữ liệu tem (xem console).',
-      };
-    }
-    parts.push(tspl);
-  }
-
-  return { tspl: parts.join('') };
-}
-
 export function parsePrintQueueFromBe(
   scanData: any,
   respData: any,
@@ -430,66 +399,6 @@ export function parsePrintQueueFromBe(
     id: `${item.workOrderMasterId}-${item.mixGlueMasterId}`,
     labelIndex: index + 1,
   }));
-}
-
-export async function printMixGlueBatch(
-  writeFn: (tspl: string) => Promise<boolean>,
-  items: MixGluePrintItem[],
-  factoryId: string,
-  confirmBy: string
-): Promise<MixGluePrintBatchResult> {
-  if (!items.length) {
-    return {
-      ok: false,
-      printedCount: 0,
-      errorStage: 'empty',
-      errorMessage: 'Không có tem trong hàng đợi in.',
-    };
-  }
-
-  let printedCount = 0;
-
-  for (let i = 0; i < items.length; i += BATCH_CHUNK_SIZE) {
-    const chunk = items.slice(i, i + BATCH_CHUNK_SIZE);
-    const batchResult = await buildMixGlueBatchTspl(chunk, factoryId, confirmBy);
-    if (!batchResult.tspl) {
-      console.error('[mixGlueLabelPrint] build TSPL fail', {
-        chunk,
-        failedItem: batchResult.failedItem,
-        errorMessage: batchResult.errorMessage,
-      });
-      return {
-        ok: false,
-        printedCount,
-        errorStage: 'tspl',
-        errorMessage: batchResult.errorMessage,
-        failedItem: batchResult.failedItem,
-      };
-    }
-
-    console.info('[mixGlueLabelPrint] gửi TSPL batch', {
-      chunkSize: chunk.length,
-      tsplLength: batchResult.tspl.length,
-      chunk,
-    });
-
-    const ok = await writeFn(batchResult.tspl);
-    if (!ok) {
-      console.error('[mixGlueLabelPrint] Bluetooth write fail', { chunk });
-      notifyPrintInterrupted();
-      return {
-        ok: false,
-        printedCount,
-        errorStage: 'bluetooth',
-        errorMessage: 'Gửi lệnh in qua Bluetooth thất bại hoặc máy in đã ngắt kết nối.',
-        failedItem: chunk[0],
-      };
-    }
-
-    printedCount += chunk.length;
-  }
-
-  return { ok: true, printedCount };
 }
 
 const mixGlueFailureMessage: Record<MixGluePrintFailureReason, string> = {

@@ -20,8 +20,9 @@
     </ion-header>
 
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-mix-glue-page"
+      <div class="main-container max-w-full mx-auto list-mix-glue-page page-content-loading-host"
         :class="[pageClass, { 'list-mix-glue-layer--hidden': isScanning }]">
+        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
         <div class="surface-card p-0 shadow-1 border-round-xl list-mix-glue-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-mix-glue-card-head">
@@ -29,12 +30,12 @@
               <i class="pi pi-list mr-2"></i>{{ t('listMixGlue.sectionTitle') }}
             </span>
             <div class="flex align-items-center gap-2">
-              <IconField class="list-mix-glue-filter">
+              <!-- <IconField class="list-mix-glue-filter">
                 <InputIcon class="pi pi-search" />
                 <InputText v-model="chemicalMasterNameFilter" type="search"
                   :placeholder="t('listMixGlue.filter.gluePlaceholder')"
                   :aria-label="t('listMixGlue.filter.gluePlaceholder')" fluid />
-              </IconField>
+              </IconField> -->
               <div v-if="isPrinting" class="print-progress-chip">
                 <i class="pi pi-spin pi-spinner" style="font-size:0.85rem"></i>
                 <span>{{ progress.current }}/{{ progress.total }}</span>
@@ -50,7 +51,7 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-mix-glue-table-wrap">
             <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
-              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" stripedRows
+              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight"
               class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
               :paginator="true" :rows="rowsPerPage" paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
@@ -225,6 +226,8 @@ import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
 import { useRowActionLock } from '@/composables/useRowActionLock';
+import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { BsBucket, BsPaintBucket } from '@kalimahapps/vue-icons/bs';
 
 const router = useRouter();
@@ -251,6 +254,7 @@ const printFlowKind = ref<'mix' | 'separate' | null>(null);
 const printedWorkOrderIds = ref<Set<string>>(new Set());
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
 const { isRowActionBusy, isAnyRowBusy, lockRow, unlockRow } = useRowActionLock();
+const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
 
 const {
   isPrinting: isMixPrinting,
@@ -1117,10 +1121,10 @@ onIonViewWillEnter(() => {
   currentPage.value = 1;
   resetLabelPrintSession();
   clearMixPrintQueue();
-  void (async () => {
+  void runWithViewEnterLoading(async () => {
     await fetchWorkOrders(1, rowsPerPage.value);
     await restorePendingPrintJob();
-  })();
+  });
 });
 
 onIonViewDidEnter(async () => {
@@ -1145,6 +1149,11 @@ onIonViewDidLeave(() => {
 
 .list-mix-glue-layer--hidden {
   visibility: hidden;
+}
+
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
 }
 
 .list-mix-glue-page {

@@ -1,14 +1,10 @@
 {
   "common": {
-    "welcome": "歡迎",
     "save": "儲存",
     "cancel": "取消",
     "loading": "載入中...",
     "networkOffline": "無網路",
     "checkNetwork": "請檢查網路連線後再試。"
-  },
-  "home": {
-    "title": "首頁"
   },
   "appMenu": {
     "title": "首頁",
@@ -46,15 +42,12 @@
       "noMixConfirm": "確認分裝",
       "separateConfirm": "確認分裝",
       "noSeparateConfirm": "不分裝",
-      "qipConfirm": "QIP確認",
-      "confirm": "QIP確認"
+      "qipConfirm": "QIP確認"
     },
     "scan": {
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準於框內"
     },
     "print": {
-      "overlayTitle": "正在列印標籤",
-      "overlayProgress": "正在列印 {current}/{total}",
       "retryTitle": "標籤列印失敗",
       "retryMessage": "有 {count} 張標籤未成功列印，是否重新列印？",
       "retryConfirm": "重新列印",
@@ -71,7 +64,8 @@
       "gapConfirmTitle": "對準紙張間隙",
       "gapConfirmMessage": "請更換紙捲並手動對準間隙（第一張標籤貼齊列印頭）。確認後繼續列印 — 下一張標籤不會再送出 GAP 指令。",
       "gapConfirmOk": "已對準間隙 — 繼續",
-      "gapConfirmCancel": "取消"
+      "gapConfirmCancel": "取消",
+      "queuedTitle": "等待列印"
     },
     "toast": {
       "warning": "警告",
@@ -91,16 +85,12 @@
       "mixGlueIdNotFound": "找不到調膠編號。",
       "noLabels": "沒有可列印的標籤。",
       "printSuccess": "已列印 {count} 張標籤。",
-      "printFailPartial": "標籤列印失敗 ({printed}/{total})。",
-      "printFailStage": "標籤列印失敗 ({stage})。",
       "printFailed": "標籤列印失敗！",
       "printPartial": "部分列印 ({printed}/{total})。",
       "alreadyPrinted": "{name} 已列印標籤。",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
       "pendingReplaced": "已以新訂單取代待列印清單。",
-      "pendingExists": "有未處理的列印錯誤，請先處理後再繼續列印。",
       "printQueueBackBlocked": "仍有 {count} 筆訂單待列印，請等待列印完成後再離開。",
-      "queuedTitle": "等待列印",
       "componentLabel": {
         "notConfirmed": "請先確認實際重量後再列印。",
         "printSuccess": "已列印成分標籤。",
@@ -116,16 +106,13 @@
     "empty": "目前沒有可顯示的資料。",
     "selectedRow": "目前選取膠水",
     "selectRowHint": "請在表格中選取要秤重的膠水",
-    "weighed": "實際秤重",
     "columns": {
       "seq": "序號",
       "lineChemical": "膠水 / 生產線",
       "returnWeight": "報廢重量",
       "operator": "操作人員",
       "weighTime": "秤重時間",
-      "confirm": "秤重人員確認",
-      "updater": "秤重人員",
-      "updateDate": "秤重日期"
+      "confirm": "秤重人員確認"
     },
     "toast": {
       "warning": "警告",
@@ -148,8 +135,6 @@
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"
     },
     "print": {
-      "overlayTitle": "正在列印標籤",
-      "overlayProgress": "正在列印 {current}/{total}",
       "retryTitle": "標籤列印失敗",
       "retryMessage": "有 {count} 張標籤未成功列印，是否重新列印？",
       "retryConfirm": "重新列印",
@@ -167,7 +152,8 @@
       "gapConfirmTitle": "對準紙張間隙",
       "gapConfirmMessage": "請更換紙捲並手動對準間隙（第一張標籤貼齊列印頭）。確認後繼續列印 — 下一張標籤不會再送出 GAP 指令。",
       "gapConfirmOk": "已對準間隙 — 繼續",
-      "gapConfirmCancel": "取消"
+      "gapConfirmCancel": "取消",
+      "queuedTitle": "等待列印"
     },
     "toast": {
       "warning": "警告",
@@ -177,16 +163,13 @@
       "printerNotConnected": "印表機尚未連線。",
       "scanFailed": "無法掃描員工卡或已取消掃描。",
       "invalidEmployeeCard": "驗證失敗，您不是 QIP，請聯絡管理員確認。",
-      "loadOrderFailed": "無法載入訂單明細。",
       "noLabels": "沒有可列印的標籤。",
       "printSuccess": "已列印 {count} 張標籤。",
       "printPartial": "部分列印 ({printed}/{total})。",
       "printFailed": "標籤列印失敗！",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
-      "pendingReplaced": "已使用新訂單取代待列印清單。",
       "pendingExists": "有未處理的列印錯誤，請先處理後再繼續列印。",
-      "printQueueBackBlocked": "仍有 {count} 筆訂單待列印，請等待列印完成後再離開。",
-      "queuedTitle": "等待列印"
+      "printQueueBackBlocked": "仍有 {count} 筆訂單待列印，請等待列印完成後再離開。"
     }
   },
   "separateMixedGlue": {
@@ -252,11 +235,9 @@
       "weighBeforeChiet": "請先秤量膠水 {name} 再進行分裝。",
       "chietSaved": "分裝已儲存",
       "chietSavedDetail": "分裝資訊已暫存",
-      "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。",
       "selectBucketRow": "請先在第 {row} 列選擇容器再新增列。",
       "selectBucketRowShort": "請在第 {row} 列選擇容器。",
       "allocationComplete": "已分裝完成",
-      "allocationCompleteDetail": "容器總重量已達標，無需再新增。",
       "weightExceeded": "超出重量",
       "bucketCapacityExceeded": "容器總重量超出 {label}。請選擇更合適的容器。",
       "addRowMin": "請至少新增一列並選擇容器。",
@@ -267,13 +248,9 @@
       "noMixSelectBucket": "非混合膠第 {row} 列：請選擇容器。",
       "noMixPrefix": "非混合膠：{message}",
       "noMixWeighFirst": "非混合膠水 {name}：請先完成秤重。",
-      "pendingChietModal": "尚有分裝資訊未確認。請完成分裝視窗。",
-      "chietRequired": "膠水 {name} 已秤重但尚未確認分裝。請開啟視窗並確認。",
       "chietSelectBucket": "膠水 {name} 分裝第 {row} 列：請選擇容器。",
       "chietPrefix": "膠水 {name} 分裝：{message}",
-      "noMixAlreadySubmitted": "非混合膠已提交確認，無法再編輯。",
       "noMixAddRowRequired": "非混合膠：請先新增列並選擇桶槽後再確認。",
-      "noMixNoChangesToSubmit": "自上次提交後沒有新增、變更桶槽或刪除列，無需再次送出。",
       "separateNoChangesToSubmit": "自上次提交後沒有新增、變更桶槽或刪除列，無需再次送出。"
     },
     "confirmDelete": {
@@ -292,11 +269,8 @@
       "capacityMismatchWeighed": "容器總重量與已秤重重量不符。",
       "capacityExceedsRequired": "容器總重量 ({total} KG) 超出需求重量 ({target})。",
       "capacityBelowRequired": "容器總重量 ({total} KG) 低於需求重量 ({target})。",
-      "capacityExceedsWeighed": "容器總重量 ({total} KG) 超出已秤重重量 ({target})。",
       "capacityShortageWeighed": "容器總重量 ({total} KG) 與分裝目標重量 ({target}) 不符。請選擇合適的容器。",
-      "capacityMismatchWeighedGeneric": "容器總重量 ({total} KG) 與已秤重重量 ({target}) 不符。",
       "chietCapacityBlock": "容器總重量已符合分裝目標重量 {label}。無需再新增列。",
-      "chietOversizedBucketBlock": "已選擇大於實際重量的容器（{label}）。無法再新增列。",
       "chietTotalExceededBlock": "容器總重量（{total} Kg）已超過實際重量（{target}）。無法再新增列。",
       "chietChooseClosestBucket": "請選擇最接近剩餘數量（{remaining} Kg）的容器。例如實際重量 12.1–12.9 Kg 時，不能先選 12 Kg 容器。"
     }
@@ -316,11 +290,7 @@
     "refreshAriaLabel": "重新連接電子秤",
     "connected": "已連接",
     "disconnected": "未連接",
-    "connecting": "正在連接電子秤...",
-    "searching": "正在搜尋連線...",
-    "selectScale": "選擇 USB 電子秤",
     "selectScalePlaceholder": "選擇要連接的電子秤",
-    "selectScaleHint": "偵測到多台電子秤 — 請先選擇後再秤重。",
     "confirm": "確認",
     "toast": {
       "reconnecting": "重新連接中",
@@ -357,7 +327,6 @@
     },
     "lineDetailsTable": {
       "columns": {
-        "workshop": "車間",
         "requestOrder": "需求單",
         "style": "型體",
         "line": "生產線",
@@ -381,8 +350,6 @@
       "nameLabel": "成分名稱",
       "namePlaceholder": "選擇成分",
       "nameRequired": "成分名稱為必填。",
-      "percentageLabel": "百分比 (%)",
-      "percentageRequired": "請輸入百分比。",
       "weightLabel": "重量 ({unit})",
       "weightRequired": "請輸入重量 ({unit})",
       "toleranceGramsLabel": "允許誤差 (g)",
@@ -441,25 +408,13 @@
       "weighingComplete": "完成",
       "weighingCompleteDetail": "所有成分已完成秤重。",
       "baseNotFound": "找不到基礎調膠品",
-      "weighBaseFirst": "請先秤量基礎成分再新增成分",
       "addSuccess": "成功",
       "addSuccessDetail": "已新增成分",
       "deleteSuccess": "已刪除",
       "deleteSuccessDetail": "成分刪除成功：{name}",
       "loadMaterialsFailed": "無法載入成分",
-      "progressSaveFailed": "無法將進度儲存 (C) 傳送至伺服器。",
       "printBackBlocked": "正在列印標籤，請等待列印完成後再離開。"
     }
-  },
-  "valid": {
-    "required": "請勿留空",
-    "min_reason": "請至少選擇 {n} 個原因",
-    "max_reason": "最多只能 {n} 個原因",
-    "rating_required": "請為此項目評分"
-  },
-  "messages": {
-    "notifi": "通知！",
-    "submitted": "已成功送出，謝謝！"
   },
   "login": {
     "hello": "您好！",
