@@ -831,6 +831,8 @@ const executeMixPrintJob = async (entry: PrintQueueEntry<Partial<WorkOrderMaster
         factoryId,
         workOrderMasterName: row.workOrderMasterName,
         chemicalMasterName: row.chemicalMasterName,
+        allowPagedQueryFallback: true,
+        workOrderDetailStep: 2,
       });
 
       if (!separateQueue.length) {

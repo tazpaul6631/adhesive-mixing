@@ -261,6 +261,23 @@ export interface WorkOrderMaster {
   /** Dùng nội bộ khi đưa vào print queue — không đến từ BE. */
   _resolvedEmployeeId?: string;
   separateGlueConfirm?: boolean;
+  separateGlues?: Array<{
+    factoryId: string;
+    separateGlueId: number;
+    glueId?: number;
+    bucketId: number;
+    recordStatus: string;
+    seq?: number;
+  }>;
+  noSeparateGlues?: Array<{
+    factoryId: string;
+    noSeparateGlueId: number;
+    workOrderMasterId?: number;
+    bucketId: number;
+    materialCode?: number;
+    recordStatus: string;
+    seq?: number;
+  }>;
 }
 
 export interface PagedResult<T> {
@@ -590,6 +607,9 @@ const executePrintJob = async (entry: PrintQueueEntry<Partial<WorkOrderMaster>>)
       factoryId,
       workOrderMasterName: row.workOrderMasterName,
       chemicalMasterName: row.chemicalMasterName,
+      separateGlues: row.separateGlues,
+      noSeparateGlues: row.noSeparateGlues,
+      allowPagedQueryFallback: false,
     });
 
     if (!printQueue.length) {

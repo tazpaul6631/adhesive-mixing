@@ -1,4 +1,5 @@
 import separateApi from '@/api/separate';
+import workOrderApi from '@/api/workOrder';
 import { notifyPrintInterrupted, takeTsplMediaPrefix } from '@/services/labelPrintSession';
 
 export type PrintFailureReason =
@@ -76,6 +77,12 @@ const getLabelPrintSettleMs = (batchSize: number) =>
     ? LABEL_PRINT_SETTLE_LARGE_BATCH_MS
     : LABEL_PRINT_SETTLE_MS;
 
+export interface SeparateGlueConfirmEntry {
+  factoryId: string;
+  separateGlueId?: string | number;
+  noSeparateGlueId?: string | number;
+}
+
 export interface FetchSeparatePrintBatchOptions {
   workOrderMasterId: string;
   isNoMixGlue: boolean;
@@ -83,6 +90,18 @@ export interface FetchSeparatePrintBatchOptions {
   factoryId: string;
   workOrderMasterName?: string;
   chemicalMasterName?: string;
+  /** Từ postWorkOrderList — ưu tiên dùng thay vì sgqueryresult/nsgqueryresult. */
+  separateGlues?: any[];
+  noSeparateGlues?: any[];
+  /** Manifest đã build sẵn (nếu có). */
+  glueEntries?: SeparateGlueConfirmEntry[];
+  /**
+   * false (mặc định): không loop sgqueryresult/nsgqueryresult — dùng getWorkOrder step 3.
+   * true: fallback query nhiều trang (ListMixGlue QIP no-mix).
+   */
+  allowPagedQueryFallback?: boolean;
+  /** Step getWorkOrder khi lấy separateGlues/noSeparateGlues — mặc định 3 (chiết). */
+  workOrderDetailStep?: number;
 }
 
 /** true = in tem keo trộn chiết (SG); false = keo không trộn (NSG). */
@@ -297,6 +316,83 @@ const isValidGlueId = (value: unknown) => {
   return normalized !== '' && normalized !== '0';
 };
 
+const isRecordStatusCancelled = (value: unknown) =>
+  String(value ?? '').toUpperCase() === 'C';
+
+/** List WO có thể thiếu bucketId/recordStatus — chỉ loại khi đã hủy hoặc bucket = 0. */
+const isPrintableWorkOrderGlueItem = (item: any) => {
+  if (isRecordStatusCancelled(item?.recordStatus)) return false;
+  const bucketId = item?.bucketId ?? item?.selectedBucketId;
+  if (bucketId != null && bucketId !== '' && String(bucketId) === '0') return false;
+  return true;
+};
+
+const dedupeGlueEntries = (entries: SeparateGlueConfirmEntry[]): SeparateGlueConfirmEntry[] => {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const key = entry.separateGlueId != null
+      ? `sg:${entry.separateGlueId}`
+      : `nsg:${entry.noSeparateGlueId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const mapMixGlueEntry = (
+  item: any,
+  factoryId: string
+): SeparateGlueConfirmEntry | null => {
+  if (!isValidGlueId(item?.separateGlueId)) return null;
+  return {
+    factoryId: String(item?.factoryId || factoryId),
+    separateGlueId: item.separateGlueId,
+  };
+};
+
+const mapNoMixGlueEntry = (
+  item: any,
+  factoryId: string
+): SeparateGlueConfirmEntry | null => {
+  const noSeparateGlueId = item?.noSeparateGlueId ?? item?.separateGlueId;
+  if (!isValidGlueId(noSeparateGlueId)) return null;
+  return {
+    factoryId: String(item?.factoryId || factoryId),
+    noSeparateGlueId,
+  };
+};
+
+/** Lấy ID tem in từ separateGlues / noSeparateGlues trên dòng WO (sau chiết). */
+export function buildGlueEntriesFromWorkOrderRow(
+  options: Pick<
+    FetchSeparatePrintBatchOptions,
+    'factoryId' | 'isNoMixGlue' | 'separateGlues' | 'noSeparateGlues'
+  >
+): SeparateGlueConfirmEntry[] {
+  const { factoryId, isNoMixGlue } = options;
+
+  if (isSgSeparatePrintFlow(isNoMixGlue)) {
+    return dedupeGlueEntries(
+      (options.separateGlues ?? [])
+        .filter(isPrintableWorkOrderGlueItem)
+        .map((item) => mapMixGlueEntry(item, factoryId))
+        .filter(Boolean) as SeparateGlueConfirmEntry[]
+    );
+  }
+
+  const fromNoSeparate = (options.noSeparateGlues ?? [])
+    .filter(isPrintableWorkOrderGlueItem)
+    .map((item) => mapNoMixGlueEntry(item, factoryId))
+    .filter(Boolean) as SeparateGlueConfirmEntry[];
+
+  const fromSeparate = (options.separateGlues ?? [])
+    .filter(isPrintableWorkOrderGlueItem)
+    .map((item) => mapNoMixGlueEntry(item, factoryId))
+    .filter(Boolean) as SeparateGlueConfirmEntry[];
+
+  return dedupeGlueEntries([...fromNoSeparate, ...fromSeparate]);
+}
+
 /** Lọc items từ postSGQueryResult / postNSGQueryResult theo WO đang in. */
 export function parseSeparateGlueIdsFromQueryItems(
   items: any[],
@@ -344,6 +440,24 @@ export function parseSeparateGlueIdsFromQueryItems(
 
 const QUERY_PAGE_SIZE = 100;
 const QUERY_MAX_PAGES = 50;
+const DEFAULT_SEPARATE_PRINT_WORK_ORDER_STEP = 3;
+
+async function fetchGlueEntriesFromWorkOrderDetail(
+  options: FetchSeparatePrintBatchOptions
+): Promise<SeparateGlueConfirmEntry[]> {
+  const { factoryId, workOrderMasterId, isNoMixGlue } = options;
+  const stepId = options.workOrderDetailStep ?? DEFAULT_SEPARATE_PRINT_WORK_ORDER_STEP;
+
+  const { data } = await workOrderApi.getWorkOrder(factoryId, workOrderMasterId, stepId);
+  if (!data?.success || !data.data) return [];
+
+  return buildGlueEntriesFromWorkOrderRow({
+    factoryId,
+    isNoMixGlue,
+    separateGlues: data.data.separateGlues,
+    noSeparateGlues: data.data.noSeparateGlues,
+  });
+}
 
 async function fetchAllSeparateQueryItems(
   options: FetchSeparatePrintBatchOptions
@@ -425,15 +539,24 @@ export async function fetchSeparatePrintBatchFromWorkOrder(
   const { workOrderMasterId, isNoMixGlue, confirmBy, factoryId, workOrderMasterName } = options;
   const isSg = isSgSeparatePrintFlow(isNoMixGlue);
 
-  const queryItems = await fetchAllSeparateQueryItems(options);
+  let glueEntries: SeparateGlueConfirmEntry[] = options.glueEntries?.length
+    ? options.glueEntries
+    : buildGlueEntriesFromWorkOrderRow(options);
 
-  const glueEntries = parseSeparateGlueIdsFromQueryItems(
-    queryItems,
-    isNoMixGlue,
-    factoryId,
-    workOrderMasterId,
-    workOrderMasterName
-  );
+  if (!glueEntries.length) {
+    glueEntries = await fetchGlueEntriesFromWorkOrderDetail(options);
+  }
+
+  if (!glueEntries.length && options.allowPagedQueryFallback) {
+    const queryItems = await fetchAllSeparateQueryItems(options);
+    glueEntries = parseSeparateGlueIdsFromQueryItems(
+      queryItems,
+      isNoMixGlue,
+      factoryId,
+      workOrderMasterId,
+      workOrderMasterName
+    );
+  }
 
   if (!glueEntries.length) {
     return [];
