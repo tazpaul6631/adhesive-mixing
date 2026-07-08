@@ -448,6 +448,15 @@
     "cameraPermission": "Cần cấp quyền camera để quét thẻ nhân viên!",
     "invalidBarcode": "Mã vạch thẻ không hợp lệ hoặc không có dữ liệu!",
     "enterEmployeeId": "Vui lòng nhập mã nhân viên!",
-    "changeLanguage": "Đổi ngôn ngữ"
+    "changeLanguage": "Đổi ngôn ngữ",
+    "offlineDownloadTitle": "Đang tải dữ liệu",
+    "offlineDownloadNote": "Vui lòng đợi trong giây lát. Dữ liệu QR đang được lưu để sử dụng offline.",
+    "offlineLoginBlocked": "Thiết bị đang mất mạng. Vui lòng kết nối mạng để đăng nhập.",
+    "offlineFactoryMissing": "Không tìm thấy mã bộ phận SX của người dùng. Vui lòng liên hệ IT.",
+    "offlineDepartmentMissing": "Không tìm thấy mã bộ phận của người dùng. Vui lòng liên hệ IT.",
+    "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
+    "offlineSyncTitle": "Đang đồng bộ dữ liệu",
+    "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
+    "invalidOfflineUser": "Người dùng không hợp lệ."
   }
 }

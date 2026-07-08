@@ -448,6 +448,15 @@
     "cameraPermission": "Camera permission is required to scan the employee card!",
     "invalidBarcode": "Invalid card barcode or no data found!",
     "enterEmployeeId": "Please enter employee ID!",
-    "changeLanguage": "Change language"
+    "changeLanguage": "Change language",
+    "offlineDownloadTitle": "Downloading data",
+    "offlineDownloadNote": "Please wait. QR data is being saved for offline use.",
+    "offlineLoginBlocked": "The device is offline. Please connect to the network before logging in.",
+    "offlineFactoryMissing": "Unable to find the user business division ID. Please contact IT.",
+    "offlineDepartmentMissing": "Unable to find the user department ID. Please contact IT.",
+    "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again.",
+    "offlineSyncTitle": "Syncing data",
+    "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
+    "invalidOfflineUser": "Invalid user."
   }
 }
