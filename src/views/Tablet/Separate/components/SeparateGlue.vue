@@ -1,7 +1,7 @@
 <template>
   <div ref="tableWrapperRef" class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
     <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight" tableStyle="width: 100%;"
-      stripedRows class="modern-table auto-columns-table">
+      class="modern-table auto-columns-table">
 
       <template #empty>
         <div class="separate-glue-empty" :style="{ minHeight: emptyStateMinHeight }">

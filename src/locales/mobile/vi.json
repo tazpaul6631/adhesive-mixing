@@ -1,26 +1,12 @@
 {
   "common": {
-    "welcome": "Chào mừng",
     "save": "Lưu",
     "cancel": "Hủy",
     "loading": "Đang tải..."
   },
-  "home": {
-    "title": "Trang chủ"
-  },
   "appMenu": {
     "title": "Trang Chủ",
     "logout": "Đăng xuất"
-  },
-  "valid": {
-    "required": "Vui lòng không để trống",
-    "min_reason": "Vui lòng chọn ít nhất {n} lý do",
-    "max_reason": "Tối đa chỉ được {n} lý do",
-    "rating_required": "Vui lòng đánh giá mục này"
-  },
-  "messages": {
-    "notifi": "Thông báo!",
-    "submitted": "Đã gửi thành công, cám ơn!"
   },
   "login": {
     "hello": "Xin chào!",
@@ -59,10 +45,10 @@
     "offlineDownloadNote": "Vui lòng đợi trong giây lát. Dữ liệu QR đang được lưu để sử dụng offline.",
     "offlineLoginBlocked": "Thiết bị đang mất mạng. Vui lòng kết nối mạng để đăng nhập.",
     "offlineFactoryMissing": "Không tìm thấy mã nhà máy của người dùng. Vui lòng liên hệ IT.",
+    "offlineDepartmentMissing": "Không tìm thấy mã bộ phận của người dùng. Vui lòng liên hệ IT.",
     "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
     "offlineSyncTitle": "Đang đồng bộ dữ liệu",
     "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
-    "offlineSyncFailed": "Không thể đồng bộ dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
     "invalidOfflineUser": "Người dùng không hợp lệ."
   },
   "mobile": {
@@ -73,12 +59,6 @@
       "scanPlaceholder": "Chạm để quét mã QR",
       "statusLabel": "Trạng thái:",
       "confirmReturnButton": "Xác nhận phát keo",
-      "scanReturnQrButton": "Quét Mã QR thùng keo trả về",
-      "returnDialogTitle": "Xác nhận thùng keo trả về",
-      "returnDialogMessage": "Xác nhận trả về thùng keo đã quét?",
-      "cancelButton": "HỦY",
-      "okButton": "OK",
-      "submittingButton": "Đang gửi...",
       "fields": {
         "productLineLabel": "Chuyền:",
         "glueLabel": "Keo:"
@@ -91,17 +71,11 @@
         "loadingInfo": "Đang tải thông tin...",
         "loadLineError": "Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!",
         "loadAllocatedError": "Không thể lấy thông tin mã QR thùng keo phát. Vui lòng kiểm tra kết nối API!",
-        "loadReturnError": "Không thể lấy thông tin mã QR thùng keo trả về. Vui lòng kiểm tra kết nối API!",
-        "returnSuccess": "Trả về thành công",
-        "returnConfirmError": "Không thể xác nhận trả về thùng keo. Vui lòng thử lại!",
         "confirmError": "Không thể xác nhận. Vui lòng thử lại!",
         "confirmSuccess": "Xác nhận thành công",
         "statusMismatch": "Mã QR thùng keo chuyền không khớp với mã QR thùng keo phát.",
         "statusMatched": "Mã QR thùng keo chuyền khớp với mã QR thùng keo phát.",
-        "allocatedExpired": "Mã thùng keo đã hết hiệu lực.",
-        "invalidReceiverEmployee": "Không tìm thấy người nhận keo. Vui lòng quét lại.",
-        "receiverValidateError": "Không thể xác nhận người nhận keo. Vui lòng thử lại!",
-        "receiverCameraPermission": "Cần cấp quyền camera để quét thẻ người nhận keo!"
+        "allocatedExpired": "Mã thùng keo đã hết hiệu lực."
       }
     },
     "appMenu": {
@@ -129,18 +103,15 @@
       "submittingButton": "Đang gửi...",
       "fields": {
         "lineLabel": "Chuyền:",
-        "glueLabel": "Keo:",
-        "lineChemicalLabel": "Chi tiết:"
+        "glueLabel": "Keo:"
       },
       "messages": {
-        "requireConfirmedLine": "Vui lòng xác nhận keo chuyền trước khi quét thùng keo trả về.",
         "cameraPermission": "Cần cấp quyền camera để quét mã QR!",
         "invalidQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo trả về.",
         "noGlueData": "Không có dữ liệu thùng keo trả về.",
         "loadError": "Không thể lấy thông tin mã QR thùng keo trả về. Vui lòng kiểm tra kết nối API!",
         "returnSuccess": "Trả về thành công",
         "returnConfirmError": "Không thể tạo log trả về thùng keo. Vui lòng thử lại!",
-        "loadingInfo": "Đang tải thông tin...",
         "invalidLineQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo chuyền.",
         "noLineData": "Không có dữ liệu thùng keo chuyền.",
         "loadLineError": "Không thể lấy thông tin mã QR thùng keo chuyền. Vui lòng kiểm tra kết nối API!",
@@ -149,13 +120,9 @@
         "lineMismatchWarning": "Thùng keo chuyền đã quét không khớp với thùng keo phát."
       },
       "lineQrTitle": "Mã QR thùng keo chuyền",
-      "lineScanPlaceholder": "Quét mã QR thùng keo chuyền",
-      "lineScanDescription": "Có thể quét nhiều thùng keo chuyền để kiểm tra loại keo trước khi trả.",
       "lineScanAddButton": "Quét thêm keo chuyền",
       "lineScanDisabledHint": "Vui lòng quét mã QR thùng keo trả về trước.",
       "lineListTitle": "Đã quét {count} chuyền",
-      "lineMatched": "Khớp",
-      "lineMismatch": "Không khớp",
       "removeLineItem": "Xóa keo chuyền"
     },
     "glueInfoCheck": {
@@ -191,29 +158,26 @@
     },
     "glueCheckList": {
       "title": "Tuần tra kiểm phòng pha keo",
-      "scanTitle": "Quét mã kiểm tra",
       "scanButton": "Quét mã kiểm tra",
       "dialogTitle": "Phiếu kiểm tra",
       "issueLabel": "Vấn đề",
       "resultLabel": "Kết quả kiểm tra",
-      "hasIssueLabel": "Có vấn đề",
       "okResult": "Không vấn đề",
       "notOkResult": "Có vấn đề",
       "noteLabel": "Ghi chú",
       "notePlaceholder": "Nhập ghi chú nếu có",
       "cancelButton": "HỦY",
       "submitButton": "Submit",
-      "SubmitRequired": "Vui lòng nhập ghi chú trước khi gửi.",
       "messages": {
         "cameraPermission": "Cần cấp quyền camera để quét mã kiểm tra!",
         "invalidQr": "Mã kiểm tra không hợp lệ hoặc không có dữ liệu!",
         "scanError": "Không thể quét mã kiểm tra. Vui lòng thử lại!",
         "submitSuccess": "Đã gửi thông tin kiểm tra thành công.",
-        "resultRequired": "Vui lòng chọn kết quả kiểm tra",
         "submitError": "Không thể gửi thông tin kiểm tra. Vui lòng thử lại!",
         "noCheckListData": "Không tìm thấy dữ liệu kiểm tra.",
         "cancelSuccess": "Đã hủy phiếu kiểm tra"
-      }
+      },
+      "submitRequired": "Vui lòng nhập ghi chú trước khi gửi."
     },
     "common": {
       "offlineLocalData": "Không có mạng - Đang sử dụng dữ liệu cục bộ"
@@ -223,8 +187,6 @@
       "title": "Dữ liệu chờ đồng bộ",
       "description": "Các dữ liệu này đã được lưu tạm trên máy và sẽ đồng bộ khi có mạng.",
       "close": "Đóng",
-      "noData": "Không có dữ liệu chờ đồng bộ.",
-      "createdAt": "Thời gian lưu",
       "receiveGlue": "Chuyền xác nhận nhận keo",
       "returnGlue": "Quét keo trả về",
       "glueCheckList": "Tuần tra kiểm phòng pha keo",

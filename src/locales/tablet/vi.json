@@ -1,14 +1,10 @@
 {
   "common": {
-    "welcome": "Chào mừng",
     "save": "Lưu",
     "cancel": "Hủy",
     "loading": "Đang tải...",
     "networkOffline": "Không có mạng",
     "checkNetwork": "Vui lòng kiểm tra kết nối mạng và thử lại."
-  },
-  "home": {
-    "title": "Trang chủ"
   },
   "appMenu": {
     "title": "Trang chủ",
@@ -39,22 +35,35 @@
     "columns": {
       "workOrder": "Đơn điều công",
       "glue": "Keo trộn",
-      "totalWeight": "Tổng TL yêu cầu (KG)",
+      "totalWeight": "TL yêu cầu (KG)",
       "updater": "Nhân viên điều công",
       "updateDate": "Ngày điều công",
       "glueConfirm": "Trộn keo hỗn hợp",
       "noMixConfirm": "Xác nhận chiết keo",
       "separateConfirm": "Xác nhận chiết keo",
       "noSeparateConfirm": "Không chiết",
-      "qipConfirm": "QIP xác nhận",
-      "confirm": "Xác nhận QIP"
+      "qipConfirm": "QIP xác nhận"
+    },
+    "mlnsDialog": {
+      "title": "Xác minh mã số của đơn {workOrderMasterName}",
+      "hint": "Nhập cách nhau bằng dấu phẩy (chỉ số và dấu phẩy).",
+      "inputLabel": "Mã số",
+      "placeholder": "Ví dụ: 4,5",
+      "confirm": "Xác nhận"
+    },
+    "printAuthDialog": {
+      "title": "Xác thực QIP để in tem",
+      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "scanButton": "Quét mã QIP",
+      "confirm": "Xác nhận"
     },
     "scan": {
       "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
     },
     "print": {
-      "overlayTitle": "Đang in tem",
-      "overlayProgress": "Đang in {current}/{total}",
+      "queuedTitle": "Đang chờ in",
       "retryTitle": "In tem thất bại",
       "retryMessage": "Có {count} tem chưa in thành công. Bạn có muốn in lại không?",
       "retryConfirm": "In lại",
@@ -71,7 +80,8 @@
       "gapConfirmTitle": "Căn gap giấy",
       "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
       "gapConfirmOk": "Đã căn gap — tiếp tục",
-      "gapConfirmCancel": "Hủy"
+      "gapConfirmCancel": "Hủy",
+      "busyPendingToast": "Đang có tem chờ in. Vui lòng xử lý xong trước khi in đơn mới."
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -91,16 +101,13 @@
       "mixGlueIdNotFound": "Không tìm thấy mã trộn keo.",
       "noLabels": "Không có tem để in.",
       "printSuccess": "Đã in {count} tem.",
-      "printFailPartial": "In tem thất bại ({printed}/{total}).",
-      "printFailStage": "In tem thất bại ({stage}).",
       "printFailed": "In tem thất bại!",
       "printPartial": "In một phần ({printed}/{total}).",
       "alreadyPrinted": "{name} đã in tem rồi.",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới.",
-      "pendingExists": "Có lỗi in chưa xử lý. Vui lòng xử lý lỗi trước khi in thêm.",
       "printQueueBackBlocked": "Đang in {count} đơn còn lại. Vui lòng chờ in xong mới thoát.",
-      "queuedTitle": "Đang chờ in",
+      "mlnsEmpty": "Vui lòng nhập mã số.",
+      "mlnsMismatch": "Mã số không khớp (thiếu hoặc thừa). Vui lòng nhập lại.",
       "componentLabel": {
         "notConfirmed": "Vui lòng xác nhận trọng lượng thực tế trước khi in.",
         "printSuccess": "Đã in tem thành phần.",
@@ -116,16 +123,13 @@
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
     "selectedRow": "Keo đang chọn",
     "selectRowHint": "Chọn keo cần cân trong bảng",
-    "weighed": "Cân thực tế",
     "columns": {
       "seq": "STT",
       "lineChemical": "Keo / chuyền SX",
       "returnWeight": "TL hủy",
       "operator": "Người thao tác",
       "weighTime": "Thời gian cân",
-      "confirm": "Xác nhận người cân",
-      "updater": "Người cân",
-      "updateDate": "Ngày cân"
+      "confirm": "Xác nhận người cân"
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -144,12 +148,19 @@
     "filter": {
       "gluePlaceholder": "Lọc theo tên keo"
     },
+    "printAuthDialog": {
+      "title": "Xác thực QIP để in tem",
+      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "scanButton": "Quét mã QIP",
+      "confirm": "Xác nhận"
+    },
     "scan": {
       "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
     },
     "print": {
-      "overlayTitle": "Đang in tem",
-      "overlayProgress": "Đang in {current}/{total}",
+      "queuedTitle": "Đang chờ in",
       "retryTitle": "In tem thất bại",
       "retryMessage": "Có {count} tem chưa in thành công. Bạn có muốn in lại không?",
       "retryConfirm": "In lại",
@@ -177,16 +188,13 @@
       "printerNotConnected": "Máy in chưa kết nối.",
       "scanFailed": "Không quét được thẻ nhân viên hoặc đã hủy quét.",
       "invalidEmployeeCard": "Xác nhận thất bại, bạn không phải QIP, vui lòng liên hệ Admin để kiểm tra.",
-      "loadOrderFailed": "Không tải được chi tiết đơn hàng.",
       "noLabels": "Không có tem để in.",
       "printSuccess": "Đã in {count} tem.",
       "printPartial": "In một phần ({printed}/{total}).",
       "printFailed": "In tem thất bại!",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới.",
       "pendingExists": "Có lỗi in chưa xử lý. Vui lòng xử lý lỗi trước khi in thêm.",
-      "printQueueBackBlocked": "Đang in {count} đơn còn lại. Vui lòng chờ in xong mới thoát.",
-      "queuedTitle": "Đang chờ in"
+      "printQueueBackBlocked": "Đang in {count} đơn còn lại. Vui lòng chờ in xong mới thoát."
     }
   },
   "separateMixedGlue": {
@@ -237,9 +245,7 @@
       "incomplete": "Chưa hoàn thành",
       "locked": "Không thể chỉnh sửa",
       "completeFirst": "Đơn điều công này đã hoàn thành chiết, không thể thêm hoặc xóa.",
-      "noMixAlreadySubmitted": "Keo không trộn đã gửi xác nhận, không thể chỉnh sửa thêm.",
       "noMixAddRowRequired": "Keo không trộn: vui lòng thêm dòng và chọn thùng chứa trước khi xác nhận.",
-      "noMixNoChangesToSubmit": "Không có thay đổi thêm dòng, chọn thùng hoặc xóa dòng. Không cần gửi lại.",
       "separateNoChangesToSubmit": "Không có thay đổi thêm dòng, chọn thùng hoặc xóa dòng. Không cần gửi lại.",
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
@@ -256,11 +262,9 @@
       "weighBeforeChiet": "Vui lòng cân keo {name} trước khi chiết.",
       "chietSaved": "Đã lưu chiết",
       "chietSavedDetail": "Thông tin chiết đã được tạm lưu",
-      "progressSaveFailed": "Không thể gửi lưu tiến độ (C) lên server.",
       "selectBucketRow": "Vui lòng chọn thùng chứa ở dòng {row} trước khi thêm dòng mới.",
       "selectBucketRowShort": "Vui lòng chọn thùng chứa ở dòng {row}.",
       "allocationComplete": "Đã chiết xong",
-      "allocationCompleteDetail": "Tổng TL thùng chứa đã đạt, không cần thêm mới.",
       "weightExceeded": "Vượt trọng lượng",
       "bucketCapacityExceeded": "Tổng TL thùng chứa vượt quá {label}. Vui lòng chọn thùng phù hợp hơn.",
       "addRowMin": "Vui lòng thêm ít nhất một dòng và chọn thùng chứa.",
@@ -271,8 +275,6 @@
       "noMixSelectBucket": "Keo không trộn dòng {row}: vui lòng chọn thùng chứa.",
       "noMixPrefix": "Keo không trộn: {message}",
       "noMixWeighFirst": "Keo không trộn {name}: vui lòng hoàn thành cân trước.",
-      "pendingChietModal": "Còn thông tin chiết chưa xác nhận. Vui lòng hoàn tất cửa sổ chiết.",
-      "chietRequired": "Keo {name} đã cân nhưng chưa xác nhận chiết. Vui lòng mở cửa sổ và xác nhận.",
       "chietSelectBucket": "Keo {name} chiết dòng {row}: vui lòng chọn thùng chứa.",
       "chietPrefix": "Keo {name} chiết: {message}"
     },
@@ -292,11 +294,8 @@
       "capacityMismatchWeighed": "Tổng TL thùng chứa không khớp TL đã cân.",
       "capacityExceedsRequired": "Tổng TL thùng chứa ({total} KG) vượt quá TL yêu cầu ({target}).",
       "capacityBelowRequired": "Tổng TL thùng chứa ({total} KG) thấp hơn TL yêu cầu ({target}).",
-      "capacityExceedsWeighed": "Tổng TL thùng chứa ({total} KG) vượt quá TL đã cân ({target}).",
       "capacityShortageWeighed": "Tổng TL thùng chứa ({total} KG) chưa khớp TL chiết ({target}). Vui lòng chọn thùng phù hợp.",
-      "capacityMismatchWeighedGeneric": "Tổng TL thùng chứa ({total} KG) không khớp TL đã cân ({target}).",
       "chietCapacityBlock": "Tổng TL thùng chứa đã khớp TL chiết {label}. Không cần thêm dòng mới.",
-      "chietOversizedBucketBlock": "Đã chọn thùng lớn hơn TL thực tế ({label}). Không thể thêm dòng mới.",
       "chietTotalExceededBlock": "Tổng TL thùng ({total} Kg) đã vượt TL thực tế ({target}). Không thể thêm dòng mới.",
       "chietChooseClosestBucket": "Vui lòng chọn thùng gần nhất với số lượng còn lại ({remaining} Kg). Ví dụ: TL thực tế 12,1–12,9 Kg không thể chọn thùng 12 Kg đầu tiên."
     }
@@ -316,11 +315,7 @@
     "refreshAriaLabel": "Kết nối lại cân",
     "connected": "Đã kết nối cân điện tử",
     "disconnected": "Chưa kết nối cân điện tử",
-    "connecting": "Đang kết nối cân điện tử...",
-    "searching": "Đang tìm kết nối...",
-    "selectScale": "Chọn cân USB",
     "selectScalePlaceholder": "Chọn cân để kết nối",
-    "selectScaleHint": "Phát hiện nhiều cân — vui lòng chọn cân trước khi cân.",
     "confirm": "Xác nhận",
     "toast": {
       "reconnecting": "Đang kết nối lại",
@@ -357,7 +352,6 @@
     },
     "lineDetailsTable": {
       "columns": {
-        "workshop": "Xưởng",
         "requestOrder": "Đơn yêu cầu",
         "style": "Kiểu dáng",
         "line": "Chuyền SX",
@@ -381,8 +375,6 @@
       "nameLabel": "Tên thành phần",
       "namePlaceholder": "Chọn thành phần",
       "nameRequired": "Tên thành phần là bắt buộc.",
-      "percentageLabel": "Phần trăm (%)",
-      "percentageRequired": "Vui lòng nhập phần trăm.",
       "weightLabel": "Trọng lượng ({unit})",
       "weightRequired": "Vui lòng nhập trọng lượng ({unit})",
       "toleranceGramsLabel": "Độ chênh lệch (g)",
@@ -441,25 +433,13 @@
       "weighingComplete": "Hoàn thành",
       "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
       "baseNotFound": "Không tìm thấy keo trộn cơ bản",
-      "weighBaseFirst": "Vui lòng cân thành phần cơ bản trước khi thêm thành phần",
       "addSuccess": "Thành công",
       "addSuccessDetail": "Đã thêm thành phần",
       "deleteSuccess": "Đã xóa",
       "deleteSuccessDetail": "Xóa thành phần thành công: {name}",
       "loadMaterialsFailed": "Không thể tải thành phần",
-      "progressSaveFailed": "Không thể gửi lưu tiến độ (C) lên server.",
       "printBackBlocked": "Đang in tem. Vui lòng chờ in xong mới thoát."
     }
-  },
-  "valid": {
-    "required": "Vui lòng không để trống",
-    "min_reason": "Vui lòng chọn ít nhất {n} lý do",
-    "max_reason": "Tối đa chỉ được {n} lý do",
-    "rating_required": "Vui lòng đánh giá mục này"
-  },
-  "messages": {
-    "notifi": "Thông báo!",
-    "submitted": "Đã gửi thành công, cảm ơn!"
   },
   "login": {
     "hello": "Xin chào!",
@@ -493,6 +473,15 @@
     "cameraPermission": "Cần cấp quyền camera để quét thẻ nhân viên!",
     "invalidBarcode": "Mã vạch thẻ không hợp lệ hoặc không có dữ liệu!",
     "enterEmployeeId": "Vui lòng nhập mã nhân viên!",
-    "changeLanguage": "Đổi ngôn ngữ"
+    "changeLanguage": "Đổi ngôn ngữ",
+    "offlineDownloadTitle": "Đang tải dữ liệu",
+    "offlineDownloadNote": "Vui lòng đợi trong giây lát. Dữ liệu QR đang được lưu để sử dụng offline.",
+    "offlineLoginBlocked": "Thiết bị đang mất mạng. Vui lòng kết nối mạng để đăng nhập.",
+    "offlineFactoryMissing": "Không tìm thấy mã bộ phận SX của người dùng. Vui lòng liên hệ IT.",
+    "offlineDepartmentMissing": "Không tìm thấy mã bộ phận của người dùng. Vui lòng liên hệ IT.",
+    "offlineDownloadFailed": "Không thể tải dữ liệu offline. Vui lòng kiểm tra kết nối mạng và thử lại.",
+    "offlineSyncTitle": "Đang đồng bộ dữ liệu",
+    "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
+    "invalidOfflineUser": "Người dùng không hợp lệ."
   }
 }

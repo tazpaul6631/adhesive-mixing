@@ -1,4 +1,5 @@
 import format from '@/mixins/format';
+import { normalizeWeightUnit } from '@/utils/weightUnit';
 import type { HeaderInfo, RequestDetailOption, SeparateGlueRow } from './separateMixedGlue.types';
 import { buildNoMixTableRowsFromApiItems } from './noSeparateGlueSync';
 import { normalizeRowSeq, resolveNoMixApiItemsForSeqMap } from './separateGlueSeqSync';
@@ -126,7 +127,7 @@ export const mapNoMixChemicalsFull = (mixChemicals: any[]) => {
     styleName: item.styleName,
     materialCode: item.materialCode || '0',
     materialName: item.materialName,
-    weightUnit: item.weightUnit || 'Kg',
+    weightUnit: normalizeWeightUnit(item.weightUnit),
     glueWeight: item.glueWeight ?? item.requiredWeight ?? '',
     requiredWeight: item.requiredWeight || item.glueWeight || '',
     actualWeight: item.actualWeight || '',

@@ -1,4 +1,4 @@
-export interface CursorPagedMeta {
+interface CursorPagedMeta {
   page: number;
   pageSize: number;
   hasNextPage: boolean;

@@ -16,8 +16,9 @@
     </ion-header>
 
     <ion-content class="ion-padding list-separate-mixed-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-separate-page"
+      <div class="main-container max-w-full mx-auto list-separate-page page-content-loading-host"
         :class="[pageClass, { 'list-separate-mixed-glue-layer--hidden': isScanning }]">
+        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
         <div class="surface-card p-0 shadow-1 border-round-xl list-separate-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-separate-card-head">
@@ -25,12 +26,12 @@
               <i class="pi pi-list mr-2"></i>{{ t('listSeparateMixedGlue.sectionTitle') }}
             </span>
             <div class="flex align-items-center gap-2 list-separate-card-head-actions">
-              <IconField class="list-separate-glue-filter">
+              <!-- <IconField class="list-separate-glue-filter">
                 <InputIcon class="pi pi-search" />
                 <InputText v-model="chemicalMasterNameFilter" type="search"
                   :placeholder="t('listSeparateMixedGlue.filter.gluePlaceholder')"
                   :aria-label="t('listSeparateMixedGlue.filter.gluePlaceholder')" fluid />
-              </IconField>
+              </IconField> -->
               <div v-if="isPrinting" class="print-progress-chip">
                 <i class="pi pi-spin pi-spinner" style="font-size:0.85rem"></i>
                 <span>{{ progress.current }}/{{ progress.total }}</span>
@@ -46,7 +47,7 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-separate-table-wrap">
             <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
-              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" stripedRows
+              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight"
               class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
               :paginator="true" :rows="rowsPerPage" paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
@@ -105,12 +106,15 @@
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
                   <div v-else class="flex gap-2 justify-content-center">
-                    <Button icon="pi pi-print" severity="success" class="button-lg" :disabled="isRowPrintDisabled(data)"
-                      :loading="isRowPrinting(data.workOrderMasterId)"
+                    <Button severity="success" class="button-lg" :disabled="isRowPrintDisabled(data)"
+                      :loading="isPrintRowLoading(data.workOrderMasterId)"
                       :title="isRowQueued(data.workOrderMasterId) ? t('listSeparateMixedGlue.print.queuedTitle') : undefined"
-                      @click.stop="handlePrint(data)">
-                      <template v-if="isRowQueued(data.workOrderMasterId)" #icon>
+                      @click.stop="onPrintClick(data)">
+                      <template v-if="isRowQueued(data.workOrderMasterId) && !isPrintRowLoading(data.workOrderMasterId)" #icon>
                         <i class="pi pi-clock" />
+                      </template>
+                      <template v-else-if="!isPrintRowLoading(data.workOrderMasterId)" #icon>
+                        <i class="pi pi-print" />
                       </template>
                     </Button>
                   </div>
@@ -149,6 +153,45 @@
 
     <BatchPrintRetryDialog v-model:visible="showRetryDialog" :failed-items="failedItems" :loading="isPrinting"
       @retry="handleRetryPrint" />
+
+    <Dialog v-model:visible="showPrintAuthDialog" modal :header="t('listSeparateMixedGlue.printAuthDialog.title')"
+      :style="{ width: 'min(92vw, 420px)' }" :closable="false" @hide="closePrintAuthDialog">
+      <div class="flex flex-column gap-3">
+        <p class="m-0 text-600 line-height-3">
+          {{ t('listSeparateMixedGlue.printAuthDialog.hint', { workOrderMasterName: pendingPrintRow?.workOrderMasterName ?? '' })
+          }}
+        </p>
+        <div class="flex flex-column gap-2">
+          <label for="printAuthPassword" class="font-semibold text-900">{{
+            t('listSeparateMixedGlue.printAuthDialog.passwordLabel')
+            }}</label>
+          <div class="flex align-items-center gap-2">
+            <IconField class="flex-1 w-full print-auth-password-field">
+              <InputText id="printAuthPassword" v-model="printAuthPassword"
+                :type="showPrintAuthPassword ? 'text' : 'password'" class="w-full"
+                :placeholder="t('listSeparateMixedGlue.printAuthDialog.passwordPlaceholder')" autocomplete="off"
+                :disabled="isPrintAuthSubmitting || isPrintAuthScanning" @keyup.enter="submitPrintAuthPassword" />
+              <InputIcon class="password-toggle-icon pi" :class="[
+                showPrintAuthPassword ? 'pi-eye-slash' : 'pi-eye',
+                { 'password-toggle-icon--disabled': isPrintAuthSubmitting || isPrintAuthScanning }
+              ]" @click="togglePrintAuthPassword" />
+            </IconField>
+            <Button icon="pi pi-qrcode" severity="success" outlined
+              :title="t('listSeparateMixedGlue.printAuthDialog.scanButton')"
+              :aria-label="t('listSeparateMixedGlue.printAuthDialog.scanButton')" size="large"
+              :disabled="isPrintAuthSubmitting || isPrintAuthScanning" :loading="isPrintAuthScanning"
+              @click="startPrintAuthScan" />
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button :label="t('common.cancel')" icon="pi pi-times" text severity="secondary" size="large"
+          :disabled="isPrintAuthSubmitting || isPrintAuthScanning" @click="closePrintAuthDialog" />
+        <Button :label="t('listSeparateMixedGlue.printAuthDialog.confirm')" icon="pi pi-check" severity="success"
+          size="large" :disabled="!printAuthPassword.trim() || isPrintAuthScanning" :loading="isPrintAuthSubmitting"
+          @click="submitPrintAuthPassword" />
+      </template>
+    </Dialog>
   </ion-page>
 </template>
 
@@ -177,6 +220,9 @@ import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
+import { useRowActionLock } from '@/composables/useRowActionLock';
+import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -198,6 +244,8 @@ const showRetryDialog = ref(false);
 const lastPrintTotal = ref(0);
 
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
+const { isRowActionBusy, isAnyRowBusy, lockRow, unlockRow } = useRowActionLock();
+const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
 
 const {
   isPrinting,
@@ -252,6 +300,23 @@ export interface WorkOrderMaster {
   /** Dùng nội bộ khi đưa vào print queue — không đến từ BE. */
   _resolvedEmployeeId?: string;
   separateGlueConfirm?: boolean;
+  separateGlues?: Array<{
+    factoryId: string;
+    separateGlueId: number;
+    glueId?: number;
+    bucketId: number;
+    recordStatus: string;
+    seq?: number;
+  }>;
+  noSeparateGlues?: Array<{
+    factoryId: string;
+    noSeparateGlueId: number;
+    workOrderMasterId?: number;
+    bucketId: number;
+    materialCode?: number;
+    recordStatus: string;
+    seq?: number;
+  }>;
 }
 
 export interface PagedResult<T> {
@@ -458,13 +523,18 @@ const goBack = () => {
   router.push('/app-menu');
 };
 
-const isRowPrinting = (workOrderMasterId?: string) =>
+const isPrintRowLoading = (workOrderMasterId?: string) =>
+  isRowActionBusy(workOrderMasterId, 'print') ||
   Boolean(workOrderMasterId && printingWorkOrderId.value === workOrderMasterId && isPrinting.value);
+
+const isRowPrintProcessing = (workOrderMasterId?: string) =>
+  isRowActionBusy(workOrderMasterId, 'print') ||
+  (workOrderMasterId != null && printingWorkOrderId.value === workOrderMasterId);
 
 const isRowProcessing = (workOrderMasterId?: string) =>
   isScanning.value ||
-  isRowPrinting(workOrderMasterId) ||
-  Boolean(workOrderMasterId && printingWorkOrderId.value === workOrderMasterId && !isPrinting.value);
+  isRowPrintProcessing(workOrderMasterId) ||
+  isAnyRowBusy();
 
 const isRowPrintDisabled = (row: Partial<WorkOrderMaster>): boolean => {
   if (row.separateGlueComplete === false && row.isNoMixGlue === true) return true;
@@ -521,35 +591,236 @@ const openPendingPrintDialog = () => {
   }
 };
 
-/** Resolve employeeId — scan hoặc lấy từ authStore. Trả null nếu thất bại. */
-const resolveEmployeeId = async (factoryId: string): Promise<string | null> => {
-  if (authStore.user?.isQip) {
-    const id = authStore.user?.employeeId?.trim() || '';
-    if (!id) {
-      showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'), life: 6000 });
-      return null;
-    }
-    return id;
+const showPrintAuthDialog = ref(false);
+const printAuthPassword = ref('');
+const showPrintAuthPassword = ref(false);
+const pendingPrintRow = ref<Partial<WorkOrderMaster> | null>(null);
+const isPrintAuthSubmitting = ref(false);
+const isPrintAuthScanning = ref(false);
+
+const togglePrintAuthPassword = () => {
+  if (isPrintAuthSubmitting.value || isPrintAuthScanning.value) return;
+  showPrintAuthPassword.value = !showPrintAuthPassword.value;
+};
+
+const closePrintAuthDialog = () => {
+  if (isPrintAuthSubmitting.value || isPrintAuthScanning.value) return;
+  showPrintAuthDialog.value = false;
+  pendingPrintRow.value = null;
+  printAuthPassword.value = '';
+  showPrintAuthPassword.value = false;
+};
+
+const onPrintClick = (row: Partial<WorkOrderMaster>) => {
+  if (!row.workOrderMasterId) return;
+  if (isRowPrintDisabled(row)) return;
+  if (isRowPrintedLocally(row.workOrderMasterId)) {
+    showAlreadyPrintedToast(row);
+    return;
   }
 
-  const scanned = await scanOnce({ title: t('login.scanOverlayTitle'), note: t('listSeparateMixedGlue.scan.employeeNote') });
-  if (!scanned?.trim()) {
-    showToast({ severity: 'warn', summary: t('listSeparateMixedGlue.toast.warning'), detail: t('listSeparateMixedGlue.toast.scanFailed'), life: 6000 });
-    return null;
+  if (hasPendingPrint.value) {
+    showToast({
+      severity: 'warn',
+      summary: t('listSeparateMixedGlue.toast.warning'),
+      detail: t('listSeparateMixedGlue.toast.pendingExists'),
+      life: 5000,
+    });
+    return;
   }
-  const employeeId = scanned.trim();
+
+  pendingPrintRow.value = row;
+  printAuthPassword.value = '';
+  showPrintAuthPassword.value = false;
+  showPrintAuthDialog.value = true;
+};
+
+const enqueuePrintWithEmployee = async (row: Partial<WorkOrderMaster>, employeeId: string) => {
+  if (!row.workOrderMasterId || !employeeId) return;
+
+  if (!lockRow(row.workOrderMasterId, 'print')) return;
+  printingWorkOrderId.value = row.workOrderMasterId;
+
+  let enqueued = false;
   try {
-    const resp = await employeeApi.postValidateQIP({ factoryId, employeeId });
-    if (resp.data?.success !== true) {
-      showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'), life: 6000 });
-      return null;
+    const factoryId = authStore.user?.factoryId;
+    if (!factoryId) {
+      showToast({
+        severity: 'error',
+        summary: t('listSeparateMixedGlue.toast.error'),
+        detail: t('listSeparateMixedGlue.toast.factoryNotFound'),
+        life: 6000,
+      });
+      return;
     }
+
+    if (!(await ensurePrinterReady())) {
+      showToast({
+        severity: 'warn',
+        summary: t('listSeparateMixedGlue.toast.warning'),
+        detail: t('listSeparateMixedGlue.toast.printerNotConnected'),
+        life: 6000,
+      });
+      return;
+    }
+
+    if (!(await requireOnline())) return;
+
+    const rowWithEmployee = { ...row, _resolvedEmployeeId: employeeId };
+
+    const isFirstJob = !isPrinting.value && !isRowPrintActive(row.workOrderMasterId);
+    enqueuePrintRow(rowWithEmployee as Partial<WorkOrderMaster>);
+    enqueued = true;
+
+    if (isFirstJob) {
+      void runNextPrintJob(executePrintJob);
+    }
+  } finally {
+    unlockRow();
+    if (!enqueued) {
+      printingWorkOrderId.value = null;
+    }
+  }
+};
+
+const proceedPrintAfterAuth = async (employeeId: string) => {
+  const row = pendingPrintRow.value;
+  showPrintAuthDialog.value = false;
+  pendingPrintRow.value = null;
+  printAuthPassword.value = '';
+  showPrintAuthPassword.value = false;
+  if (!row) return;
+  await enqueuePrintWithEmployee(row, employeeId);
+};
+
+const submitPrintAuthPassword = async () => {
+  const row = pendingPrintRow.value;
+  const password = printAuthPassword.value.trim();
+  if (!row || !password || isPrintAuthSubmitting.value) return;
+
+  const factoryId = authStore.user?.factoryId;
+  if (!factoryId) {
+    showToast({
+      severity: 'error',
+      summary: t('listSeparateMixedGlue.toast.error'),
+      detail: t('listSeparateMixedGlue.toast.factoryNotFound'),
+      life: 6000,
+    });
+    return;
+  }
+
+  if (!(await requireOnline())) return;
+
+  isPrintAuthSubmitting.value = true;
+  try {
+    const { data } = await employeeApi.postValidatePasswordQIP({
+      factoryId,
+      password,
+    });
+
+    if (data?.success !== true) {
+      showToast({
+        severity: 'error',
+        summary: t('listSeparateMixedGlue.toast.error'),
+        detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      return;
+    }
+
+    const employeeId = String(data?.data ?? '').trim();
+    if (!employeeId) {
+      showToast({
+        severity: 'error',
+        summary: t('listSeparateMixedGlue.toast.error'),
+        detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      return;
+    }
+
+    await proceedPrintAfterAuth(employeeId);
   } catch (error: any) {
     console.error(error);
-    showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'), life: 6000 });
-    return null;
+    showToast({
+      severity: 'error',
+      summary: t('listSeparateMixedGlue.toast.error'),
+      detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+      life: 6000,
+    });
+  } finally {
+    isPrintAuthSubmitting.value = false;
   }
-  return employeeId;
+};
+
+const startPrintAuthScan = async () => {
+  const row = pendingPrintRow.value;
+  if (!row || isPrintAuthScanning.value || isPrintAuthSubmitting.value) return;
+
+  const factoryId = authStore.user?.factoryId;
+  if (!factoryId) {
+    showToast({
+      severity: 'error',
+      summary: t('listSeparateMixedGlue.toast.error'),
+      detail: t('listSeparateMixedGlue.toast.factoryNotFound'),
+      life: 6000,
+    });
+    return;
+  }
+
+  if (!(await requireOnline())) return;
+
+  isPrintAuthScanning.value = true;
+  showPrintAuthDialog.value = false;
+
+  try {
+    const scannedEmployeeId = await scanOnce({
+      title: t('login.scanOverlayTitle'),
+      note: t('listSeparateMixedGlue.scan.employeeNote'),
+    });
+
+    if (!scannedEmployeeId?.trim()) {
+      showToast({
+        severity: 'warn',
+        summary: t('listSeparateMixedGlue.toast.warning'),
+        detail: t('listSeparateMixedGlue.toast.scanFailed'),
+        life: 6000,
+      });
+      showPrintAuthDialog.value = true;
+      return;
+    }
+
+    const employeeId = scannedEmployeeId.trim();
+    const { data } = await employeeApi.postValidateQIP({
+      factoryId,
+      employeeId,
+    });
+
+    if (data?.success !== true) {
+      showToast({
+        severity: 'error',
+        summary: t('listSeparateMixedGlue.toast.error'),
+        detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      showPrintAuthDialog.value = true;
+      return;
+    }
+
+    const resolvedId = String(data?.data ?? employeeId).trim() || employeeId;
+    await proceedPrintAfterAuth(resolvedId);
+  } catch (error: any) {
+    console.error(error);
+    showToast({
+      severity: 'error',
+      summary: t('listSeparateMixedGlue.toast.error'),
+      detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+      life: 6000,
+    });
+    showPrintAuthDialog.value = true;
+  } finally {
+    isPrintAuthScanning.value = false;
+  }
 };
 
 /**
@@ -576,6 +847,9 @@ const executePrintJob = async (entry: PrintQueueEntry<Partial<WorkOrderMaster>>)
       factoryId,
       workOrderMasterName: row.workOrderMasterName,
       chemicalMasterName: row.chemicalMasterName,
+      separateGlues: row.separateGlues,
+      noSeparateGlues: row.noSeparateGlues,
+      allowPagedQueryFallback: false,
     });
 
     if (!printQueue.length) {
@@ -611,46 +885,6 @@ const executePrintJob = async (entry: PrintQueueEntry<Partial<WorkOrderMaster>>)
     showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: error?.response?.data?.message || error?.message || t('listSeparateMixedGlue.toast.printFailed'), life: 6000 });
     printingWorkOrderId.value = null;
     return { success: false };
-  }
-};
-
-const handlePrint = async (row: Partial<WorkOrderMaster>) => {
-  if (!row.workOrderMasterId) return;
-  if (isRowPrintDisabled(row)) return;
-  if (isRowPrintedLocally(row.workOrderMasterId)) {
-    showAlreadyPrintedToast(row);
-    return;
-  }
-
-  if (hasPendingPrint.value) {
-    showToast({ severity: 'warn', summary: t('listSeparateMixedGlue.toast.warning'), detail: t('listSeparateMixedGlue.toast.pendingExists'), life: 5000 });
-    return;
-  }
-
-  const factoryId = authStore.user?.factoryId;
-  if (!factoryId) {
-    showToast({ severity: 'error', summary: t('listSeparateMixedGlue.toast.error'), detail: t('listSeparateMixedGlue.toast.factoryNotFound'), life: 6000 });
-    return;
-  }
-
-  if (!(await ensurePrinterReady())) {
-    showToast({ severity: 'warn', summary: t('listSeparateMixedGlue.toast.warning'), detail: t('listSeparateMixedGlue.toast.printerNotConnected'), life: 6000 });
-    return;
-  }
-
-  if (!(await requireOnline())) return;
-
-  const employeeId = await resolveEmployeeId(factoryId);
-  if (!employeeId) return;
-
-  // Gắn employeeId vào row tạm để executePrintJob dùng
-  const rowWithEmployee = { ...row, _resolvedEmployeeId: employeeId };
-
-  const isFirstJob = !isPrinting.value && !isRowPrintActive(row.workOrderMasterId);
-  enqueuePrintRow(rowWithEmployee as Partial<WorkOrderMaster>);
-
-  if (isFirstJob) {
-    void runNextPrintJob(executePrintJob);
   }
 };
 
@@ -708,8 +942,10 @@ onIonViewWillEnter(() => {
   currentPage.value = 1;
   resetLabelPrintSession();
   clearPrintQueue();
-  void restorePendingPrintJob();
-  void fetchWorkOrders(1, rowsPerPage.value);
+  void runWithViewEnterLoading(async () => {
+    await restorePendingPrintJob();
+    await fetchWorkOrders(1, rowsPerPage.value);
+  });
 });
 
 onIonViewDidEnter(async () => {
@@ -730,6 +966,11 @@ onIonViewDidLeave(() => {
 .text-wrap {
   word-break: break-word;
   white-space: normal;
+}
+
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
 }
 
 .list-separate-page {
@@ -774,6 +1015,26 @@ onIonViewDidLeave(() => {
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.print-auth-password-field {
+  width: 100%;
+}
+
+.password-toggle-icon {
+  cursor: pointer;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-icon:hover {
+  color: #317af0;
+}
+
+.password-toggle-icon--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .list-separate-glue-filter {

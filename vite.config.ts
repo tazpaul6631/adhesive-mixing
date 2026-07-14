@@ -4,38 +4,11 @@ import legacy from '@vitejs/plugin-legacy'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { defineConfig } from 'vite'
-import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     vue(),
     legacy(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2,wasm}'],
-        cleanupOutdatedCaches: true,
-        // 1️⃣ THÊM DÒNG NÀY ĐỂ FIX LỖI "Assets exceeding the limit" (Tăng lên 5MB)
-        maximumFileSizeToCacheInBytes: 5000000,
-      },
-      manifest: {
-        name: 'My Security App',
-        short_name: 'SecurityApp',
-        description: 'Ứng dụng bảo mật tối ưu',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          {
-            src: '/assets/favicon.ico',
-            sizes: '64x64 32x32 24x24 16x16',
-            type: 'image/x-icon',
-            purpose: 'any'
-          }
-        ]
-      }
-    })
   ],
 
   // SASS DEPRECATION

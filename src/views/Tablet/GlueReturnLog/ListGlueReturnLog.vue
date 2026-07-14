@@ -16,7 +16,8 @@
     </ion-header>
 
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-glue-return-page" :class="pageClass">
+      <div class="main-container max-w-full mx-auto list-glue-return-page page-content-loading-host" :class="pageClass">
+        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
         <div class="surface-card p-0 shadow-1 border-round-xl list-glue-return-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-glue-return-card-head">
@@ -45,7 +46,7 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-glue-return-table-wrap">
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
-              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" stripedRows
+              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight"
               class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" selectionMode="single"
               :paginator="true" :rows="rowsPerPage" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
               paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
@@ -150,6 +151,8 @@ import {
 import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
+import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
@@ -184,6 +187,7 @@ const {
   tableScrollHeight,
   emptyStateMinHeight,
 } = useTabletPageLayout({ listPageWithToolbar: true });
+const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
 
 const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
@@ -527,7 +531,9 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
 onIonViewWillEnter(() => {
   currentPage.value = 1;
   startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void fetchGlueReturnLogs(1, rowsPerPage.value);
+  void runWithViewEnterLoading(async () => {
+    await fetchGlueReturnLogs(1, rowsPerPage.value);
+  });
 });
 
 onIonViewWillLeave(() => {
@@ -536,6 +542,11 @@ onIonViewWillLeave(() => {
 </script>
 
 <style scoped>
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
+}
+
 .list-glue-return-page {
   width: 100%;
 }

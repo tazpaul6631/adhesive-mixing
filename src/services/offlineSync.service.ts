@@ -213,7 +213,3 @@ export function syncPendingOfflineQueue(
 
   return activeSyncPromise;
 }
-
-export default {
-  syncPendingOfflineQueue,
-};

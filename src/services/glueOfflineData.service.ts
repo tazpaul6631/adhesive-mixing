@@ -251,38 +251,6 @@ function parseGlueQrText(qrText: string): ParsedGlueQr | null {
   return { qrCode, factoryId, itemId };
 }
 
-
-type ParsedCheckListQr = {
-  factoryId: string;
-  checkListItemId: string;
-};
-
-function parseCheckListQrText(qrText: string): ParsedCheckListQr | null {
-  const normalizedQrText = normalizeValue(qrText).replace(/^\/+|\/+$/g, '');
-
-  if (!normalizedQrText) {
-    return null;
-  }
-
-  const parts = normalizedQrText
-    .split('/')
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (parts.length !== 2) {
-    return null;
-  }
-
-  const factoryId = normalizeValue(parts[0]);
-  const checkListItemId = normalizeValue(parts[1]);
-
-  if (!factoryId || !checkListItemId) {
-    return null;
-  }
-
-  return { factoryId, checkListItemId };
-}
-
 async function findRawJsonByQrConfig(
   db: GlueOfflineDbConnection,
   config: OfflineQrLookupConfig,
@@ -404,12 +372,18 @@ async function clearAllOfflineBuckets(db: GlueOfflineDbConnection) {
 
 export async function downloadAndSaveGlueOfflineData(
   factoryId: string,
+  departmentId: string,
   onProgress?: (progress: GlueOfflineDownloadProgress) => void
 ): Promise<GlueOfflineDownloadCounts> {
   const normalizedFactoryId = normalizeValue(factoryId);
+  const normalizedDepartmentId = normalizeValue(departmentId);
 
   if (!normalizedFactoryId) {
     throw new Error('Không tìm thấy mã nhà máy để tải dữ liệu offline.');
+  }
+
+  if (!normalizedDepartmentId) {
+    throw new Error('Không tìm thấy mã bộ phận để tải dữ liệu offline.');
   }
 
   const db = await getReadyDatabase();
@@ -429,15 +403,15 @@ export async function downloadAndSaveGlueOfflineData(
   await saveDownloadedBucket(db, 'lineChemical', data.lineChemical);
   onProgress?.({ current: 1, total: DOWNLOAD_TOTAL_STEPS, type: 'lineChemical' });
 
-  data.mixGlue = assertSuccessAndExtractItems(await offlineApi.getMixGlueQrData(normalizedFactoryId));
+  data.mixGlue = assertSuccessAndExtractItems(await offlineApi.getMixGlueQrData(normalizedFactoryId, normalizedDepartmentId));
   await saveDownloadedBucket(db, 'mixGlue', data.mixGlue);
   onProgress?.({ current: 2, total: DOWNLOAD_TOTAL_STEPS, type: 'mixGlue' });
 
-  data.separateGlue = assertSuccessAndExtractItems(await offlineApi.getSeparateGlueQrData(normalizedFactoryId));
+  data.separateGlue = assertSuccessAndExtractItems(await offlineApi.getSeparateGlueQrData(normalizedFactoryId, normalizedDepartmentId));
   await saveDownloadedBucket(db, 'separateGlue', data.separateGlue);
   onProgress?.({ current: 3, total: DOWNLOAD_TOTAL_STEPS, type: 'separateGlue' });
 
-  data.noSeparateGlue = assertSuccessAndExtractItems(await offlineApi.getNoSeparateGlueQrData(normalizedFactoryId));
+  data.noSeparateGlue = assertSuccessAndExtractItems(await offlineApi.getNoSeparateGlueQrData(normalizedFactoryId, normalizedDepartmentId));
   await saveDownloadedBucket(db, 'noSeparateGlue', data.noSeparateGlue);
   onProgress?.({ current: 4, total: DOWNLOAD_TOTAL_STEPS, type: 'noSeparateGlue' });
 
@@ -458,11 +432,6 @@ export async function clearGlueOfflineData() {
   const db = await getReadyDatabase();
   await createOfflineTables(db);
   await clearAllOfflineBuckets(db);
-}
-
-export async function ensureGlueOfflineTables() {
-  const db = await getReadyDatabase();
-  await createOfflineTables(db);
 }
 
 export async function findGlueOfflineQrData(qrText: string): Promise<GlueOfflineQrResult> {
@@ -522,22 +491,3 @@ export async function findCheckListOfflineData(
 
   return { data, status: 'success', type: 'checkList' };
 }
-
-export async function findCheckListOfflineQrData(qrText: string): Promise<GlueOfflineQrResult> {
-  const parsedQr = parseCheckListQrText(qrText);
-
-  if (!parsedQr) {
-    return { data: null, status: 'invalid', type: 'checkList' };
-  }
-
-  return findCheckListOfflineData(parsedQr.factoryId, parsedQr.checkListItemId);
-}
-
-export default {
-  downloadAndSaveGlueOfflineData,
-  clearGlueOfflineData,
-  ensureGlueOfflineTables,
-  findGlueOfflineQrData,
-  findCheckListOfflineData,
-  findCheckListOfflineQrData,
-};

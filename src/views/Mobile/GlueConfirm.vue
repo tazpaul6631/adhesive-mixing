@@ -156,7 +156,7 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
-import { useLineChemicalStore } from "@/services/lineChemical.store";
+import { useLineChemicalStore } from '@/store/lineChemical';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";

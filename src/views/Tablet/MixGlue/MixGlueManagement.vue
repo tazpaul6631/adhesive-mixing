@@ -7,7 +7,7 @@
             <ion-button @click="goBack">
               <i class="pi pi-angle-left text-xl mr-1"></i>
               <ion-title class="no-padding" style="line-height: 50px;">{{ t('mixGlueManagement.pageTitle')
-                }}</ion-title>
+              }}</ion-title>
             </ion-button>
           </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
@@ -17,7 +17,8 @@
 
     <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
 
-      <div class="mix-glue-layout main-container max-w-full mx-auto">
+      <div class="mix-glue-layout main-container max-w-full mx-auto page-content-loading-host">
+        <PageContentLoadingOverlay :visible="isPageDataLoading" />
         <!-- Thông tin header — cố định, không scroll -->
         <div class="mix-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -35,7 +36,7 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-                }}</label>
+              }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
@@ -97,7 +98,7 @@
                   <div class="grid formgrid align-items-end">
                     <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                       <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                      }}</label>
+                        }}</label>
                       <InputText v-model="mixingProcess.component" readonly
                         class="font-bold text-primary border-blue-200" style="width: 350px;" />
                     </div>
@@ -155,7 +156,7 @@
                   <div class="grid formgrid align-items-end">
                     <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                       <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                      }}</label>
+                        }}</label>
                       <InputText v-model="noMixMixingProcess.component" readonly
                         class="font-bold text-primary border-blue-200" style="width: 350px;" />
                     </div>
@@ -241,12 +242,15 @@ import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddCo
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
 import { buildComponentWeightLabelTspl } from '@/services/componentWeightLabelPrint';
 import { useLabelPrintGapConfirm } from '@/composables/useLabelPrintGapConfirm';
 import { ensureGapConfirmed, notifyPrintInterrupted } from '@/services/labelPrintSession';
+import { normalizeWeightUnit, toKilograms } from '@/utils/weightUnit';
+import format from '@/mixins/format';
 
 dayjs.extend(customParseFormat);
 
@@ -331,6 +335,36 @@ const ensurePrinterReady = async (): Promise<boolean> => {
   return (await bluetoothRef.value?.verifyHardwareConnected?.()) === true;
 };
 
+const buildPrintMixGlueLabelPayload = (row: any) => {
+  const factoryId = authStore.user?.factoryId || '';
+  const employeeId = authStore.user?.employeeId || '';
+  const recordStatus = '0';
+
+  return {
+    factoryId,
+    mgm: {
+      factoryId,
+      workOrderMasterId: currentWorkOrderId.value,
+      recordStatus,
+      createrId: employeeId,
+      updaterId: employeeId,
+      mixGlues: [
+        {
+          factoryId,
+          materialCode: row.materialCode || 0,
+          mixGlueWeight: Number(row.actualWeight) || 0,
+          mixGlueWeightUnit: normalizeWeightUnit(row.weightUnit),
+          weightCompleteDate: row.weighingTime ?? '',
+          glueExtra: row.glueExtra || false,
+          recordStatus,
+          createrId: row.operatorId || employeeId,
+          updaterId: row.operatorId || employeeId,
+        },
+      ],
+    },
+  };
+};
+
 const handlePrintComponent = async (row: any) => {
   if (!row.weighingTime) {
     showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.notConfirmed'), life: 6000 });
@@ -348,20 +382,43 @@ const handlePrintComponent = async (row: any) => {
   }
 
   if (!(await ensureGapConfirmed())) return;
+  if (!(await requireOnline())) return;
 
   isPrintingComponent.value = true;
   printingMaterialCode.value = row.materialCode ?? null;
 
   try {
+    const { data: apiRes } = await mixGlueApi.postPrintMixGlueLabel(buildPrintMixGlueLabelPayload(row));
+    if (!apiRes?.success) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: apiRes?.message || t('listMixGlue.toast.componentLabel.printFailed'),
+        life: 6000,
+      });
+      return;
+    }
+
+    const labelCode = String(apiRes.data ?? '');
+    if (!labelCode) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: t('listMixGlue.toast.componentLabel.printFailed'),
+        life: 6000,
+      });
+      return;
+    }
+
     const tspl = buildComponentWeightLabelTspl({
       workOrderMasterName: headerInfo.value.orderNo,
       requestTime: lineDetails.value[0]?.requestTime,
       glueName: headerInfo.value.glue,
       materialName: row.materialName ?? '',
-      operatorName: row.operator ?? '',
       actualWeight: row.actualWeight ?? '',
-      weightUnit: row.weightUnit ?? 'KG',
+      weightUnit: normalizeWeightUnit(row.weightUnit),
       weighingTime: row.weighingTime ?? '',
+      labelCode,
     });
 
     const ok = await (bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false));
@@ -378,6 +435,7 @@ const handlePrintComponent = async (row: any) => {
       life: ok ? 3000 : 6000,
     });
   } catch (error) {
+    if (notifyOfflineFromError(error)) return;
     console.error(error);
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.componentLabel.printFailed'), life: 6000 });
   } finally {
@@ -479,6 +537,7 @@ const componentDetailsFull = ref<ComponentDetail[]>([]);
 const noMixComponents = ref<ComponentDetail[]>([]);
 const isLoadingLine = ref(true);
 const isLoadingComponent = ref(true);
+const isPageDataLoading = computed(() => isLoadingLine.value || isLoadingComponent.value);
 const hourlyValidity = ref<string>('0');
 const hidenTable1 = ref(false);
 const mixGlueConfirm = ref(false);
@@ -534,10 +593,7 @@ const canShowTable3Content = computed(
 
 const hasWorkOrderDataErrors = computed(() => firstDataValidationError.value != null);
 
-const toKg = (weight: number, unit?: string) => {
-  const normalizedUnit = (unit || 'Kg').toLowerCase();
-  return normalizedUnit === 'g' ? weight / 1000 : weight;
-};
+const toKg = (weight: number, unit?: string) => toKilograms(weight, unit);
 
 const sumActualWeightsKg = (rows: ComponentDetail[]) =>
   rows.reduce((sum, row) => {
@@ -600,7 +656,7 @@ const mapMixChemicals = (items: any[] = []): ComponentDetail[] =>
   items.map((item: any) => ({
     ...item,
     materialCode: item.materialCode || '0',
-    weightUnit: item.weightUnit || 'Kg',
+    weightUnit: normalizeWeightUnit(item.weightUnit),
     glueWeight: item.glueWeight ?? item.requiredWeight ?? '',
     requiredWeight: item.requiredWeight || item.glueWeight || '',
     actualWeight: item.actualWeight || '',
@@ -829,7 +885,7 @@ const buildPayload = (recordStatus: string, opts?: BuildPayloadOpts) => {
       factoryId: factoryId,
       materialCode: item.materialCode || 0,
       mixGlueWeight: Number(item.actualWeight) || 0,
-      mixGlueWeightUnit: item.weightUnit || 'Kg',
+      mixGlueWeightUnit: normalizeWeightUnit(item.weightUnit),
       glueExtra: item.glueExtra || false,
       recordStatus: recordStatus,
       createrId: item.operatorId || employeeId,
@@ -905,7 +961,7 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
       requestDetails.value,
       bucketList,
       row.actualWeight,
-      row.weightUnit || 'Kg',
+      normalizeWeightUnit(row.weightUnit),
       { requireAllRequestDetails: false }
     );
     if (chietAllocationError) {
@@ -1164,8 +1220,8 @@ const buildExtraComponent = (
   flags: { mixGlue: boolean; noMixGlue: boolean }
 ): ComponentDetail => {
   const enteredWeight = Number(newComponentData.percentage ?? 0);
-  const weightUnit = newComponentData.weightUnit || 'Kg';
-  const weightStr = enteredWeight.toFixed(3);
+  const weightUnit = normalizeWeightUnit(newComponentData.weightUnit);
+  const weightStr = format.formatDisplayWeight(enteredWeight) || '0';
   // Cũ: sai số = 5% trọng lượng — const toleranceGrams = calcToleranceGrams(enteredWeight, weightUnit);
   const deviationGrams = Number(newComponentData.toleranceGrams);
   const toleranceStr = String(deviationGrams);
@@ -1253,9 +1309,12 @@ const fetchMaterialsForRows = async (
     if (data?.success) {
       const existingCodes = rows.map(item => String(item.materialCode));
 
-      targetList.value = (data.data || []).filter(
-        (item: any) => !existingCodes.includes(String(item.materialCode))
-      );
+      targetList.value = (data.data || [])
+        .filter((item: any) => !existingCodes.includes(String(item.materialCode)))
+        .map((item: any) => ({
+          ...item,
+          weightUnit: normalizeWeightUnit(item.weightUnit),
+        }));
     }
   } catch (error) {
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 3000 });
@@ -1410,6 +1469,11 @@ onIonViewWillEnter(() => {
 <style scoped>
 .mix-glue-management-content {
   --overflow: hidden;
+}
+
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
 }
 
 .mix-glue-layout {

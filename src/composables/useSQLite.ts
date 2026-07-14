@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection, capSQLiteSet } from '@capacitor-community/sqlite';
 
-const DB_NAME = 'security_app_db';
+const DB_NAME = 'adhesive_mixing_db';
 
 const schema = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);

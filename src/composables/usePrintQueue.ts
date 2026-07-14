@@ -83,7 +83,7 @@ export function usePrintQueue<TRow extends { workOrderMasterId?: string }>() {
     if (queue.value.length === 0) return;
     if (isAwaitingGapConfirm()) return;
 
-    const INTER_ORDER_DELAY_MS = 2000;
+    const INTER_ORDER_DELAY_MS = 1000;
 
     await sleep(INTER_ORDER_DELAY_MS);
     void runNext(executeFn);

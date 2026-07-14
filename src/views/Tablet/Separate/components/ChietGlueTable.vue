@@ -1,6 +1,6 @@
 <template>
   <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="orderDetails" scrollable scrollHeight="320px" tableStyle="width: 100%;" stripedRows
+    <DataTable :value="orderDetails" scrollable scrollHeight="320px" tableStyle="width: 100%;"
       class="modern-table auto-columns-table">
 
       <template #empty>

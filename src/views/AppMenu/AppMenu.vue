@@ -70,8 +70,7 @@ import {
 } from '@ionic/vue';
 import {
   scaleOutline, logOutOutline, qrCodeOutline, readerOutline,
-  colorPaletteOutline, checkmarkDoneOutline,
-  cubeOutline, documentTextOutline, searchOutline, gitCompareOutline, gitMergeOutline, search
+  checkmarkDoneOutline, gitCompareOutline, gitMergeOutline, search
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
@@ -157,22 +156,6 @@ const tabletFeatures = computed(() => [
     color: '#8b5cf6',
     bgLight: '#ede9fe'
   },
-  // {
-  //   path: '/list-qip-confirm-mix-glue',
-  //   title: 'QIP Confirm Mix Glue',
-  //   description: 'Xác nhận chất lượng keo trộn (QIP).',
-  //   icon: checkmarkDoneOutline,
-  //   color: '#10b981',
-  //   bgLight: '#d1fae5'
-  // },
-  // {
-  //   path: '/list-qip-confirm-separate-mixed-glue',
-  //   title: 'QIP Confirm Separate Mixed Glue',
-  //   description: 'Xác nhận chất lượng keo đóng gói lại (QIP).',
-  //   icon: documentTextOutline,
-  //   color: '#8b5cf6',
-  //   bgLight: '#ede9fe'
-  // }
 ]);
 
 // --- DATA CHO MOBILE FEATURES ---

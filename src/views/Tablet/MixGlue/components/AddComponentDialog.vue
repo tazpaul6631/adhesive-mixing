@@ -18,14 +18,13 @@
 
       <div class="flex flex-column gap-2">
         <label for="weight" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.weightLabel', {
-          unit:
-            weightUnitSuffix
+          unit: selectedWeightUnit
         })
         }}</label>
-        <InputNumber id="weight" v-model="weight" suffix=" Kg" :min="0" :invalid="submitted && weight === null"
-          class="w-full" />
+        <InputNumber id="weight" v-model="weight" :suffix="weightUnitSuffix" :min="0"
+          :invalid="submitted && weight === null" class="w-full" />
         <small v-if="submitted && weight === null" class="text-red-500">
-          {{ t('mixGlueManagement.addComponentDialog.weightRequired', { unit: weightUnitSuffix }) }}
+          {{ t('mixGlueManagement.addComponentDialog.weightRequired', { unit: selectedWeightUnit }) }}
         </small>
       </div>
 
@@ -51,6 +50,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { normalizeWeightUnit, weightUnitInputSuffix } from '@/utils/weightUnit';
 
 const props = defineProps<{
   visible: boolean;
@@ -67,8 +67,8 @@ const weight = ref<number | null>(null);
 const submitted = ref(false);
 const toleranceGrams = ref<number | null>(null);
 
-const selectedWeightUnit = computed(() => selectedMaterial.value?.weightUnit || 'Kg');
-const weightUnitSuffix = computed(() => ` ${selectedWeightUnit.value}`);
+const selectedWeightUnit = computed(() => normalizeWeightUnit(selectedMaterial.value?.weightUnit));
+const weightUnitSuffix = computed(() => weightUnitInputSuffix(selectedMaterial.value?.weightUnit));
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
@@ -91,7 +91,7 @@ const saveForm = () => {
       name: selectedMaterial.value.materialName,
       percentage: weight.value,
       materialCode: selectedMaterial.value.materialCode,
-      weightUnit: 'Kg',
+      weightUnit: selectedWeightUnit.value,
       toleranceGrams: grams,
     });
     hideDialog();
