@@ -9,5 +9,8 @@ export default {
     },
     postMGMQIPConfirm(data: any) {
         return request.post(`api/mobile/mixglue/mgmqipconfirm`, data)
+    },
+    postPrintMixGlueLabel(data: any) {
+        return request.post(`api/mobile/mixglue/printmixglue`, data)
     }
 };

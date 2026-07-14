@@ -44,6 +44,21 @@
       "noSeparateConfirm": "不分裝",
       "qipConfirm": "QIP確認"
     },
+    "mlnsDialog": {
+      "title": "驗證 {workOrderMasterName} 的 編號",
+      "hint": "請輸入以逗號分隔（僅可輸入數字與逗號）。",
+      "inputLabel": "編號",
+      "placeholder": "例如：4,5",
+      "confirm": "確認"
+    },
+    "printAuthDialog": {
+      "title": "QIP 驗證後列印",
+      "hint": "請輸入訂單 {workOrderMasterName} 的 QIP 密碼，或掃描員工卡。",
+      "passwordLabel": "密碼",
+      "passwordPlaceholder": "請輸入密碼",
+      "scanButton": "掃描 QIP",
+      "confirm": "確認"
+    },
     "scan": {
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準於框內"
     },
@@ -65,7 +80,8 @@
       "gapConfirmMessage": "請更換紙捲並手動對準間隙（第一張標籤貼齊列印頭）。確認後繼續列印 — 下一張標籤不會再送出 GAP 指令。",
       "gapConfirmOk": "已對準間隙 — 繼續",
       "gapConfirmCancel": "取消",
-      "queuedTitle": "等待列印"
+      "queuedTitle": "等待列印",
+      "busyPendingToast": "尚有待列印標籤，請先處理完成再列印新訂單。"
     },
     "toast": {
       "warning": "警告",
@@ -89,8 +105,9 @@
       "printPartial": "部分列印 ({printed}/{total})。",
       "alreadyPrinted": "{name} 已列印標籤。",
       "pendingRestored": "上次仍有 {count} 張標籤尚未列印。",
-      "pendingReplaced": "已以新訂單取代待列印清單。",
       "printQueueBackBlocked": "仍有 {count} 筆訂單待列印，請等待列印完成後再離開。",
+      "mlnsEmpty": "請輸入 編號。",
+      "mlnsMismatch": "編號不符（缺少或多餘）。請重新輸入。",
       "componentLabel": {
         "notConfirmed": "請先確認實際重量後再列印。",
         "printSuccess": "已列印成分標籤。",
@@ -130,6 +147,14 @@
     "sectionTitle": "混合膠水分裝清單",
     "filter": {
       "gluePlaceholder": "依膠水名稱篩選"
+    },
+    "printAuthDialog": {
+      "title": "QIP 驗證後列印",
+      "hint": "請輸入訂單 {workOrderMasterName} 的 QIP 密碼，或掃描員工卡。",
+      "passwordLabel": "密碼",
+      "passwordPlaceholder": "請輸入密碼",
+      "scanButton": "掃描 QIP",
+      "confirm": "確認"
     },
     "scan": {
       "employeeNote": "將員工卡上的 <strong>條碼</strong> 對準框內"

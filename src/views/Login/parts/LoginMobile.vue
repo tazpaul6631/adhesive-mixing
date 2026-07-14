@@ -23,86 +23,58 @@
           </div>
 
           <div class="side-form">
-            <template v-if="!isTablet">
-              <div class="scan-instruction shadow-sm">
-                <div class="scan-icon-wrapper">
-                  <i class="pi pi-qrcode scan-icon pulse-animation"></i>
-                </div>
-                <h4>{{ t('login.scanTitle') }}</h4>
-                <p v-if="!errorLogin">
-                  {{ t('login.scanInstructionPrefix') }}<strong>{{ t('login.scanInstructionQr') }}</strong>{{
-                    t('login.scanInstructionSuffix') }}
-                </p>
-                <p v-else class="login-error-message">{{ errorMessage }}</p>
-
-                <!-- <div v-if="code" class="animate__animated animate__fadeIn scanned-result-box"
-                  :class="errorLogin ? 'scanned-result-error' : 'scanned-result'">
-                  <i class="scanned-result-box__icon"
-                    :class="errorLogin ? 'pi pi-times-circle' : 'pi pi-check-circle'"></i>
-                  <span class="scanned-result-box__text">{{ t('login.employeeCode') }}</span>
-                </div> -->
+            <div class="tablet-login-form shadow-sm">
+              <div class="field-group">
+                <label for="company" class="field-label">{{ t('login.company') }}</label>
+                <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
+                  optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
+                  :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies"
+                  @show="handleCompanySelectShow" />
               </div>
 
-              <Button class="login-btn scan-btn w-full"
-                :label="isLoggingIn ? t('login.loggingIn') : (isLoading ? t('login.processing') : t('login.scanButton'))"
-                :icon="isLoading || isLoggingIn ? undefined : 'pi pi-camera'" :loading="isLoading || isLoggingIn"
-                :disabled="isLoggingIn" @click="startScan" />
-            </template>
-
-            <template v-else>
-              <div class="tablet-login-form shadow-sm">
-                <div class="field-group">
-                  <label for="company" class="field-label">{{ t('login.company') }}</label>
-                  <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
-                    optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
-                    :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies"
-                    @show="handleCompanySelectShow" />
-                </div>
-
-                <div class="field-group">
-                  <label for="factory" class="field-label">{{ t('login.factory') }}</label>
-                  <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
-                    optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
-                    :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
-                    :loading="isLoadingFactories" @show="handleFactorySelectShow" />
-                </div>
-
-                <div class="field-group">
-                  <label for="employeeId" class="field-label">{{ t('login.account') }}</label>
-                  <IconField>
-                    <InputIcon class="pi pi-user" />
-                    <InputText id="employeeId" v-model="employeeId" :placeholder="t('login.employeeIdPlaceholder')"
-                      class="w-full" :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
-                  </IconField>
-                </div>
-
-                <div class="field-group">
-                  <label for="password" class="field-label">{{ t('login.password') }}</label>
-                  <IconField>
-                    <InputIcon class="pi pi-lock" />
-                    <InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
-                      placeholder="********" class="w-full"
-                      :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn"
-                      @keyup.enter="handleTabletLogin" />
-                    <InputIcon class="password-toggle-icon pi"
-                      :class="[showPassword ? 'pi-eye-slash' : 'pi-eye', { 'password-toggle-icon--disabled': !isCredentialFieldsEnabled || isLoading || isLoggingIn }]"
-                      @click="togglePasswordVisibility" />
-                  </IconField>
-                </div>
-
-                <p v-if="errorLogin" class="login-error-message">{{ errorMessage }}</p>
-
-                <div class="tablet-login-actions">
-                  <Button class="tablet-login-btn flex-1"
-                    :label="isLoggingIn ? t('login.loggingIn') : (isLoading ? t('login.processing') : t('login.loginButton'))"
-                    :loading="isLoading || isLoggingIn" :disabled="!isLoginButtonEnabled || isLoggingIn"
-                    @click="handleTabletLogin" />
-                  <Button class="tablet-scan-btn" icon="pi pi-qrcode" severity="secondary" outlined
-                    :disabled="isLoading || isScanning || isLoggingIn" :loading="isScanning || isLoggingIn"
-                    @click="startScan" />
-                </div>
+              <div class="field-group">
+                <label for="factory" class="field-label">{{ t('login.factory') }}</label>
+                <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
+                  optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
+                  :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
+                  :loading="isLoadingFactories" @show="handleFactorySelectShow" />
               </div>
-            </template>
+
+              <div class="field-group">
+                <label for="employeeId" class="field-label">{{ t('login.account') }}</label>
+                <IconField>
+                  <InputIcon class="pi pi-user" />
+                  <InputText id="employeeId" v-model="employeeId" :placeholder="t('login.employeeIdPlaceholder')"
+                    class="w-full" :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
+                </IconField>
+              </div>
+
+              <div class="field-group">
+                <label for="password" class="field-label">{{ t('login.password') }}</label>
+                <IconField>
+                  <InputIcon class="pi pi-lock" />
+                  <InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
+                    placeholder="********" class="w-full"
+                    :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn"
+                    @keyup.enter="handleTabletLogin" />
+                  <InputIcon class="password-toggle-icon pi"
+                    :class="[showPassword ? 'pi-eye-slash' : 'pi-eye', { 'password-toggle-icon--disabled': !isCredentialFieldsEnabled || isLoading || isLoggingIn }]"
+                    @click="togglePasswordVisibility" />
+                </IconField>
+              </div>
+
+              <p v-if="errorLogin" class="login-error-message">{{ errorMessage }}</p>
+
+              <div class="tablet-login-actions">
+                <Button class="tablet-login-btn flex-1"
+                  :label="isLoggingIn ? t('login.loggingIn') : (isLoading ? t('login.processing') : t('login.loginButton'))"
+                  :loading="isLoading || isLoggingIn" :disabled="!isLoginButtonEnabled || isLoggingIn"
+                  @click="handleTabletLogin" />
+                <Button class="tablet-scan-btn" icon="pi pi-qrcode" severity="secondary" outlined
+                  :disabled="isLoading || isScanning || isLoggingIn" :loading="isScanning || isLoggingIn"
+                  @click="startScan" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -112,13 +84,8 @@
       </div>
     </div>
 
-    <OfflineDataLoading v-if="shouldUseMobileOffline"
-      :is-open="isLoggingIn && isLoginRoute"
-      :title="loginLoadingTitle"
-      :note="loginLoadingNote"
-      :current="loginLoadingCurrent"
-      :total="loginLoadingTotal"
-    />
+    <OfflineDataLoading v-if="shouldUseMobileOffline" :is-open="isLoggingIn && isLoginRoute" :title="loginLoadingTitle"
+      :note="loginLoadingNote" :current="loginLoadingCurrent" :total="loginLoadingTotal" />
 
     <Teleport to="body">
       <div v-if="isScanning" class="scan-camera-overlay">
@@ -794,29 +761,35 @@ const processScannedData = async (scannedCode: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .form-container {
-  background: white;
-  border-radius: 30px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
-  padding: 18px;
-  max-width: 450px;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow:
+    0 4px 6px rgba(15, 23, 42, 0.04),
+    0 16px 40px rgba(15, 23, 42, 0.08);
+  padding: 16px 16px 18px;
+  max-width: 420px;
   width: 100%;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .mobile-lang-bar {
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 0 2px;
 }
 
 .form-inner {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   align-items: stretch;
   min-width: 0;
   width: 100%;
@@ -832,13 +805,13 @@ const processScannedData = async (scannedCode: string) => {
 }
 
 .side-info--tablet {
-  padding: 28px 22px;
+  padding: 20px 16px;
 }
 
 .side-info-toolbar {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   z-index: 1;
 }
 
@@ -848,6 +821,7 @@ const processScannedData = async (scannedCode: string) => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 8px;
   width: 100%;
 }
 
@@ -863,33 +837,49 @@ const processScannedData = async (scannedCode: string) => {
 
 .form-logo {
   display: block;
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
+  width: 160px;
+  height: 100px;
+  max-width: 80%;
+  object-fit: contain;
+  object-position: center;
+  margin: 0 auto;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .login-header {
-  padding: 0;
+  padding: 0 8px;
 }
 
 .login-header h3 {
-  font-size: 2rem;
+  font-size: 1.65rem;
   font-weight: 800;
-  margin: 0 0 5px 0;
+  margin: 0 0 4px;
   color: #317af0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .login-header p {
   margin: 0;
   color: #64748b;
-  font-size: 1rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
 }
 
 .footer-note {
   text-align: center;
-  margin-top: 25px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
   color: #94a3b8;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.footer-note p {
+  margin: 0;
 }
 
 .scan-instruction {
@@ -1044,8 +1034,8 @@ const processScannedData = async (scannedCode: string) => {
 
 .tablet-login-form {
   background: #f8fafc;
-  border-radius: 20px;
-  padding: 28px 22px;
+  border-radius: 16px;
+  padding: 16px 14px;
   border: 1px solid #e2e8f0;
   flex: 1;
   display: flex;
@@ -1054,19 +1044,21 @@ const processScannedData = async (scannedCode: string) => {
   min-width: 0;
   width: 100%;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
 }
 
 .field-label {
   font-weight: 700;
   color: #317af0;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
 }
 
 .password-toggle-icon {
@@ -1088,27 +1080,29 @@ const processScannedData = async (scannedCode: string) => {
 .tablet-login-actions {
   display: flex;
   align-items: stretch;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .tablet-login-btn {
-  height: 3.8rem;
+  height: 3.25rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  border-radius: 14px;
+  letter-spacing: 0.4px;
+  border-radius: 12px;
+  font-size: 1rem;
 }
 
 .tablet-scan-btn {
-  width: 3.8rem;
-  min-width: 3.5rem;
-  height: 3.8rem;
-  border-radius: 14px;
-  border: 5px solid #6ed3b3 !important;
+  width: 3.25rem;
+  min-width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 12px;
+  border: 2px solid #6ed3b3 !important;
+  flex-shrink: 0;
 }
 
 .tablet-scan-btn :deep(.pi) {
-  font-size: 2rem;
+  font-size: 1.45rem;
   color: #6ed3b3;
 }
 
@@ -1315,68 +1309,252 @@ const processScannedData = async (scannedCode: string) => {
 
   .content-wrapper {
     align-items: flex-start;
-    padding-top: 20px;
+    padding-top: 16px;
     min-height: auto;
   }
 
   .form-container {
-    padding: 20px;
+    padding: 14px;
   }
 
   .form-logo {
-    object-fit: cover;
-  }
-}
-
-@media (min-width: 768px) and (orientation: portrait) {
-  .top-background {
-    height: 40vh;
-  }
-
-  .form-container {
-    max-width: 550px;
-    padding: 50px 40px;
+    width: 56px;
+    height: 56px;
+    max-width: 72px;
   }
 
   .login-header h3 {
-    font-size: 2.3rem;
+    font-size: 1.4rem;
+  }
+
+  .tablet-login-form {
+    padding: 12px;
+  }
+
+  .field-group {
+    margin-bottom: 0.6rem;
+  }
+
+  .tablet-login-btn,
+  .tablet-scan-btn {
+    height: 2.85rem;
+  }
+
+  .tablet-scan-btn {
+    width: 2.85rem;
+    min-width: 2.85rem;
   }
 }
 
-@media (min-width: 800px) and (orientation: landscape) {
+/* Tablet portrait */
+@media (min-width: 768px) and (orientation: portrait) {
+  .content-wrapper {
+    padding: 28px 24px;
+  }
+
   .top-background {
-    height: 50vh;
-    border-radius: 0 0 100px 100px;
+    height: 38vh;
   }
 
   .form-container {
-    max-width: 850px;
-    padding: 50px;
+    max-width: 520px;
+    padding: 28px 28px 24px;
+    border-radius: 28px;
+  }
+
+  .form-inner {
+    gap: 20px;
+  }
+
+  .form-logo {
+    width: 250px;
+    height: 160px;
+  }
+
+  .login-header h3 {
+    font-size: 2.1rem;
+  }
+
+  .login-header p {
+    font-size: 1.05rem;
+  }
+
+  .side-info--tablet {
+    padding: 28px 22px;
+  }
+
+  .tablet-login-form {
+    padding: 24px 22px;
+    border-radius: 18px;
+  }
+
+  .field-group {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .field-label {
+    font-size: 0.95rem;
+  }
+
+  .tablet-login-btn {
+    height: 3.6rem;
+    font-size: 1.1rem;
+    border-radius: 14px;
+  }
+
+  .tablet-scan-btn {
+    width: 3.6rem;
+    min-width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 14px;
+    border-width: 3px !important;
+  }
+
+  .tablet-scan-btn :deep(.pi) {
+    font-size: 1.75rem;
+  }
+
+  .footer-note {
+    margin-top: 20px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Tablet landscape — 2 cột */
+@media (min-width: 800px) and (orientation: landscape) {
+  .content-wrapper {
+    padding: 24px 32px;
+  }
+
+  .top-background {
+    height: 48vh;
+    border-radius: 0 0 80px 80px;
+  }
+
+  .form-container {
+    max-width: 880px;
+    padding: 36px 40px 28px;
+    border-radius: 28px;
   }
 
   .form-inner {
     flex-direction: row;
     align-items: stretch;
-    gap: 50px;
+    gap: 28px;
   }
 
   .side-info,
   .side-form {
     flex: 1;
+    min-width: 0;
   }
 
-  .login-header h3 {
-    font-size: 2.5rem;
+  .side-info--tablet {
+    padding: 24px 20px;
+    display: flex;
+    border-right: 2px solid gainsboro;
+  }
+
+  .side-info-content {
+    gap: 12px;
   }
 
   .form-logo {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
+    width: 230px;
+    height: 150px;
   }
 
-  .side-info {
-    border-right: inset;
+  .login-header h3 {
+    font-size: 2.25rem;
+  }
+
+  .login-header p {
+    font-size: 1.05rem;
+    max-width: 260px;
+  }
+
+  .tablet-login-form {
+    padding: 28px 24px;
+    border-radius: 18px;
+    height: 100%;
+  }
+
+  .field-group {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .field-label {
+    font-size: 0.95rem;
+  }
+
+  .tablet-login-actions {
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .tablet-login-btn {
+    height: 3.6rem;
+    font-size: 1.1rem;
+    border-radius: 14px;
+  }
+
+  .tablet-scan-btn {
+    width: 3.6rem;
+    min-width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 14px;
+    border-width: 3px !important;
+  }
+
+  .tablet-scan-btn :deep(.pi) {
+    font-size: 1.75rem;
+  }
+
+  .footer-note {
+    margin-top: 20px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile nhỏ */
+@media (max-width: 380px) {
+  .content-wrapper {
+    padding: 12px;
+  }
+
+  .form-container {
+    padding: 12px 12px 14px;
+    border-radius: 20px;
+  }
+
+  .form-logo {
+    width: 90px;
+    height: 90px;
+    max-width: 88px;
+  }
+
+  .login-header h3 {
+    font-size: 1.45rem;
+  }
+
+  .login-header p {
+    font-size: 0.85rem;
+  }
+
+  .tablet-login-form {
+    padding: 12px 10px;
+  }
+
+  .tablet-login-btn,
+  .tablet-scan-btn {
+    height: 3rem;
+  }
+
+  .tablet-scan-btn {
+    width: 3rem;
+    min-width: 3rem;
   }
 }
 </style>

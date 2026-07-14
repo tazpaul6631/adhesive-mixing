@@ -44,6 +44,21 @@
       "noSeparateConfirm": "No decant",
       "qipConfirm": "QIP confirm"
     },
+    "mlnsDialog": {
+      "title": "Verify order {workOrderMasterName} codes",
+      "hint": "Enter the codes separated by commas (digits and commas only).",
+      "inputLabel": "Codes",
+      "placeholder": "Example: 4,5",
+      "confirm": "Confirm"
+    },
+    "printAuthDialog": {
+      "title": "QIP authentication to print",
+      "hint": "Enter the QIP password for order {workOrderMasterName}, or scan an employee card.",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter password",
+      "scanButton": "Scan QIP code",
+      "confirm": "Confirm"
+    },
     "scan": {
       "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"
     },
@@ -65,7 +80,8 @@
       "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
       "gapConfirmOk": "Gap aligned — continue",
       "gapConfirmCancel": "Cancel",
-      "queuedTitle": "Waiting to print"
+      "queuedTitle": "Waiting to print",
+      "busyPendingToast": "There are pending labels. Please finish them before printing a new order."
     },
     "toast": {
       "warning": "Warning",
@@ -89,8 +105,9 @@
       "printPartial": "Partial print ({printed}/{total}).",
       "alreadyPrinted": "{name} has already been printed.",
       "pendingRestored": "{count} label(s) from the previous session are still pending.",
-      "pendingReplaced": "Replaced the pending label queue with the new order.",
       "printQueueBackBlocked": "Still printing {count} order(s). Please wait until printing is complete before leaving.",
+      "mlnsEmpty": "Please enter codes.",
+      "mlnsMismatch": "Codes do not match (missing or extra). Please try again.",
       "componentLabel": {
         "notConfirmed": "Please confirm the actual weight before printing.",
         "printSuccess": "Component label printed.",
@@ -130,6 +147,14 @@
     "sectionTitle": "Mixed glue repackaging list",
     "filter": {
       "gluePlaceholder": "Filter by glue name"
+    },
+    "printAuthDialog": {
+      "title": "QIP authentication to print",
+      "hint": "Enter the QIP password for order {workOrderMasterName}, or scan an employee card.",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter password",
+      "scanButton": "Scan QIP code",
+      "confirm": "Confirm"
     },
     "scan": {
       "employeeNote": "Align the <strong>barcode</strong> on the employee card inside the frame"

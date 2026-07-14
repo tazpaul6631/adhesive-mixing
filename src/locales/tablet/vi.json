@@ -44,6 +44,21 @@
       "noSeparateConfirm": "Không chiết",
       "qipConfirm": "QIP xác nhận"
     },
+    "mlnsDialog": {
+      "title": "Xác minh mã số của đơn {workOrderMasterName}",
+      "hint": "Nhập cách nhau bằng dấu phẩy (chỉ số và dấu phẩy).",
+      "inputLabel": "Mã số",
+      "placeholder": "Ví dụ: 4,5",
+      "confirm": "Xác nhận"
+    },
+    "printAuthDialog": {
+      "title": "Xác thực QIP để in tem",
+      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "scanButton": "Quét mã QIP",
+      "confirm": "Xác nhận"
+    },
     "scan": {
       "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
     },
@@ -65,7 +80,8 @@
       "gapConfirmTitle": "Căn gap giấy",
       "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
       "gapConfirmOk": "Đã căn gap — tiếp tục",
-      "gapConfirmCancel": "Hủy"
+      "gapConfirmCancel": "Hủy",
+      "busyPendingToast": "Đang có tem chờ in. Vui lòng xử lý xong trước khi in đơn mới."
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -89,8 +105,9 @@
       "printPartial": "In một phần ({printed}/{total}).",
       "alreadyPrinted": "{name} đã in tem rồi.",
       "pendingRestored": "Còn {count} tem chưa in từ lần trước.",
-      "pendingReplaced": "Đã thay thế danh sách tem chờ in bằng đơn mới.",
       "printQueueBackBlocked": "Đang in {count} đơn còn lại. Vui lòng chờ in xong mới thoát.",
+      "mlnsEmpty": "Vui lòng nhập mã số.",
+      "mlnsMismatch": "Mã số không khớp (thiếu hoặc thừa). Vui lòng nhập lại.",
       "componentLabel": {
         "notConfirmed": "Vui lòng xác nhận trọng lượng thực tế trước khi in.",
         "printSuccess": "Đã in tem thành phần.",
@@ -130,6 +147,14 @@
     "sectionTitle": "Danh sách chiết keo trộn hỗn hợp",
     "filter": {
       "gluePlaceholder": "Lọc theo tên keo"
+    },
+    "printAuthDialog": {
+      "title": "Xác thực QIP để in tem",
+      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "scanButton": "Quét mã QIP",
+      "confirm": "Xác nhận"
     },
     "scan": {
       "employeeNote": "Đưa <strong>mã vạch</strong> trên thẻ nhân viên vào khung hình"
