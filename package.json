@@ -7,6 +7,15 @@
     "postinstall": "patch-package",
     "dev": "vite",
     "build": "vue-tsc && vite build",
+    "build:web": "vue-tsc && vite build",
+    "cap:sync:android": "npx cap sync android",
+    "cap:sync:ios": "npx cap sync ios && node scripts/fix-ios-spm.mjs",
+    "build:android": "npm run build:web && npm run cap:sync:android && node scripts/build-android.mjs",
+    "build:android:signed": "npm run build:android && bash scripts/sign-android-apk.sh",
+    "build:ios": "npm run build:web && npm run cap:sync:ios && node scripts/build-ios.mjs",
+    "build:ios:archive": "npm run build:web && npm run cap:sync:ios && node scripts/build-ios.mjs archive",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios",
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test:unit": "vitest"
@@ -55,7 +64,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "8.3.1",
     "@types/crypto-js": "^4.2.2",
     "@vitejs/plugin-legacy": "^5.0.0",
