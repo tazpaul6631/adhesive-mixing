@@ -38,6 +38,7 @@
       "totalWeight": "需求總重量 (KG)",
       "updater": "派工人員",
       "updateDate": "派工日期",
+      "requestTime": "領取時間",
       "glueConfirm": "調膠攪拌",
       "noMixConfirm": "確認分裝",
       "separateConfirm": "確認分裝",

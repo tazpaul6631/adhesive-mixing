@@ -96,12 +96,12 @@
                 </template>
               </Column>
 
-              <Column field="createDate" :header="t('listMixGlue.columns.updateDate')" headerClass="dt-col-datetime"
+              <Column field="requestTime" :header="t('listMixGlue.columns.requestTime')" headerClass="dt-col-datetime"
                 bodyClass="dt-col-datetime">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.updateDate ?
-                    format.formatDate(data.updateDate) : '' }}</span>
+                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.requestTime ?
+                    format.formatDate(data.requestTime) : '' }}</span>
                 </template>
               </Column>
 
@@ -627,6 +627,7 @@ export interface WorkOrderMaster {
   createDate: string;
   updaterId: string;
   updateDate: string;
+  requestTime: string;
   chemicalMasterName: string;
   hourlyValidity: string;
   workOrderWeight: string;

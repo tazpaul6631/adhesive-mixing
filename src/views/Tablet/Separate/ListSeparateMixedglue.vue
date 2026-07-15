@@ -47,9 +47,9 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-separate-table-wrap">
             <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
-              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight"
-              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick"
-              :paginator="true" :rows="rowsPerPage" paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
+              @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" class="modern-table auto-columns-table"
+              tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick" :paginator="true" :rows="rowsPerPage"
+              paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}" selectionMode="single"
               v-model:selection="selectedItem" dataKey="workOrderMasterId">
 
@@ -92,12 +92,12 @@
                 </template>
               </Column>
 
-              <Column field="updateDate" :header="t('listMixGlue.columns.updateDate')" headerClass="dt-col-datetime"
+              <Column field="requestTime" :header="t('listMixGlue.columns.requestTime')" headerClass="dt-col-datetime"
                 bodyClass="dt-col-datetime">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
-                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.updateDate ?
-                    format.formatDate(data.updateDate) : '' }}</span>
+                  <span v-else><i class="pi pi-clock text-xs mr-1"></i>{{ data.requestTime ?
+                    format.formatDate(data.requestTime) : '' }}</span>
                 </template>
               </Column>
 
@@ -110,7 +110,8 @@
                       :loading="isPrintRowLoading(data.workOrderMasterId)"
                       :title="isRowQueued(data.workOrderMasterId) ? t('listSeparateMixedGlue.print.queuedTitle') : undefined"
                       @click.stop="onPrintClick(data)">
-                      <template v-if="isRowQueued(data.workOrderMasterId) && !isPrintRowLoading(data.workOrderMasterId)" #icon>
+                      <template v-if="isRowQueued(data.workOrderMasterId) && !isPrintRowLoading(data.workOrderMasterId)"
+                        #icon>
                         <i class="pi pi-clock" />
                       </template>
                       <template v-else-if="!isPrintRowLoading(data.workOrderMasterId)" #icon>
@@ -158,7 +159,11 @@
       :style="{ width: 'min(92vw, 420px)' }" :closable="false" @hide="closePrintAuthDialog">
       <div class="flex flex-column gap-3">
         <p class="m-0 text-600 line-height-3">
-          {{ t('listSeparateMixedGlue.printAuthDialog.hint', { workOrderMasterName: pendingPrintRow?.workOrderMasterName ?? '' })
+          {{ t('listSeparateMixedGlue.printAuthDialog.hint', {
+            workOrderMasterName: pendingPrintRow?.workOrderMasterName
+              ??
+              ''
+          })
           }}
         </p>
         <div class="flex flex-column gap-2">
@@ -289,6 +294,7 @@ export interface WorkOrderMaster {
   createDate: string;
   updaterId: string;
   updateDate: string;
+  requestTime: string;
   chemicalMasterName: string;
   hourlyValidity: string;
   workOrderWeight: string;
