@@ -10,7 +10,7 @@ const DEFAULT_TIMEOUT = 10000;
 export const SLOW_API_TIMEOUT = 30000;
 
 /** Header requestBy cố định (chỉ gửi khi withRequestBy: true). */
-const REQUEST_BY_KEY = 'key_666ttp10tyuio72612aqzvntnmyt1r2y9y3tre7823';
+const REQUEST_BY_KEY = 'key_666ttp10tyuio72612aqzvntnmyt1r2y9y3tre78';
 
 const api = axios.create({
   baseURL,
