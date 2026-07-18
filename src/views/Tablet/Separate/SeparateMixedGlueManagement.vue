@@ -7,7 +7,7 @@
             <ion-button @click="goBack">
               <i class="pi pi-angle-left text-xl mr-1"></i>
               <ion-title class="no-padding" style="line-height: 50px;">{{ t('separateMixedGlue.management.pageTitle')
-                }}</ion-title>
+              }}</ion-title>
             </ion-button>
           </ion-buttons>
           <LocaleSelect device-scope="tablet" select-class="mr-4" />
@@ -18,7 +18,7 @@
     <ion-content class="ion-padding separate-mixed-glue-content" :scroll-y="false">
 
       <div class="separate-mixed-glue-layout main-container max-w-full mx-auto page-content-loading-host">
-        <PageContentLoadingOverlay :visible="isLoadingLine" />
+        <PageContentLoadingOverlay :visible="isLoadingLine || isCompleting" />
         <!-- Thông tin header — cố định, không scroll -->
         <div class="separate-mixed-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -36,13 +36,13 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-                }}</label>
+              }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
                 <Button icon="pi pi-check-circle" severity="success" class="button-lg"
-                  :disabled="isCompleteButtonDisabled" :loading="isCompleting" @click="handleComplete" />
+                  :disabled="isCompleteButtonDisabled" @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -64,7 +64,8 @@
             </div>
           </div>
 
-          <div v-if="hasNoMixChemicals" class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
+          <div v-if="hasNoMixChemicals"
+            class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-box mr-2"></i>{{ t('separateMixedGlue.management.sections.noMixGlue') }}

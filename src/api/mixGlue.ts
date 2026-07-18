@@ -2,7 +2,7 @@ import request from "@/services/apiService";
 
 export default {
     postMixGlueCommand(data: any) {
-        return request.post(`api/mobile/mixglue/command`, data)
+        return request.post(`api/mobile/mixglue/command`, data, { withRequestBy: true })
     },
     postMGMConfirmComplete(data: any) {
         return request.post(`api/mobile/mixglue/mgmconfirmcomplete`, data)

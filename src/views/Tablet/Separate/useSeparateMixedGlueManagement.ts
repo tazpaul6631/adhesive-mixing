@@ -696,23 +696,24 @@ export function useSeparateMixedGlueManagement() {
 
   const handleComplete = async () => {
     if (isCompleting.value || isNavigatingAway.value) return;
-    if (blockIfNoChangesOnResubmit()) return;
-
-    if (!(await requireOnline())) return;
-
-    const validationError = await validateBeforeComplete();
-    if (validationError) {
-      showToast({
-        severity: 'warn',
-        summary: t('separateMixedGlue.toast.incomplete'),
-        detail: validationError,
-        life: 6000,
-      });
-      return;
-    }
 
     isCompleting.value = true;
     try {
+      if (blockIfNoChangesOnResubmit()) return;
+
+      if (!(await requireOnline())) return;
+
+      const validationError = await validateBeforeComplete();
+      if (validationError) {
+        showToast({
+          severity: 'warn',
+          summary: t('separateMixedGlue.toast.incomplete'),
+          detail: validationError,
+          life: 6000,
+        });
+        return;
+      }
+
       const payload = buildSeparateGlueCommandPayload(getPayloadContext(), '1', { forComplete: true });
 
       await separateGlue.postSeparateGlueCommand(payload);
@@ -739,11 +740,13 @@ export function useSeparateMixedGlueManagement() {
       await router.push('/list-separate-mixed-glue-management');
     } catch (error) {
       if (notifyOfflineFromError(error)) {
-        isCompleting.value = false;
         return;
       }
       showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('separateMixedGlue.toast.completeFailed'), life: 6000 });
-      isCompleting.value = false;
+    } finally {
+      if (!isNavigatingAway.value) {
+        isCompleting.value = false;
+      }
     }
   };
 

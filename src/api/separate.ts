@@ -2,7 +2,7 @@ import request from "@/services/apiService";
 
 export default {
     postSeparateGlueCommand(data: any) {
-        return request.post(`api/mobile/separateglue/command`, data)
+        return request.post(`api/mobile/separateglue/command`, data, { withRequestBy: true })
     },
     postSGQueryResult(data: any) {
         return request.post(`api/mobile/separateglue/sgqueryresult`, data)

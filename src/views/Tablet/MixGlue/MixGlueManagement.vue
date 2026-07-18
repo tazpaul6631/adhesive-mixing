@@ -18,7 +18,7 @@
     <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
 
       <div class="mix-glue-layout main-container max-w-full mx-auto page-content-loading-host">
-        <PageContentLoadingOverlay :visible="isPageDataLoading" />
+        <PageContentLoadingOverlay :visible="isPageDataLoading || isCompleting" />
         <!-- Thông tin header — cố định, không scroll -->
         <div class="mix-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -44,8 +44,7 @@
                 <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
                 <Button :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
-                  :loading="isCompleting" icon="pi pi-check-circle" severity="success" class="button-lg"
-                  @click="handleComplete" />
+                  icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -974,21 +973,22 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
   if (isCompleting.value || isNavigatingAway.value) return;
-  if (!(await requireOnline())) return;
-
-  const validationError = await validateBeforeNoMixComplete();
-  if (validationError) {
-    showToast({
-      severity: 'warn',
-      summary: t('separateMixedGlue.toast.incomplete'),
-      detail: validationError,
-      life: 6000,
-    });
-    return;
-  }
 
   isCompleting.value = true;
   try {
+    if (!(await requireOnline())) return;
+
+    const validationError = await validateBeforeNoMixComplete();
+    if (validationError) {
+      showToast({
+        severity: 'warn',
+        summary: t('separateMixedGlue.toast.incomplete'),
+        detail: validationError,
+        life: 6000,
+      });
+      return;
+    }
+
     const payload = source === 'chiet-row'
       ? buildSeparateGlueCommandPayload(getSeparatePayloadContext(), '1', {
         forComplete: true,
@@ -1016,7 +1016,6 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
     }
   } catch (error) {
     if (notifyOfflineFromError(error)) {
-      isCompleting.value = false;
       return;
     }
     console.error(error);
@@ -1026,7 +1025,10 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       detail: t('separateMixedGlue.toast.completeFailed'),
       life: 6000,
     });
-    isCompleting.value = false;
+  } finally {
+    if (!isNavigatingAway.value) {
+      isCompleting.value = false;
+    }
   }
 };
 
@@ -1035,23 +1037,23 @@ completeNoMixGlue = () => handleCompleteNoMixGlue('chiet-row');
 const handleCompleteMixGlue = async () => {
   if (isCompleting.value || isNavigatingAway.value) return;
 
-  const hasIncompleteRows = (rows: ComponentDetail[]) =>
-    rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
-
-  if (hasMixChemicals.value && hasIncompleteRows(componentDetailsFull.value)) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
-    return;
-  }
-
-  if (hasNoMixChemicals.value && hasIncompleteRows(noMixComponents.value)) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
-    return;
-  }
-
-  if (!(await requireOnline())) return;
-
   isCompleting.value = true;
   try {
+    const hasIncompleteRows = (rows: ComponentDetail[]) =>
+      rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
+
+    if (hasMixChemicals.value && hasIncompleteRows(componentDetailsFull.value)) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
+      return;
+    }
+
+    if (hasNoMixChemicals.value && hasIncompleteRows(noMixComponents.value)) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
+      return;
+    }
+
+    if (!(await requireOnline())) return;
+
     const payloadToSubmit = buildPayload('1');
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
     await saveDraftSnapshot();
@@ -1069,12 +1071,14 @@ const handleCompleteMixGlue = async () => {
     await router.push('/list-mix-glue');
   } catch (error) {
     if (notifyOfflineFromError(error)) {
-      isCompleting.value = false;
       return;
     }
     console.error(error);
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 6000 });
-    isCompleting.value = false;
+  } finally {
+    if (!isNavigatingAway.value) {
+      isCompleting.value = false;
+    }
   }
 };
 

@@ -9,6 +9,9 @@ const baseURL = baseURLApi.url;
 const DEFAULT_TIMEOUT = 10000;
 export const SLOW_API_TIMEOUT = 30000;
 
+/** Header requestBy cố định (chỉ gửi khi withRequestBy: true). */
+const REQUEST_BY_KEY = 'key_666ttp10tyuio72612aqzvntnmyt1r2y9y3tre7823';
+
 const api = axios.create({
   baseURL,
   timeout: DEFAULT_TIMEOUT,
@@ -16,14 +19,30 @@ const api = axios.create({
 
 /**
  * 1. REQUEST INTERCEPTOR: Tự động gắn Token vào mỗi yêu cầu
+ * Header requestBy chỉ gửi khi caller bật withRequestBy: true
  */
 api.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig & { withRequestBy?: boolean }) => {
     const authStore = useAuthStore();
     const token = authStore.token;
+    const employeeId =
+      authStore.user?.employeeId?.trim() ||
+      token ||
+      localStorage.getItem('web_token_backup') ||
+      '';
 
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (config.headers) {
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      if (employeeId) {
+        config.headers.requestBy = employeeId;
+      }
+
+      if (config.withRequestBy) {
+        config.headers.requestKey = REQUEST_BY_KEY;
+      }
     }
     return config;
   },
@@ -82,7 +101,11 @@ api.interceptors.response.use(
   }
 );
 
-export type RequestConfig = { timeout?: number };
+export type RequestConfig = {
+  timeout?: number;
+  /** true → gắn header requestBy = employeeId. Mặc định: không gửi */
+  withRequestBy?: boolean;
+};
 
 /**
  * 3. EXPORT WRAPPER: chạy bằng Axios
