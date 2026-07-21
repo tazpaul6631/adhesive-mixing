@@ -54,7 +54,7 @@
     },
     "printAuthDialog": {
       "title": "Xác thực QIP để in tem",
-      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "hint": "QIP nhập mật khẩu hoặc quét thẻ nhân viên cho đơn {workOrderMasterName}.",
       "passwordLabel": "Mật khẩu",
       "passwordPlaceholder": "Nhập mật khẩu",
       "scanButton": "Quét mã QIP",
@@ -151,7 +151,7 @@
     },
     "printAuthDialog": {
       "title": "Xác thực QIP để in tem",
-      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "hint": "QIP nhập mật khẩu hoặc quét thẻ nhân viên cho đơn {workOrderMasterName}.",
       "passwordLabel": "Mật khẩu",
       "passwordPlaceholder": "Nhập mật khẩu",
       "scanButton": "Quét mã QIP",

@@ -54,7 +54,7 @@
     },
     "printAuthDialog": {
       "title": "QIP authentication to print",
-      "hint": "Enter the QIP password for order {workOrderMasterName}, or scan an employee card.",
+      "hint": "QIP enter password or scan employee card for order {workOrderMasterName}.",
       "passwordLabel": "Password",
       "passwordPlaceholder": "Enter password",
       "scanButton": "Scan QIP code",
@@ -151,7 +151,7 @@
     },
     "printAuthDialog": {
       "title": "QIP authentication to print",
-      "hint": "Enter the QIP password for order {workOrderMasterName}, or scan an employee card.",
+      "hint": "QIP enter password or scan employee card for order {workOrderMasterName}.",
       "passwordLabel": "Password",
       "passwordPlaceholder": "Enter password",
       "scanButton": "Scan QIP code",

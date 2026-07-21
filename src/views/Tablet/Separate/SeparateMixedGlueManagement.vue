@@ -10,7 +10,10 @@
               }}</ion-title>
             </ion-button>
           </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+          <div class="flex align-items-center gap-2 mr-2">
+            <NetworkStatusIcon />
+            <LocaleSelect device-scope="tablet" />
+          </div>
         </div>
       </ion-toolbar>
     </ion-header>
@@ -42,7 +45,7 @@
             <div class="col-12 lg:col-2">
               <div class="flex gap-2 justify-content-end">
                 <Button icon="pi pi-check-circle" severity="success" class="button-lg"
-                  :disabled="isCompleteButtonDisabled" @click="handleComplete" />
+                  :disabled="isCompleteButtonDisabled" :loading="isCompleting" @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -94,6 +97,7 @@ import SeparateGlue from '@/views/Tablet/Separate/components/SeparateGlue.vue';
 import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useSeparateMixedGlueManagement } from './useSeparateMixedGlueManagement';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const { t } = useAppLocale(() => 'tablet');

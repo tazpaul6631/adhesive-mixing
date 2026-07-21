@@ -7,6 +7,8 @@ const TSPL_FONT = '5';
 const TSPL_LEFT_X = 13;
 const TSPL_START_Y = 30;
 const TSPL_MAX_Y = 400;
+/** Chiều rộng tem dots (~69mm @ 203dpi). */
+const TSPL_LABEL_WIDTH = 555;
 /** Độ rộng chữ in được trên 69mm (trừ lề trái). */
 const TSPL_MAX_CHARS_FIRST_LINE = 24;
 const TSPL_MAX_CHARS_CONTINUATION = 26;
@@ -15,6 +17,19 @@ const TSPL_MAX_CHARS_CONTINUATION = 26;
 const MUL_WO_GLUE = 12;
 const MUL_MATERIAL = 17;
 const MUL_META = 14;
+
+/** Badge góc trên phải: vòng neo top/right; value căn tâm vòng (TEXT góc trên-trái). */
+const LABEL_BADGE_SIZE = 90;
+const LABEL_BADGE_MARGIN = 15;
+const LABEL_BADGE_RING_THICKNESS = 6;
+/** Font "5" — mul hiển thị; DIGIT_* = cell in thật để cx-W/2, cy-H/2 đúng tâm. */
+const LABEL_BADGE_FONT = TSPL_FONT;
+const LABEL_BADGE_MUL = 18;
+/** Đo/chỉnh theo máy: W quá lớn → số 2 chữ lệch trái (hàng đơn vị vào tâm). */
+const LABEL_BADGE_DIGIT_W = 22;
+const LABEL_BADGE_DIGIT_H = 45;
+/** In đậm giả: TEXT in lại lệch (dots). */
+const LABEL_BADGE_BOLD_OFFSET = 2;
 
 /**
  * Khoảng trắng sau mỗi dòng (giống 1→2 đang đúng).
@@ -37,6 +52,81 @@ const textLine = (x: number, y: number, value: string, mul: number, boldOffset =
   const l1 = `TEXT ${x},${y},"${TSPL_FONT}",0,${mul},${mul},"${inner}"\n`;
   if (!boldOffset) return l1;
   return `${l1}TEXT ${x + boldOffset},${y},"${TSPL_FONT}",0,${mul},${mul},"${inner}"\n`;
+};
+
+/** Vòng tròn bằng BAR (máy BT thường bỏ CIRCLE). */
+const circleOutlineBars = (x: number, y: number, size: number, thickness: number): string => {
+  const outerR = Math.max(2, Math.floor(size / 2) - 1);
+  const innerR = Math.max(1, outerR - Math.max(1, thickness) + 1);
+  const cx = x + Math.floor(size / 2);
+  const cy = y + Math.floor(size / 2);
+  const points = new Set<string>();
+
+  const plotRing = (r: number) => {
+    let xi = r;
+    let yi = 0;
+    let err = 1 - xi;
+    while (xi >= yi) {
+      const octants: Array<[number, number]> = [
+        [cx + xi, cy + yi],
+        [cx + yi, cy + xi],
+        [cx - yi, cy + xi],
+        [cx - xi, cy + yi],
+        [cx - xi, cy - yi],
+        [cx - yi, cy - xi],
+        [cx + yi, cy - xi],
+        [cx + xi, cy - yi],
+      ];
+      for (const [px, py] of octants) {
+        points.add(`${px},${py}`);
+      }
+      yi += 1;
+      if (err < 0) {
+        err += 2 * yi + 1;
+      } else {
+        xi -= 1;
+        err += 2 * (yi - xi) + 1;
+      }
+    }
+  };
+
+  for (let r = innerR; r <= outerR; r += 1) {
+    plotRing(r);
+  }
+
+  let tspl = '';
+  const barSize = Math.max(1, Math.min(3, Math.ceil(thickness / 2)));
+  const half = Math.floor(barSize / 2);
+  for (const key of points) {
+    const [px, py] = key.split(',').map(Number);
+    tspl += `BAR ${px - half},${py - half},${barSize},${barSize}\n`;
+  }
+  return tspl;
+};
+
+/** Badge: vòng đậm + value đậm; x = cx - W/2, y = cy - H/2. */
+const labelCodeBadge = (labelCode: string): string => {
+  const code = String(labelCode ?? '').trim();
+  if (!code) return '';
+
+  const circleX = TSPL_LABEL_WIDTH - LABEL_BADGE_MARGIN - LABEL_BADGE_SIZE;
+  const circleY = LABEL_BADGE_MARGIN;
+  const cx = circleX + Math.floor(LABEL_BADGE_SIZE / 2);
+  const cy = circleY + Math.floor(LABEL_BADGE_SIZE / 2);
+
+  const valueW = [...code].length * LABEL_BADGE_DIGIT_W + LABEL_BADGE_BOLD_OFFSET;
+  const valueH = LABEL_BADGE_DIGIT_H;
+  const textX = cx - Math.floor(valueW / 2);
+  const textY = cy - Math.floor(valueH / 2);
+  const inner = escape(code);
+  const bold = LABEL_BADGE_BOLD_OFFSET;
+
+  return (
+    circleOutlineBars(circleX, circleY, LABEL_BADGE_SIZE, LABEL_BADGE_RING_THICKNESS) +
+    `TEXT ${textX},${textY},"${LABEL_BADGE_FONT}",0,${LABEL_BADGE_MUL},${LABEL_BADGE_MUL},"${inner}"\n` +
+    `TEXT ${textX + bold},${textY},"${LABEL_BADGE_FONT}",0,${LABEL_BADGE_MUL},${LABEL_BADGE_MUL},"${inner}"\n` +
+    `TEXT ${textX},${textY + bold},"${LABEL_BADGE_FONT}",0,${LABEL_BADGE_MUL},${LABEL_BADGE_MUL},"${inner}"\n`
+  );
 };
 
 type WrapStyle = { mul: number; boldOffset?: number };
@@ -133,6 +223,9 @@ export function buildComponentWeightLabelTspl(data: ComponentWeightLabelData): s
   let tspl = `${mediaPrefix}CLS
 `;
 
+  // Badge mã số — góc trên phải (không chiếm luồng dọc)
+  tspl += labelCodeBadge(labelCode);
+
   let y = TSPL_START_Y;
 
   // Dòng 1: WO — bước theo MUL_WO_GLUE
@@ -145,7 +238,7 @@ export function buildComponentWeightLabelTspl(data: ComponentWeightLabelData): s
     y += lineStep(MUL_MATERIAL) + 5;
   }
 
-  // Dòng 3–6: meta — bước theo MUL_META
+  // Dòng 3–5: meta — bước theo MUL_META
   const metaStep = lineStep(MUL_META) + 5;
 
   if (requestTimeDisplay && y + metaStep <= TSPL_MAX_Y) {
@@ -163,12 +256,7 @@ export function buildComponentWeightLabelTspl(data: ComponentWeightLabelData): s
     y += metaStep;
   }
 
-  if (labelCode && y + metaStep <= TSPL_MAX_Y) {
-    tspl += textLine(TSPL_LEFT_X, y, `Mã số: ${labelCode}`, MUL_META, BOLD_OFFSET_META);
-    y += metaStep;
-  }
-
-  // Dòng 7: Keo trộn — bước theo MUL_WO_GLUE
+  // Dòng 6: Keo trộn — bước theo MUL_WO_GLUE
   const glueBlock = wrapBlock(
     'Keo trộn: ',
     glueName,

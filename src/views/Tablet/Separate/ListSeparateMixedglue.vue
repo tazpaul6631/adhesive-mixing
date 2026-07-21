@@ -10,7 +10,10 @@
               }}</ion-title>
             </ion-button>
           </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+          <div class="flex align-items-center gap-2 mr-2">
+            <NetworkStatusIcon />
+            <LocaleSelect device-scope="tablet" />
+          </div>
         </div>
       </ion-toolbar>
     </ion-header>
@@ -45,7 +48,7 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto border-round-bottom-xl list-separate-table-wrap">
+          <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl list-separate-table-wrap">
             <DataTable :value="filteredLineDetails" lazy :totalRecords="totalRecords" :first="tableFirst"
               @page="onPageLine" scrollable :scrollHeight="tableScrollHeight" class="modern-table auto-columns-table"
               tableStyle="width: 100%; min-width: 0;" @row-click="onRowClick" :paginator="true" :rows="rowsPerPage"
@@ -175,25 +178,24 @@
               <InputText id="printAuthPassword" v-model="printAuthPassword"
                 :type="showPrintAuthPassword ? 'text' : 'password'" class="w-full"
                 :placeholder="t('listSeparateMixedGlue.printAuthDialog.passwordPlaceholder')" autocomplete="off"
-                :disabled="isPrintAuthSubmitting || isPrintAuthScanning" @keyup.enter="submitPrintAuthPassword" />
+                :disabled="isPrintAuthBusy" @keyup.enter="submitPrintAuthPassword" />
               <InputIcon class="password-toggle-icon pi" :class="[
                 showPrintAuthPassword ? 'pi-eye-slash' : 'pi-eye',
-                { 'password-toggle-icon--disabled': isPrintAuthSubmitting || isPrintAuthScanning }
+                { 'password-toggle-icon--disabled': isPrintAuthBusy }
               ]" @click="togglePrintAuthPassword" />
             </IconField>
-            <Button icon="pi pi-qrcode" severity="success" outlined
+            <Button icon="pi pi-qrcode" severity="success" outlined class="print-auth-scan-btn"
               :title="t('listSeparateMixedGlue.printAuthDialog.scanButton')"
               :aria-label="t('listSeparateMixedGlue.printAuthDialog.scanButton')" size="large"
-              :disabled="isPrintAuthSubmitting || isPrintAuthScanning" :loading="isPrintAuthScanning"
-              @click="startPrintAuthScan" />
+              :disabled="isPrintAuthBusy" :loading="isPrintAuthScanning" @click="startPrintAuthScan" />
           </div>
         </div>
       </div>
       <template #footer>
         <Button :label="t('common.cancel')" icon="pi pi-times" text severity="secondary" size="large"
-          :disabled="isPrintAuthSubmitting || isPrintAuthScanning" @click="closePrintAuthDialog" />
+          :disabled="isPrintAuthBusy" @click="closePrintAuthDialog" />
         <Button :label="t('listSeparateMixedGlue.printAuthDialog.confirm')" icon="pi pi-check" severity="success"
-          size="large" :disabled="!printAuthPassword.trim() || isPrintAuthScanning" :loading="isPrintAuthSubmitting"
+          size="large" :disabled="!printAuthPassword.trim() || isPrintAuthBusy" :loading="isPrintAuthSubmitting"
           @click="submitPrintAuthPassword" />
       </template>
     </Dialog>
@@ -215,6 +217,7 @@ import { useAppToast } from '@/composables/useAppToast';
 import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
 import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useSeparateLabelBatchPrint } from '@/composables/useSeparateLabelBatchPrint';
@@ -227,6 +230,7 @@ import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
 import { useRowActionLock } from '@/composables/useRowActionLock';
 import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
+import { useScrollToSelectedTableRow } from '@/composables/useScrollToSelectedTableRow';
 import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 
 const router = useRouter();
@@ -281,6 +285,8 @@ const separatePrintQueueCount = computed(() =>
 );
 
 const selectedItem = ref<any>(null);
+const tableWrapperRef = ref<HTMLElement | null>(null);
+const { scrollToRowByDataKey } = useScrollToSelectedTableRow(tableWrapperRef);
 
 export interface WorkOrderMaster {
   orderDetails: any[];
@@ -417,6 +423,18 @@ const filteredLineDetails = computed(() => {
   );
 });
 
+const scrollToSelectedRow = () => {
+  const id = selectedItem.value?.workOrderMasterId;
+  if (id == null || id === '') return;
+  const match = filteredLineDetails.value.find(
+    (row) => String(row.workOrderMasterId ?? '') === String(id)
+  );
+  if (match) {
+    selectedItem.value = match;
+  }
+  void scrollToRowByDataKey(filteredLineDetails.value, id);
+};
+
 useBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
     void cancelScan();
@@ -437,6 +455,11 @@ useBackButton(10, (processNextHandler) => {
 const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
   const workOrderMasterId = event.data.workOrderMasterId;
   if (workOrderMasterId) {
+    // Tablet/touch: click lại row đang chọn có thể unselect — ép giữ selection để highlight/scroll khi quay lại.
+    selectedItem.value = event.data;
+    void nextTick(() => {
+      selectedItem.value = event.data;
+    });
     router.push({
       path: '/separate-mixed-glue-management',
       query: {
@@ -495,6 +518,7 @@ const fetchWorkOrders = async (page: number, pageSize: number) => {
   } finally {
     if (!isStaleRequest(requestId)) {
       isLoadingLine.value = false;
+      scrollToSelectedRow();
     }
   }
 };
@@ -603,14 +627,28 @@ const showPrintAuthPassword = ref(false);
 const pendingPrintRow = ref<Partial<WorkOrderMaster> | null>(null);
 const isPrintAuthSubmitting = ref(false);
 const isPrintAuthScanning = ref(false);
+const isPrintAuthBusy = computed(
+  () => isPrintAuthSubmitting.value || isPrintAuthScanning.value
+);
+
+const reopenPrintAuthDialogWithToast = async (toastOptions: {
+  severity: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast';
+  summary: string;
+  detail: string;
+  life?: number;
+}) => {
+  showPrintAuthDialog.value = true;
+  await nextTick();
+  showToast(toastOptions);
+};
 
 const togglePrintAuthPassword = () => {
-  if (isPrintAuthSubmitting.value || isPrintAuthScanning.value) return;
+  if (isPrintAuthBusy.value) return;
   showPrintAuthPassword.value = !showPrintAuthPassword.value;
 };
 
 const closePrintAuthDialog = () => {
-  if (isPrintAuthSubmitting.value || isPrintAuthScanning.value) return;
+  if (isPrintAuthBusy.value) return;
   showPrintAuthDialog.value = false;
   pendingPrintRow.value = null;
   printAuthPassword.value = '';
@@ -702,7 +740,7 @@ const proceedPrintAfterAuth = async (employeeId: string) => {
 const submitPrintAuthPassword = async () => {
   const row = pendingPrintRow.value;
   const password = printAuthPassword.value.trim();
-  if (!row || !password || isPrintAuthSubmitting.value) return;
+  if (!row || !password || isPrintAuthBusy.value) return;
 
   const factoryId = authStore.user?.factoryId;
   if (!factoryId) {
@@ -761,7 +799,7 @@ const submitPrintAuthPassword = async () => {
 
 const startPrintAuthScan = async () => {
   const row = pendingPrintRow.value;
-  if (!row || isPrintAuthScanning.value || isPrintAuthSubmitting.value) return;
+  if (!row || isPrintAuthBusy.value) return;
 
   const factoryId = authStore.user?.factoryId;
   if (!factoryId) {
@@ -786,13 +824,12 @@ const startPrintAuthScan = async () => {
     });
 
     if (!scannedEmployeeId?.trim()) {
-      showToast({
+      await reopenPrintAuthDialogWithToast({
         severity: 'warn',
         summary: t('listSeparateMixedGlue.toast.warning'),
         detail: t('listSeparateMixedGlue.toast.scanFailed'),
         life: 6000,
       });
-      showPrintAuthDialog.value = true;
       return;
     }
 
@@ -803,13 +840,12 @@ const startPrintAuthScan = async () => {
     });
 
     if (data?.success !== true) {
-      showToast({
+      await reopenPrintAuthDialogWithToast({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
         detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
         life: 6000,
       });
-      showPrintAuthDialog.value = true;
       return;
     }
 
@@ -817,13 +853,12 @@ const startPrintAuthScan = async () => {
     await proceedPrintAfterAuth(resolvedId);
   } catch (error: any) {
     console.error(error);
-    showToast({
+    await reopenPrintAuthDialogWithToast({
       severity: 'error',
       summary: t('listSeparateMixedGlue.toast.error'),
       detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
       life: 6000,
     });
-    showPrintAuthDialog.value = true;
   } finally {
     isPrintAuthScanning.value = false;
   }
@@ -1025,6 +1060,16 @@ onIonViewDidLeave(() => {
 
 .print-auth-password-field {
   width: 100%;
+}
+
+.print-auth-scan-btn {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex-shrink: 0;
+}
+
+.print-auth-scan-btn :deep(.p-button-icon) {
+  font-size: 2.5rem;
 }
 
 .password-toggle-icon {

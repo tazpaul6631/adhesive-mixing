@@ -100,11 +100,6 @@ ion-list {
     text-decoration: underline;
 }
 
-/* --- 4. UTILITY & LAYOUT CLASSES --- */
-.header-container {
-    margin-top: 35px;
-}
-
 .no-padding {
     padding: 5px 0 !important;
 }

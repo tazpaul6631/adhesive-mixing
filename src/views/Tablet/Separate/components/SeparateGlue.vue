@@ -1,7 +1,8 @@
 <template>
-  <div ref="tableWrapperRef" class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight" tableStyle="width: 100%;"
-      class="modern-table auto-columns-table">
+  <div ref="tableWrapperRef"
+    class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight"
+      tableStyle="width: 100%;" class="modern-table auto-columns-table">
 
       <template #empty>
         <div class="separate-glue-empty" :style="{ minHeight: emptyStateMinHeight }">
@@ -69,7 +70,7 @@
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex justify-content-center">
-            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text
+            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger"
               :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" class="button-lg"
               @click.stop="handleDeleteRow(data)" />
           </div>

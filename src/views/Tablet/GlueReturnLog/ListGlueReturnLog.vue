@@ -7,10 +7,13 @@
             <ion-button @click="goBack">
               <i class="pi pi-angle-left text-xl mr-1"></i>
               <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
-              }}</ion-title>
+                }}</ion-title>
             </ion-button>
           </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+          <div class="flex align-items-center gap-2 mr-2">
+            <NetworkStatusIcon />
+            <LocaleSelect device-scope="tablet" />
+          </div>
         </div>
       </ion-toolbar>
     </ion-header>
@@ -46,9 +49,9 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-glue-return-table-wrap">
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
-              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight"
-              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" selectionMode="single"
-              :paginator="true" :rows="rowsPerPage" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
+              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" class="modern-table auto-columns-table"
+              tableStyle="width: 100%; min-width: 0;" selectionMode="single" :paginator="true" :rows="rowsPerPage"
+              dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
               paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}">
               <template #empty>
@@ -142,6 +145,7 @@ import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import glueReturnLogApi from '@/api/glueReturnLog';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import ElectronicScaleGlueReturn from '@/components/ElectronicScaleGlueReturn.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import {
@@ -479,12 +483,13 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
     return;
   }
 
-  if (!(await requireOnline())) return;
-
+  // Khóa UI sớm — tránh spam khi requireOnline/API chậm
   isConfirming.value = true;
   submittingRowId.value = row.glueReturnLogId;
 
   try {
+    if (!(await requireOnline())) return;
+
     const payload = {
       factoryId: row.factoryId || authStore.user?.factoryId || '',
       glueReturnLogId: row.glueReturnLogId,

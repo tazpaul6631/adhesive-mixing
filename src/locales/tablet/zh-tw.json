@@ -54,7 +54,7 @@
     },
     "printAuthDialog": {
       "title": "QIP 驗證後列印",
-      "hint": "請輸入訂單 {workOrderMasterName} 的 QIP 密碼，或掃描員工卡。",
+      "hint": "QIP 輸入密碼或掃描員工卡後列印訂單 {workOrderMasterName}。",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "請輸入密碼",
       "scanButton": "掃描 QIP",
@@ -151,7 +151,7 @@
     },
     "printAuthDialog": {
       "title": "QIP 驗證後列印",
-      "hint": "請輸入訂單 {workOrderMasterName} 的 QIP 密碼，或掃描員工卡。",
+      "hint": "QIP 輸入密碼或掃描員工卡後列印訂單 {workOrderMasterName}。",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "請輸入密碼",
       "scanButton": "掃描 QIP",

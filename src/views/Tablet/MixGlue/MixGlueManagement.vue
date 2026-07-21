@@ -10,13 +10,15 @@
               }}</ion-title>
             </ion-button>
           </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+          <div class="flex align-items-center gap-2 mr-2">
+            <NetworkStatusIcon />
+            <LocaleSelect device-scope="tablet" />
+          </div>
         </div>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
-
       <div class="mix-glue-layout main-container max-w-full mx-auto page-content-loading-host">
         <PageContentLoadingOverlay :visible="isPageDataLoading || isCompleting" />
         <!-- Thông tin header — cố định, không scroll -->
@@ -44,7 +46,8 @@
                 <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
                 <Button :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
-                  icon="pi pi-check-circle" severity="success" class="button-lg" @click="handleComplete" />
+                  :loading="isCompleting" icon="pi pi-check-circle" severity="success" class="button-lg"
+                  @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -185,8 +188,8 @@
 
                   <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
                     :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
-                    @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet" @add-row="handleAddChietRow"
-                    @delete-row="handleDeleteChietRow" />
+                    :confirming="isChietConfirming" @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet"
+                    @add-row="handleAddChietRow" @delete-row="handleDeleteChietRow" />
                 </div>
               </template>
             </div>
@@ -241,6 +244,7 @@ import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddCo
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
@@ -371,22 +375,23 @@ const handlePrintComponent = async (row: any) => {
   }
   if (isPrintingComponent.value) return;
 
-  // Chỉ kết nối lại khi chưa connected — tránh verify gây re-render BluetoothPrinterStatus
-  if (!bluetoothRef.value?.isConnected?.()) {
-    const ready = await ensurePrinterReady();
-    if (!ready) {
-      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
-      return;
-    }
-  }
-
-  if (!(await ensureGapConfirmed())) return;
-  if (!(await requireOnline())) return;
-
+  // Khóa UI sớm — tránh spam trong lúc connect / gap / check mạng
   isPrintingComponent.value = true;
   printingMaterialCode.value = row.materialCode ?? null;
 
   try {
+    // Chỉ kết nối lại khi chưa connected — tránh verify gây re-render BluetoothPrinterStatus
+    if (!bluetoothRef.value?.isConnected?.()) {
+      const ready = await ensurePrinterReady();
+      if (!ready) {
+        showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
+        return;
+      }
+    }
+
+    if (!(await ensureGapConfirmed())) return;
+    if (!(await requireOnline())) return;
+
     const { data: apiRes } = await mixGlueApi.postPrintMixGlueLabel(buildPrintMixGlueLabelPayload(row));
     if (!apiRes?.success) {
       showToast({
@@ -741,6 +746,7 @@ const {
   saveChietDraftToStoreOnly,
   handleConfirmNoMixWeight,
   isRowWeighed,
+  isChietConfirming,
 } = useMixGlueNoMixChiet({
   headerInfo,
   mixGlueConfirm,
