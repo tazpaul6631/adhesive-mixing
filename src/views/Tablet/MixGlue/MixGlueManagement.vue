@@ -226,10 +226,10 @@ import workOrder from '@/api/workOrder';
 import materialApi from '@/api/material';
 import mixGlueApi from '@/api/mixGlue';
 import separateGlue from '@/api/separate';
-import bucketApi from '@/api/bucket';
 import { buildSeparateGlueCommandPayload } from '@/views/Tablet/Separate/separateMixedGlue.payload';
 import type { PayloadBuildContext } from '@/views/Tablet/Separate/separateMixedGlue.types';
 import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separateGlue.bucket';
+import { getCachedBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
@@ -908,20 +908,10 @@ const isSeparateGlueRowFilled = (row: any) =>
   !!row.selectedBucketId || !!row.bucketId;
 
 const ensureBucketListForValidation = async () => {
-  if (bucketListForValidation.value.length > 0) {
-    return bucketListForValidation.value;
-  }
-
-  try {
-    const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-    if (data?.success && data.data) {
-      bucketListForValidation.value = data.data;
-    }
-  } catch (error) {
-    console.error('Lỗi khi tải danh sách thùng chứa', error);
-  }
-
-  return bucketListForValidation.value;
+  // Complete / chiết validate chỉ dùng cache từ Select — không gọi API
+  const list = getCachedBucketOptions(authStore.user?.factoryId || '');
+  bucketListForValidation.value = list;
+  return list;
 };
 
 const getSeparatePayloadContext = (): PayloadBuildContext => ({
@@ -940,8 +930,6 @@ const getSeparatePayloadContext = (): PayloadBuildContext => ({
 });
 
 const validateBeforeNoMixComplete = async (): Promise<string | null> => {
-  const bucketList = await ensureBucketListForValidation();
-
   const unweighed = noMixComponents.value.find((item) => !isRowWeighed(item));
   if (unweighed) {
     return t('separateMixedGlue.toast.noMixWeighFirst', { name: unweighed.materialName });
@@ -959,6 +947,11 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
       if (!isSeparateGlueRowFilled(extras[i])) {
         return t('separateMixedGlue.toast.chietSelectBucket', { name: row.materialName, row: i + 1 });
       }
+    }
+
+    const bucketList = await ensureBucketListForValidation();
+    if (bucketList.length === 0) {
+      return t('separateMixedGlue.toast.bucketListRequired');
     }
 
     const chietAllocationError = validateSeparateGlueAllocation(

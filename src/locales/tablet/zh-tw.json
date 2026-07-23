@@ -277,6 +277,8 @@
       "chietSelectBucket": "膠水 {name} 分裝第 {row} 列：請選擇容器。",
       "chietPrefix": "膠水 {name} 分裝：{message}",
       "noMixAddRowRequired": "非混合膠：請先新增列並選擇桶槽後再確認。",
+      "mixAddRowRequired": "混合膠：請先新增至少一列並選擇容器後再確認。",
+      "bucketListRequired": "請至少開啟一次容器選單以載入清單，再進行容量檢查／確認。",
       "separateNoChangesToSubmit": "自上次提交後沒有新增、變更桶槽或刪除列，無需再次送出。"
     },
     "confirmDelete": {

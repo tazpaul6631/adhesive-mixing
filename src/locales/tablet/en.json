@@ -247,6 +247,8 @@
       "locked": "Cannot edit",
       "completeFirst": "This work order repackaging is complete. Adding or deleting is not allowed.",
       "noMixAddRowRequired": "Non-mixed glue: add at least one row and select buckets before confirming.",
+      "mixAddRowRequired": "Mixed glue: add at least one row and select buckets before confirming.",
+      "bucketListRequired": "Please open a bucket selector at least once to load the list before capacity check / confirm.",
       "separateNoChangesToSubmit": "No add-row, bucket change, or delete since the last submit. Nothing to send.",
       "completeSuccess": "Completed",
       "completeSuccessDetail": "Data submitted successfully",

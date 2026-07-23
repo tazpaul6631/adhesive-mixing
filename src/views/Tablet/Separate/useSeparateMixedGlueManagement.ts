@@ -12,15 +12,14 @@ import { useMixGlueDraftStore, isSeparateDraftRestorable, hasDraftSeparateTableD
 import workOrder from '@/api/workOrder';
 import materialApi from '@/api/material';
 import separateGlue from '@/api/separate';
-import bucketApi from '@/api/bucket';
 import {
   validateSeparateGlueAllocation,
   validateChietBucketCapacity,
-  mapBucketOptions,
   pruneStaleBucketIds,
   getRowActiveBucketId,
   type BucketOption,
 } from './separateGlue.bucket';
+import { getCachedBucketOptions } from './bucketOptionsCache';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 
@@ -592,29 +591,31 @@ export function useSeparateMixedGlueManagement() {
 
   const bucketListForValidation = ref<BucketOption[]>([]);
 
-  const ensureBucketListForValidation = async () => {
-    try {
-      const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-      if (data?.success && data.data) {
-        bucketListForValidation.value = mapBucketOptions(data.data);
-      }
-    } catch (error) {
-      console.error('Lỗi khi tải danh sách thùng chứa', error);
-    }
-
-    return bucketListForValidation.value;
+  /** Complete chỉ đọc cache từ Select — không gọi API bucket. */
+  const getBucketListForCapacityCheck = (): BucketOption[] | null => {
+    const list = getCachedBucketOptions(authStore.user?.factoryId || '');
+    bucketListForValidation.value = list;
+    return list.length > 0 ? list : null;
   };
 
   const validateBeforeComplete = async (): Promise<string | null> => {
-    const bucketList = await ensureBucketListForValidation();
-
+    // Rule: không có row → không submit; có row → đủ bucket + đủ kg (cache từ Select)
     if (hasMixChemicals.value) {
       pruneStaleBucketIds(separateGlueDetails.value);
+
+      if (separateGlueDetails.value.length === 0) {
+        return t('separateMixedGlue.toast.mixAddRowRequired');
+      }
 
       for (let i = 0; i < separateGlueDetails.value.length; i++) {
         if (!isSeparateGlueRowFilled(separateGlueDetails.value[i])) {
           return t('separateMixedGlue.toast.mixedGlueSelectBucket', { row: i + 1 });
         }
+      }
+
+      const bucketList = getBucketListForCapacityCheck();
+      if (!bucketList) {
+        return t('separateMixedGlue.toast.bucketListRequired');
       }
 
       const mixCapacityResult = validateChietBucketCapacity(
@@ -633,7 +634,7 @@ export function useSeparateMixedGlueManagement() {
     if (shouldValidateNoMixSeparateRows()) {
       const rowsToValidate = noMixSeparateGlueDetails.value;
 
-      if (headerInfo.value.isNoMixGlue && rowsToValidate.length === 0) {
+      if (rowsToValidate.length === 0) {
         return t('separateMixedGlue.toast.noMixAddRowRequired');
       }
 
@@ -643,6 +644,11 @@ export function useSeparateMixedGlueManagement() {
         if (!isSeparateGlueRowFilled(rowsToValidate[i])) {
           return t('separateMixedGlue.toast.noMixSelectBucket', { row: i + 1 });
         }
+      }
+
+      const bucketList = getBucketListForCapacityCheck();
+      if (!bucketList) {
+        return t('separateMixedGlue.toast.bucketListRequired');
       }
 
       const noMixCapacityResult = validateChietBucketCapacity(
@@ -676,6 +682,11 @@ export function useSeparateMixedGlueManagement() {
           if (!isSeparateGlueRowFilled(extras[i])) {
             return t('separateMixedGlue.toast.chietSelectBucket', { name: row.materialName, row: i + 1 });
           }
+        }
+
+        const bucketList = getBucketListForCapacityCheck();
+        if (!bucketList) {
+          return t('separateMixedGlue.toast.bucketListRequired');
         }
 
         const chietAllocationError = validateSeparateGlueAllocation(

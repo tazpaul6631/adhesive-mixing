@@ -247,6 +247,8 @@
       "locked": "Không thể chỉnh sửa",
       "completeFirst": "Đơn điều công này đã hoàn thành chiết, không thể thêm hoặc xóa.",
       "noMixAddRowRequired": "Keo không trộn: vui lòng thêm dòng và chọn thùng chứa trước khi xác nhận.",
+      "mixAddRowRequired": "Keo trộn hỗn hợp: vui lòng thêm ít nhất một dòng và chọn thùng chứa trước khi xác nhận.",
+      "bucketListRequired": "Vui lòng mở chọn thùng chứa ít nhất một lần để tải danh sách trước khi kiểm tra dung tích / xác nhận.",
       "separateNoChangesToSubmit": "Không có thay đổi thêm dòng, chọn thùng hoặc xóa dòng. Không cần gửi lại.",
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
