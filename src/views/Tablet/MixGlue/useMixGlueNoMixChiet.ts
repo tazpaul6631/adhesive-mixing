@@ -46,6 +46,7 @@ export function useMixGlueNoMixChiet(options: {
   const currentChietChemical = ref<NoMixRow | null>(null);
   const extraChietList = ref<any[]>([]);
   const chietPendingByMaterial = ref<Record<string, any[]>>({});
+  const isChietConfirming = ref(false);
 
   const getOperatorInfo = () => ({
     name: authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || t('mixGlueManagement.unknownOperator'),
@@ -382,66 +383,73 @@ export function useMixGlueNoMixChiet(options: {
   };
 
   const confirmChiet = async () => {
-    const targetCode = currentChietChemical.value?.materialCode;
-    const sourceRow = options.noMixComponents.value.find(
-      (item) => String(item.materialCode) === String(targetCode)
-    );
-    const keepGlueExtra = !!(sourceRow?.glueExtra ?? currentChietChemical.value?.glueExtra);
+    if (isChietConfirming.value) return;
+    isChietConfirming.value = true;
 
-    extraChietList.value = extraChietList.value.filter(item => item.glueId !== targetCode);
-
-    const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
-    chietOrderDetails.value.forEach(item => {
-      if (item.selectedBucketId) {
-        extraChietList.value.push({
-          glueId: String(targetCode || item.chemicalId || ''),
-          bucketId: item.selectedBucketId,
-          selectedRequestDetailIds: item.selectedRequestDetailIds ?? [],
-          _sourceLineId: item.selectedBucketId,
-          operator: item.operator,
-          operatorId: item.operatorId,
-          confirmDate: item.confirmDate || now,
-          recordStatus: '1',
-          glueExtra: keepGlueExtra,
-        });
-      }
-    });
-
-    if (targetCode) {
-      const index = options.noMixComponents.value.findIndex(
+    try {
+      const targetCode = currentChietChemical.value?.materialCode;
+      const sourceRow = options.noMixComponents.value.find(
         (item) => String(item.materialCode) === String(targetCode)
       );
-      if (index !== -1) {
-        options.noMixComponents.value[index].isChietCompleted = true;
-        options.noMixComponents.value[index].recordStatus = 'C';
-        options.noMixComponents.value[index].bucketId = 0;
-        options.noMixComponents.value[index].glueExtra = keepGlueExtra;
+      const keepGlueExtra = !!(sourceRow?.glueExtra ?? currentChietChemical.value?.glueExtra);
+
+      extraChietList.value = extraChietList.value.filter(item => item.glueId !== targetCode);
+
+      const now = dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS');
+      chietOrderDetails.value.forEach(item => {
+        if (item.selectedBucketId) {
+          extraChietList.value.push({
+            glueId: String(targetCode || item.chemicalId || ''),
+            bucketId: item.selectedBucketId,
+            selectedRequestDetailIds: item.selectedRequestDetailIds ?? [],
+            _sourceLineId: item.selectedBucketId,
+            operator: item.operator,
+            operatorId: item.operatorId,
+            confirmDate: item.confirmDate || now,
+            recordStatus: '1',
+            glueExtra: keepGlueExtra,
+          });
+        }
+      });
+
+      if (targetCode) {
+        const index = options.noMixComponents.value.findIndex(
+          (item) => String(item.materialCode) === String(targetCode)
+        );
+        if (index !== -1) {
+          options.noMixComponents.value[index].isChietCompleted = true;
+          options.noMixComponents.value[index].recordStatus = 'C';
+          options.noMixComponents.value[index].bucketId = 0;
+          options.noMixComponents.value[index].glueExtra = keepGlueExtra;
+        }
+
+        const fullIndex = noMixChemicalsFull.value.findIndex(
+          (item) => String(item.materialCode) === String(targetCode)
+        );
+        if (fullIndex !== -1) {
+          noMixChemicalsFull.value[fullIndex].isChietCompleted = true;
+          noMixChemicalsFull.value[fullIndex].recordStatus = 'C';
+          noMixChemicalsFull.value[fullIndex].bucketId = 0;
+          noMixChemicalsFull.value[fullIndex].glueExtra = keepGlueExtra;
+        }
+
+        const nextPending = { ...chietPendingByMaterial.value };
+        delete nextPending[String(targetCode)];
+        chietPendingByMaterial.value = nextPending;
       }
 
-      const fullIndex = noMixChemicalsFull.value.findIndex(
-        (item) => String(item.materialCode) === String(targetCode)
-      );
-      if (fullIndex !== -1) {
-        noMixChemicalsFull.value[fullIndex].isChietCompleted = true;
-        noMixChemicalsFull.value[fullIndex].recordStatus = 'C';
-        noMixChemicalsFull.value[fullIndex].bucketId = 0;
-        noMixChemicalsFull.value[fullIndex].glueExtra = keepGlueExtra;
-      }
-
-      const nextPending = { ...chietPendingByMaterial.value };
-      delete nextPending[String(targetCode)];
-      chietPendingByMaterial.value = nextPending;
+      chietOrderDetails.value = [];
+      await options.saveDraftSnapshot();
+      showToast({
+        severity: 'success',
+        summary: t('separateMixedGlue.toast.chietSaved'),
+        detail: t('separateMixedGlue.toast.chietSavedDetail'),
+        life: 3000,
+      });
+      chietDialog.value = false;
+    } finally {
+      isChietConfirming.value = false;
     }
-
-    chietOrderDetails.value = [];
-    await options.saveDraftSnapshot();
-    showToast({
-      severity: 'success',
-      summary: t('separateMixedGlue.toast.chietSaved'),
-      detail: t('separateMixedGlue.toast.chietSavedDetail'),
-      life: 3000,
-    });
-    chietDialog.value = false;
   };
 
   const recalculateNoMixRequiredWeights = (baseActualWeight: number) => {
@@ -543,5 +551,6 @@ export function useMixGlueNoMixChiet(options: {
     saveChietDraftToStoreOnly,
     handleConfirmNoMixWeight,
     isRowWeighed,
+    isChietConfirming,
   };
 }

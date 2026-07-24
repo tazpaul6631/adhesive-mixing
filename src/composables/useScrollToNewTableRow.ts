@@ -1,6 +1,6 @@
 import { ref, watch, nextTick, type Ref } from 'vue';
 
-export interface UseScrollToNewTableRowOptions {
+interface UseScrollToNewTableRowOptions {
   focusSelector?: string;
   highlightClass?: string;
   highlightMs?: number;
@@ -70,6 +70,5 @@ export function useScrollToNewTableRow(
 
   return {
     markPendingScrollToNewRow,
-    scrollToRowIndex,
   };
 }

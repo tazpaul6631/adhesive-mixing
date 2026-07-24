@@ -7,16 +7,20 @@
             <ion-button @click="goBack">
               <i class="pi pi-angle-left text-xl mr-1"></i>
               <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
-              }}</ion-title>
+                }}</ion-title>
             </ion-button>
           </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+          <div class="flex align-items-center gap-2 mr-2">
+            <NetworkStatusIcon />
+            <LocaleSelect device-scope="tablet" />
+          </div>
         </div>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-glue-return-page" :class="pageClass">
+      <div class="main-container max-w-full mx-auto list-glue-return-page page-content-loading-host" :class="pageClass">
+        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
         <div class="surface-card p-0 shadow-1 border-round-xl list-glue-return-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-glue-return-card-head">
@@ -45,9 +49,9 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-glue-return-table-wrap">
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
-              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" stripedRows
-              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" selectionMode="single"
-              :paginator="true" :rows="rowsPerPage" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
+              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" class="modern-table auto-columns-table"
+              tableStyle="width: 100%; min-width: 0;" selectionMode="single" :paginator="true" :rows="rowsPerPage"
+              dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
               paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}">
               <template #empty>
@@ -141,6 +145,7 @@ import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import glueReturnLogApi from '@/api/glueReturnLog';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import ElectronicScaleGlueReturn from '@/components/ElectronicScaleGlueReturn.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import {
@@ -150,6 +155,8 @@ import {
 import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
+import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
@@ -184,6 +191,7 @@ const {
   tableScrollHeight,
   emptyStateMinHeight,
 } = useTabletPageLayout({ listPageWithToolbar: true });
+const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
 
 const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
@@ -475,12 +483,13 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
     return;
   }
 
-  if (!(await requireOnline())) return;
-
+  // Khóa UI sớm — tránh spam khi requireOnline/API chậm
   isConfirming.value = true;
   submittingRowId.value = row.glueReturnLogId;
 
   try {
+    if (!(await requireOnline())) return;
+
     const payload = {
       factoryId: row.factoryId || authStore.user?.factoryId || '',
       glueReturnLogId: row.glueReturnLogId,
@@ -527,7 +536,9 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
 onIonViewWillEnter(() => {
   currentPage.value = 1;
   startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void fetchGlueReturnLogs(1, rowsPerPage.value);
+  void runWithViewEnterLoading(async () => {
+    await fetchGlueReturnLogs(1, rowsPerPage.value);
+  });
 });
 
 onIonViewWillLeave(() => {
@@ -536,6 +547,11 @@ onIonViewWillLeave(() => {
 </script>
 
 <style scoped>
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
+}
+
 .list-glue-return-page {
   width: 100%;
 }

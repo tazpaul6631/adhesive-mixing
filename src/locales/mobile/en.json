@@ -1,12 +1,8 @@
 {
   "common": {
-    "welcome": "Welcome",
     "save": "Save",
     "cancel": "Cancel",
     "loading": "Loading..."
-  },
-  "home": {
-    "title": "Home"
   },
   "appMenu": {
     "title": "Home",
@@ -53,7 +49,6 @@
     "offlineDownloadFailed": "Unable to download offline data. Please check the network connection and try again.",
     "offlineSyncTitle": "Syncing data",
     "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
-    "offlineSyncFailed": "Unable to sync offline data. Please check the network connection and try again.",
     "invalidOfflineUser": "Invalid user."
   },
   "mobile": {
@@ -64,12 +59,6 @@
       "scanPlaceholder": "Tap to scan QR code",
       "statusLabel": "Status:",
       "confirmReturnButton": "Confirm Glue Delivery",
-      "scanReturnQrButton": "Scan return glue bucket QR code",
-      "returnDialogTitle": "Confirm return glue bucket",
-      "returnDialogMessage": "Confirm return of the scanned glue bucket?",
-      "cancelButton": "CANCEL",
-      "okButton": "OK",
-      "submittingButton": "Submitting...",
       "fields": {
         "productLineLabel": "Line:",
         "glueLabel": "Glue:"
@@ -82,17 +71,11 @@
         "loadingInfo": "Loading information...",
         "loadLineError": "Unable to get the line glue bucket QR code information. Please check the API connection!",
         "loadAllocatedError": "Unable to get the delivery glue bucket QR code information. Please check the API connection!",
-        "loadReturnError": "Unable to get the return glue bucket QR code information. Please check the API connection!",
-        "returnSuccess": "Return completed successfully",
-        "returnConfirmError": "Unable to confirm the glue bucket return. Please try again!",
         "confirmError": "Unable to confirm. Please try again!",
         "confirmSuccess": "Confirmed successfully",
         "statusMismatch": "The line glue bucket QR code does not match the delivery glue bucket QR code.",
         "statusMatched": "The line glue bucket QR code matches the delivery glue bucket QR code.",
-        "allocatedExpired": "The delivery glue bucket QR code has expired.",
-        "invalidReceiverEmployee": "Receiver not found. Please scan again.",
-        "receiverValidateError": "Unable to verify the glue receiver. Please try again!",
-        "receiverCameraPermission": "Camera permission is required to scan the glue receiver card!"
+        "allocatedExpired": "The delivery glue bucket QR code has expired."
       }
     },
     "appMenu": {
@@ -120,18 +103,15 @@
       "submittingButton": "Submitting...",
       "fields": {
         "lineLabel": "Line:",
-        "glueLabel": "Glue:",
-        "lineChemicalLabel": "Detail:"
+        "glueLabel": "Glue:"
       },
       "messages": {
-        "requireConfirmedLine": "Please confirm the production line glue first before scanning the returned glue bucket.",
         "cameraPermission": "Camera permission is required to scan the QR code!",
         "invalidQr": "Invalid QR code. Please scan the returned glue bucket QR code again.",
         "noGlueData": "No returned glue bucket data found.",
         "loadError": "Unable to retrieve the returned glue bucket QR information. Please check the API connection!",
         "returnSuccess": "Return completed successfully",
         "returnConfirmError": "Unable to create the glue return log. Please try again!",
-        "loadingInfo": "Loading information...",
         "invalidLineQr": "Invalid QR code. Please scan the line glue bucket QR code again.",
         "noLineData": "No line glue bucket data found.",
         "loadLineError": "Unable to retrieve the line glue bucket QR information. Please check the API connection!",
@@ -140,13 +120,9 @@
         "lineMismatchWarning": "The scanned line glue bucket does not match the delivery glue bucket."
       },
       "lineQrTitle": "Line glue bucket QR code",
-      "lineScanPlaceholder": "Scan the line glue bucket QR code",
-      "lineScanDescription": "Scan one or more line glue buckets to check the glue type before returning.",
       "lineScanAddButton": "Scan another line glue bucket",
       "lineScanDisabledHint": "Please scan the returned glue bucket QR code first.",
       "lineListTitle": "Scanned lines: {count}",
-      "lineMatched": "Matched",
-      "lineMismatch": "Not matched",
       "removeLineItem": "Remove line glue bucket"
     },
     "glueInfoCheck": {
@@ -182,12 +158,10 @@
     },
     "glueCheckList": {
       "title": "Glue Check List",
-      "scanTitle": "Inspection Code Scan",
       "scanButton": "Scan inspection code",
       "dialogTitle": "Inspection Form",
       "issueLabel": "Issue",
       "resultLabel": "Check result",
-      "hasIssueLabel": "Has issue",
       "okResult": "OK",
       "notOkResult": "Not OK",
       "noteLabel": "Note",
@@ -200,7 +174,6 @@
         "invalidQr": "Invalid inspection code or no data found!",
         "scanError": "Unable to scan the inspection code. Please try again!",
         "submitSuccess": "Inspection information submitted successfully.",
-        "resultRequired": "Please select the inspection result",
         "submitError": "Unable to submit inspection information. Please try again!",
         "noCheckListData": "No inspection data found.",
         "cancelSuccess": "Inspection form cancelled"
@@ -214,8 +187,6 @@
       "title": "Pending sync data",
       "description": "These records are saved locally and will be synced when the network is available.",
       "close": "Close",
-      "noData": "No pending sync data.",
-      "createdAt": "Saved at",
       "receiveGlue": "Production Line Glue Receipt Confirmation",
       "returnGlue": "Return glue scan",
       "glueCheckList": "Glue Check List",

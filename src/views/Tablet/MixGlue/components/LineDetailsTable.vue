@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
     <DataTable :value="isLoading ? skeletons : lineDetails" scrollable scrollHeight="700px" tableStyle="width: 100%;"
-      stripedRows class="modern-table auto-columns-table">
+      class="modern-table auto-columns-table">
 
       <template #empty>
         <div style="text-align: center; padding: 3.3rem; height: 400px; align-content: center;">

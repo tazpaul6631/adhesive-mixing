@@ -58,26 +58,6 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/list-qip-confirm-mix-glue',
-    component: () => import('@/views/Tablet/QIPMixGlue/ListQIPMixGlue.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/qip-confirm-mix-glue',
-    component: () => import('@/views/Tablet/QIPMixGlue/QIPConfirmMixGlue.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/list-qip-confirm-separate-mixed-glue',
-    component: () => import('@/views/Tablet/QIPSeparate/ListQIPConfirmSeparateMixedGlue.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/qip-confirm-separate-mixed-glue',
-    component: () => import('@/views/Tablet/QIPSeparate/QIPConfirmSeparateMixedGlue.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/glue-return-log',
     component: () => import('@/views/Tablet/GlueReturnLog/ListGlueReturnLog.vue'),
     meta: { requiresAuth: true }

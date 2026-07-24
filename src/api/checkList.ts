@@ -5,6 +5,6 @@ export default {
         return request.get(`api/mobile/checklist/getone/${factoryId}/${cliId}`)
     },
     createCheckList(data: any) {
-        return request.post(`api/mobile/checklist/create`, data)
+        return request.post(`api/mobile/checklist/create`, data, { withRequestBy: true })
     }
 };

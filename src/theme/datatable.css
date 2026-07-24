@@ -22,34 +22,40 @@
 }
 
 .auto-columns-table .dt-col-action-glue {
-  width: 130px;
+  width: 120px;
   min-width: auto;
+  padding: 10px;
 }
 
 .auto-columns-table .dt-col-action-qip {
-  width: 120px;
+  width: auto;
   min-width: auto;
+  padding: 10px;
 }
 
 .auto-columns-table .dt-col-primary {
   min-width: auto;
   width: auto;
   white-space: nowrap;
+  padding: 10px;
 }
 
 .auto-columns-table .dt-col-text {
   min-width: auto;
-  width: 140px;
+  width: 130px;
+  padding: 10px;
 }
 
 .auto-columns-table .dt-col-datetime {
   min-width: auto;
-  width: 180px;
+  width: 170px;
+  padding: 10px;
 }
 
 .auto-columns-table .dt-col-weight {
   min-width: auto;
-  width: 150px;
+  width: 140px;
+  padding: 10px;
 }
 
 .auto-columns-table .dt-col-input {

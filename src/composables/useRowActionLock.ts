@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 
-export type RowActionKind = 'confirm' | 'noMix' | 'print';
+type RowActionKind = 'confirm' | 'noMix' | 'print';
 
 /**
  * Khóa thao tác theo dòng — tránh double-click khi chờ API / BLE / quét thẻ.
@@ -32,8 +32,6 @@ export function useRowActionLock() {
   };
 
   return {
-    busyRowId,
-    busyAction,
     isRowActionBusy,
     isAnyRowBusy,
     lockRow,

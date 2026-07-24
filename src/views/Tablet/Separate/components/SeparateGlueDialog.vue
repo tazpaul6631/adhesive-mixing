@@ -4,7 +4,8 @@
     <template #header>
       <div class="chiet-dialog-header">
         <span class="chiet-dialog-header__title">{{ t('separateMixedGlue.chietDialog.title') }}</span>
-        <Button v-if="!isViewMode" icon="pi pi-check-circle" severity="success" size="large" @click="handleConfirm" />
+        <Button v-if="!isViewMode" icon="pi pi-check-circle" severity="success" size="large"
+          :disabled="isBusy" :loading="isBusy" @click="handleConfirm" />
       </div>
     </template>
 
@@ -52,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -87,6 +88,7 @@ const props = defineProps<{
   orderDetails: OrderDetails[];
   requestDetails: any[];
   isViewMode?: boolean;
+  confirming?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -100,6 +102,17 @@ const emit = defineEmits<{
 const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const chietGlueTableRef = ref<InstanceType<typeof ChietGlueTable> | null>(null);
+const localConfirming = ref(false);
+
+const isBusy = computed(() => Boolean(props.confirming) || localConfirming.value);
+
+watch(() => props.visible, (visible) => {
+  if (!visible) localConfirming.value = false;
+});
+
+watch(() => props.confirming, (confirming) => {
+  if (!confirming) localConfirming.value = false;
+});
 
 const targetWeight = computed(() => props.chemical?.actualWeight ?? '');
 const targetWeightUnit = computed(() => props.chemical?.weightUnit || 'Kg');
@@ -114,6 +127,8 @@ const isRowComplete = (row: OrderDetails) => {
 };
 
 const handleConfirm = () => {
+  if (isBusy.value) return;
+
   const rows = props.orderDetails || [];
 
   if (rows.length === 0) {
@@ -158,6 +173,7 @@ const handleConfirm = () => {
     return;
   }
 
+  localConfirming.value = true;
   emit('confirm');
 };
 </script>

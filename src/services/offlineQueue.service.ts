@@ -92,20 +92,6 @@ export async function addOfflineQueueItem(
   );
 }
 
-export async function countPendingQueueItems(queueType?: OfflineQueueType): Promise<number> {
-  const db = await getReadyDatabase();
-  await ensureOfflineQueueTable();
-
-  const result = queueType
-    ? await db.query(
-      `SELECT COUNT(*) AS total FROM offline_queue WHERE status = 'pending' AND queue_type = ?`,
-      [queueType]
-    )
-    : await db.query(`SELECT COUNT(*) AS total FROM offline_queue WHERE status = 'pending'`);
-
-  return Number(result?.values?.[0]?.total ?? 0);
-}
-
 export async function getPendingQueueCounts(): Promise<OfflineQueueCounts> {
   const counts: OfflineQueueCounts = {
     ReceiveGlue: 0,
@@ -220,13 +206,3 @@ export async function updateOfflineQueueItemsError(ids: number[], message: strin
     [normalizeValue(message), new Date().toISOString(), ...validIds]
   );
 }
-
-export default {
-  ensureOfflineQueueTable,
-  addOfflineQueueItem,
-  countPendingQueueItems,
-  getPendingQueueCounts,
-  listPendingQueueItems,
-  deleteOfflineQueueItems,
-  updateOfflineQueueItemsError,
-};

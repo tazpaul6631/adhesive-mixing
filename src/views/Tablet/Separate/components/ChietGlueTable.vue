@@ -1,6 +1,6 @@
 <template>
   <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="orderDetails" scrollable scrollHeight="320px" tableStyle="width: 100%;" stripedRows
+    <DataTable :value="orderDetails" scrollable scrollHeight="320px" tableStyle="width: 100%;"
       class="modern-table auto-columns-table">
 
       <template #empty>
@@ -38,7 +38,8 @@
           <Select :key="`chiet-bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
-            :disabled="isViewMode" @change="handleBucketChange(data, index)" />
+            :loading="isLoadingBuckets" :disabled="isViewMode || isLoadingBuckets" filter
+            @show="() => handleBucketSelectShow()" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
 
@@ -71,12 +72,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
-import bucketApi from '@/api/bucket';
 import dayjs from 'dayjs';
+import { ensureBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 import {
   filterChietBucketOptionsForRow,
   sumSelectedBucketCapacityKg,
@@ -89,7 +90,6 @@ import {
   hasChietTotalExceededActual,
   formatWeightKg,
   resolveChietTargetCapacityKg,
-  mapBucketOptions,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
@@ -109,6 +109,8 @@ const { showToast } = useAppToast();
 const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const bucketList = ref<BucketOption[]>([]);
+const isLoadingBuckets = ref(false);
+let bucketLoadPromise: Promise<void> | null = null;
 const bucketSelectResetKeys = ref<Record<number, number>>({});
 const tableWrapperRef = ref<HTMLElement | null>(null);
 
@@ -274,14 +276,32 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
 };
 
 const loadBucketList = async () => {
-  try {
-    const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-    if (data?.success && data.data) {
-      bucketList.value = mapBucketOptions(data.data);
-    }
-  } catch (error) {
-    console.error('[ChietGlueTable] Lỗi khi tải danh sách thùng chứa', error);
+  const factoryId = authStore.user?.factoryId || '';
+
+  if (bucketLoadPromise) {
+    await bucketLoadPromise;
+    return;
   }
+
+  // Mỗi lần mở Select → luôn gọi API (force) và cập nhật cache
+  bucketLoadPromise = (async () => {
+    isLoadingBuckets.value = true;
+    try {
+      bucketList.value = await ensureBucketOptions(factoryId, { force: true });
+    } catch (error) {
+      console.error('[ChietGlueTable] Lỗi khi tải danh sách thùng chứa', error);
+    } finally {
+      isLoadingBuckets.value = false;
+      bucketLoadPromise = null;
+    }
+  })();
+
+  await bucketLoadPromise;
+};
+
+const handleBucketSelectShow = () => {
+  if (props.isViewMode || isLoadingBuckets.value) return;
+  void loadBucketList();
 };
 
 defineExpose({
@@ -295,9 +315,5 @@ defineExpose({
     );
     return result.ok ? null : result.message || t('separateMixedGlue.validation.capacityMismatchWeighed');
   },
-});
-
-onMounted(() => {
-  void loadBucketList();
 });
 </script>

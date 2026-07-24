@@ -1,7 +1,7 @@
 <template>
 
   <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px" stripedRows
+    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px"
       class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
       selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
@@ -32,7 +32,8 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
+          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? `
+            ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
         </template>
       </Column>
 
@@ -41,7 +42,8 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else>
-            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? `
+            ${normalizeWeightUnit(data.weightUnit)}` : '' }}
           </span>
         </template>
       </Column>
@@ -68,13 +70,13 @@
         bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex justify-content-center">
-            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text :disabled="disabled"
+            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" :disabled="disabled"
               :aria-label="t('separateMixedGlue.table.addAriaLabel')" @click.stop="$emit('chiet-row', data)" />
 
-            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text
+            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary"
               :aria-label="t('separateMixedGlue.table.viewAriaLabel')" @click.stop="$emit('view-row', data)" />
 
-            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text :disabled="disabled"
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" :disabled="disabled"
               :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="$emit('delete-row', data)" />
           </div>
         </template>

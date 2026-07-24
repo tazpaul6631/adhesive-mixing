@@ -5,8 +5,8 @@
         <ion-title class="app-menu-toolbar__title">{{ t('appMenu.title') }}</ion-title>
 
         <div slot="end" class="app-menu-toolbar__actions">
+          <component :is="networkStatusIconComp" v-if="networkStatusIconComp" />
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
-          <component :is="NetworkStatusIcon" v-if="!isTablet && NetworkStatusIcon" />
           <ion-button fill="clear" @click="handleLogout" class="logout-btn">
             <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
             <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
@@ -45,8 +45,7 @@
 
           <template v-if="!isTablet">
             <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card shadow-sm"
-              :class="{ 'feature-card--disabled': feature.disabled }"
-              @click="navigateFeature(feature)">
+              :class="{ 'feature-card--disabled': feature.disabled }" @click="navigateFeature(feature)">
               <div class="icon-wrapper" :style="{ background: feature.bgLight }">
                 <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
               </div>
@@ -70,14 +69,13 @@ import {
 } from '@ionic/vue';
 import {
   scaleOutline, logOutOutline, qrCodeOutline, readerOutline,
-  colorPaletteOutline, checkmarkDoneOutline,
-  cubeOutline, documentTextOutline, searchOutline, gitCompareOutline, gitMergeOutline, search
+  checkmarkDoneOutline, gitCompareOutline, gitMergeOutline, search
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useOfflineStore } from '@/store/offline';
 import { useOfflineLoginStore } from '@/store/offlineLogin';
-import { ref, computed, onMounted, onUnmounted, shallowRef, type Component } from 'vue';
+import { ref, computed, onMounted, onUnmounted, shallowRef, type Component, type ShallowRef } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import { resolveAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
 import { clearGlueOfflineData } from '@/services/glueOfflineData.service';
@@ -91,15 +89,21 @@ const offlineLoginStore = useOfflineLoginStore();
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
 
-const NetworkStatusIcon = shallowRef<Component | null>(null);
-const MobileOfflineNotice = shallowRef<Component | null>(null);
-const PendingQueueButton = shallowRef<Component | null>(null);
+const networkStatusIconComp: ShallowRef<Component | null> = shallowRef(null);
+const MobileOfflineNotice: ShallowRef<Component | null> = shallowRef(null);
+const PendingQueueButton: ShallowRef<Component | null> = shallowRef(null);
+
+const loadNetworkStatusIcon = async () => {
+  if (networkStatusIconComp.value) return;
+  const mod = await import('@/views/Mobile/components/NetworkStatusIcon.vue');
+  networkStatusIconComp.value = mod.default;
+};
 
 const loadMobileShell = async () => {
   if (isTablet.value) return;
 
   const shell = await resolveAppMenuMobileShell();
-  NetworkStatusIcon.value = shell.NetworkStatusIcon;
+  networkStatusIconComp.value = shell.NetworkStatusIcon;
   MobileOfflineNotice.value = shell.MobileOfflineNotice;
   PendingQueueButton.value = shell.PendingQueueButton;
 };
@@ -111,6 +115,7 @@ const updateDeviceType = () => {
   if (nextTablet !== isTablet.value) {
     isTablet.value = nextTablet;
     void syncLocaleForDevice();
+    void loadNetworkStatusIcon();
     if (!nextTablet) {
       void loadMobileShell();
     }
@@ -120,6 +125,7 @@ const updateDeviceType = () => {
 onMounted(() => {
   window.addEventListener('resize', updateDeviceType);
 
+  void loadNetworkStatusIcon();
   if (!isTablet.value) {
     void loadMobileShell();
     void offlineStore.refreshQueueCounts();
@@ -157,22 +163,6 @@ const tabletFeatures = computed(() => [
     color: '#8b5cf6',
     bgLight: '#ede9fe'
   },
-  // {
-  //   path: '/list-qip-confirm-mix-glue',
-  //   title: 'QIP Confirm Mix Glue',
-  //   description: 'Xác nhận chất lượng keo trộn (QIP).',
-  //   icon: checkmarkDoneOutline,
-  //   color: '#10b981',
-  //   bgLight: '#d1fae5'
-  // },
-  // {
-  //   path: '/list-qip-confirm-separate-mixed-glue',
-  //   title: 'QIP Confirm Separate Mixed Glue',
-  //   description: 'Xác nhận chất lượng keo đóng gói lại (QIP).',
-  //   icon: documentTextOutline,
-  //   color: '#8b5cf6',
-  //   bgLight: '#ede9fe'
-  // }
 ]);
 
 // --- DATA CHO MOBILE FEATURES ---

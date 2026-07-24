@@ -6,5 +6,8 @@ export default {
     },
     postValidateQIP(data: any) {
         return request.post(`api/mobile/employee/validateqip`, data)
+    },
+    postValidatePasswordQIP(data: any) {
+        return request.post(`api/mobile/employee/validateqipbypassword`, data)
     }
 };

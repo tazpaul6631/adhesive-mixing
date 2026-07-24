@@ -51,14 +51,19 @@ function addValueIfExists(target: Record<string, any>, key: string, value: any) 
 function mapReceiveGluePayload(payload: any) {
   const requestPayload: Record<string, any> = {
     factoryId: normalizeValue(payload?.factoryId),
-    productLineId: normalizeValue(payload?.productLineId),
     updaterId: normalizeValue(payload?.updaterId),
   };
 
+  addValueIfExists(requestPayload, 'productLineId', payload?.productLineId);
+  addValueIfExists(requestPayload, 'lineChemicalId', payload?.lineChemicalId);
   addValueIfExists(requestPayload, 'mixGlueMasterId', payload?.mixGlueMasterId);
   addValueIfExists(requestPayload, 'separateGlueId', payload?.separateGlueId);
   addValueIfExists(requestPayload, 'noSeparateGlueId', payload?.noSeparateGlueId);
   addValueIfExists(requestPayload, 'receivedBy', payload?.receivedBy);
+
+  if (typeof payload?.scanFailed === 'boolean') {
+    requestPayload.scanFailed = payload.scanFailed;
+  }
 
   return requestPayload;
 }
@@ -213,7 +218,3 @@ export function syncPendingOfflineQueue(
 
   return activeSyncPromise;
 }
-
-export default {
-  syncPendingOfflineQueue,
-};

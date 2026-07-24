@@ -8,6 +8,6 @@ export default {
         return request.get(`api/mobile/workorder/getone/${factoryId}/${id}/${stepId}`, undefined, { timeout: SLOW_API_TIMEOUT });
     },
     postConfirmNoSeparate(data: any) {
-        return request.post(`api/mobile/workorder/confirmnoseparate`, data)
+        return request.post(`api/mobile/workorder/confirmnoseparate`, data, { withRequestBy: true })
     }
 };

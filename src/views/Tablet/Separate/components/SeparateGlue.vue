@@ -1,7 +1,8 @@
 <template>
-  <div ref="tableWrapperRef" class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight" tableStyle="width: 100%;"
-      stripedRows class="modern-table auto-columns-table">
+  <div ref="tableWrapperRef"
+    class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight"
+      tableStyle="width: 100%;" class="modern-table auto-columns-table">
 
       <template #empty>
         <div class="separate-glue-empty" :style="{ minHeight: emptyStateMinHeight }">
@@ -42,7 +43,7 @@
           <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
-            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets" filter
+            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets"
             @show="() => handleBucketSelectShow(data, index)" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
@@ -69,7 +70,7 @@
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex justify-content-center">
-            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text
+            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger"
               :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" class="button-lg"
               @click.stop="handleDeleteRow(data)" />
           </div>
@@ -80,15 +81,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
-import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAdaptiveTableScrollHeight } from '@/composables/useAdaptiveTableScrollHeight';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { ensureBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 import {
   normalizeWeightToKg,
   sortBucketsByClosestCapacity,
@@ -107,7 +108,6 @@ import {
   WEIGHT_EPSILON,
   findBucketOptionById,
   normalizeBucketIdForSelect,
-  mapBucketOptions,
   getRowActiveBucketId,
   pruneStaleBucketIds,
   type BucketOption,
@@ -260,12 +260,6 @@ const getBucketOptionsForRow = (currentRow: any) => {
   return options;
 };
 
-const hasStoredBucketSelection = () =>
-  props.orderDetails.some((row) => {
-    const id = row.selectedBucketId ?? row.bucketId;
-    return id != null && id !== '';
-  });
-
 const isAllocationComplete = () => {
   const targetWeightKg = getTargetWeightKg();
 
@@ -389,20 +383,18 @@ const handleDeleteRow = (rowData: any) => {
 };
 
 const fetchBucketList = async () => {
+  const factoryId = authStore.user?.factoryId || '';
+
   if (bucketLoadPromise) {
     await bucketLoadPromise;
     return;
   }
 
+  // Mỗi lần mở Select → luôn gọi API (force) và cập nhật cache
   bucketLoadPromise = (async () => {
     isLoadingBuckets.value = true;
     try {
-      const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-      if (data?.success && data.data) {
-        bucketList.value = mapBucketOptions(data.data);
-      } else {
-        bucketList.value = [];
-      }
+      bucketList.value = await ensureBucketOptions(factoryId, { force: true });
     } catch (error) {
       console.error('Lỗi khi tải danh sách thùng chứa', error);
       bucketList.value = [];
@@ -421,15 +413,6 @@ const fetchBucketList = async () => {
 
   await bucketLoadPromise;
 };
-
-watch(
-  () => [props.isLoading, props.orderDetails.length, orderDetailsSelectionKey.value] as const,
-  ([loading]) => {
-    if (loading || !hasStoredBucketSelection()) return;
-    void fetchBucketList();
-  },
-  { immediate: true }
-);
 
 const handleBucketSelectShow = (rowData: any, rowIndex: number) => {
   bucketBeforeChangeByIndex.value[rowIndex] = rowData?.selectedBucketId ?? rowData?.bucketId ?? null;

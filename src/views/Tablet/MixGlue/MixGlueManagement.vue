@@ -7,17 +7,20 @@
             <ion-button @click="goBack">
               <i class="pi pi-angle-left text-xl mr-1"></i>
               <ion-title class="no-padding" style="line-height: 50px;">{{ t('mixGlueManagement.pageTitle')
-                }}</ion-title>
+              }}</ion-title>
             </ion-button>
           </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+          <div class="flex align-items-center gap-2 mr-2">
+            <NetworkStatusIcon />
+            <LocaleSelect device-scope="tablet" />
+          </div>
         </div>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
-
-      <div class="mix-glue-layout main-container max-w-full mx-auto">
+      <div class="mix-glue-layout main-container max-w-full mx-auto page-content-loading-host">
+        <PageContentLoadingOverlay :visible="isPageDataLoading || isCompleting" />
         <!-- Thông tin header — cố định, không scroll -->
         <div class="mix-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -35,7 +38,7 @@
             </div>
             <div class="col-12 lg:col-2">
               <label class="text-800 font-medium mb-1 block">{{ t('mixGlueManagement.fields.totalWeightActual')
-                }}</label>
+              }}</label>
               <InputText :model-value="totalWeightActualDisplay" fluid readonly class="font-bold text-blue-600" />
             </div>
             <div class="col-12 lg:col-2">
@@ -97,7 +100,7 @@
                   <div class="grid formgrid align-items-end">
                     <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                       <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                      }}</label>
+                        }}</label>
                       <InputText v-model="mixingProcess.component" readonly
                         class="font-bold text-primary border-blue-200" style="width: 350px;" />
                     </div>
@@ -155,7 +158,7 @@
                   <div class="grid formgrid align-items-end">
                     <div class="col-12 sm:col-5 lg:col-5 lg:mb-0">
                       <label class="text-800 font-medium mb-2 block">{{ t('mixGlueManagement.fields.componentCode')
-                      }}</label>
+                        }}</label>
                       <InputText v-model="noMixMixingProcess.component" readonly
                         class="font-bold text-primary border-blue-200" style="width: 350px;" />
                     </div>
@@ -185,8 +188,8 @@
 
                   <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
                     :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
-                    @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet" @add-row="handleAddChietRow"
-                    @delete-row="handleDeleteChietRow" />
+                    :confirming="isChietConfirming" @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet"
+                    @add-row="handleAddChietRow" @delete-row="handleDeleteChietRow" />
                 </div>
               </template>
             </div>
@@ -223,10 +226,10 @@ import workOrder from '@/api/workOrder';
 import materialApi from '@/api/material';
 import mixGlueApi from '@/api/mixGlue';
 import separateGlue from '@/api/separate';
-import bucketApi from '@/api/bucket';
 import { buildSeparateGlueCommandPayload } from '@/views/Tablet/Separate/separateMixedGlue.payload';
 import type { PayloadBuildContext } from '@/views/Tablet/Separate/separateMixedGlue.types';
 import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separateGlue.bucket';
+import { getCachedBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
@@ -241,6 +244,8 @@ import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddCo
 import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
+import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
@@ -333,6 +338,36 @@ const ensurePrinterReady = async (): Promise<boolean> => {
   return (await bluetoothRef.value?.verifyHardwareConnected?.()) === true;
 };
 
+const buildPrintMixGlueLabelPayload = (row: any) => {
+  const factoryId = authStore.user?.factoryId || '';
+  const employeeId = authStore.user?.employeeId || '';
+  const recordStatus = '0';
+
+  return {
+    factoryId,
+    mgm: {
+      factoryId,
+      workOrderMasterId: currentWorkOrderId.value,
+      recordStatus,
+      createrId: employeeId,
+      updaterId: employeeId,
+      mixGlues: [
+        {
+          factoryId,
+          materialCode: row.materialCode || 0,
+          mixGlueWeight: Number(row.actualWeight) || 0,
+          mixGlueWeightUnit: normalizeWeightUnit(row.weightUnit),
+          weightCompleteDate: row.weighingTime ?? '',
+          glueExtra: row.glueExtra || false,
+          recordStatus,
+          createrId: row.operatorId || employeeId,
+          updaterId: row.operatorId || employeeId,
+        },
+      ],
+    },
+  };
+};
+
 const handlePrintComponent = async (row: any) => {
   if (!row.weighingTime) {
     showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.notConfirmed'), life: 6000 });
@@ -340,30 +375,54 @@ const handlePrintComponent = async (row: any) => {
   }
   if (isPrintingComponent.value) return;
 
-  // Chỉ kết nối lại khi chưa connected — tránh verify gây re-render BluetoothPrinterStatus
-  if (!bluetoothRef.value?.isConnected?.()) {
-    const ready = await ensurePrinterReady();
-    if (!ready) {
-      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
-      return;
-    }
-  }
-
-  if (!(await ensureGapConfirmed())) return;
-
+  // Khóa UI sớm — tránh spam trong lúc connect / gap / check mạng
   isPrintingComponent.value = true;
   printingMaterialCode.value = row.materialCode ?? null;
 
   try {
+    // Chỉ kết nối lại khi chưa connected — tránh verify gây re-render BluetoothPrinterStatus
+    if (!bluetoothRef.value?.isConnected?.()) {
+      const ready = await ensurePrinterReady();
+      if (!ready) {
+        showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
+        return;
+      }
+    }
+
+    if (!(await ensureGapConfirmed())) return;
+    if (!(await requireOnline())) return;
+
+    const { data: apiRes } = await mixGlueApi.postPrintMixGlueLabel(buildPrintMixGlueLabelPayload(row));
+    if (!apiRes?.success) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: apiRes?.message || t('listMixGlue.toast.componentLabel.printFailed'),
+        life: 6000,
+      });
+      return;
+    }
+
+    const labelCode = String(apiRes.data ?? '');
+    if (!labelCode) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: t('listMixGlue.toast.componentLabel.printFailed'),
+        life: 6000,
+      });
+      return;
+    }
+
     const tspl = buildComponentWeightLabelTspl({
       workOrderMasterName: headerInfo.value.orderNo,
       requestTime: lineDetails.value[0]?.requestTime,
       glueName: headerInfo.value.glue,
       materialName: row.materialName ?? '',
-      operatorName: row.operator ?? '',
       actualWeight: row.actualWeight ?? '',
       weightUnit: normalizeWeightUnit(row.weightUnit),
       weighingTime: row.weighingTime ?? '',
+      labelCode,
     });
 
     const ok = await (bluetoothRef.value?.writeTspl?.(tspl) ?? Promise.resolve(false));
@@ -380,6 +439,7 @@ const handlePrintComponent = async (row: any) => {
       life: ok ? 3000 : 6000,
     });
   } catch (error) {
+    if (notifyOfflineFromError(error)) return;
     console.error(error);
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('listMixGlue.toast.componentLabel.printFailed'), life: 6000 });
   } finally {
@@ -481,6 +541,7 @@ const componentDetailsFull = ref<ComponentDetail[]>([]);
 const noMixComponents = ref<ComponentDetail[]>([]);
 const isLoadingLine = ref(true);
 const isLoadingComponent = ref(true);
+const isPageDataLoading = computed(() => isLoadingLine.value || isLoadingComponent.value);
 const hourlyValidity = ref<string>('0');
 const hidenTable1 = ref(false);
 const mixGlueConfirm = ref(false);
@@ -685,6 +746,7 @@ const {
   saveChietDraftToStoreOnly,
   handleConfirmNoMixWeight,
   isRowWeighed,
+  isChietConfirming,
 } = useMixGlueNoMixChiet({
   headerInfo,
   mixGlueConfirm,
@@ -846,20 +908,10 @@ const isSeparateGlueRowFilled = (row: any) =>
   !!row.selectedBucketId || !!row.bucketId;
 
 const ensureBucketListForValidation = async () => {
-  if (bucketListForValidation.value.length > 0) {
-    return bucketListForValidation.value;
-  }
-
-  try {
-    const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-    if (data?.success && data.data) {
-      bucketListForValidation.value = data.data;
-    }
-  } catch (error) {
-    console.error('Lỗi khi tải danh sách thùng chứa', error);
-  }
-
-  return bucketListForValidation.value;
+  // Complete / chiết validate chỉ dùng cache từ Select — không gọi API
+  const list = getCachedBucketOptions(authStore.user?.factoryId || '');
+  bucketListForValidation.value = list;
+  return list;
 };
 
 const getSeparatePayloadContext = (): PayloadBuildContext => ({
@@ -878,8 +930,6 @@ const getSeparatePayloadContext = (): PayloadBuildContext => ({
 });
 
 const validateBeforeNoMixComplete = async (): Promise<string | null> => {
-  const bucketList = await ensureBucketListForValidation();
-
   const unweighed = noMixComponents.value.find((item) => !isRowWeighed(item));
   if (unweighed) {
     return t('separateMixedGlue.toast.noMixWeighFirst', { name: unweighed.materialName });
@@ -897,6 +947,11 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
       if (!isSeparateGlueRowFilled(extras[i])) {
         return t('separateMixedGlue.toast.chietSelectBucket', { name: row.materialName, row: i + 1 });
       }
+    }
+
+    const bucketList = await ensureBucketListForValidation();
+    if (bucketList.length === 0) {
+      return t('separateMixedGlue.toast.bucketListRequired');
     }
 
     const chietAllocationError = validateSeparateGlueAllocation(
@@ -917,21 +972,22 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
   if (isCompleting.value || isNavigatingAway.value) return;
-  if (!(await requireOnline())) return;
-
-  const validationError = await validateBeforeNoMixComplete();
-  if (validationError) {
-    showToast({
-      severity: 'warn',
-      summary: t('separateMixedGlue.toast.incomplete'),
-      detail: validationError,
-      life: 6000,
-    });
-    return;
-  }
 
   isCompleting.value = true;
   try {
+    if (!(await requireOnline())) return;
+
+    const validationError = await validateBeforeNoMixComplete();
+    if (validationError) {
+      showToast({
+        severity: 'warn',
+        summary: t('separateMixedGlue.toast.incomplete'),
+        detail: validationError,
+        life: 6000,
+      });
+      return;
+    }
+
     const payload = source === 'chiet-row'
       ? buildSeparateGlueCommandPayload(getSeparatePayloadContext(), '1', {
         forComplete: true,
@@ -959,7 +1015,6 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
     }
   } catch (error) {
     if (notifyOfflineFromError(error)) {
-      isCompleting.value = false;
       return;
     }
     console.error(error);
@@ -969,7 +1024,10 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
       detail: t('separateMixedGlue.toast.completeFailed'),
       life: 6000,
     });
-    isCompleting.value = false;
+  } finally {
+    if (!isNavigatingAway.value) {
+      isCompleting.value = false;
+    }
   }
 };
 
@@ -978,23 +1036,23 @@ completeNoMixGlue = () => handleCompleteNoMixGlue('chiet-row');
 const handleCompleteMixGlue = async () => {
   if (isCompleting.value || isNavigatingAway.value) return;
 
-  const hasIncompleteRows = (rows: ComponentDetail[]) =>
-    rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
-
-  if (hasMixChemicals.value && hasIncompleteRows(componentDetailsFull.value)) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
-    return;
-  }
-
-  if (hasNoMixChemicals.value && hasIncompleteRows(noMixComponents.value)) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
-    return;
-  }
-
-  if (!(await requireOnline())) return;
-
   isCompleting.value = true;
   try {
+    const hasIncompleteRows = (rows: ComponentDetail[]) =>
+      rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
+
+    if (hasMixChemicals.value && hasIncompleteRows(componentDetailsFull.value)) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
+      return;
+    }
+
+    if (hasNoMixChemicals.value && hasIncompleteRows(noMixComponents.value)) {
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
+      return;
+    }
+
+    if (!(await requireOnline())) return;
+
     const payloadToSubmit = buildPayload('1');
     await mixGlueApi.postMixGlueCommand(payloadToSubmit);
     await saveDraftSnapshot();
@@ -1012,12 +1070,14 @@ const handleCompleteMixGlue = async () => {
     await router.push('/list-mix-glue');
   } catch (error) {
     if (notifyOfflineFromError(error)) {
-      isCompleting.value = false;
       return;
     }
     console.error(error);
     showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.saveFailed'), life: 6000 });
-    isCompleting.value = false;
+  } finally {
+    if (!isNavigatingAway.value) {
+      isCompleting.value = false;
+    }
   }
 };
 
@@ -1412,6 +1472,11 @@ onIonViewWillEnter(() => {
 <style scoped>
 .mix-glue-management-content {
   --overflow: hidden;
+}
+
+.page-content-loading-host {
+  position: relative;
+  min-height: 12rem;
 }
 
 .mix-glue-layout {

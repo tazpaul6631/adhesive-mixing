@@ -2,16 +2,16 @@ import { computed, type ComputedRef, type Ref } from 'vue';
 import { useWindowSize } from '@vueuse/core';
 
 /** Tablet 8.7" (Tab A9) vs 11.0" (Tab A9+ / A11). */
-export type TabletPageTier = 'inch87' | 'inch11';
+type TabletPageTier = 'inch87' | 'inch11';
 
 const INCH11_LONG_SIDE_MIN = 1100;
 
-export const getTabletPageTier = (width: number, height: number): TabletPageTier => {
+const getTabletPageTier = (width: number, height: number): TabletPageTier => {
   const longSide = Math.max(width, height);
   return longSide >= INCH11_LONG_SIDE_MIN ? 'inch11' : 'inch87';
 };
 
-export interface UseTabletPageLayoutOptions {
+interface UseTabletPageLayoutOptions {
   stackedTables?: Ref<number> | ComputedRef<number> | number;
   /** Trừ px cho chrome trang (toolbar, header card, paginator…). */
   pageChromeOffset?: number;
@@ -81,16 +81,8 @@ export function useTabletPageLayout(options: UseTabletPageLayoutOptions = {}) {
   });
 
   return {
-    tier,
-    isPortrait,
-    isInch11,
-    width,
-    height,
     pageClass,
     tableScrollHeight,
     emptyStateMinHeight,
   };
 }
-
-export const getTabletDataTableTier = (width: number, height = width) =>
-  getTabletPageTier(width, height);
