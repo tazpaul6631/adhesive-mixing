@@ -39,25 +39,12 @@ const hasMixTableProgress = (items: unknown): boolean =>
   );
 
 const hasNoMixDraftProgress = (draft: MixGlueDraftPayload): boolean => {
-  if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
-    return true;
-  }
-
-  const pendingByMaterial = draft.chietPendingByMaterial;
-  if (pendingByMaterial && typeof pendingByMaterial === 'object') {
-    const hasPendingChiet = Object.values(pendingByMaterial as Record<string, unknown>).some(
-      (rows) => Array.isArray(rows) && rows.length > 0
-    );
-    if (hasPendingChiet) return true;
-  }
-
   const weighed = (items: unknown) =>
     Array.isArray(items) &&
     items.some(
       (item: any) =>
         item.weighingTime ||
         (item.actualWeight && Number(item.actualWeight) > 0) ||
-        item.isChietCompleted ||
         (item.glueExtra && item.requiredWeight && Number(item.requiredWeight) > 0)
     );
 
@@ -85,18 +72,6 @@ export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined
   )) {
     return true;
   }
-  if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
-    return true;
-  }
-
-  const pendingByMaterial = draft.chietPendingByMaterial;
-  if (pendingByMaterial && typeof pendingByMaterial === 'object') {
-    const hasPendingChiet = Object.values(pendingByMaterial as Record<string, unknown>).some(
-      (rows) => Array.isArray(rows) && rows.length > 0
-    );
-    if (hasPendingChiet) return true;
-  }
-
   return hasNoMixDraftProgress(draft);
 };
 

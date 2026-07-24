@@ -184,7 +184,10 @@ const connectedScaleDeviceId = ref<string | null>(null);
 const DATA_WATCHDOG_MS = 15000;
 const PORT_HANDSHAKE_MS = 10000;
 const AUTO_RETRY_MS = 4000;
-const DEVICE_SWITCH_DELAY_MS = 600;
+/** Chờ chip USB-RS232 release sau disconnect trước khi mở cân khác. */
+const DEVICE_SWITCH_DELAY_MS = 1500;
+/** Reconnect cùng device có thể ngắn hơn một chút. */
+const DEVICE_RECONNECT_DELAY_MS = 800;
 
 let dataListener: any = null;
 let errorListener: any = null;
@@ -192,6 +195,8 @@ let watchdog: ReturnType<typeof setTimeout> | null = null;
 let handshakeTimeout: ReturnType<typeof setTimeout> | null = null;
 let autoConnectInterval: ReturnType<typeof setInterval> | null = null;
 let connectInProgress = false;
+/** Chặn watchdog/auto-reconnect xen vào lúc đang disconnect/switch. */
+let suppressAutoReconnect = false;
 let dataBuffer = '';
 let lastDataAt = 0;
 let connectMutex: Promise<void> = Promise.resolve();
@@ -262,6 +267,7 @@ const pruneSessionDeviceIds = (devices: ScaleDevice[]) => {
 };
 
 const disconnectHardware = async () => {
+  suppressAutoReconnect = true;
   isGlobalConnected.value = false;
   isGlobalStable.value = false;
   connectedScaleDeviceId.value = null;
@@ -286,6 +292,8 @@ const disconnectHardware = async () => {
 };
 
 const handleStaleConnection = async () => {
+  if (suppressAutoReconnect || connectInProgress) return;
+
   if (staleReconnectHandler) {
     await staleReconnectHandler();
     return;
@@ -327,6 +335,7 @@ const clearHandshakeTimeout = () => {
 
 const scheduleWatchdog = () => {
   clearWatchdog();
+  if (suppressAutoReconnect || connectInProgress) return;
   watchdog = setTimeout(() => {
     void handleStaleConnection();
   }, DATA_WATCHDOG_MS);
@@ -468,9 +477,12 @@ export function useScaleManager() {
 
     const result = await SerialScale.connect({ deviceId });
     connectedScaleDeviceId.value = result?.deviceId ?? deviceId;
+    // Cho phép watchdog sau khi native connect thành công.
+    suppressAutoReconnect = false;
 
     clearHandshakeTimeout();
     handshakeTimeout = setTimeout(() => {
+      if (suppressAutoReconnect || connectInProgress) return;
       if (!isGlobalConnected.value) {
         void handleStaleConnection();
       }
@@ -487,6 +499,7 @@ export function useScaleManager() {
     if (sessionId == null) return;
 
     const force = options?.force ?? false;
+    const previousDeviceId = connectedScaleDeviceId.value;
 
     await loadLastSelectedDeviceId();
 
@@ -501,7 +514,10 @@ export function useScaleManager() {
     }
 
     connectInProgress = true;
+    suppressAutoReconnect = true;
     isScaleConnecting.value = true;
+    clearWatchdog();
+    clearHandshakeTimeout();
 
     try {
       if (options?.pickPort) {
@@ -536,12 +552,14 @@ export function useScaleManager() {
       ) {
         pendingSelectionSessionId.value = null;
         sessionDeviceIds.set(sessionId, deviceId);
+        suppressAutoReconnect = false;
         return;
       }
 
       if (force || dataListener || errorListener) {
+        const switchingDevice = !!previousDeviceId && previousDeviceId !== deviceId;
         await forceDisconnect();
-        await sleep(DEVICE_SWITCH_DELAY_MS);
+        await sleep(switchingDevice ? DEVICE_SWITCH_DELAY_MS : DEVICE_RECONNECT_DELAY_MS);
       }
 
       pendingSelectionSessionId.value = null;
@@ -555,6 +573,10 @@ export function useScaleManager() {
     } finally {
       connectInProgress = false;
       isScaleConnecting.value = false;
+      // Nếu connect thất bại / chưa mở được, vẫn giữ suppress đến lần connect thành công.
+      if (!connectedScaleDeviceId.value) {
+        suppressAutoReconnect = true;
+      }
     }
   };
 
@@ -566,6 +588,8 @@ export function useScaleManager() {
   }) => withConnectLock(() => runConnectToScale(options));
 
   staleReconnectHandler = async () => {
+    if (suppressAutoReconnect || connectInProgress) return;
+
     const sessionId = activeScaleSessionId.value;
     const deviceId = connectedScaleDeviceId.value
       || lastSelectedDeviceId
@@ -588,6 +612,7 @@ export function useScaleManager() {
     deviceId: string
   ) => {
     if (!deviceId) return;
+    if (connectInProgress || isScaleConnecting.value) return;
 
     activeScaleSessionId.value = sessionId;
     sessionDeviceIds.set(sessionId, deviceId);
@@ -628,39 +653,44 @@ export function useScaleManager() {
   };
 
   /** Quét lại USB hub, cập nhật dropdown và kết nối lại cân đã chọn (nếu còn). */
-  const refreshScaleDevices = async (sessionId: string | number | symbol) => {
-    activeScaleSessionId.value = sessionId;
-    globalWeight.value = '0.000';
+  const refreshScaleDevices = async (sessionId: string | number | symbol) =>
+    withConnectLock(async () => {
+      activeScaleSessionId.value = sessionId;
+      globalWeight.value = '0.000';
+      suppressAutoReconnect = true;
+      clearWatchdog();
+      clearHandshakeTimeout();
 
-    await forceDisconnect();
-    await sleep(DEVICE_SWITCH_DELAY_MS);
+      await forceDisconnect();
+      await sleep(DEVICE_SWITCH_DELAY_MS);
 
-    await requestAllUsbPermissions();
-    const devices = await fetchAvailableScales();
-    const saved = sessionDeviceIds.get(sessionId);
+      await requestAllUsbPermissions();
+      const devices = await fetchAvailableScales();
+      const saved = sessionDeviceIds.get(sessionId);
 
-    if (devices.length === 0) {
+      if (devices.length === 0) {
+        pendingSelectionSessionId.value = null;
+        return { devices, connected: false, needsSelection: false };
+      }
+
+      const deviceId = resolveDeviceIdForSession(sessionId, devices, saved ?? undefined);
+
+      if (!deviceId) {
+        pendingSelectionSessionId.value = sessionId;
+        return { devices, connected: false, needsSelection: true };
+      }
+
       pendingSelectionSessionId.value = null;
-      return { devices, connected: false, needsSelection: false };
-    }
-
-    const deviceId = resolveDeviceIdForSession(sessionId, devices, saved ?? undefined);
-
-    if (!deviceId) {
-      pendingSelectionSessionId.value = sessionId;
-      return { devices, connected: false, needsSelection: true };
-    }
-
-    pendingSelectionSessionId.value = null;
-    await connectToScale({ sessionId, deviceId, force: true });
-    return { devices, connected: true, needsSelection: false, deviceId };
-  };
+      // Đã nằm trong connect lock — gọi runConnect trực tiếp để tránh deadlock mutex.
+      await runConnectToScale({ sessionId, deviceId, force: true });
+      return { devices, connected: true, needsSelection: false, deviceId };
+    });
 
   const startAutoConnectInterval = () => {
     if (autoConnectInterval) return;
 
     autoConnectInterval = setInterval(() => {
-      if (activeScaleSessionId.value === null || connectInProgress) return;
+      if (activeScaleSessionId.value === null || connectInProgress || suppressAutoReconnect) return;
       if (pendingSelectionSessionId.value !== null) return;
 
       const stale = isGlobalConnected.value

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.util.Log;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -21,31 +22,59 @@ import java.util.List;
 
 @CapacitorPlugin(name = "SerialScale")
 public class SerialScalePlugin extends Plugin implements SerialInputOutputManager.Listener {
+    private static final String TAG = "SerialScale";
+    /** Cho IO thread thoát trước khi close port — tránh treo chip USB-RS232 khi switch cân. */
+    private static final int IO_STOP_SETTLE_MS = 350;
+
     private UsbSerialPort usbPort;
     private SerialInputOutputManager ioManager;
     private UsbDeviceConnection usbConnection;
     private String connectedDeviceId = null;
+    private volatile boolean disconnecting = false;
 
     private void internalDisconnect() {
-        if (ioManager != null) {
-            ioManager.stop();
-            ioManager = null;
+        disconnecting = true;
+
+        SerialInputOutputManager manager = ioManager;
+        ioManager = null;
+        if (manager != null) {
+            try {
+                manager.stop();
+            } catch (Exception ignored) {
+            }
+            // stop() chỉ đánh dấu STOPPING; chờ thread đọc thoát trước khi đóng port.
+            try {
+                Thread.sleep(IO_STOP_SETTLE_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
 
-        if (usbPort != null) {
+        UsbSerialPort port = usbPort;
+        usbPort = null;
+        if (port != null) {
             try {
-                usbPort.close();
+                port.setDTR(false);
+                port.setRTS(false);
+            } catch (Exception ignored) {
+            }
+            try {
+                port.close();
             } catch (IOException ignored) {
             }
-            usbPort = null;
         }
 
-        if (usbConnection != null) {
-            usbConnection.close();
-            usbConnection = null;
+        UsbDeviceConnection connection = usbConnection;
+        usbConnection = null;
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (Exception ignored) {
+            }
         }
 
         connectedDeviceId = null;
+        disconnecting = false;
     }
 
     private List<UsbSerialDriver> findAllDrivers() {
@@ -204,11 +233,23 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
 
         try {
             usbConnection = manager.openDevice(device);
+            if (usbConnection == null) {
+                call.reject("Không mở được thiết bị USB. Hãy rút cắm lại cân rồi thử refresh.");
+                return;
+            }
+
             usbPort = driver.getPorts().get(0);
             usbPort.open(usbConnection);
             usbPort.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
             usbPort.setDTR(true);
             usbPort.setRTS(true);
+
+            // Cho chip USB-RS232 settle sau khi mở port trước khi start IO.
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
             ioManager = new SerialInputOutputManager(usbPort, this);
             ioManager.start();
@@ -219,6 +260,7 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
             ret.put("deviceId", connectedDeviceId);
             call.resolve(ret);
         } catch (IOException e) {
+            Log.e(TAG, "Connect failed", e);
             internalDisconnect();
             call.reject("Lỗi kết nối: " + e.getMessage());
         }
@@ -226,6 +268,9 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
 
     @Override
     public void onNewData(byte[] data) {
+        if (disconnecting || ioManager == null) {
+            return;
+        }
         String message = new String(data);
         JSObject ret = new JSObject();
         ret.put("data", message);
@@ -234,9 +279,14 @@ public class SerialScalePlugin extends Plugin implements SerialInputOutputManage
 
     @Override
     public void onRunError(Exception e) {
+        // Bỏ qua lỗi phát sinh khi đang chủ động disconnect (tránh race khi switch cân).
+        if (disconnecting) {
+            return;
+        }
+        Log.w(TAG, "Serial IO error", e);
         internalDisconnect();
         JSObject ret = new JSObject();
-        ret.put("error", e.getMessage());
+        ret.put("error", e != null ? e.getMessage() : "serial error");
         notifyListeners("onScaleError", ret);
     }
 }

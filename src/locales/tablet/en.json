@@ -221,23 +221,7 @@
         "selectBucket": "Select container"
       },
       "deleteAriaLabel": "Delete",
-      "addAriaLabel": "Add",
-      "viewAriaLabel": "View"
-    },
-    "addComponentDialog": {
-      "title": "Add component",
-      "nameLabel": "Component name",
-      "namePlaceholder": "Select component",
-      "nameRequired": "Component name is required.",
-      "weightLabel": "Actual weight",
-      "weightRequired": "Please enter a value ({unit})"
-    },
-    "chietDialog": {
-      "title": "Repack glue by container",
-      "currentGlue": "Glue being repackaged",
-      "weighedWeight": "Weighed weight",
-      "capacityMustMatch": "Total container weight must match weighed weight",
-      "viewOnly": "View only"
+      "addAriaLabel": "Add"
     },
     "toast": {
       "restore": "Restored",
@@ -253,33 +237,21 @@
       "completeSuccess": "Completed",
       "completeSuccessDetail": "Data submitted successfully",
       "completeFailed": "Could not confirm completion",
-      "weighingComplete": "Completed",
-      "weighingCompleteDetail": "All components have been weighed.",
-      "addSuccess": "Success",
-      "addSuccessDetail": "Component added",
       "deleteSuccess": "Deleted",
       "deleteSuccessDetail": "Component deleted successfully",
-      "loadMaterialsFailed": "Could not load components",
       "notWeighed": "Not weighed",
       "weighBeforeAdd": "Please weigh glue {name} before adding a component.",
       "weighBeforeChiet": "Please weigh glue {name} before repackaging.",
-      "chietSaved": "Repackaging saved",
-      "chietSavedDetail": "Repackaging information temporarily saved",
       "selectBucketRow": "Please select a container on row {row} before adding a new row.",
-      "selectBucketRowShort": "Please select a container on row {row}.",
       "allocationComplete": "Repackaging complete",
       "weightExceeded": "Weight exceeded",
       "bucketCapacityExceeded": "Total container weight exceeds {label}. Please choose a more suitable container.",
-      "addRowMin": "Please add at least one row and select a container.",
-      "notWeighedForChiet": "Glue {name} has no weighed weight. Please weigh before repackaging.",
       "invalid": "Invalid",
       "mixedGlueSelectBucket": "Mixed glue row {row}: please select a container.",
       "mixedGluePrefix": "Mixed glue: {message}",
       "noMixSelectBucket": "Non-mixed glue row {row}: please select a container.",
       "noMixPrefix": "Non-mixed glue: {message}",
-      "noMixWeighFirst": "Non-mixed glue {name}: please complete weighing first.",
-      "chietSelectBucket": "Glue {name} repackaging row {row}: please select a container.",
-      "chietPrefix": "Glue {name} repackaging: {message}"
+      "noMixWeighFirst": "Non-mixed glue {name}: please complete weighing first."
     },
     "confirmDelete": {
       "title": "Confirm delete",
@@ -433,8 +405,6 @@
       "saveSuccess": "Saved successfully",
       "saveSuccessDetail": "Data saved. Please return to the list to confirm!",
       "saveFailed": "Could not save data",
-      "weighingComplete": "Completed",
-      "weighingCompleteDetail": "All components have been weighed.",
       "baseNotFound": "Base mix glue product not found",
       "addSuccess": "Success",
       "addSuccessDetail": "Component added",

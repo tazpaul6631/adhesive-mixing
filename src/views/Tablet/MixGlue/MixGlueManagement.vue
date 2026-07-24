@@ -150,7 +150,7 @@
 
               <div v-if="isLoadingComponent" class="overflow-x-auto border-round-bottom-xl">
                 <NoSeparateGlue :is-loading="true" :no-mix-chemicals="[]" :header-total-weight="headerInfo.totalWeight"
-                  :disabled="true" :is-no-mix-glue="isNoMixGlue" v-model:selectedItem="selectedItemNoMix" />
+                  :disabled="true" v-model:selectedItem="selectedItemNoMix" />
               </div>
 
               <template v-else-if="hasNoMixChemicals">
@@ -177,19 +177,9 @@
                   <div class="table-wrapper">
                     <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
                       :header-total-weight="headerInfo.totalWeight" :disabled="mixGlueConfirm"
-                      :is-no-mix-glue="isNoMixGlue" v-model:selectedItem="selectedItemNoMix"
-                      @row-click="onNoMixRowClick" @open-new="openNoMixComponentDialog"
-                      @delete-row="handleDeleteNoMixComponent" @chiet-row="handleChietRow" @view-row="handleViewRow" />
+                      v-model:selectedItem="selectedItemNoMix" @row-click="onNoMixRowClick"
+                      @delete-row="handleDeleteNoMixComponent" @chiet-row="handleChietRow" />
                   </div>
-
-                  <SeparateAddComponentDialog v-model:visible="noMixProductDialog" :materials-list="noMixMaterialsList"
-                    :is-loading-materials="isLoadingNoMixMaterials" @fetch-materials="fetchNoMixMaterials"
-                    @save="handleSaveNewNoMixComponent" />
-
-                  <SeparateGlueDialog v-model:visible="chietDialog" :chemical="currentChietChemical"
-                    :order-details="chietOrderDetails" :request-details="requestDetails" :is-view-mode="isViewMode"
-                    :confirming="isChietConfirming" @update-bucket="saveChietDraftToStoreOnly" @confirm="confirmChiet"
-                    @add-row="handleAddChietRow" @delete-row="handleDeleteChietRow" />
                 </div>
               </template>
             </div>
@@ -228,8 +218,6 @@ import mixGlueApi from '@/api/mixGlue';
 import separateGlue from '@/api/separate';
 import { buildSeparateGlueCommandPayload } from '@/views/Tablet/Separate/separateMixedGlue.payload';
 import type { PayloadBuildContext } from '@/views/Tablet/Separate/separateMixedGlue.types';
-import { validateSeparateGlueAllocation } from '@/views/Tablet/Separate/separateGlue.bucket';
-import { getCachedBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 
 import ElectronicScale from '@/components/ElectronicScale.vue';
 import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
@@ -240,8 +228,6 @@ import MixGlueDataValidationAlert from '@/views/Tablet/MixGlue/components/MixGlu
 import MixingComponentsTable from '@/views/Tablet/MixGlue/components/MixingComponentsTable.vue';
 import AddComponentDialog from '@/views/Tablet/MixGlue/components/AddComponentDialog.vue';
 import NoSeparateGlue from '@/views/Tablet/Separate/components/NoSeparateGlue.vue';
-import SeparateAddComponentDialog from '@/views/Tablet/Separate/components/AddComponentDialog.vue';
-import SeparateGlueDialog from '@/views/Tablet/Separate/components/SeparateGlueDialog.vue';
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
@@ -485,7 +471,6 @@ interface ComponentDetail {
   glueExtra?: boolean;
   mixGlue?: boolean;
   noMixGlue?: boolean;
-  isChietCompleted?: boolean;
   recordStatus?: string;
   bucketId?: number | string;
   confirmDate?: string;
@@ -550,7 +535,6 @@ const isNavigatingAway = ref(false);
 const isNoMixGlue = ref(false);
 const startDate = ref('');
 const endDate = ref('');
-const bucketListForValidation = ref<any[]>([]);
 
 watch(componentDetailsFull, () => {
   if (!isLoadingComponent.value) isDirty.value = true;
@@ -721,32 +705,15 @@ let completeNoMixGlue: () => Promise<void> = async () => { };
 const {
   requestDetails,
   mixGlueMasterId,
-  extraChietList,
-  noMixProductDialog,
-  noMixMaterialsList,
-  isLoadingNoMixMaterials,
-  isViewMode,
-  chietDialog,
-  chietOrderDetails,
-  currentChietChemical,
   applyNoMixFromWorkOrder,
   restoreNoMixDraft,
   getNoMixDraftExtras,
   resetNoMixSection,
   onNoMixRowClick,
-  openNoMixComponentDialog,
-  fetchNoMixMaterials,
-  handleSaveNewNoMixComponent,
   handleDeleteNoMixComponent,
   handleChietRow,
-  handleViewRow,
-  confirmChiet,
-  handleAddChietRow,
-  handleDeleteChietRow,
-  saveChietDraftToStoreOnly,
   handleConfirmNoMixWeight,
   isRowWeighed,
-  isChietConfirming,
 } = useMixGlueNoMixChiet({
   headerInfo,
   mixGlueConfirm,
@@ -904,16 +871,6 @@ const handleHidenTable1 = () => {
   hidenTable1.value = !hidenTable1.value;
 };
 
-const isSeparateGlueRowFilled = (row: any) =>
-  !!row.selectedBucketId || !!row.bucketId;
-
-const ensureBucketListForValidation = async () => {
-  // Complete / chiết validate chỉ dùng cache từ Select — không gọi API
-  const list = getCachedBucketOptions(authStore.user?.factoryId || '');
-  bucketListForValidation.value = list;
-  return list;
-};
-
 const getSeparatePayloadContext = (): PayloadBuildContext => ({
   factoryId: authStore.user?.factoryId || '',
   employeeId: authStore.user?.employeeId || '',
@@ -925,7 +882,6 @@ const getSeparatePayloadContext = (): PayloadBuildContext => ({
   noMixChemicals: [],
   separateGlueDetails: [],
   noMixSeparateGlueDetails: [],
-  extraChietList: extraChietList.value,
   noMixComponents: noMixComponents.value,
 });
 
@@ -933,38 +889,6 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
   const unweighed = noMixComponents.value.find((item) => !isRowWeighed(item));
   if (unweighed) {
     return t('separateMixedGlue.toast.noMixWeighFirst', { name: unweighed.materialName });
-  }
-
-  for (const row of noMixComponents.value) {
-    if (!row.isChietCompleted) continue;
-
-    const extras = extraChietList.value.filter(
-      (item) => String(item.glueId) === String(row.materialCode)
-    );
-    if (extras.length === 0) continue;
-
-    for (let i = 0; i < extras.length; i++) {
-      if (!isSeparateGlueRowFilled(extras[i])) {
-        return t('separateMixedGlue.toast.chietSelectBucket', { name: row.materialName, row: i + 1 });
-      }
-    }
-
-    const bucketList = await ensureBucketListForValidation();
-    if (bucketList.length === 0) {
-      return t('separateMixedGlue.toast.bucketListRequired');
-    }
-
-    const chietAllocationError = validateSeparateGlueAllocation(
-      extras,
-      requestDetails.value,
-      bucketList,
-      row.actualWeight,
-      normalizeWeightUnit(row.weightUnit),
-      { requireAllRequestDetails: false }
-    );
-    if (chietAllocationError) {
-      return t('separateMixedGlue.toast.chietPrefix', { name: row.materialName, message: chietAllocationError || '' });
-    }
   }
 
   return null;
@@ -1165,12 +1089,6 @@ const confirmWeightForRows = async (
     await scrollToActiveRow(context);
   } else {
     setActiveRow({ ...rows[index] });
-    // showToast({
-    //   severity: 'success',
-    //   summary: t('mixGlueManagement.toast.weighingComplete'),
-    //   detail: t('mixGlueManagement.toast.weighingCompleteDetail'),
-    //   life: 6000,
-    // });
   }
 
   await saveDraftSnapshot();
@@ -1437,7 +1355,6 @@ const resetState = () => {
   isNoMixGlue.value = false;
   startDate.value = '';
   endDate.value = '';
-  bucketListForValidation.value = [];
   resetNoMixSection();
 };
 

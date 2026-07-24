@@ -62,7 +62,7 @@
             <div class="separate-mixed-glue-table-card__body">
               <SeparateGlue :is-loading="isLoadingLine" :order-details="mixedGlueTableDetails" :disabled="false"
                 :disable-add-row="false" :request-details="requestDetails" :target-weight="mixSeparateTargetWeight"
-                target-weight-unit="Kg" use-chiet-capacity-validation @update-bucket="handleMixSeparateBucketUpdate"
+                target-weight-unit="Kg" @update-bucket="handleMixSeparateBucketUpdate"
                 @add-row="handleAddSeparateGlueRow" @delete-row="handleDeleteSeparateGlueRow" />
             </div>
           </div>
@@ -77,7 +77,7 @@
             <div class="separate-mixed-glue-table-card__body">
               <SeparateGlue :is-loading="isLoadingLine" :order-details="noMixGlueTableDetails" :disabled="false"
                 :disable-add-row="false" :request-details="requestDetails" :target-weight="noMixSeparateTargetWeight"
-                target-weight-unit="Kg" use-chiet-capacity-validation @update-bucket="handleNoMixSeparateBucketUpdate"
+                target-weight-unit="Kg" @update-bucket="handleNoMixSeparateBucketUpdate"
                 @add-row="handleAddNoMixSeparateGlueRow" @delete-row="handleDeleteNoMixSeparateGlueRow" />
             </div>
           </div>
@@ -113,7 +113,6 @@ const {
   hasMixChemicals,
   hasNoMixChemicals,
   requestDetails,
-  isNoMixGlue,
   saveDraftToStoreOnly,
   handleAddSeparateGlueRow,
   handleDeleteSeparateGlueRow,

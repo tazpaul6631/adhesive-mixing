@@ -7,12 +7,6 @@ export type HeaderInfo = {
   isNoMixGlue: boolean;
 };
 
-export type MixingProcess = {
-  component: string;
-  weight: string;
-  styleName: string;
-};
-
 export type SeparateGlueRow = {
   glueId: string;
   selectedRequestDetailIds: string[];
@@ -34,13 +28,6 @@ export type RequestDetailOption = {
   label: string;
 };
 
-export type NewComponentFormData = {
-  name: string;
-  percentage: string | number;
-  materialCode: string;
-  weightUnit: string;
-};
-
 export type PayloadBuildContext = {
   factoryId: string;
   employeeId: string;
@@ -52,7 +39,6 @@ export type PayloadBuildContext = {
   noMixChemicals: any[];
   separateGlueDetails: any[];
   noMixSeparateGlueDetails: any[];
-  extraChietList: any[];
   noMixComponents: any[];
   isNoMixGlue?: boolean;
   apiNoSeparateGlues?: any[];
