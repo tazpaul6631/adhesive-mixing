@@ -7,4 +7,7 @@ export default {
     postConfirmGlueReturnLog(data: any) {
         return request.post(`api/mobile/gluereturnlog/confirmgrl`, data, { withRequestBy: true });
     },
+    postCreateGlueReturnLogInRoom(data: any) {
+        return request.post(`api/mobile/gluereturnlog/createinmgr`, data, { withRequestBy: true });
+    },
 };

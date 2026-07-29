@@ -5,6 +5,9 @@ import router from '@/router';
 export interface UserData {
   employeeId: string;
   name?: string;
+  isMixGlueRoom?: boolean;
+  isMixGluePhone?: boolean;
+  isQip?: boolean;
   [key: string]: any;
 }
 
@@ -19,6 +22,9 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.token,
     getUserName: (state) => state.user?.name || state.user?.employeeId || 'Guest',
+    canUseMixGlueRoom: (state) => Boolean(state.user?.isMixGlueRoom),
+    canUseMixGluePhone: (state) => Boolean(state.user?.isMixGluePhone),
+    canUseQip: (state) => Boolean(state.user?.isQip)
   },
 
   actions: {

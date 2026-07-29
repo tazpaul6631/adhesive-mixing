@@ -19,9 +19,8 @@
     </ion-header>
 
     <ion-content class="ion-padding list-separate-mixed-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-separate-page page-content-loading-host"
+      <div class="main-container max-w-full mx-auto list-separate-page"
         :class="[pageClass, { 'list-separate-mixed-glue-layer--hidden': isScanning }]">
-        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
         <div class="surface-card p-0 shadow-1 border-round-xl list-separate-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-separate-card-head">
@@ -229,9 +228,8 @@ import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
 import { useRowActionLock } from '@/composables/useRowActionLock';
-import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
 import { useScrollToSelectedTableRow } from '@/composables/useScrollToSelectedTableRow';
-import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -240,6 +238,7 @@ useLabelPrintGapConfirm('listSeparateMixedGlue');
 const { showToast } = useAppToast();
 const draftStore = useMixGlueDraftStore();
 const { t } = useAppLocale(() => 'tablet');
+
 
 const {
   pageClass,
@@ -254,8 +253,6 @@ const lastPrintTotal = ref(0);
 
 const { scanOnce, isScanning, cancelScan, scanTitle, scanNote } = useTabletBarcodeScan();
 const { isRowActionBusy, isAnyRowBusy, lockRow, unlockRow } = useRowActionLock();
-const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
-
 const {
   isPrinting,
   progress,
@@ -657,6 +654,7 @@ const closePrintAuthDialog = () => {
 
 const onPrintClick = (row: Partial<WorkOrderMaster>) => {
   if (!row.workOrderMasterId) return;
+  selectedItem.value = row;
   if (isRowPrintDisabled(row)) return;
   if (isRowPrintedLocally(row.workOrderMasterId)) {
     showAlreadyPrintedToast(row);
@@ -766,7 +764,11 @@ const submitPrintAuthPassword = async () => {
       showToast({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
-        detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        detail: resolveCatchErrorMessage(
+          t,
+          data?.message,
+          t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        ),
         life: 6000,
       });
       return;
@@ -777,7 +779,11 @@ const submitPrintAuthPassword = async () => {
       showToast({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
-        detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        detail: resolveCatchErrorMessage(
+          t,
+          data?.message,
+          t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        ),
         life: 6000,
       });
       return;
@@ -789,7 +795,11 @@ const submitPrintAuthPassword = async () => {
     showToast({
       severity: 'error',
       summary: t('listSeparateMixedGlue.toast.error'),
-      detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+      detail: resolveCatchErrorMessage(
+        t,
+        error?.response?.data?.message,
+        t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+      ),
       life: 6000,
     });
   } finally {
@@ -843,7 +853,11 @@ const startPrintAuthScan = async () => {
       await reopenPrintAuthDialogWithToast({
         severity: 'error',
         summary: t('listSeparateMixedGlue.toast.error'),
-        detail: data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        detail: resolveCatchErrorMessage(
+          t,
+          data?.message,
+          t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        ),
         life: 6000,
       });
       return;
@@ -856,7 +870,11 @@ const startPrintAuthScan = async () => {
     await reopenPrintAuthDialogWithToast({
       severity: 'error',
       summary: t('listSeparateMixedGlue.toast.error'),
-      detail: error?.response?.data?.message || t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+      detail: resolveCatchErrorMessage(
+        t,
+        error?.response?.data?.message,
+        t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+      ),
       life: 6000,
     });
   } finally {
@@ -983,10 +1001,10 @@ onIonViewWillEnter(() => {
   currentPage.value = 1;
   resetLabelPrintSession();
   clearPrintQueue();
-  void runWithViewEnterLoading(async () => {
+  void (async () => {
     await restorePendingPrintJob();
     await fetchWorkOrders(1, rowsPerPage.value);
-  });
+  })();
 });
 
 onIonViewDidEnter(async () => {
@@ -1007,11 +1025,6 @@ onIonViewDidLeave(() => {
 .text-wrap {
   word-break: break-word;
   white-space: normal;
-}
-
-.page-content-loading-host {
-  position: relative;
-  min-height: 12rem;
 }
 
 .list-separate-page {

@@ -90,6 +90,8 @@
       "error": "Lỗi",
       "draftNotFound": "Không tìm thấy bản nháp đơn điều công.",
       "confirmSuccess": "Đã xác nhận đơn điều công!",
+      "mixStartSuccess": "Xác nhận bắt đầu trộn keo",
+      "mixCompleteSuccess": "Xác nhận đã trộn keo xong",
       "confirmFailed": "Xác nhận thất bại!",
       "noMixConfirmSuccess": "Đã xác nhận không chiết!",
       "separateConfirmSuccess": "Đã xác nhận chiết!",
@@ -456,5 +458,24 @@
     "offlineSyncTitle": "Đang đồng bộ dữ liệu",
     "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
     "invalidOfflineUser": "Người dùng không hợp lệ."
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "Không tìm thấy dữ liệu khởi tạo",
+    "DATA_NOT_FOUND": "Không tìm thấy dữ liệu.",
+    "CREATE_SUCCESS": "Thêm mới thành công",
+    "LOGIN_INFO_NOT_FOUND": "Không tìm thấy thông tin đăng nhập",
+    "WRONG_PASSWORD": "Mật khẩu không chính xác",
+    "USER_NOT_AUTHORIZED": "Bạn chưa được phân quyền để truy cập ứng dụng",
+    "LOGIN_SUCCESS": "Đăng nhập thành công",
+    "CONFIRM_SUCCESS": "Xác nhận thành công",
+    "QIP_CONFIRM_FAIL": "Xác nhận thất bại, bạn không phải QIP vui lòng liên hệ Admin để kiểm tra",
+    "LINE_GLUE_CONFIRM_SUCCESS": "Xác nhận phát keo chuyền thành công",
+    "GLUE_ALREADY_SEPARATE": "Xác nhận phát keo không thành công. Do keo này đã được chiết",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "Xác nhận trả keo thành công",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "Xác nhận keo trả về thành công",
+    "PRINT_SUCCESS": "In thành công",
+    "DATA_ALREADY_EXISTS": "Dữ liệu đã tồn tại",
+    "SYNC_SUCCESS": "Đồng bộ dữ liệu thành công",
+    "CONFIRM_FAIL": "Xác nhận thất bại"
   }
 }

@@ -19,8 +19,7 @@
     </ion-header>
 
     <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-glue-return-page page-content-loading-host" :class="pageClass">
-        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
+      <div class="main-container max-w-full mx-auto list-glue-return-page" :class="pageClass">
         <div class="surface-card p-0 shadow-1 border-round-xl list-glue-return-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-glue-return-card-head">
@@ -73,7 +72,15 @@
                 headerClass="dt-col-primary" bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else class="dt-cell-wrap">{{ data.lineChemicalName }}</span>
+                  <div v-else class="dt-cell-wrap line-chemical-names">
+                    <div
+                      v-for="(name, index) in splitLineChemicalNames(data.lineChemicalName)"
+                      :key="`${data.glueReturnLogId}-${index}`"
+                      class="line-chemical-names__item"
+                    >
+                      {{ name }}
+                    </div>
+                  </div>
                 </template>
               </Column>
 
@@ -155,9 +162,7 @@ import {
 import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
-import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
-import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
-
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
 
@@ -191,8 +196,6 @@ const {
   tableScrollHeight,
   emptyStateMinHeight,
 } = useTabletPageLayout({ listPageWithToolbar: true });
-const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
-
 const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
@@ -208,6 +211,13 @@ const hasLoadedGlueReturnRows = () =>
   lineDetails.value.some((row) => row.glueReturnLogId != null && row.glueReturnLogId !== '');
 
 const goBack = () => router.push('/app-menu');
+
+const splitLineChemicalNames = (value: unknown) => {
+  return String(value ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+};
 
 const isRowScaleConfirmed = (row: Partial<GlueReturnLogItem> | null | undefined) =>
   !!row?.scaleConfirmed &&
@@ -515,16 +525,26 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
     showToast({
       severity: 'success',
       summary: t('listGlueReturnLog.toast.success'),
-      detail: t('listGlueReturnLog.toast.confirmSuccess'),
+      detail: resolveCatchErrorMessage(
+        t,
+        data?.message || 'RETURNED_GLUE_CONFIRM_SUCCESS',
+        t('catchError.RETURNED_GLUE_CONFIRM_SUCCESS'),
+      ),
       life: 3000,
     });
   } catch (error) {
     if (notifyOfflineFromError(error)) return;
     console.error('Lỗi xác nhận cân trả keo:', error);
+    const rawMessage = (error as any)?.response?.data?.message
+      || (error instanceof Error ? error.message : '');
     showToast({
       severity: 'error',
       summary: t('listGlueReturnLog.toast.error'),
-      detail: t('listGlueReturnLog.toast.confirmFailed'),
+      detail: resolveCatchErrorMessage(
+        t,
+        rawMessage,
+        t('listGlueReturnLog.toast.confirmFailed'),
+      ),
       life: 6000,
     });
   } finally {
@@ -536,9 +556,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
 onIonViewWillEnter(() => {
   currentPage.value = 1;
   startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void runWithViewEnterLoading(async () => {
-    await fetchGlueReturnLogs(1, rowsPerPage.value);
-  });
+  void fetchGlueReturnLogs(1, rowsPerPage.value);
 });
 
 onIonViewWillLeave(() => {
@@ -547,11 +565,6 @@ onIonViewWillLeave(() => {
 </script>
 
 <style scoped>
-.page-content-loading-host {
-  position: relative;
-  min-height: 12rem;
-}
-
 .list-glue-return-page {
   width: 100%;
 }
@@ -570,6 +583,19 @@ onIonViewWillLeave(() => {
 .list-glue-return-table-wrap {
   width: 100%;
   max-width: 100%;
+}
+
+.line-chemical-names {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.line-chemical-names__item {
+  display: block;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .tablet-page--inch87.list-glue-return-page {

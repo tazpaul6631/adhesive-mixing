@@ -3,14 +3,9 @@
     <ion-router-outlet />
     <RouteLoadingOverlay />
     <AppToast />
-    <OfflineDataLoading
-      v-if="shouldShowMobileOfflineLoading"
-      :is-open="shouldShowMobileOfflineLoading"
-      :title="mobileOfflineLoadingTitle"
-      :note="mobileOfflineLoadingNote"
-      :current="mobileOfflineLoadingCurrent"
-      :total="mobileOfflineLoadingTotal"
-    />
+    <OfflineDataLoading v-if="shouldShowMobileOfflineLoading" :is-open="shouldShowMobileOfflineLoading"
+      :title="mobileOfflineLoadingTitle" :note="mobileOfflineLoadingNote" :current="mobileOfflineLoadingCurrent"
+      :total="mobileOfflineLoadingTotal" />
   </ion-app>
 </template>
 
@@ -136,15 +131,6 @@ const startMobileOfflineRefreshAfterReconnect = async () => {
 
     const factoryId = resolveCurrentFactoryId();
     const departmentId = resolveCurrentDepartmentId();
-    if (!factoryId) {
-      console.warn('Không tìm thấy factoryId để tải lại dữ liệu offline sau khi có mạng.');
-      return;
-    }
-
-    if (!departmentId) {
-      console.warn('Không tìm thấy departmentId để tải lại dữ liệu offline sau khi có mạng.');
-      return;
-    }
 
     offlineStore.resetDownloadState();
     await offlineStore.downloadOfflineQrData(factoryId, departmentId);

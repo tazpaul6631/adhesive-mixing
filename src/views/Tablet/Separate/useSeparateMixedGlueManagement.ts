@@ -107,6 +107,7 @@ export function useSeparateMixedGlueManagement() {
   const isCompleteButtonDisabled = computed(
     () => isCompleting.value
       || isNavigatingAway.value
+      || isLoadingLine.value
       || (hasSeparateBeenSubmittedBefore() && !separateChangedSinceLastSubmit.value)
   );
 
@@ -540,7 +541,7 @@ export function useSeparateMixedGlueManagement() {
   };
 
   const handleComplete = async () => {
-    if (isCompleting.value || isNavigatingAway.value) return;
+    if (isCompleting.value || isNavigatingAway.value || isLoadingLine.value) return;
 
     isCompleting.value = true;
     try {
@@ -778,7 +779,10 @@ export function useSeparateMixedGlueManagement() {
   });
 
   onIonViewWillLeave(() => {
-    void persistDraftOnLeave();
+    void (async () => {
+      await persistDraftOnLeave();
+      await draftStore.flushPersist();
+    })();
   });
 
   onIonViewWillEnter(() => {

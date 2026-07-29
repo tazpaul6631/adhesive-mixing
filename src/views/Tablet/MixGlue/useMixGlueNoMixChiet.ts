@@ -23,6 +23,8 @@ export function useMixGlueNoMixChiet(options: {
   activeNoMixComponent: Ref<NoMixRow | null>;
   selectedItemNoMix: Ref<NoMixRow | null>;
   noMixMixingProcess: Ref<{ component: string; weight: string }>;
+  isCompleting: Ref<boolean>;
+  isNavigatingAway: Ref<boolean>;
   saveDraftSnapshot: () => Promise<void>;
   completeNoMixGlue?: () => Promise<void>;
 }) {
@@ -33,6 +35,8 @@ export function useMixGlueNoMixChiet(options: {
   const requestDetails = ref<any[]>([]);
   const mixGlueMasterId = ref('');
   const noMixChemicalsFull = ref<NoMixRow[]>([]);
+  /** Khóa sớm trước await saveDraft — tránh spam nút Chiết (gọi BE complete). */
+  const isChietPending = ref(false);
 
   const getOperatorInfo = () => ({
     name: authStore.user?.name || authStore.user?.employeeName || authStore.user?.employeeId || t('mixGlueManagement.unknownOperator'),
@@ -156,6 +160,14 @@ export function useMixGlueNoMixChiet(options: {
   };
 
   const handleChietRow = async (rowData: NoMixRow) => {
+    if (
+      isChietPending.value
+      || options.isCompleting.value
+      || options.isNavigatingAway.value
+    ) {
+      return;
+    }
+
     if (!isRowWeighed(rowData)) {
       showToast({
         severity: 'warn',
@@ -166,8 +178,13 @@ export function useMixGlueNoMixChiet(options: {
       return;
     }
 
-    await options.saveDraftSnapshot();
-    void options.completeNoMixGlue?.();
+    isChietPending.value = true;
+    try {
+      await options.saveDraftSnapshot();
+      await options.completeNoMixGlue?.();
+    } finally {
+      isChietPending.value = false;
+    }
   };
 
   const recalculateNoMixRequiredWeights = (baseActualWeight: number) => {
@@ -247,5 +264,6 @@ export function useMixGlueNoMixChiet(options: {
     handleChietRow,
     handleConfirmNoMixWeight,
     isRowWeighed,
+    isChietPending,
   };
 }

@@ -1,12 +1,12 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
-        <ion-buttons slot="end">
+      <ion-toolbar color="primary" class="header-toolbar">
+        <div slot="start" class="header-start">
+          <ion-back-button default-href="/app-menu" text="" class="header-back"></ion-back-button>
+          <h1 class="header-title">{{ t("mobile.glueConfirm.title") }}</h1>
+        </div>
+        <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
         </ion-buttons>
       </ion-toolbar>
@@ -95,9 +95,6 @@
           </div>
         </section>
       </div>
-
-      <ion-toast :is-open="showSuccessToast" :message="toastMessage" duration="1800" position="bottom"
-        :color="toastColor" :css-class="toastCssClass" @didDismiss="showSuccessToast = false"></ion-toast>
     </ion-content>
   </ion-page>
 </template>
@@ -118,8 +115,6 @@ import {
   IonModal,
   IonPage,
   IonSpinner,
-  IonTitle,
-  IonToast,
   IonToolbar,
 } from "@ionic/vue";
 import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from "ionicons/icons";
@@ -135,7 +130,9 @@ import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
 type ConfirmScanTarget = "line" | "allocated";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
@@ -149,6 +146,7 @@ const authStore = useAuthStore();
 const lineChemicalStore = useLineChemicalStore();
 const offlineStore = useOfflineStore();
 const { t } = useI18n();
+const { showToast } = useAppToast();
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -158,10 +156,6 @@ const lineChemicalInfo = ref<any>(null);
 const allocatedGlueInfo = ref<any>(null);
 const allocatedDisplayRows = ref<Array<{ label: string; value: string }>>([]);
 
-const showSuccessToast = ref(false);
-const toastMessage = ref("");
-const toastColor = ref<string | undefined>('success');
-const toastCssClass = ref('');
 const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
 const isLoadingAllocatedQr = ref(false);
@@ -291,7 +285,11 @@ async function triggerMismatchFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerMismatchFeedback();
-  alert(message);
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueConfirm.title'),
+    detail: message,
+  });
 }
 
 function getCurrentUserId() {
@@ -388,7 +386,7 @@ async function enqueueConfirmGrPayload(payload: Record<string, any>) {
 async function submitConfirmGrPayload(
   payload: Record<string, any>,
   options: { silent?: boolean; fallbackToQueueOnFailure?: boolean } = {}
-): Promise<boolean> {
+): Promise<string | boolean> {
   if (!authStore.isOnline) {
     await enqueueConfirmGrPayload(payload);
     return true;
@@ -410,7 +408,7 @@ async function submitConfirmGrPayload(
       throw new Error(responseData.message || '');
     }
 
-    return true;
+    return typeof responseData.message === 'string' ? responseData.message : true;
   } catch (error) {
     if (options.fallbackToQueueOnFailure) {
       try {
@@ -556,7 +554,11 @@ async function openScanner(target: ConfirmScanTarget) {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== "granted" && camera !== "limited") {
-      alert(t("mobile.glueConfirm.messages.cameraPermission"));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueConfirm.title'),
+        detail: t("mobile.glueConfirm.messages.cameraPermission"),
+      });
       return;
     }
 
@@ -590,8 +592,6 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
   if (target === "allocated") {
     await handleAllocatedQrScanResult(normalizedValue);
   }
-
-  closeCurrentToast();
 }
 
 async function handleLineQrScanResult(qrText: string) {
@@ -629,7 +629,11 @@ async function handleLineQrScanResult(qrText: string) {
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
     resetLineQrField();
-    alert(t("mobile.glueConfirm.messages.loadLineError"));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueConfirm.title'),
+      detail: t("mobile.glueConfirm.messages.loadLineError"),
+    });
   } finally {
     isLoadingLineQr.value = false;
   }
@@ -671,7 +675,11 @@ async function handleAllocatedQrScanResult(qrText: string) {
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo phát:", error);
     resetAllocatedQrField();
-    alert(t("mobile.glueConfirm.messages.loadAllocatedError"));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueConfirm.title'),
+      detail: t("mobile.glueConfirm.messages.loadAllocatedError"),
+    });
   } finally {
     isLoadingAllocatedQr.value = false;
   }
@@ -693,16 +701,20 @@ async function handleConfirmReturn() {
     if (!authStore.isOnline) {
       await submitConfirmGrPayload(payload);
       saveLineChemicalSessionAfterConfirm();
-      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      notifyToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       resetAllocatedQrField();
       resetLineQrField();
       return;
     }
 
     try {
-      await submitConfirmGrPayload(payload);
+      const result = await submitConfirmGrPayload(payload);
       saveLineChemicalSessionAfterConfirm();
-      showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
+      notifyToast(resolveCatchErrorMessage(
+        t,
+        typeof result === 'string' ? result : 'LINE_GLUE_CONFIRM_SUCCESS',
+        t('catchError.LINE_GLUE_CONFIRM_SUCCESS'),
+      ));
       resetAllocatedQrField();
       resetLineQrField();
     } finally {
@@ -711,11 +723,18 @@ async function handleConfirmReturn() {
   } catch (error) {
     console.error("Không thể xác nhận:", error);
 
-    const errorMessage = error instanceof Error && error.message
-      ? error.message
-      : t("mobile.glueConfirm.messages.confirmError");
+    const rawMessage = (error as any)?.response?.data?.message
+      || (error instanceof Error ? error.message : '');
 
-    alert(errorMessage);
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueConfirm.title'),
+      detail: resolveCatchErrorMessage(
+        t,
+        rawMessage,
+        t('mobile.glueConfirm.messages.confirmError'),
+      ),
+    });
   } finally {
     isConfirmingReturn.value = false;
   }
@@ -740,15 +759,14 @@ function resetConfirmReturnStatus() {
   isConfirmReturnCompleted.value = false;
 }
 
-function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
-  toastMessage.value = message;
-  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
-  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
-  showSuccessToast.value = true;
-}
-
-function closeCurrentToast() {
-  showSuccessToast.value = false;
+function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  showToast({
+    severity: type === 'offlineQueue' ? 'warn' : 'success',
+    summary: type === 'offlineQueue'
+      ? t('mobile.offlineQueue.title')
+      : t('mobile.glueConfirm.title'),
+    detail: message,
+  });
 }
 
 function formatLineChemicalDisplay(info: any) {
@@ -773,17 +791,50 @@ function getAllocatedDisplayRows(info: any) {
 </script>
 
 <style scoped lang="scss">
-.header-back-button {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  --color: #ffffff;
-  --icon-font-size: 2rem;
-  --padding-start: 0;
-  --padding-end: 0;
-  --min-width: 54px;
-  --min-height: 54px;
+.header-container {
+  ion-toolbar.header-toolbar {
+    --background: #0b56d9;
+    --color: #ffffff;
+    --min-height: 56px;
+    --padding-start: 4px;
+    --padding-end: 10px;
+    --padding-top: 6px;
+    --padding-bottom: 6px;
+  }
+}
+
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+  padding-inline-end: 8px;
+}
+
+.header-back {
+  margin: 0;
+  --padding-start: 6px;
+  --padding-end: 2px;
+  --icon-margin-end: 0;
+  --icon-margin-start: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
 }
 
 .mobile-content {

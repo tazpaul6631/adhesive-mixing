@@ -20,8 +20,7 @@
 
     <ion-content class="ion-padding separate-mixed-glue-content" :scroll-y="false">
 
-      <div class="separate-mixed-glue-layout main-container max-w-full mx-auto page-content-loading-host">
-        <PageContentLoadingOverlay :visible="isLoadingLine || isCompleting" />
+      <div class="separate-mixed-glue-layout main-container max-w-full mx-auto">
         <!-- Thông tin header — cố định, không scroll -->
         <div class="separate-mixed-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -53,7 +52,8 @@
 
         <!-- Vùng bảng — scroll khi nội dung dài -->
         <div class="separate-mixed-glue-scroll-body">
-          <div v-if="hasMixChemicals" class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
+          <div v-if="isLoadingLine || hasMixChemicals"
+            class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-list mr-2"></i>{{ t('separateMixedGlue.management.sections.mixedGlueBucket') }}
@@ -67,7 +67,7 @@
             </div>
           </div>
 
-          <div v-if="hasNoMixChemicals"
+          <div v-if="isLoadingLine || hasNoMixChemicals"
             class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">
@@ -94,7 +94,6 @@ import {
 } from '@ionic/vue';
 
 import SeparateGlue from '@/views/Tablet/Separate/components/SeparateGlue.vue';
-import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useSeparateMixedGlueManagement } from './useSeparateMixedGlueManagement';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
@@ -134,11 +133,6 @@ const {
 
 .separate-mixed-glue-content {
   --overflow: hidden;
-}
-
-.page-content-loading-host {
-  position: relative;
-  min-height: 12rem;
 }
 
 .separate-mixed-glue-layout {

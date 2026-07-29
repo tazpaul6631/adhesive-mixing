@@ -51,9 +51,23 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            // Keep vue-icons out of vendor-vue-core (`includes('vue')` would match "vue-icons").
+            if (id.includes('@kalimahapps/vue-icons')) {
+              return 'vendor-vue-icons';
+            }
             if (id.includes('@ionic')) return 'vendor-ionic';
             if (id.includes('primevue') || id.includes('primeicons')) return 'vendor-primevue';
-            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vendor-vue-core';
+            if (
+              id.includes(`${path.sep}vue${path.sep}`)
+              || id.includes('/vue/')
+              || id.includes('\\vue\\')
+              || id.includes('@vue')
+              || id.includes('pinia')
+              || id.includes('vue-router')
+              || id.includes('vue-i18n')
+            ) {
+              return 'vendor-vue-core';
+            }
             if (id.includes('@capacitor')) return 'vendor-capacitor';
             return 'vendor-others';
           }

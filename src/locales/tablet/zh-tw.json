@@ -90,6 +90,8 @@
       "error": "錯誤",
       "draftNotFound": "找不到派工單草稿。",
       "confirmSuccess": "已確認派工單！",
+      "mixStartSuccess": "確認開始調膠",
+      "mixCompleteSuccess": "確認調膠完成",
       "confirmFailed": "確認失敗！",
       "noMixConfirmSuccess": "已確認無分裝！",
       "separateConfirmSuccess": "已確認分裝！",
@@ -456,5 +458,24 @@
     "offlineSyncTitle": "正在同步資料",
     "offlineSyncNote": "請稍候，離線資料正在上傳至系統。",
     "invalidOfflineUser": "使用者無效。"
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "找不到初始化資料",
+    "DATA_NOT_FOUND": "找不到資料。",
+    "CREATE_SUCCESS": "新增成功",
+    "LOGIN_INFO_NOT_FOUND": "找不到登入資訊",
+    "WRONG_PASSWORD": "密碼不正確",
+    "USER_NOT_AUTHORIZED": "您尚未被授權存取此應用程式",
+    "LOGIN_SUCCESS": "登入成功",
+    "CONFIRM_SUCCESS": "確認成功",
+    "QIP_CONFIRM_FAIL": "確認失敗，您不是 QIP，請聯繫管理員檢查",
+    "LINE_GLUE_CONFIRM_SUCCESS": "產線發膠確認成功",
+    "GLUE_ALREADY_SEPARATE": "發膠確認失敗，此膠水已分裝",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "退膠確認成功",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "退回膠水確認成功",
+    "PRINT_SUCCESS": "列印成功",
+    "DATA_ALREADY_EXISTS": "資料已存在",
+    "SYNC_SUCCESS": "資料同步成功",
+    "CONFIRM_FAIL": "確認失敗"
   }
 }

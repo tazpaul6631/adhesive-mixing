@@ -10,8 +10,7 @@ import { computed, onMounted } from 'vue';
 import { Network } from '@capacitor/network';
 import { useAuthStore } from '@/store/auth';
 import { useAppLocale } from '@/composables/useAppLocale';
-import VueIcon from '@kalimahapps/vue-icons/VueIcon';
-import { BxWifiOff } from '@kalimahapps/vue-icons';
+import { BxWifiOff } from '@kalimahapps/vue-icons/bx';
 
 const authStore = useAuthStore();
 const { t } = useAppLocale(() => 'mobile');

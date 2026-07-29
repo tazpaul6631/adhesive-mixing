@@ -1,15 +1,15 @@
 <template>
   <ion-page>
     <ion-header class="ion-no-border header-container">
-      <ion-toolbar color="primary" class="no-padding app-menu-toolbar">
-        <ion-title class="app-menu-toolbar__title">{{ t('appMenu.title') }}</ion-title>
-
-        <div slot="end" class="app-menu-toolbar__actions">
+      <ion-toolbar color="primary" class="header-toolbar">
+        <div slot="start" class="header-start">
+          <h1 class="header-title">{{ t('appMenu.title') }}</h1>
+        </div>
+        <div slot="end" class="header-end">
           <component :is="networkStatusIconComp" v-if="networkStatusIconComp" />
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
-          <ion-button fill="clear" @click="handleLogout" class="logout-btn">
-            <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
-            <!-- <span class="logout-text">{{ t('appMenu.logout') }}</span> -->
+          <ion-button fill="clear" class="logout-btn" @click="handleLogout">
+            <ion-icon slot="icon-only" :icon="logOutOutline"></ion-icon>
           </ion-button>
         </div>
       </ion-toolbar>
@@ -44,7 +44,7 @@
           </template>
 
           <template v-if="!isTablet">
-            <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card shadow-sm"
+            <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card-mobile shadow-sm"
               :class="{ 'feature-card--disabled': feature.disabled }" @click="navigateFeature(feature)">
               <div class="icon-wrapper" :style="{ background: feature.bgLight }">
                 <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonPage, IonHeader, IonToolbar, IonContent,
   IonIcon, IonButton, alertController
 } from '@ionic/vue';
 import {
@@ -137,71 +137,94 @@ onUnmounted(() => {
 });
 // --------------------------------
 
-// --- DATA MÔ PHỎNG API CHO TABLET FEATURES ---
-const tabletFeatures = computed(() => [
-  {
-    path: '/list-mix-glue',
-    title: t('appMenu.features.mixGlue.title'),
-    description: t('appMenu.features.mixGlue.description'),
-    icon: scaleOutline,
-    color: '#0ea5e9',
-    bgLight: '#e0f2fe'
-  },
-  {
-    path: '/list-separate-mixed-glue-management',
-    title: t('appMenu.features.separateMixedGlue.title'),
-    description: t('appMenu.features.separateMixedGlue.description'),
-    icon: gitMergeOutline,
-    color: '#f59e0b',
-    bgLight: '#fef3c7'
-  },
-  {
-    path: '/glue-return-log',
-    title: t('appMenu.features.glueReturnLog.title'),
-    description: t('appMenu.features.glueReturnLog.description'),
-    icon: readerOutline,
-    color: '#8b5cf6',
-    bgLight: '#ede9fe'
-  },
-]);
+// --- TABLET FEATURES (chỉ hiện khi isMixGlueRoom === true) ---
+const tabletFeatures = computed(() => {
+  if (!authStore.canUseMixGlueRoom) return [];
+
+  return [
+    {
+      path: '/list-mix-glue',
+      title: t('appMenu.features.mixGlue.title'),
+      description: t('appMenu.features.mixGlue.description'),
+      icon: scaleOutline,
+      color: '#0ea5e9',
+      bgLight: '#e0f2fe'
+    },
+    {
+      path: '/list-separate-mixed-glue-management',
+      title: t('appMenu.features.separateMixedGlue.title'),
+      description: t('appMenu.features.separateMixedGlue.description'),
+      icon: gitMergeOutline,
+      color: '#f59e0b',
+      bgLight: '#fef3c7'
+    },
+    {
+      path: '/glue-return-log',
+      title: t('appMenu.features.glueReturnLog.title'),
+      description: t('appMenu.features.glueReturnLog.description'),
+      icon: readerOutline,
+      color: '#8b5cf6',
+      bgLight: '#ede9fe'
+    },
+  ];
+});
 
 // --- DATA CHO MOBILE FEATURES ---
-const mobileFeatures = computed(() => [
-  {
-    path: '/mobile',
-    title: t('mobile.appMenu.glueConfirm'),
-    description: t('mobile.appMenu.description'),
-    icon: gitCompareOutline,
-    color: '#f59e0b',
-    bgLight: '#fef3c7'
-  },
-  {
-    path: '/mobile/glue-return',
-    title: t('mobile.appMenu.glueReturn'),
-    description: t('mobile.appMenu.glueReturnDescription'),
-    icon: qrCodeOutline,
-    color: '#8b5cf6',
-    bgLight: '#ede9fe'
-  },
-  {
-    path: '/mobile/glue-check-list',
-    title: t('mobile.appMenu.glueCheckList'),
-    description: t('mobile.appMenu.glueCheckListDescription'),
-    icon: checkmarkDoneOutline,
-    color: '#10b981',
-    bgLight: '#d1fae5'
-  },
-  {
-    path: '/mobile/glue-info-check',
-    title: t('mobile.appMenu.glueInfoCheck'),
-    description: t('mobile.appMenu.glueInfoCheckDescription'),
-    icon: search,
-    color: '#0ea5e9',
-    bgLight: '#e0f2fe',
-    disabled: !authStore.isOnline,
-    disabledMessage: !authStore.isOnline ? t('mobile.appMenu.onlineOnly') : '',
+const mobileFeatures = computed(() => {
+  const features = [];
+
+  if (authStore.canUseMixGluePhone) {
+    features.push(
+      {
+        path: '/mobile',
+        title: t('mobile.appMenu.glueConfirm'),
+        description: t('mobile.appMenu.description'),
+        icon: gitCompareOutline,
+        color: '#f59e0b',
+        bgLight: '#fef3c7'
+      },
+      {
+        path: '/mobile/glue-return',
+        title: t('mobile.appMenu.glueReturn'),
+        description: t('mobile.appMenu.glueReturnDescription'),
+        icon: qrCodeOutline,
+        color: '#8b5cf6',
+        bgLight: '#ede9fe'
+      },
+      {
+        path: '/mobile/glue-return-in-room',
+        title: t('mobile.appMenu.glueReturnInRoom'),
+        description: t('mobile.appMenu.glueReturnInRoomDescription'),
+        icon: qrCodeOutline,
+        color: '#ec4899',
+        bgLight: '#fce7f3'
+      },
+      {
+        path: '/mobile/glue-info-check',
+        title: t('mobile.appMenu.glueInfoCheck'),
+        description: t('mobile.appMenu.glueInfoCheckDescription'),
+        icon: search,
+        color: '#0ea5e9',
+        bgLight: '#e0f2fe',
+        disabled: !authStore.isOnline,
+        disabledMessage: !authStore.isOnline ? t('mobile.appMenu.onlineOnly') : '',
+      }
+    );
   }
-]);
+
+  if (authStore.canUseQip) {
+    features.push({
+      path: '/mobile/glue-check-list',
+      title: t('mobile.appMenu.glueCheckList'),
+      description: t('mobile.appMenu.glueCheckListDescription'),
+      icon: checkmarkDoneOutline,
+      color: '#10b981',
+      bgLight: '#d1fae5'
+    });
+  }
+
+  return features;
+});
 
 type AppMenuFeature = {
   path: string;
@@ -254,22 +277,43 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.app-menu-toolbar {
-  --padding-top: 6px;
-  --padding-bottom: 6px;
+.header-container {
+  --background: #0b56d9;
+}
+
+.header-toolbar {
+  --background: #0b56d9;
+  --color: #ffffff;
+  --min-height: 50px;
   --padding-start: 12px;
   --padding-end: 8px;
-  --min-height: 56px;
+  --padding-top: 6px;
+  --padding-bottom: 6px;
 }
 
-.app-menu-toolbar__title {
-  font-size: 1.15rem;
+.header-start {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: calc(100vw - 180px);
+  padding-inline-end: 8px;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
   font-weight: 700;
+  line-height: 1.3;
   letter-spacing: 0.01em;
-  padding-inline: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.app-menu-toolbar__actions {
+.header-end {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -280,17 +324,16 @@ const handleLogout = async () => {
   --color: #fff;
   --background-hover: rgba(255, 255, 255, 0.12);
   --border-radius: 999px;
-  --padding-start: 10px;
-  --padding-end: 12px;
+  --padding-start: 8px;
+  --padding-end: 8px;
   margin: 0;
-  font-weight: 600;
-  font-size: 1.5rem;
-  height: 50px;
-  margin-left: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
 }
 
 .logout-btn ion-icon {
-  font-size: 2rem;
+  font-size: 1.75rem;
 }
 
 .custom-content {
@@ -307,7 +350,7 @@ const handleLogout = async () => {
   background: white;
   border-radius: 20px;
   padding: 25px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
@@ -341,6 +384,17 @@ const handleLogout = async () => {
   align-items: center;
   gap: 20px;
   cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.feature-card-mobile {
+  background: white;
+  border-radius: 20px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
   transition: all 0.3s ease;
   border: 1px solid transparent;
 }
@@ -431,17 +485,15 @@ const handleLogout = async () => {
 }
 
 @media (max-width: 480px) {
-  .app-menu-toolbar__title {
-    font-size: 1rem;
-  }
-
-  .logout-text {
-    display: none;
+  .header-title {
+    font-size: 18px;
   }
 
   .logout-btn {
-    --padding-start: 8px;
-    --padding-end: 8px;
+    --padding-start: 6px;
+    --padding-end: 6px;
+    width: 40px;
+    height: 40px;
     min-width: 40px;
   }
 }

@@ -90,6 +90,8 @@
       "error": "Error",
       "draftNotFound": "Work order draft not found.",
       "confirmSuccess": "Work order confirmed!",
+      "mixStartSuccess": "Confirmed start of glue mixing",
+      "mixCompleteSuccess": "Confirmed glue mixing completed",
       "confirmFailed": "Confirmation failed!",
       "noMixConfirmSuccess": "No-decant confirmation completed.",
       "separateConfirmSuccess": "Decant confirmation completed.",
@@ -456,5 +458,24 @@
     "offlineSyncTitle": "Syncing data",
     "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
     "invalidOfflineUser": "Invalid user."
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "Initialization data not found",
+    "DATA_NOT_FOUND": "Data not found.",
+    "CREATE_SUCCESS": "Created successfully",
+    "LOGIN_INFO_NOT_FOUND": "Login information not found",
+    "WRONG_PASSWORD": "Incorrect password",
+    "USER_NOT_AUTHORIZED": "You are not authorized to access this application",
+    "LOGIN_SUCCESS": "Login successful",
+    "CONFIRM_SUCCESS": "Confirmed successfully",
+    "QIP_CONFIRM_FAIL": "Confirmation failed. You are not a QIP. Please contact Admin to check",
+    "LINE_GLUE_CONFIRM_SUCCESS": "Line glue issue confirmed successfully",
+    "GLUE_ALREADY_SEPARATE": "Glue issue confirmation failed because this glue has already been separated",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "Glue return confirmed successfully",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "Returned glue confirmed successfully",
+    "PRINT_SUCCESS": "Printed successfully",
+    "DATA_ALREADY_EXISTS": "Data already exists",
+    "SYNC_SUCCESS": "Data synced successfully",
+    "CONFIRM_FAIL": "Confirmation failed"
   }
 }
