@@ -221,23 +221,7 @@
         "selectBucket": "Chọn thùng chứa"
       },
       "deleteAriaLabel": "Xóa",
-      "addAriaLabel": "Thêm",
-      "viewAriaLabel": "Xem"
-    },
-    "addComponentDialog": {
-      "title": "Thêm thành phần",
-      "nameLabel": "Tên thành phần",
-      "namePlaceholder": "Chọn thành phần",
-      "nameRequired": "Tên thành phần là bắt buộc.",
-      "weightLabel": "TL thực tế",
-      "weightRequired": "Vui lòng nhập số ({unit})"
-    },
-    "chietDialog": {
-      "title": "Chiết keo theo thùng chứa",
-      "currentGlue": "Keo đang chiết",
-      "weighedWeight": "TL đã cân",
-      "capacityMustMatch": "Tổng TL thùng chứa phải khớp TL đã cân",
-      "viewOnly": "Chỉ xem"
+      "addAriaLabel": "Thêm"
     },
     "toast": {
       "restore": "Đã khôi phục",
@@ -253,33 +237,21 @@
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
       "completeFailed": "Không thể xác nhận hoàn thành",
-      "weighingComplete": "Hoàn thành",
-      "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
-      "addSuccess": "Thành công",
-      "addSuccessDetail": "Đã thêm thành phần",
       "deleteSuccess": "Đã xóa",
       "deleteSuccessDetail": "Xóa thành phần thành công",
-      "loadMaterialsFailed": "Không thể tải thành phần",
       "notWeighed": "Chưa cân",
       "weighBeforeAdd": "Vui lòng cân keo {name} trước khi thêm thành phần.",
       "weighBeforeChiet": "Vui lòng cân keo {name} trước khi chiết.",
-      "chietSaved": "Đã lưu chiết",
-      "chietSavedDetail": "Thông tin chiết đã được tạm lưu",
       "selectBucketRow": "Vui lòng chọn thùng chứa ở dòng {row} trước khi thêm dòng mới.",
-      "selectBucketRowShort": "Vui lòng chọn thùng chứa ở dòng {row}.",
       "allocationComplete": "Đã chiết xong",
       "weightExceeded": "Vượt trọng lượng",
       "bucketCapacityExceeded": "Tổng TL thùng chứa vượt quá {label}. Vui lòng chọn thùng phù hợp hơn.",
-      "addRowMin": "Vui lòng thêm ít nhất một dòng và chọn thùng chứa.",
-      "notWeighedForChiet": "Keo {name} chưa có TL cân. Vui lòng cân trước khi chiết.",
       "invalid": "Không hợp lệ",
       "mixedGlueSelectBucket": "Keo trộn hỗn hợp dòng {row}: vui lòng chọn thùng chứa.",
       "mixedGluePrefix": "Keo trộn hỗn hợp: {message}",
       "noMixSelectBucket": "Keo không trộn dòng {row}: vui lòng chọn thùng chứa.",
       "noMixPrefix": "Keo không trộn: {message}",
-      "noMixWeighFirst": "Keo không trộn {name}: vui lòng hoàn thành cân trước.",
-      "chietSelectBucket": "Keo {name} chiết dòng {row}: vui lòng chọn thùng chứa.",
-      "chietPrefix": "Keo {name} chiết: {message}"
+      "noMixWeighFirst": "Keo không trộn {name}: vui lòng hoàn thành cân trước."
     },
     "confirmDelete": {
       "title": "Xác nhận xóa",
@@ -433,8 +405,6 @@
       "saveSuccess": "Lưu thành công",
       "saveSuccessDetail": "Dữ liệu đã lưu. Vui lòng quay lại danh sách để xác nhận!",
       "saveFailed": "Không thể lưu dữ liệu",
-      "weighingComplete": "Hoàn thành",
-      "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
       "baseNotFound": "Không tìm thấy keo trộn cơ bản",
       "addSuccess": "Thành công",
       "addSuccessDetail": "Đã thêm thành phần",
