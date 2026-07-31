@@ -555,7 +555,7 @@ export function useSeparateMixedGlueManagement() {
           severity: 'warn',
           summary: t('separateMixedGlue.toast.incomplete'),
           detail: validationError,
-          life: 6000,
+          life: 3000,
         });
         return;
       }

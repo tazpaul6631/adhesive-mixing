@@ -29,6 +29,12 @@
   "listMixGlue": {
     "sectionTitle": "Mix glue list",
     "empty": "No data to display at the moment.",
+    "deviceUsage": {
+      "small": "Small",
+      "large": "Large",
+      "smallTitle": "Small devices in use {inUse}/{total}",
+      "largeTitle": "Large devices in use {inUse}/{total}"
+    },
     "filter": {
       "gluePlaceholder": "Filter by glue name"
     },
@@ -82,7 +88,8 @@
       "gapConfirmOk": "Gap aligned — continue",
       "gapConfirmCancel": "Cancel",
       "queuedTitle": "Waiting to print",
-      "busyPendingToast": "There are pending labels. Please finish them before printing a new order."
+      "busyPendingToast": "There are pending labels. Please finish them before printing a new order.",
+      "busyPrintingToast": "Print authentication in progress. Please finish before selecting another order."
     },
     "toast": {
       "warning": "Warning",
@@ -93,6 +100,10 @@
       "mixStartSuccess": "Confirmed start of glue mixing",
       "mixCompleteSuccess": "Confirmed glue mixing completed",
       "confirmFailed": "Confirmation failed!",
+      "noMixingDeviceAvailable": "No mixing device available. Please wait for another device to finish.",
+      "noSmallMixingDeviceAvailable": "All 'Small' mixing devices are busy. Please wait for a 'Small' device to finish before continuing.",
+      "noLargeMixingDeviceAvailable": "All 'Large' mixing devices are busy. Please wait for a 'Large' device to finish before continuing.",
+      "mixingDeviceAssignmentMissing": "No mixing device assigned to this order. Please refresh the list or contact IT.",
       "noMixConfirmSuccess": "No-decant confirmation completed.",
       "separateConfirmSuccess": "Decant confirmation completed.",
       "noMixConfirmFailed": "No-decant confirmation failed.",
@@ -181,7 +192,8 @@
       "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
       "gapConfirmOk": "Gap aligned — continue",
       "gapConfirmCancel": "Cancel",
-      "queuedTitle": "Waiting to print"
+      "queuedTitle": "Waiting to print",
+      "busyPrintingToast": "Print authentication in progress. Please finish before selecting another order."
     },
     "toast": {
       "warning": "Warning",
@@ -204,8 +216,8 @@
     "management": {
       "pageTitle": "Mixed glue repackaging",
       "sections": {
-        "mixedGlueBucket": "Mixed glue repackaging bucket requirement details",
-        "noMixGlue": "Non-mixed glue usage requirement details"
+        "mixedGlueBucket": "Mixed glue repackaging bucket requirement.",
+        "noMixGlue": "Non-mixed glue repackaging bucket requirement."
       }
     },
     "table": {

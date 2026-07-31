@@ -298,7 +298,7 @@ const confirmWeight = () => {
       severity: 'warn',
       summary: t('electronicScale.toast.noTargetWeight'),
       detail: t('electronicScale.toast.noTargetWeightDetail'),
-      life: 4000
+      life: 3000
     });
     return;
   }
@@ -309,7 +309,7 @@ const confirmWeight = () => {
       severity: 'warn',
       summary: t('electronicScale.toast.zeroWeight'),
       detail: t('electronicScale.toast.zeroWeightDetail'),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
@@ -355,7 +355,7 @@ const confirmWeight = () => {
     detail: props.enforceTolerance
       ? t('electronicScale.toast.successWithinTolerance')
       : t('electronicScale.toast.successConfirmed'),
-    life: 6000
+    life: 3000
   });
 };
 

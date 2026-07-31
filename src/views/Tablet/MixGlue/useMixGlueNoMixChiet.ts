@@ -64,7 +64,7 @@ export function useMixGlueNoMixChiet(options: {
       severity: 'warn',
       summary: t('separateMixedGlue.toast.locked'),
       detail: t('separateMixedGlue.toast.completeFirst'),
-      life: 6000,
+      life: 3000,
     });
     return true;
   };
@@ -173,7 +173,7 @@ export function useMixGlueNoMixChiet(options: {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.notWeighed'),
         detail: t('separateMixedGlue.toast.weighBeforeChiet', { name: rowData.materialName || '' }),
-        life: 6000,
+        life: 3000,
       });
       return;
     }

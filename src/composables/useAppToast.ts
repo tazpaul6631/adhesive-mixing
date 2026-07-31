@@ -2,7 +2,7 @@ import { useToast } from 'primevue/usetoast';
 import type { ToastMessageOptions } from 'primevue/toast';
 
 const TOAST_LIFE_SUCCESS = 3000;
-const TOAST_LIFE_DEFAULT = 6000;
+const TOAST_LIFE_DEFAULT = 3000;
 
 const resolveToastLife = (severity?: ToastMessageOptions['severity']): number =>
   severity === 'success' ? TOAST_LIFE_SUCCESS : TOAST_LIFE_DEFAULT;

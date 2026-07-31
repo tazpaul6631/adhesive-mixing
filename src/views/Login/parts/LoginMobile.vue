@@ -533,9 +533,18 @@ const downloadOfflineDataAfterLogin = async (userData: any, fallbackFactoryId = 
 };
 
 const getLoginErrorMessage = (error: any, fallback: string) => {
+  const apiMessage = error?.response?.data?.message;
+  const rawMessage = typeof error?.message === 'string' ? error.message.trim() : '';
+  const isNetworkish =
+    !error?.response
+    || rawMessage === 'Network Error'
+    || error?.code === 'ERR_NETWORK'
+    || error?.code === 'ECONNABORTED'
+    || rawMessage.toLowerCase().includes('timeout');
+
   return resolveCatchErrorMessage(
     t,
-    error?.response?.data?.message || error?.message,
+    isNetworkish ? '' : (apiMessage || rawMessage),
     fallback,
   );
 };

@@ -56,6 +56,7 @@ function mapReceiveGluePayload(payload: any) {
 
   addValueIfExists(requestPayload, 'productLineId', payload?.productLineId);
   addValueIfExists(requestPayload, 'lineChemicalId', payload?.lineChemicalId);
+  addValueIfExists(requestPayload, 'layoutLineChemicalId', payload?.layoutLineChemicalId);
   addValueIfExists(requestPayload, 'mixGlueMasterId', payload?.mixGlueMasterId);
   addValueIfExists(requestPayload, 'separateGlueId', payload?.separateGlueId);
   addValueIfExists(requestPayload, 'noSeparateGlueId', payload?.noSeparateGlueId);

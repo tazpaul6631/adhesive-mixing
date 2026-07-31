@@ -30,4 +30,8 @@ export default {
   getCheckListAbnormalItemQrData(factoryId: string) {
     return request.get(`api/mobile/offline/claiqrdata/${encodeURIComponent(factoryId)}`);
   },
+
+  getLineLayoutChemicalQrData(factoryId: string, departmentId: string) {
+    return request.get(`api/mobile/offline/llcqrdata/${encodeURIComponent(factoryId)}/${encodeURIComponent(departmentId)}`);
+  },
 };

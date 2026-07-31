@@ -7,7 +7,7 @@
             <ion-button @click="goBack">
               <i class="pi pi-angle-left text-xl mr-1"></i>
               <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
-                }}</ion-title>
+              }}</ion-title>
             </ion-button>
           </ion-buttons>
           <div class="flex align-items-center gap-2 mr-2">
@@ -73,11 +73,8 @@
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
                   <div v-else class="dt-cell-wrap line-chemical-names">
-                    <div
-                      v-for="(name, index) in splitLineChemicalNames(data.lineChemicalName)"
-                      :key="`${data.glueReturnLogId}-${index}`"
-                      class="line-chemical-names__item"
-                    >
+                    <div v-for="(name, index) in splitLineChemicalNames(data.lineChemicalName)"
+                      :key="`${data.glueReturnLogId}-${index}`" class="line-chemical-names__item">
                       {{ name }}
                     </div>
                   </div>
@@ -146,7 +143,12 @@ import {
 } from '@ionic/vue';
 import { useAppToast } from '@/composables/useAppToast';
 import dayjs from 'dayjs';
-import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
+import {
+  computeLazyTableTotalRecords,
+  createSkeletonRows,
+  parseCursorPagedMeta,
+  useListTableFetch,
+} from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
@@ -196,10 +198,10 @@ const {
   tableScrollHeight,
   emptyStateMinHeight,
 } = useTabletPageLayout({ listPageWithToolbar: true });
-const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(50);
+const rowsPerPage = ref(100);
+const lineDetails = ref<Partial<GlueReturnLogItem>[]>(createSkeletonRows(rowsPerPage.value));
 const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const isLoadingLine = ref(true);
 const isConfirming = ref(false);
@@ -364,7 +366,7 @@ const syncSelectedItem = () => {
 const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
   const requestId = startRequest();
   isLoadingLine.value = true;
-  lineDetails.value = Array.from({ length: pageSize }).map(() => ({}));
+  lineDetails.value = createSkeletonRows(pageSize);
 
   try {
     const payload = {
@@ -442,7 +444,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.selectRowFirst'),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
@@ -474,7 +476,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
   //   severity: 'info',
   //   summary: t('listGlueReturnLog.toast.success'),
   //   detail: t('listGlueReturnLog.toast.scaleSaved'),
-  //   life: 6000,
+  //   life: 3000,
   // });
 };
 
@@ -488,7 +490,7 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.missingConfirmIds'),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
@@ -553,6 +555,15 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
   }
 };
 
+/**
+ * Thả hàng list khỏi heap khi rời page.
+ * Giữ: selectedItem, pending cân (store). Không clear khi đang confirm.
+ */
+const releaseListTableMemory = () => {
+  if (isConfirming.value) return;
+  lineDetails.value = [];
+};
+
 onIonViewWillEnter(() => {
   currentPage.value = 1;
   startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
@@ -561,6 +572,7 @@ onIonViewWillEnter(() => {
 
 onIonViewWillLeave(() => {
   stopAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
+  releaseListTableMemory();
 });
 </script>
 

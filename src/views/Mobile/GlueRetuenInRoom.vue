@@ -259,6 +259,7 @@ async function showWarningAlert(message: string) {
     severity: 'warn',
     summary: t('mobile.glueReturnInRoom.title'),
     detail: message,
+    life: 3000,
   });
 }
 
@@ -269,6 +270,7 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
       ? t('mobile.offlineQueue.title')
       : t('mobile.glueReturnInRoom.title'),
     detail: message,
+    life: 3000,
   });
 }
 
@@ -285,6 +287,7 @@ async function loadProductLines() {
       severity: 'warn',
       summary: t('mobile.glueReturnInRoom.title'),
       detail: t('mobile.glueReturnInRoom.messages.factoryMissing'),
+      life: 3000,
     });
     return;
   }
@@ -294,6 +297,7 @@ async function loadProductLines() {
       severity: 'warn',
       summary: t('mobile.glueReturnInRoom.title'),
       detail: t('mobile.glueReturnInRoom.messages.departmentMissing'),
+      life: 3000,
     });
     return;
   }
@@ -325,6 +329,7 @@ async function loadProductLines() {
       detail: error instanceof Error && error.message
         ? error.message
         : t('mobile.glueReturnInRoom.messages.productLineLoadError'),
+      life: 3000,
     });
   } finally {
     isLoadingProductLines.value = false;
@@ -349,6 +354,7 @@ async function openScanner() {
         severity: 'warn',
         summary: t('mobile.glueReturnInRoom.title'),
         detail: t('mobile.glueReturnInRoom.messages.cameraPermission'),
+        life: 3000,
       });
       return;
     }
@@ -399,6 +405,7 @@ async function openScanner() {
       severity: 'warn',
       summary: t('mobile.glueReturnInRoom.title'),
       detail: t('mobile.glueReturnInRoom.messages.loadError'),
+      life: 3000,
     });
   }
 }
@@ -454,6 +461,7 @@ async function confirmReturnQr() {
         rawMessage,
         t('mobile.glueReturnInRoom.messages.returnConfirmError'),
       ),
+      life: 3000,
     });
   } finally {
     isSubmittingReturn.value = false;

@@ -1,6 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/auth';
 import baseURLApi from '@/api/baseURLApi';
+import i18n from '@/i18n';
+import { notifyServerMaintenanceToast } from '@/services/toastBridge';
 
 const baseURL = baseURLApi.url;
 
@@ -16,6 +18,20 @@ const api = axios.create({
   baseURL,
   timeout: DEFAULT_TIMEOUT,
 });
+
+const tGlobal = (key: string) => String(i18n.global.t(key));
+
+const isLoginApiRequest = (error: AxiosError) => {
+  const url = String(error.config?.url || '');
+  return url.includes('employee/login') || url.includes('/login');
+};
+
+const toastServerMaintenance = (error: AxiosError) => {
+  // Login page đã hiện message trên form — tránh toast trùng.
+  if (isLoginApiRequest(error)) return;
+
+  notifyServerMaintenanceToast(tGlobal('login.serverMaintenance'));
+};
 
 /**
  * 1. REQUEST INTERCEPTOR: Tự động gắn Token vào mỗi yêu cầu
@@ -75,10 +91,13 @@ api.interceptors.response.use(
         // Server đang chạy nhưng xử lý quá chậm → KHÔNG chuyển Offline
         console.warn(`[API] Request timeout: ${error.config?.url}. Server đang xử lý chậm.`);
       } else {
-        // Mất mạng thật sự
+        // Mất mạng thật sự / BE tắt không bắt tay được
         console.warn(`[API] Mất kết nối mạng: ${error.config?.url}. Chuyển sang Offline Mode.`);
         authStore.setNetworkStatus(false);
       }
+
+      // Mạng ổn nhưng BE tắt / timeout → báo bảo trì (debounce trong toastBridge)
+      toastServerMaintenance(error);
       return Promise.reject(error);
     }
 
@@ -93,8 +112,9 @@ api.interceptors.response.use(
 
     // TH3: Lỗi hệ thống Server (5xx) -> Ép về Offline để dùng dữ liệu SQLite
     if (status >= 500) {
-      console.warn(`Server lỗi ${status}. Tạm thời chuyển sang chế độ Offline.`);
+      console.warn(`Server lỗi ${status}. Tạm thời chuyển sang chế độ offline.`);
       authStore.setNetworkStatus(false);
+      toastServerMaintenance(error);
     }
 
     return Promise.reject(error);

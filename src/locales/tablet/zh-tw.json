@@ -29,6 +29,12 @@
   "listMixGlue": {
     "sectionTitle": "調膠清單",
     "empty": "目前沒有可顯示的資料。",
+    "deviceUsage": {
+      "small": "小型",
+      "large": "大型",
+      "smallTitle": "小型機使用中 {inUse}/{total}",
+      "largeTitle": "大型機使用中 {inUse}/{total}"
+    },
     "filter": {
       "gluePlaceholder": "依膠水名稱篩選"
     },
@@ -82,7 +88,8 @@
       "gapConfirmOk": "已對準間隙 — 繼續",
       "gapConfirmCancel": "取消",
       "queuedTitle": "等待列印",
-      "busyPendingToast": "尚有待列印標籤，請先處理完成再列印新訂單。"
+      "busyPendingToast": "尚有待列印標籤，請先處理完成再列印新訂單。",
+      "busyPrintingToast": "正在驗證列印，請完成後再選擇其他訂單。"
     },
     "toast": {
       "warning": "警告",
@@ -93,6 +100,10 @@
       "mixStartSuccess": "確認開始調膠",
       "mixCompleteSuccess": "確認調膠完成",
       "confirmFailed": "確認失敗！",
+      "noMixingDeviceAvailable": "沒有可用的調膠機。請等待其他機器完成。",
+      "noSmallMixingDeviceAvailable": "所有小型調膠機都在使用中。請等待小型調膠機完成後再繼續。",
+      "noLargeMixingDeviceAvailable": "所有大型調膠機都在使用中。請等待大型調膠機完成後再繼續。",
+      "mixingDeviceAssignmentMissing": "找不到此派工單已綁定的調膠機。請重新整理清單或聯絡 IT。",
       "noMixConfirmSuccess": "已確認無分裝！",
       "separateConfirmSuccess": "已確認分裝！",
       "noMixConfirmFailed": "確認無分裝失敗！",
@@ -181,7 +192,8 @@
       "gapConfirmMessage": "請更換紙捲並手動對準間隙（第一張標籤貼齊列印頭）。確認後繼續列印 — 下一張標籤不會再送出 GAP 指令。",
       "gapConfirmOk": "已對準間隙 — 繼續",
       "gapConfirmCancel": "取消",
-      "queuedTitle": "等待列印"
+      "queuedTitle": "等待列印",
+      "busyPrintingToast": "正在驗證列印，請完成後再選擇其他訂單。"
     },
     "toast": {
       "warning": "警告",
@@ -204,8 +216,8 @@
     "management": {
       "pageTitle": "混合膠水分裝",
       "sections": {
-        "mixedGlueBucket": "混合膠水分裝桶需求明細",
-        "noMixGlue": "非混合膠水使用需求明細"
+        "mixedGlueBucket": "混合膠水分裝桶需求。",
+        "noMixGlue": "非混合膠水使用需求。"
       }
     },
     "table": {

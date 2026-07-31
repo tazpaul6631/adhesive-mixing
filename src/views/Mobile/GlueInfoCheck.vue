@@ -41,11 +41,7 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <div
-                    v-for="field in returnInfoFields"
-                    :key="field.label"
-                    class="info-content__row"
-                  >
+                  <div v-for="field in returnInfoFields" :key="field.label" class="info-content__row">
                     <span class="info-content__label">{{ field.label }}</span>
                     <span class="info-content__value">{{ field.value }}</span>
                   </div>
@@ -240,6 +236,7 @@ async function showWarningAlert(message: string) {
     severity: 'warn',
     summary: t('mobile.glueInfoCheck.title'),
     detail: message,
+    life: 3000,
   });
 }
 
@@ -309,6 +306,7 @@ async function openScanner() {
         severity: 'warn',
         summary: t('mobile.glueInfoCheck.title'),
         detail: t('mobile.glueInfoCheck.messages.cameraPermission'),
+        life: 3000,
       });
       return;
     }
@@ -378,6 +376,7 @@ async function handleGlueInfoScanResult(value: string) {
       severity: 'warn',
       summary: t('mobile.glueInfoCheck.title'),
       detail: t('mobile.glueInfoCheck.messages.loadError'),
+      life: 3000,
     });
   } finally {
     isLoadingQr.value = false;
@@ -536,7 +535,7 @@ async function handleGlueInfoScanResult(value: string) {
   justify-content: center;
   flex: 0 0 22px;
   line-height: 1;
-  color:rgba(0, 0, 0, 0.582)
+  color: rgba(0, 0, 0, 0.582)
 }
 
 .confirm-button__icon :deep(svg) {

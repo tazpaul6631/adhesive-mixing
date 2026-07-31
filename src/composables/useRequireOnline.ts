@@ -24,6 +24,7 @@ export function useRequireOnline() {
       severity: 'warn',
       summary: t('common.networkOffline'),
       detail: t('common.checkNetwork'),
+      life: 3000,
     });
   };
 

@@ -293,7 +293,7 @@ const handleAddRow = () => {
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
-        life: 6000,
+        life: 3000,
       });
       return;
     }
@@ -316,7 +316,7 @@ const handleAddRow = () => {
             target: actualLabel,
           })
           : formatChietCapacityBlockMessage(props.targetWeight, props.targetWeightUnit || 'Kg'),
-        life: 6000,
+        life: 3000,
       });
       return;
     }

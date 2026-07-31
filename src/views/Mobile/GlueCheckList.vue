@@ -246,6 +246,7 @@ async function loadAbnormalOptions() {
       severity: 'warn',
       summary: t('mobile.glueCheckList.title'),
       detail: t('mobile.glueCheckList.messages.noCheckListData'),
+      life: 3000,
     });
     return;
   }
@@ -265,6 +266,7 @@ async function loadAbnormalOptions() {
           severity: 'warn',
           summary: t('mobile.glueCheckList.title'),
           detail: t('mobile.glueCheckList.messages.abnormalOffline'),
+          life: 3000,
         });
         return;
       }
@@ -299,6 +301,7 @@ async function loadAbnormalOptions() {
       detail: error instanceof Error && error.message
         ? error.message
         : t('mobile.glueCheckList.messages.abnormalLoadError'),
+      life: 3000,
     });
   } finally {
     isLoadingAbnormalOptions.value = false;
@@ -319,6 +322,7 @@ async function showWarningAlert(message: string) {
     severity: 'warn',
     summary: t('mobile.glueCheckList.title'),
     detail: message,
+    life: 3000,
   });
 }
 
@@ -346,6 +350,7 @@ async function openScanner() {
         severity: 'warn',
         summary: t('mobile.glueCheckList.title'),
         detail: t('mobile.glueCheckList.messages.cameraPermission'),
+        life: 3000,
       });
       return;
     }
@@ -392,6 +397,7 @@ async function openScanner() {
       severity: 'warn',
       summary: t('mobile.glueCheckList.title'),
       detail: t('mobile.glueCheckList.messages.scanError'),
+      life: 3000,
     });
   } finally {
     isLoadingScan.value = false;
@@ -421,6 +427,7 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
       severity: 'warn',
       summary: t('mobile.glueCheckList.title'),
       detail: t('mobile.glueCheckList.messages.noCheckListData'),
+      life: 3000,
     });
     return;
   }
@@ -476,6 +483,7 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
       severity: 'warn',
       summary: t('mobile.glueCheckList.title'),
       detail: errorMessage,
+      life: 3000,
     });
   } finally {
     isSubmittingForm.value = false;
@@ -501,6 +509,7 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
       ? t('mobile.offlineQueue.title')
       : t('mobile.glueCheckList.title'),
     detail: message,
+    life: 3000,
   });
 }
 </script>

@@ -311,6 +311,7 @@ async function showWarningAlert(message: string) {
     severity: 'warn',
     summary: t('mobile.glueReturn.title'),
     detail: message,
+    life: 3000,
   });
 }
 
@@ -337,6 +338,7 @@ async function openScanner() {
         severity: 'warn',
         summary: t('mobile.glueReturn.title'),
         detail: t('mobile.glueReturn.messages.cameraPermission'),
+        life: 3000,
       });
       return;
     }
@@ -389,6 +391,7 @@ async function openScanner() {
       severity: 'warn',
       summary: t('mobile.glueReturn.title'),
       detail: t('mobile.glueReturn.messages.loadError'),
+      life: 3000,
     });
   }
 }
@@ -429,6 +432,7 @@ async function openLineScanner() {
         severity: 'warn',
         summary: t('mobile.glueReturn.title'),
         detail: t('mobile.glueReturn.messages.cameraPermission'),
+        life: 3000,
       });
       return;
     }
@@ -491,6 +495,7 @@ async function openLineScanner() {
       severity: 'warn',
       summary: t('mobile.glueReturn.title'),
       detail: t('mobile.glueReturn.messages.loadLineError'),
+      life: 3000,
     });
   }
 }
@@ -547,6 +552,7 @@ async function confirmReturnQr() {
         rawMessage,
         t('mobile.glueReturn.messages.returnConfirmError'),
       ),
+      life: 3000,
     });
   } finally {
     isSubmittingReturn.value = false;

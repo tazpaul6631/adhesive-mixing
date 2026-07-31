@@ -29,6 +29,12 @@
   "listMixGlue": {
     "sectionTitle": "Danh sách trộn keo",
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
+    "deviceUsage": {
+      "small": "Máy nhỏ",
+      "large": "Máy lớn",
+      "smallTitle": "Máy nhỏ đang dùng {inUse}/{total}",
+      "largeTitle": "Máy lớn đang dùng {inUse}/{total}"
+    },
     "filter": {
       "gluePlaceholder": "Lọc theo tên keo"
     },
@@ -82,7 +88,8 @@
       "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
       "gapConfirmOk": "Đã căn gap — tiếp tục",
       "gapConfirmCancel": "Hủy",
-      "busyPendingToast": "Đang có tem chờ in. Vui lòng xử lý xong trước khi in đơn mới."
+      "busyPendingToast": "Đang có tem chờ in. Vui lòng xử lý xong trước khi in đơn mới.",
+      "busyPrintingToast": "Đang xác thực in. Vui lòng hoàn tất trước khi chọn đơn khác."
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -93,6 +100,10 @@
       "mixStartSuccess": "Xác nhận bắt đầu trộn keo",
       "mixCompleteSuccess": "Xác nhận đã trộn keo xong",
       "confirmFailed": "Xác nhận thất bại!",
+      "noMixingDeviceAvailable": "Không còn máy trộn khả dụng. Vui lòng chờ máy khác hoàn tất.",
+      "noSmallMixingDeviceAvailable": "Toàn bộ máy 'Nhỏ' đang hoạt động. Vui lòng chờ máy 'Nhỏ' hoàn tất để tiếp tục.",
+      "noLargeMixingDeviceAvailable": "Toàn bộ máy 'Lớn' đang hoạt động. Vui lòng chờ máy 'Lớn' hoàn tất để tiếp tục.",
+      "mixingDeviceAssignmentMissing": "Không tìm thấy máy đã gắn cho đơn này. Vui lòng tải lại danh sách hoặc liên hệ IT.",
       "noMixConfirmSuccess": "Đã xác nhận không chiết!",
       "separateConfirmSuccess": "Đã xác nhận chiết!",
       "noMixConfirmFailed": "Xác nhận không chiết thất bại!",
@@ -181,7 +192,8 @@
       "gapConfirmTitle": "Căn gap giấy",
       "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
       "gapConfirmOk": "Đã căn gap — tiếp tục",
-      "gapConfirmCancel": "Hủy"
+      "gapConfirmCancel": "Hủy",
+      "busyPrintingToast": "Đang xác thực in. Vui lòng hoàn tất trước khi chọn đơn khác."
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -204,8 +216,8 @@
     "management": {
       "pageTitle": "Chiết keo trộn hỗn hợp",
       "sections": {
-        "mixedGlueBucket": "Chi tiết yêu cầu thùng chiết keo trộn hỗn hợp",
-        "noMixGlue": "Chi tiết yêu cầu sử dụng keo không trộn"
+        "mixedGlueBucket": "Chi tiết yêu cầu thùng chiết keo trộn.",
+        "noMixGlue": "Chi tiết yêu cầu thùng chiết keo không trộn."
       }
     },
     "table": {

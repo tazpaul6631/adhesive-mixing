@@ -27,14 +27,16 @@
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
-                    <div class="qr-scan-field__info-row">
+                    <div v-if="lineChemicalInfo.productLineName" class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel")
                       }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.glueLabel") }}</span>
-                      <span class="qr-scan-field__info-value">{{ lineChemicalInfo.glueName }}</span>
+                      <span class="qr-scan-field__info-value">{{
+                        lineChemicalInfo.glueName || lineChemicalInfo.layoutLineChemicalName
+                      }}</span>
                     </div>
                   </div>
                   <span v-else class="qr-scan-field__text">
@@ -289,6 +291,7 @@ async function showWarningAlert(message: string) {
     severity: 'warn',
     summary: t('mobile.glueConfirm.title'),
     detail: message,
+    life: 3000,
   });
 }
 
@@ -357,13 +360,30 @@ function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null 
   }
 
   const userId = getCurrentUserId();
+  const lineChemicalId = normalizeCompareValue(lineChemicalInfo.value.lineChemicalId);
+  const layoutLineChemicalId = normalizeCompareValue(
+    lineChemicalInfo.value.layoutLineChemicalId
+  );
+
+  // QR cũ: lineChemicalId; QR mới /s/llc: layoutLineChemicalId — cần ít nhất một.
+  if (!lineChemicalId && !layoutLineChemicalId) {
+    return null;
+  }
+
   const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
     updaterId: userId,
     receivedBy: userId,
-    lineChemicalId: normalizeCompareValue(lineChemicalInfo.value.lineChemicalId),
     scanFailed,
   };
+
+  if (lineChemicalId) {
+    payload.lineChemicalId = lineChemicalId;
+  }
+
+  if (layoutLineChemicalId) {
+    payload.layoutLineChemicalId = layoutLineChemicalId;
+  }
 
   const productLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
   if (productLineId) {
@@ -454,12 +474,13 @@ async function notifyMismatchIfNeeded() {
 }
 
 function saveLineChemicalSessionAfterConfirm() {
+  const info = lineChemicalInfo.value;
   lineChemicalStore.setLineChemicalSession({
-    lineChemicalId: lineChemicalInfo.value?.lineChemicalId ?? null,
-    productLineId: lineChemicalInfo.value?.productLineId ?? null,
+    lineChemicalId: info?.lineChemicalId ?? info?.layoutLineChemicalId ?? null,
+    productLineId: info?.productLineId ?? null,
     factoryId: allocatedGlueInfo.value?.factoryId ?? null,
-    productLineName: lineChemicalInfo.value?.productLineName ?? null,
-    glueName: lineChemicalInfo.value?.glueName ?? null,
+    productLineName: info?.productLineName ?? null,
+    glueName: info?.glueName || info?.layoutLineChemicalName || null,
     confirmedAt: new Date().toISOString(),
   });
 }
@@ -468,8 +489,23 @@ function getSystemQrUrl(qrText: string) {
   return buildSystemQrUrl(qrText);
 }
 
+/** Chuẩn hóa data QR chuyền: hỗ trợ lineChemicalId (cũ) và layoutLineChemicalId (/s/llc). */
+function normalizeLineChemicalScanData(data: any) {
+  if (!data || typeof data !== 'object') return data;
+
+  return {
+    ...data,
+    glueName: data.glueName || data.layoutLineChemicalName || '',
+    productLineName: data.productLineName || '',
+  };
+}
+
 function getGlueQrType(data: any): GlueQrType | null {
-  if (hasPayloadValue(data?.lineChemicalId) && hasPayloadValue(data?.chemicalMasterId)) {
+  const hasLineId =
+    hasPayloadValue(data?.lineChemicalId) ||
+    hasPayloadValue(data?.layoutLineChemicalId);
+
+  if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
     return "lineChemical";
   }
 
@@ -558,6 +594,7 @@ async function openScanner(target: ConfirmScanTarget) {
         severity: 'warn',
         summary: t('mobile.glueConfirm.title'),
         detail: t("mobile.glueConfirm.messages.cameraPermission"),
+        life: 3000,
       });
       return;
     }
@@ -622,8 +659,9 @@ async function handleLineQrScanResult(qrText: string) {
     }
 
     lineQrRawText.value = qrText;
-    lineChemicalInfo.value = result.data;
-    lineQrText.value = formatLineChemicalDisplay(result.data);
+    const normalized = normalizeLineChemicalScanData(result.data);
+    lineChemicalInfo.value = normalized;
+    lineQrText.value = formatLineChemicalDisplay(normalized);
     resetConfirmReturnStatus();
     await notifyMismatchIfNeeded();
   } catch (error) {
@@ -633,6 +671,7 @@ async function handleLineQrScanResult(qrText: string) {
       severity: 'warn',
       summary: t('mobile.glueConfirm.title'),
       detail: t("mobile.glueConfirm.messages.loadLineError"),
+      life: 3000,
     });
   } finally {
     isLoadingLineQr.value = false;
@@ -679,6 +718,7 @@ async function handleAllocatedQrScanResult(qrText: string) {
       severity: 'warn',
       summary: t('mobile.glueConfirm.title'),
       detail: t("mobile.glueConfirm.messages.loadAllocatedError"),
+      life: 3000,
     });
   } finally {
     isLoadingAllocatedQr.value = false;
@@ -734,6 +774,7 @@ async function handleConfirmReturn() {
         rawMessage,
         t('mobile.glueConfirm.messages.confirmError'),
       ),
+      life: 3000,
     });
   } finally {
     isConfirmingReturn.value = false;
@@ -766,11 +807,17 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
       ? t('mobile.offlineQueue.title')
       : t('mobile.glueConfirm.title'),
     detail: message,
+    life: 3000,
   });
 }
 
 function formatLineChemicalDisplay(info: any) {
-  return formatGlueDisplay(info);
+  const glueName = info?.glueName || info?.layoutLineChemicalName || '';
+  const productLineName = info?.productLineName || '';
+  if (productLineName) {
+    return `${t("mobile.glueConfirm.fields.productLineLabel")} ${productLineName}\n${t("mobile.glueConfirm.fields.glueLabel")} ${glueName}`;
+  }
+  return `${t("mobile.glueConfirm.fields.glueLabel")} ${glueName}`;
 }
 
 function formatGlueDisplay(info: any) {

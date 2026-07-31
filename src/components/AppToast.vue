@@ -17,10 +17,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import Toast from 'primevue/toast';
+import { useAppToast } from '@/composables/useAppToast';
+import { registerAppToast, unregisterAppToast } from '@/services/toastBridge';
 
 const TABLET_MIN_WIDTH = 768;
 const isTablet = ref(typeof window !== 'undefined' ? window.innerWidth >= TABLET_MIN_WIDTH : true);
 const toastDeviceClass = computed(() => (isTablet.value ? 'app-toast--tablet' : 'app-toast--mobile'));
+const { showToast } = useAppToast();
 
 const severityIcons: Record<string, string> = {
   info: 'pi pi-info-circle',
@@ -38,11 +41,13 @@ const updateDeviceType = () => {
 };
 
 onMounted(() => {
+  registerAppToast(showToast);
   updateDeviceType();
   window.addEventListener('resize', updateDeviceType);
 });
 
 onUnmounted(() => {
+  unregisterAppToast(showToast);
   window.removeEventListener('resize', updateDeviceType);
 });
 </script>

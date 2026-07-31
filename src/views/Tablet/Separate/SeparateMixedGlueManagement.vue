@@ -52,8 +52,7 @@
 
         <!-- Vùng bảng — scroll khi nội dung dài -->
         <div class="separate-mixed-glue-scroll-body">
-          <div v-if="isLoadingLine || hasMixChemicals"
-            class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
+          <div v-if="hasMixChemicals" class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">
                 <i class="pi pi-list mr-2"></i>{{ t('separateMixedGlue.management.sections.mixedGlueBucket') }}
@@ -67,7 +66,7 @@
             </div>
           </div>
 
-          <div v-if="isLoadingLine || hasNoMixChemicals"
+          <div v-if="hasNoMixChemicals"
             class="separate-mixed-glue-table-card surface-card p-0 shadow-1 border-round-xl">
             <div class="surface-100 p-3 border-round-top-xl separate-mixed-glue-table-card__title">
               <span class="font-bold text-700 text-lg">

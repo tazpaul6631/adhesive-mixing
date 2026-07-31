@@ -16,6 +16,7 @@ type GlueOfflineDbConnection = {
 
 export type GlueOfflineDataType =
   | 'lineChemical'
+  | 'layoutLineChemical'
   | 'mixGlue'
   | 'separateGlue'
   | 'noSeparateGlue'
@@ -42,7 +43,7 @@ type OfflineTableConfig = {
   getValues: (item: any, updatedAt: string) => any[];
 };
 
-const DOWNLOAD_TOTAL_STEPS = 6;
+const DOWNLOAD_TOTAL_STEPS = 7;
 /** Số record / lần executeSet — cân bằng tốc độ bridge và RAM máy yếu. */
 const INSERT_CHUNK_SIZE = 200;
 
@@ -99,6 +100,25 @@ const tableConfigs: Record<GlueOfflineDataType, OfflineTableConfig> = {
       normalizeValue(item?.factoryId),
       normalizeValue(item?.lineChemicalId),
       normalizeValue(item?.productLineId),
+      normalizeValue(item?.chemicalMasterId),
+      JSON.stringify(item ?? {}),
+      updatedAt,
+    ],
+  },
+  layoutLineChemical: {
+    tableName: 'offline_layout_line_chemical',
+    insertSql: `
+      INSERT OR REPLACE INTO offline_layout_line_chemical (
+        factory_id,
+        layout_line_chemical_id,
+        chemical_master_id,
+        raw_json,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `,
+    getValues: (item, updatedAt) => [
+      normalizeValue(item?.factoryId),
+      normalizeValue(item?.layoutLineChemicalId),
       normalizeValue(item?.chemicalMasterId),
       JSON.stringify(item ?? {}),
       updatedAt,
@@ -217,6 +237,11 @@ const qrLookupConfigs: Record<string, OfflineQrLookupConfig> = {
     tableName: 'offline_line_chemical',
     idColumn: 'line_chemical_id',
   },
+  llc: {
+    type: 'layoutLineChemical',
+    tableName: 'offline_layout_line_chemical',
+    idColumn: 'layout_line_chemical_id',
+  },
   mgm: {
     type: 'mixGlue',
     tableName: 'offline_mix_glue',
@@ -327,6 +352,15 @@ async function createOfflineTables(db: GlueOfflineDbConnection) {
       PRIMARY KEY (factory_id, line_chemical_id)
     );
 
+    CREATE TABLE IF NOT EXISTS offline_layout_line_chemical (
+      factory_id TEXT NOT NULL,
+      layout_line_chemical_id TEXT NOT NULL,
+      chemical_master_id TEXT,
+      raw_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (factory_id, layout_line_chemical_id)
+    );
+
     CREATE TABLE IF NOT EXISTS offline_mix_glue (
       factory_id TEXT NOT NULL,
       mix_glue_master_id TEXT NOT NULL,
@@ -409,6 +443,7 @@ async function saveDownloadedBucket(
 
 async function clearAllOfflineBuckets(db: GlueOfflineDbConnection) {
   await clearBucket(db, 'lineChemical');
+  await clearBucket(db, 'layoutLineChemical');
   await clearBucket(db, 'mixGlue');
   await clearBucket(db, 'separateGlue');
   await clearBucket(db, 'noSeparateGlue');
@@ -467,6 +502,17 @@ export async function downloadAndSaveGlueOfflineData(
     onProgress
   );
 
+  const layoutLineChemical = await downloadAndSaveBucket(
+    db,
+    'layoutLineChemical',
+    async () =>
+      assertSuccessAndExtractItems(
+        await offlineApi.getLineLayoutChemicalQrData(normalizedFactoryId, normalizedDepartmentId)
+      ),
+    2,
+    onProgress
+  );
+
   const mixGlue = await downloadAndSaveBucket(
     db,
     'mixGlue',
@@ -474,7 +520,7 @@ export async function downloadAndSaveGlueOfflineData(
       assertSuccessAndExtractItems(
         await offlineApi.getMixGlueQrData(normalizedFactoryId, normalizedDepartmentId)
       ),
-    2,
+    3,
     onProgress
   );
 
@@ -485,7 +531,7 @@ export async function downloadAndSaveGlueOfflineData(
       assertSuccessAndExtractItems(
         await offlineApi.getSeparateGlueQrData(normalizedFactoryId, normalizedDepartmentId)
       ),
-    3,
+    4,
     onProgress
   );
 
@@ -496,7 +542,7 @@ export async function downloadAndSaveGlueOfflineData(
       assertSuccessAndExtractItems(
         await offlineApi.getNoSeparateGlueQrData(normalizedFactoryId, normalizedDepartmentId)
       ),
-    4,
+    5,
     onProgress
   );
 
@@ -504,7 +550,7 @@ export async function downloadAndSaveGlueOfflineData(
     db,
     'checkList',
     async () => assertSuccessAndExtractItems(await offlineApi.getCheckListQrData(normalizedFactoryId)),
-    5,
+    6,
     onProgress
   );
 
@@ -513,12 +559,13 @@ export async function downloadAndSaveGlueOfflineData(
     'checkListAbnormal',
     async () =>
       assertSuccessAndExtractItems(await offlineApi.getCheckListAbnormalItemQrData(normalizedFactoryId)),
-    6,
+    7,
     onProgress
   );
 
   return {
     lineChemical,
+    layoutLineChemical,
     mixGlue,
     separateGlue,
     noSeparateGlue,
