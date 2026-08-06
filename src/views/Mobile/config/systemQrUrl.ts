@@ -1,19 +1,18 @@
 import baseURLApi from "@/api/baseURLApi";
 
-function normalizeQrPath(qrText: string) {
-  return qrText.trim().replace(/^\/+/, "");
-}
-
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.trim().replace(/\/+$/, "") + "/";
 }
 
-export function buildSystemQrUrl(qrText: string) {
+/** Lấy path API từ QR (absolute hoặc relative), luôn bắt đầu từ segment `s/...` nếu có. */
+function extractQrApiPath(qrText: string): string | null {
   const normalizedText = qrText.trim();
 
   if (!normalizedText) {
     return null;
   }
+
+  let pathText = normalizedText;
 
   try {
     const absoluteUrl = new URL(normalizedText);
@@ -23,13 +22,29 @@ export function buildSystemQrUrl(qrText: string) {
       return null;
     }
 
-    return absoluteUrl;
+    // Bỏ host trên QR — luôn gắn lại với baseURLApi
+    pathText = absoluteUrl.pathname;
   } catch {
-    // QR code can return a relative API path, for example:
-    // s/mgm/01/134247485277723923
+    // QR dạng relative: s/mgm/01/134247485277723923
   }
 
-  const relativePath = normalizeQrPath(normalizedText);
+  const parts = pathText
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  const scanIndex = parts.findIndex((part) => part.toLowerCase() === "s");
+  const apiParts = scanIndex >= 0 ? parts.slice(scanIndex) : parts;
+
+  return apiParts.join("/") || null;
+}
+
+export function buildSystemQrUrl(qrText: string) {
+  const relativePath = extractQrApiPath(qrText);
 
   if (!relativePath) {
     return null;

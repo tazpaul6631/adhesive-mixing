@@ -174,18 +174,29 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-  // Tạm thời không kiểm tra chuyền, chỉ kiểm tra keo có khớp hay không.
-  // const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
-  // const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
-  // const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
+  const receiveType = getLineReceiveType(lineChemicalInfo.value);
+  const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
+  const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
+  const isProductLineMatched =
+    !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
 
   const lineChemicalMasterId = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId);
   const allocatedCompareValue = getAllocatedGlueCompareValue(allocatedGlueInfo.value);
-  const isGlueMatched = !!lineChemicalMasterId && !!allocatedCompareValue && lineChemicalMasterId === allocatedCompareValue;
+  const isGlueMatched =
+    !!lineChemicalMasterId &&
+    !!allocatedCompareValue &&
+    lineChemicalMasterId === allocatedCompareValue;
 
-  return isGlueMatched; // Check mỗi Keo có khớp hay không
-  // Check cả Chuyền và Keo thì mở ở dưới
-  // return isProductLineMatched && isGlueMatched;
+  // UseProductLine: khớp theo chuyền; nếu có chemicalMasterId thì vẫn kiểm tra keo.
+  if (receiveType === 'UseProductLine') {
+    if (lineChemicalMasterId) {
+      return isProductLineMatched && isGlueMatched;
+    }
+    return isProductLineMatched;
+  }
+
+  // UseLineChemical / QR cũ: chỉ kiểm tra keo khớp.
+  return isGlueMatched;
 });
 
 const isAllocatedGlueExpired = computed(() => {
@@ -354,21 +365,22 @@ function getAllocatedGlueCompareValue(info: any) {
   return normalizeCompareValue(info?.glueId);
 }
 
+function getLineReceiveType(data: any): string {
+  return normalizeCompareValue(data?.type);
+}
+
 function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null {
   if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
     return null;
   }
 
   const userId = getCurrentUserId();
+  const receiveType = getLineReceiveType(lineChemicalInfo.value);
   const lineChemicalId = normalizeCompareValue(lineChemicalInfo.value.lineChemicalId);
   const layoutLineChemicalId = normalizeCompareValue(
     lineChemicalInfo.value.layoutLineChemicalId
   );
-
-  // QR cũ: lineChemicalId; QR mới /s/llc: layoutLineChemicalId — cần ít nhất một.
-  if (!lineChemicalId && !layoutLineChemicalId) {
-    return null;
-  }
+  const productLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
 
   const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
@@ -377,17 +389,38 @@ function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null 
     scanFailed,
   };
 
-  if (lineChemicalId) {
-    payload.lineChemicalId = lineChemicalId;
-  }
-
-  if (layoutLineChemicalId) {
-    payload.layoutLineChemicalId = layoutLineChemicalId;
-  }
-
-  const productLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
-  if (productLineId) {
+  // type từ QR scan: UseProductLine → chỉ productLineId;
+  // UseLineChemical → chỉ lineChemicalId / layoutLineChemicalId.
+  if (receiveType === 'UseProductLine') {
+    if (!productLineId) {
+      return null;
+    }
     payload.productLineId = productLineId;
+  } else if (receiveType === 'UseLineChemical') {
+    // QR cũ: lineChemicalId; QR mới /s/llc: layoutLineChemicalId — cần ít nhất một.
+    if (!lineChemicalId && !layoutLineChemicalId) {
+      return null;
+    }
+    if (lineChemicalId) {
+      payload.lineChemicalId = lineChemicalId;
+    }
+    if (layoutLineChemicalId) {
+      payload.layoutLineChemicalId = layoutLineChemicalId;
+    }
+  } else {
+    // QR không có type: giữ hành vi cũ — gửi các id có sẵn.
+    if (!lineChemicalId && !layoutLineChemicalId) {
+      return null;
+    }
+    if (lineChemicalId) {
+      payload.lineChemicalId = lineChemicalId;
+    }
+    if (layoutLineChemicalId) {
+      payload.layoutLineChemicalId = layoutLineChemicalId;
+    }
+    if (productLineId) {
+      payload.productLineId = productLineId;
+    }
   }
 
   const { mixGlueMasterId, separateGlueId, noSeparateGlueId } = allocatedGlueInfo.value;
@@ -501,9 +534,25 @@ function normalizeLineChemicalScanData(data: any) {
 }
 
 function getGlueQrType(data: any): GlueQrType | null {
+  const receiveType = getLineReceiveType(data);
   const hasLineId =
     hasPayloadValue(data?.lineChemicalId) ||
     hasPayloadValue(data?.layoutLineChemicalId);
+  const hasProductLineId = hasPayloadValue(data?.productLineId);
+
+  if (receiveType === 'UseProductLine') {
+    if (hasProductLineId) {
+      return "lineChemical";
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLineChemical') {
+    if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
+      return "lineChemical";
+    }
+    return null;
+  }
 
   if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
     return "lineChemical";
