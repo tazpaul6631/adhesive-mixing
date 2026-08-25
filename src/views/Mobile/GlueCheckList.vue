@@ -3,8 +3,10 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary" class="header-toolbar">
         <div slot="start" class="header-start">
-          <ion-back-button default-href="/app-menu" text="" class="header-back"></ion-back-button>
-          <h1 class="header-title">{{ t('mobile.glueCheckList.title') }}</h1>
+          <ion-button fill="clear" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t('mobile.glueCheckList.title') }}</h1>
+          </ion-button>
         </div>
         <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
@@ -67,16 +69,16 @@
                 @show="loadAbnormalOptions" @change="onAbnormalSelectChange" />
             </div>
 
-            <div class="check-form-dialog__field">
+            <div v-if="!hasAbnormalSelection" class="check-form-dialog__field">
               <label class="check-form-dialog__label" for="glue-check-note">
                 {{ t('mobile.glueCheckList.noteLabel') }}
               </label>
               <textarea id="glue-check-note" v-model="checkNote" class="check-form-dialog__textarea"
-                :class="{ 'check-form-dialog__textarea--disabled': isNoteLockedByAbnormal }"
                 :placeholder="t('mobile.glueCheckList.notePlaceholder')" rows="3"
-                :disabled="isNoteLockedByAbnormal || isSubmittingForm"></textarea>
-              <p v-if="isIssueDetailRequired" class="check-form-dialog__note-message">
-                {{ t('mobile.glueCheckList.submitRequired') }}
+                :disabled="isSubmittingForm"></textarea>
+              <p v-if="isIssueDetailRequired" class="check-form-dialog__note-message" role="alert">
+                <span class="check-form-dialog__required-asterisk" aria-hidden="true">*</span>
+                <span>{{ t('mobile.glueCheckList.submitRequired') }}</span>
               </p>
             </div>
           </div>
@@ -95,8 +97,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
@@ -117,15 +119,21 @@ import { findCheckListAbnormalOfflineData, findCheckListOfflineData } from '@/se
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
 import { useAppToast } from '@/composables/useAppToast';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 import { McScanFill } from '@kalimahapps/vue-icons/mc';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
 const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const scannedCheckQr = ref<{ factoryId: string; cliId: string } | null>(null);
 const scannedCheckItem = ref<any>(null);
@@ -147,7 +155,6 @@ const checkIssueName = computed(() => normalizeValue(scannedCheckItem.value?.che
 const hasAbnormalSelection = computed(
   () => selectedAbnormalItemId.value !== null && selectedAbnormalItemId.value !== undefined && selectedAbnormalItemId.value !== ''
 );
-const isNoteLockedByAbnormal = computed(() => hasAbnormalSelection.value);
 /** Có vấn đề thì bắt buộc chọn bất thường hoặc nhập ghi chú. */
 const isIssueDetailRequired = computed(
   () => !checkResult.value && !hasAbnormalSelection.value && !checkNote.value.trim()
@@ -203,7 +210,11 @@ async function resolveCheckListItem(factoryId: string, cliId: string) {
   return {
     data: responseData?.data ?? null,
     success: !!responseData?.success && !!responseData?.data,
-    message: responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'),
+    message: resolveCatchErrorMessage(
+      t,
+      responseData?.message,
+      t('mobile.glueCheckList.messages.noCheckListData'),
+    ),
   };
 }
 
@@ -275,7 +286,13 @@ async function loadAbnormalOptions() {
       const responseData = response?.data as any;
 
       if (responseData?.success === false) {
-        throw new Error(responseData?.message || t('mobile.glueCheckList.messages.abnormalLoadError'));
+        throw new Error(
+          resolveCatchErrorMessage(
+            t,
+            responseData?.message,
+            t('mobile.glueCheckList.messages.abnormalLoadError'),
+          ),
+        );
       }
 
       items = Array.isArray(responseData?.data)
@@ -298,9 +315,11 @@ async function loadAbnormalOptions() {
     showToast({
       severity: 'warn',
       summary: t('mobile.glueCheckList.title'),
-      detail: error instanceof Error && error.message
-        ? error.message
-        : t('mobile.glueCheckList.messages.abnormalLoadError'),
+      detail: resolveCatchErrorMessage(
+        t,
+        error instanceof Error ? error.message : '',
+        t('mobile.glueCheckList.messages.abnormalLoadError'),
+      ),
       life: 3000,
     });
   } finally {
@@ -465,24 +484,36 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
     const responseData = response.data as any;
 
     if (!responseData.success || responseData.data !== true) {
-      throw new Error(responseData.message || t('mobile.glueCheckList.messages.submitError'));
+      throw new Error(
+        resolveCatchErrorMessage(
+          t,
+          responseData.message,
+          t('mobile.glueCheckList.messages.submitError'),
+        ),
+      );
     }
 
     if (recordStatus !== 'C') {
-      notifyToast(t('mobile.glueCheckList.messages.submitSuccess'));
+      notifyToast(
+        resolveCatchErrorMessage(
+          t,
+          responseData.message,
+          t('mobile.glueCheckList.messages.submitSuccess'),
+        ),
+      );
     }
     resetAndCloseCheckDialog();
   } catch (error) {
     console.error('Không thể gửi thông tin kiểm tra:', error);
 
-    const errorMessage = error instanceof Error && error.message
-      ? error.message
-      : t('mobile.glueCheckList.messages.submitError');
-
     showToast({
       severity: 'warn',
       summary: t('mobile.glueCheckList.title'),
-      detail: errorMessage,
+      detail: resolveCatchErrorMessage(
+        t,
+        error instanceof Error ? error.message : '',
+        t('mobile.glueCheckList.messages.submitError'),
+      ),
       life: 3000,
     });
   } finally {
@@ -542,6 +573,7 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   --padding-end: 2px;
   --icon-margin-end: 0;
   --icon-margin-start: 0;
+  --color: #ffffff;
 }
 
 .header-title {
@@ -738,6 +770,16 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
       background: #f8fafc;
       cursor: not-allowed;
     }
+
+    &--error {
+      border-color: #f87171;
+      background: #fffbfb;
+
+      &:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+      }
+    }
   }
 
   &__select {
@@ -745,11 +787,15 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   }
 
   &__note-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
     margin: 0;
-    color: #64748b;
+    padding: 0;
     font-size: 12px !important;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.45;
+    color: #94a3b8;
   }
 
   &__actions {
@@ -757,6 +803,14 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
     justify-content: flex-end;
     gap: 6px;
     margin-top: 22px;
+  }
+
+  &__required-asterisk {
+    flex-shrink: 0;
+    color: #dc2626;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
   }
 }
 

@@ -3,8 +3,10 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary" class="header-toolbar">
         <div slot="start" class="header-start">
-          <ion-back-button default-href="/app-menu" text="" class="header-back"></ion-back-button>
-          <h1 class="header-title">{{ t("mobile.glueConfirm.title") }}</h1>
+          <ion-button fill="clear" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t("mobile.glueConfirm.title") }}</h1>
+          </ion-button>
         </div>
         <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
@@ -103,8 +105,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
+import { useRouter } from "vue-router";
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonCard,
@@ -119,7 +121,7 @@ import {
   IonSpinner,
   IonToolbar,
 } from "@ionic/vue";
-import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from "ionicons/icons";
+import { alertCircle, checkmarkCircle, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from "vue-i18n";
@@ -145,10 +147,15 @@ type ResolveGlueQrResult = {
 };
 
 const authStore = useAuthStore();
+const router = useRouter();
 const lineChemicalStore = useLineChemicalStore();
 const offlineStore = useOfflineStore();
 const { t } = useI18n();
 const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -914,6 +921,7 @@ function getAllocatedDisplayRows(info: any) {
   --padding-end: 2px;
   --icon-margin-end: 0;
   --icon-margin-start: 0;
+  --color: #ffffff;
 }
 
 .header-title {

@@ -3,8 +3,10 @@
     <ion-header class="header-container">
       <ion-toolbar color="primary" class="header-toolbar">
         <div slot="start" class="header-start">
-          <ion-back-button default-href="/app-menu" text="" class="header-back"></ion-back-button>
-          <h1 class="header-title">{{ t("mobile.glueReturn.title") }}</h1>
+          <ion-button fill="clear" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t("mobile.glueReturn.title") }}</h1>
+          </ion-button>
         </div>
         <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
@@ -108,8 +110,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonCard,
@@ -151,9 +153,14 @@ interface LineChemicalItem {
 }
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
 const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const returnQrText = ref('');
 const pendingReturnGlueInfo = ref<any>(null);
@@ -598,6 +605,7 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   --padding-end: 2px;
   --icon-margin-end: 0;
   --icon-margin-start: 0;
+  --color: #ffffff;
 }
 
 .header-title {
