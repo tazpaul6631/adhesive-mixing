@@ -338,9 +338,19 @@ const mixingDevicesStore = useMixingDevicesStore();
 const { t } = useAppLocale(() => 'tablet');
 
 const ensureMixingDevicesHydrated = () => {
-  if (mixingDevicesStore.devices.length > 0) return;
-  if (authStore.user?.mixingDevices) {
-    mixingDevicesStore.setFromLogin(authStore.user.mixingDevices);
+  const loginDevices = authStore.user?.mixingDevices;
+  if (!Array.isArray(loginDevices)) return;
+
+  // Login rỗng → clear pool cũ (persist); store rỗng → hydrate từ login.
+  if (loginDevices.length === 0) {
+    if (mixingDevicesStore.devices.length > 0) {
+      mixingDevicesStore.setFromLogin([]);
+    }
+    return;
+  }
+
+  if (mixingDevicesStore.devices.length === 0) {
+    mixingDevicesStore.setFromLogin(loginDevices);
   }
 };
 
@@ -348,9 +358,10 @@ ensureMixingDevicesHydrated();
 
 const smallDeviceUsage = computed(() => mixingDevicesStore.smallDeviceUsage);
 const largeDeviceUsage = computed(() => mixingDevicesStore.largeDeviceUsage);
+const hasMixingDevices = computed(() => mixingDevicesStore.devices.length > 0);
 
 const shouldShowDeviceBadge = (row: Partial<WorkOrderMaster>) =>
-  mixingDevicesStore.shouldShowBadge(row);
+  hasMixingDevices.value && mixingDevicesStore.shouldShowBadge(row);
 
 const getDeviceBadgeName = (row: Partial<WorkOrderMaster>) =>
   mixingDevicesStore.resolveBadgeName(row);
@@ -837,49 +848,55 @@ const handleConfirm = async (row: Partial<WorkOrderMaster>) => {
 
   ensureMixingDevicesHydrated();
 
-  let departmentMixingDeviceId = '';
+  const useMixingDevices = mixingDevicesStore.devices.length > 0;
+  let departmentMixingDeviceId = useMixingDevices ? '' : '0';
   let recordStatus = '';
 
   if (type === 'MixStart') {
-    const rawExistingId =
-      mixingDevicesStore.getAssignedDeviceId(workOrderMasterId)
-      || String(row.departmentMixingDeviceId ?? '').trim();
-    const existingId = !rawExistingId || rawExistingId === '0' ? '' : rawExistingId;
-    const requiredDeviceType = resolveRequiredDeviceType(row);
-    const device = existingId
-      ? mixingDevicesStore.getDeviceById(existingId)
-      : mixingDevicesStore.pickAvailableDevice(requiredDeviceType);
+    if (useMixingDevices) {
+      const rawExistingId =
+        mixingDevicesStore.getAssignedDeviceId(workOrderMasterId)
+        || String(row.departmentMixingDeviceId ?? '').trim();
+      const existingId = !rawExistingId || rawExistingId === '0' ? '' : rawExistingId;
+      const requiredDeviceType = resolveRequiredDeviceType(row);
+      const device = existingId
+        ? mixingDevicesStore.getDeviceById(existingId)
+        : mixingDevicesStore.pickAvailableDevice(requiredDeviceType);
 
-    if (!device) {
-      showToast({
-        severity: 'warn',
-        summary: t('listMixGlue.toast.warning'),
-        detail: requiredDeviceType === '1'
-          ? t('listMixGlue.toast.noSmallMixingDeviceAvailable')
-          : t('listMixGlue.toast.noLargeMixingDeviceAvailable'),
-        life: 3000,
-      });
-      unlockRow();
-      return;
+      if (!device) {
+        showToast({
+          severity: 'warn',
+          summary: t('listMixGlue.toast.warning'),
+          detail: requiredDeviceType === '1'
+            ? t('listMixGlue.toast.noSmallMixingDeviceAvailable')
+            : t('listMixGlue.toast.noLargeMixingDeviceAvailable'),
+          life: 3000,
+        });
+        unlockRow();
+        return;
+      }
+
+      departmentMixingDeviceId = String(device.departmentMixingDeviceId);
     }
 
-    departmentMixingDeviceId = String(device.departmentMixingDeviceId);
     recordStatus = '2';
   } else if (type === 'MixComplete') {
-    const rawDeviceId =
-      mixingDevicesStore.getAssignedDeviceId(workOrderMasterId)
-      || String(row.departmentMixingDeviceId ?? '').trim();
-    departmentMixingDeviceId = !rawDeviceId || rawDeviceId === '0' ? '' : rawDeviceId;
+    if (useMixingDevices) {
+      const rawDeviceId =
+        mixingDevicesStore.getAssignedDeviceId(workOrderMasterId)
+        || String(row.departmentMixingDeviceId ?? '').trim();
+      departmentMixingDeviceId = !rawDeviceId || rawDeviceId === '0' ? '' : rawDeviceId;
 
-    if (!departmentMixingDeviceId) {
-      showToast({
-        severity: 'warn',
-        summary: t('listMixGlue.toast.warning'),
-        detail: t('listMixGlue.toast.mixingDeviceAssignmentMissing'),
-        life: 3000,
-      });
-      unlockRow();
-      return;
+      if (!departmentMixingDeviceId) {
+        showToast({
+          severity: 'warn',
+          summary: t('listMixGlue.toast.warning'),
+          detail: t('listMixGlue.toast.mixingDeviceAssignmentMissing'),
+          life: 3000,
+        });
+        unlockRow();
+        return;
+      }
     }
 
     recordStatus = '1';
@@ -902,18 +919,22 @@ const handleConfirm = async (row: Partial<WorkOrderMaster>) => {
     }
 
     if (type === 'MixStart') {
-      mixingDevicesStore.markInUse(workOrderMasterId, departmentMixingDeviceId);
-      const rowIndex = lineDetails.value.findIndex(
-        (item) => item.workOrderMasterId === workOrderMasterId
-      );
-      if (rowIndex >= 0) {
-        lineDetails.value[rowIndex] = {
-          ...lineDetails.value[rowIndex],
-          departmentMixingDeviceId,
-        };
+      if (useMixingDevices && departmentMixingDeviceId) {
+        mixingDevicesStore.markInUse(workOrderMasterId, departmentMixingDeviceId);
+        const rowIndex = lineDetails.value.findIndex(
+          (item) => item.workOrderMasterId === workOrderMasterId
+        );
+        if (rowIndex >= 0) {
+          lineDetails.value[rowIndex] = {
+            ...lineDetails.value[rowIndex],
+            departmentMixingDeviceId,
+          };
+        }
       }
     } else if (type === 'MixComplete') {
-      mixingDevicesStore.markFree(workOrderMasterId);
+      if (useMixingDevices) {
+        mixingDevicesStore.markFree(workOrderMasterId);
+      }
     }
 
     showToast({

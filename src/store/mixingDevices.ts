@@ -6,7 +6,10 @@ export type MixingDevice = {
   departmentMixingDeviceId: number | string;
   deviceType?: string | number;
   departmentMixingDeviceName: string;
+  /** Runtime status (có thể đổi khi MixStart/Complete / sync WO). */
   recordStatus: string | number;
+  /** Status từ login BE — baseline khi sync lại list WO. */
+  loginRecordStatus: string;
 };
 
 export type MixingDeviceType = '1' | '2';
@@ -33,6 +36,13 @@ const normalizeStatus = (value: unknown): string => {
 };
 
 const normalizeDeviceType = (value: unknown): string => normalizeId(value);
+
+/** Tên hiển thị hợp lệ — không dùng raw id. */
+const isDisplayName = (name: unknown, deviceId: unknown): boolean => {
+  const n = normalizeId(name);
+  const id = normalizeId(deviceId);
+  return !!n && n !== id;
+};
 
 export type DeviceUsageStats = {
   inUse: number;
@@ -64,12 +74,15 @@ const normalizeDevice = (raw: any): MixingDevice | null => {
   const name = normalizeId(
     raw?.departmentMixingDeviceName ?? raw?.DepartmentMixingDeviceName
   );
+  const status = normalizeStatus(raw?.recordStatus ?? raw?.RecordStatus);
 
   return {
     departmentMixingDeviceId,
     deviceType: raw?.deviceType ?? raw?.DeviceType,
-    departmentMixingDeviceName: name || departmentMixingDeviceId,
-    recordStatus: normalizeStatus(raw?.recordStatus ?? raw?.RecordStatus),
+    // Không fallback name = id (tránh chip hiện snowflake id).
+    departmentMixingDeviceName: isDisplayName(name, departmentMixingDeviceId) ? name : '',
+    recordStatus: status,
+    loginRecordStatus: status,
   };
 };
 
@@ -101,6 +114,8 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
     devices: [] as MixingDevice[],
     /** workOrderMasterId → departmentMixingDeviceId */
     assignments: {} as Record<string, string>,
+    /** Persist tên máy theo id — còn dùng sau kill app / login lại. */
+    nameById: {} as Record<string, string>,
   }),
 
   getters: {
@@ -120,21 +135,44 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
       const list = Array.isArray(rawList) ? rawList : [];
       this.devices = list
         .map((item) => normalizeDevice(item))
-        .filter((d): d is MixingDevice => !!d)
-        // Usage/chip đếm theo WO list; login chỉ cung cấp pool máy.
-        .map((device) => ({ ...device, recordStatus: RECORD_AVAILABLE }));
+        .filter((d): d is MixingDevice => !!d);
+
+      // Merge tên vào map bền (không ghi đè bằng rỗng / id).
+      for (const device of this.devices) {
+        const id = normalizeId(device.departmentMixingDeviceId);
+        const name = normalizeId(device.departmentMixingDeviceName);
+        if (isDisplayName(name, id)) {
+          this.nameById[id] = name;
+        }
+      }
+
       this.assignments = {};
     },
 
     clear() {
       this.devices = [];
       this.assignments = {};
+      // Giữ nameById để re-login vẫn resolve được tên máy đã biết.
     },
 
     getDeviceById(deviceId: unknown): MixingDevice | null {
       if (isUnassignedDeviceId(deviceId)) return null;
       const id = normalizeId(deviceId);
       return this.devices.find((d) => normalizeId(d.departmentMixingDeviceId) === id) ?? null;
+    },
+
+    /** Chỉ trả tên hiển thị — không bao giờ trả raw id. */
+    resolveDeviceDisplayName(deviceId: unknown): string {
+      if (isUnassignedDeviceId(deviceId)) return '';
+      const id = normalizeId(deviceId);
+      const device = this.getDeviceById(id);
+      const fromDevice = normalizeId(device?.departmentMixingDeviceName);
+      if (isDisplayName(fromDevice, id)) return fromDevice;
+
+      const fromMap = normalizeId(this.nameById[id]);
+      if (isDisplayName(fromMap, id)) return fromMap;
+
+      return '';
     },
 
     getAssignedDeviceId(workOrderMasterId: unknown): string {
@@ -170,6 +208,11 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
 
       this.assignments[woId] = id;
       device.recordStatus = RECORD_IN_USE;
+
+      const name = normalizeId(device.departmentMixingDeviceName);
+      if (isDisplayName(name, id)) {
+        this.nameById[id] = name;
+      }
     },
 
     markFree(workOrderMasterId: unknown) {
@@ -189,10 +232,9 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
     },
 
     /**
-     * Rebuild usage từ row WO:
-     * - Reset toàn bộ máy về available
-     * - Máy có departmentMixingDeviceId (≠ 0) khớp pool login → in use
-     * - Bỏ qua đơn đã mixGlueComplete
+     * Rebuild usage:
+     * - Baseline = recordStatus từ login BE (1/2)
+     * - Overlay máy đang gắn trên WO list (≠ 0, chưa complete) → in use
      */
     syncAssignmentsFromRows(
       rows: Array<{
@@ -205,7 +247,7 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
     ) {
       this.assignments = {};
       for (const device of this.devices) {
-        device.recordStatus = RECORD_AVAILABLE;
+        device.recordStatus = normalizeStatus(device.loginRecordStatus);
       }
 
       for (const row of rows) {
@@ -223,8 +265,8 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
 
     /**
      * Badge label for a row.
-     * - Assigned (store or row id) → that device name
-     * - Awaiting MixStart → next available device of required deviceType
+     * - Assigned (store or row id) → device name (không hiện id)
+     * - Awaiting MixStart → next available device name
      */
     resolveBadgeName(row: {
       workOrderMasterId?: string;
@@ -235,6 +277,10 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
       isProcessingAgent?: boolean | string | number | null;
       requestOrderWeight?: string | number | null;
     }): string {
+      if (this.devices.length === 0) {
+        return '';
+      }
+
       if (row.mixGlueConfirm !== true || row.mixGlueComplete === true) {
         return '';
       }
@@ -247,13 +293,14 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
       const boundId = fromAssignment || fromRow;
 
       if (boundId) {
-        const device = this.getDeviceById(boundId);
-        return device?.departmentMixingDeviceName || boundId;
+        return this.resolveDeviceDisplayName(boundId);
       }
 
       if (row.mixStartComplete === false || row.mixStartComplete == null) {
         const deviceType = resolveRequiredDeviceType(row);
-        return this.pickAvailableDevice(deviceType)?.departmentMixingDeviceName || '';
+        const device = this.pickAvailableDevice(deviceType);
+        if (!device) return '';
+        return this.resolveDeviceDisplayName(device.departmentMixingDeviceId);
       }
 
       return '';
@@ -263,6 +310,7 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
       mixGlueConfirm?: boolean;
       mixGlueComplete?: boolean;
     }): boolean {
+      if (this.devices.length === 0) return false;
       return row.mixGlueConfirm === true && row.mixGlueComplete !== true;
     },
   },
@@ -273,6 +321,6 @@ export const useMixingDevicesStore = defineStore('mixingDevices', {
       getItem: async (key: string) => await storageService.get(key, false, true),
       setItem: async (key: string, value: string) => await storageService.set(key, value, true),
     } as any,
-    pick: ['devices', 'assignments'],
+    pick: ['devices', 'assignments', 'nameById'],
   },
 });
