@@ -195,12 +195,12 @@ const isFirstTwoQrMatched = computed(() => {
     lineChemicalMasterId === allocatedCompareValue;
 
   // UseProductLine: khớp theo chuyền; nếu có chemicalMasterId thì vẫn kiểm tra keo.
-  if (receiveType === 'UseProductLine') {
-    if (lineChemicalMasterId) {
-      return isProductLineMatched && isGlueMatched;
-    }
-    return isProductLineMatched;
-  }
+  // if (receiveType === 'UseProductLine') {
+  //   if (lineChemicalMasterId) {
+  //     return isProductLineMatched && isGlueMatched;
+  //   }
+  //   return isProductLineMatched;
+  // }
 
   // UseLineChemical / QR cũ: chỉ kiểm tra keo khớp.
   return isGlueMatched;
