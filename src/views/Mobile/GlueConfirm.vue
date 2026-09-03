@@ -228,8 +228,8 @@ function normalizeCompareValue(value: any) {
 
 function normalizeGlueName(value: any) {
   return normalizeCompareValue(value)
-    .replace(/\s+/g, " ")
-    .toUpperCase();
+    .replace(/\s+/g, "")
+    .toLowerCase();
 }
 
 function hasPayloadValue(value: any) {
