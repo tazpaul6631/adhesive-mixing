@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="offline-loading-overlay">
       <div class="offline-loading-panel">
-        <ion-spinner name="crescent" class="offline-loading-spinner"></ion-spinner>
+        <i class="pi pi-spin pi-spinner offline-loading-spinner" aria-hidden="true"></i>
         <p class="offline-loading-title">{{ title }}</p>
         <p v-if="note" class="offline-loading-note">{{ note }}</p>
 
@@ -19,7 +19,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { IonSpinner } from '@ionic/vue';
 
 const props = defineProps({
   isOpen: {
@@ -59,7 +58,11 @@ const progressPercent = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding:
+    calc(24px + var(--app-safe-area-top, env(safe-area-inset-top, 0px)))
+    calc(24px + var(--app-safe-area-right, env(safe-area-inset-right, 0px)))
+    calc(24px + var(--app-safe-area-bottom, env(safe-area-inset-bottom, 0px)))
+    calc(24px + var(--app-safe-area-left, env(safe-area-inset-left, 0px)));
   background: rgba(15, 23, 42, 0.72);
   pointer-events: auto;
 }
@@ -74,8 +77,7 @@ const progressPercent = computed(() => {
 }
 
 .offline-loading-spinner {
-  width: 42px;
-  height: 42px;
+  font-size: 42px;
   color: #2563eb;
 }
 
@@ -108,14 +110,14 @@ const progressPercent = computed(() => {
 .offline-loading-progress__value {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #38bdf8, #2563eb);
-  transition: width 0.25s ease;
+  background: #2563eb;
+  transition: width 0.2s ease;
 }
 
 .offline-loading-progress__text {
-  margin: 8px 0 0;
-  font-size: 0.88rem;
-  font-weight: 700;
+  margin: 10px 0 0;
   color: #475569;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 </style>

@@ -1,24 +1,21 @@
 <template>
-  <ion-page :class="{ 'list-separate-mixed-glue--scanning': isScanning }">
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 0px !important;">
-        <div class="flex align-items-center justify-content-between">
-          <ion-buttons slot="start">
-            <ion-button @click="goBack">
-              <i class="pi pi-angle-left text-xl mr-1"></i>
-              <ion-title class="no-padding" style="line-height: 50px;">{{ t('listSeparateMixedGlue.pageTitle')
-                }}</ion-title>
-            </ion-button>
-          </ion-buttons>
-          <div class="flex align-items-center gap-2 mr-2">
-            <NetworkStatusIcon />
-            <LocaleSelect device-scope="tablet" />
-          </div>
+  <AppPage :page-class="{ 'list-separate-mixed-glue--scanning': isScanning }">
+    <AppHeader no-border class="tablet-list-header">
+      <template #start>
+        <button type="button" class="header-back" @click="goBack">
+          <i class="pi pi-angle-left text-xl mr-1"></i>
+          <h1 class="header-title">{{ t('listSeparateMixedGlue.pageTitle') }}</h1>
+        </button>
+      </template>
+      <template #end>
+        <div class="flex align-items-center gap-2 mr-2">
+          <NetworkStatusIcon />
+          <LocaleSelect device-scope="tablet" />
         </div>
-      </ion-toolbar>
-    </ion-header>
+      </template>
+    </AppHeader>
 
-    <ion-content class="ion-padding list-separate-mixed-glue-content" :scroll-events="true">
+    <AppContent class="list-separate-mixed-glue-content" :scroll="true" :padding="true">
       <div class="main-container max-w-full mx-auto list-separate-page"
         :class="[pageClass, { 'list-separate-mixed-glue-layer--hidden': isScanning }]">
         <div class="surface-card p-0 shadow-1 border-round-xl list-separate-card">
@@ -43,7 +40,7 @@
                 :title="t('listSeparateMixedGlue.print.pendingButtonTitle', { count: pendingCount })"
                 :aria-label="t('listSeparateMixedGlue.print.pendingButtonTitle', { count: pendingCount })"
                 @click="openPendingPrintDialog" />
-              <BluetoothPrinterStatus ref="bluetoothRef" />
+              <BluetoothPrinterStatus v-if="showPrinterUi" ref="bluetoothRef" />
             </div>
           </div>
 
@@ -127,7 +124,7 @@
           </div>
         </div>
       </div>
-    </ion-content>
+    </AppContent>
 
     <div v-if="isScanning" class="scan-camera-overlay">
       <div class="scan-camera-content">
@@ -154,8 +151,8 @@
       </div>
     </div>
 
-    <BatchPrintRetryDialog v-model:visible="showRetryDialog" :failed-items="failedItems" :loading="isPrinting"
-      @retry="handleRetryPrint" />
+    <BatchPrintRetryDialog v-if="showPrinterUi" v-model:visible="showRetryDialog" :failed-items="failedItems"
+      :loading="isPrinting" @retry="handleRetryPrint" />
 
     <Dialog v-model:visible="showPrintAuthDialog" modal :header="t('listSeparateMixedGlue.printAuthDialog.title')"
       :style="{ width: 'min(92vw, 420px)' }" :closable="false" @hide="closePrintAuthDialog">
@@ -198,23 +195,22 @@
           @click="submitPrintAuthPassword" />
       </template>
     </Dialog>
-  </ion-page>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
-  onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave, useBackButton
-} from '@ionic/vue';
-import { ref, computed, nextTick } from 'vue';
+defineOptions({ name: 'ListSeparateMixedglue' });
+
+import { ref, computed, nextTick, defineAsyncComponent } from 'vue';
 import { useAuthStore } from '@/store/auth';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
+import { useAppBackButton } from '@/composables/useAppBackButton';
+import { usePageLifecycle } from '@/composables/usePageLifecycle';
 import format from '@/mixins/format';
 import workOrder from '@/api/workOrder';
 import employeeApi from '@/api/employee';
 import { useRouter } from 'vue-router';
 import { useAppToast } from '@/composables/useAppToast';
-import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
-import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import {
@@ -236,6 +232,12 @@ import { useRowActionLock } from '@/composables/useRowActionLock';
 import { useScrollToSelectedTableRow } from '@/composables/useScrollToSelectedTableRow';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
+const BluetoothPrinterStatus = defineAsyncComponent(
+  () => import('@/components/BluetoothPrinterStatus.vue'),
+);
+const BatchPrintRetryDialog = defineAsyncComponent(
+  () => import('@/components/BatchPrintRetryDialog.vue'),
+);
 const router = useRouter();
 const authStore = useAuthStore();
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
@@ -251,7 +253,15 @@ const {
   emptyStateMinHeight,
 } = useTabletPageLayout({ listPage: true });
 
-const bluetoothRef = ref<InstanceType<typeof BluetoothPrinterStatus> | null>(null);
+const bluetoothRef = ref<{
+  initBluetooth?: () => void;
+  pauseBluetooth?: () => void;
+  writeTspl?: (tspl: string) => Promise<boolean>;
+  isConnected?: () => boolean;
+  verifyHardwareConnected?: () => Promise<boolean>;
+  connectForPrint?: () => Promise<void>;
+} | null>(null);
+const showPrinterUi = ref(false);
 const printingWorkOrderId = ref<string | null>(null);
 const showRetryDialog = ref(false);
 const lastPrintTotal = ref(0);
@@ -438,7 +448,7 @@ const scrollToSelectedRow = () => {
   void scrollToRowByDataKey(filteredLineDetails.value, id);
 };
 
-useBackButton(10, (processNextHandler) => {
+useAppBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
     void cancelScan();
     return;
@@ -478,7 +488,9 @@ const onRowClick = (event: { data: Partial<WorkOrderMaster> }) => {
 const fetchWorkOrders = async (page: number, pageSize: number) => {
   const requestId = startRequest();
   isLoadingLine.value = true;
-  lineDetails.value = createSkeletonRows(pageSize);
+  if (lineDetails.value.length === 0) {
+    lineDetails.value = createSkeletonRows(pageSize);
+  }
 
   try {
     const payload = {
@@ -1019,22 +1031,6 @@ const restorePendingPrintJob = async () => {
   });
 };
 
-onIonViewWillEnter(() => {
-  currentPage.value = 1;
-  resetLabelPrintSession();
-  clearPrintQueue();
-  void (async () => {
-    await fetchWorkOrders(1, rowsPerPage.value);
-    await restorePendingPrintJob();
-  })();
-});
-
-onIonViewDidEnter(async () => {
-  await nextTick();
-  await nextTick();
-  bluetoothRef.value?.initBluetooth?.();
-});
-
 /**
  * Thả hàng list khỏi heap khi rời page.
  * Giữ: printedWorkOrderIds, pending print, selectedItem, filter.
@@ -1045,16 +1041,71 @@ const releaseListTableMemory = () => {
   lineDetails.value = [];
 };
 
-onIonViewDidLeave(() => {
-  if (isScanning.value) {
-    void cancelScan();
-  }
-  bluetoothRef.value?.pauseBluetooth?.();
-  releaseListTableMemory();
+usePageLifecycle({
+  onEnter: () => {
+    currentPage.value = 1;
+    showPrinterUi.value = false;
+
+    const fetchPromise = fetchWorkOrders(1, rowsPerPage.value);
+
+    resetLabelPrintSession();
+    clearPrintQueue();
+
+    void nextTick(() => {
+      requestAnimationFrame(() => {
+        showPrinterUi.value = true;
+      });
+    });
+
+    void fetchPromise.then(() => restorePendingPrintJob());
+  },
+  onAfterEnter: () => {
+    void nextTick(() => {
+      bluetoothRef.value?.initBluetooth?.();
+    });
+  },
+  onLeave: () => {
+    if (isScanning.value) {
+      void cancelScan();
+    }
+    bluetoothRef.value?.pauseBluetooth?.();
+    showPrinterUi.value = false;
+    // keep-alive: không clear table — lần vào lại hiện data cũ trong lúc refetch.
+  },
 });
 </script>
 
 <style scoped>
+.tablet-list-header :deep(.app-header__toolbar) {
+  min-height: 50px;
+  padding-inline: 4px 8px;
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 4px 4px 4px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 50px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .text-wrap {
   word-break: break-word;
   white-space: normal;
@@ -1076,10 +1127,6 @@ onIonViewDidLeave(() => {
 }
 
 /* 8.7" — layout trang (DataTable dùng theme/datatable.css) */
-.tablet-page--inch87.list-separate-page {
-  padding: 0.5rem 0.625rem;
-}
-
 .tablet-page--inch87 .list-separate-card-head {
   padding: 0.5rem 0.75rem;
   gap: 0.5rem;
@@ -1170,21 +1217,20 @@ onIonViewDidLeave(() => {
 <style>
 body.barcode-scanner-active,
 html.barcode-scanner-active,
-ion-app.barcode-scanner-active {
+.app-shell.barcode-scanner-active {
   visibility: hidden;
   background: transparent !important;
   --background: transparent;
-  --ion-background-color: transparent;
 }
 
 body.barcode-scanner-active .scan-camera-overlay,
 html.barcode-scanner-active .scan-camera-overlay,
-ion-app.barcode-scanner-active .scan-camera-overlay {
+.app-shell.barcode-scanner-active .scan-camera-overlay {
   visibility: visible;
 }
 
-body.barcode-scanner-active ion-content,
-body.barcode-scanner-active .ion-page,
+body.barcode-scanner-active .app-page,
+body.barcode-scanner-active .app-content,
 body.barcode-scanner-active .list-separate-mixed-glue-content {
   --background: transparent;
   background: transparent !important;

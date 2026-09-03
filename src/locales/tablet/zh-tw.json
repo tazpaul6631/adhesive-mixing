@@ -9,7 +9,7 @@
   "appMenu": {
     "title": "首頁",
     "logout": "登出",
-    "tabletH2title": "您好！",
+    "tabletH2title": "您好 {name}！",
     "tabletSubtitle": "調膠管理系統",
     "features": {
       "mixGlue": {

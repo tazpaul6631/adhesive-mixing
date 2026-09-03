@@ -1,29 +1,33 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" class="header-toolbar">
-        <div slot="start" class="header-start">
-          <ion-button fill="clear" class="header-back" @click="goBack">
+  <AppPage>
+    <AppHeader no-border class="mobile-glue-header">
+      <template #start>
+        <div class="header-start">
+          <button type="button" class="header-back" @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
             <h1 class="header-title">{{ t("mobile.glueConfirm.title") }}</h1>
-          </ion-button>
+          </button>
         </div>
-        <ion-buttons slot="end" class="header-end">
+      </template>
+      <template #end>
+        <div class="header-end">
           <NetworkStatusIcon />
-        </ion-buttons>
-      </ion-toolbar>
-      <MobileOfflineNotice />
-    </ion-header>
+        </div>
+      </template>
+      <template #after>
+        <MobileOfflineNotice />
+      </template>
+    </AppHeader>
 
-    <ion-content class="mobile-content">
+    <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="qr-panel">
           <div class="qr-panel__body">
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueConfirm.lineQrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueConfirm.lineQrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
                 <button type="button" class="qr-scan-field" @click="openScanner('line')">
                   <span v-if="!lineQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
@@ -48,14 +52,14 @@
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueConfirm.allocatedQrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueConfirm.allocatedQrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
                 <button type="button" class="qr-scan-field" @click="openScanner('allocated')">
                   <span v-if="!allocatedQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
@@ -73,61 +77,43 @@
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
             <div v-if="statusMessage" class="status-box" :class="statusClass">
-              <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
+              <i :class="['pi', 'status-box__icon', statusIcon]" aria-hidden="true"></i>
               <div class="status-box__content">
                 <p><strong>{{ t("mobile.glueConfirm.statusLabel") }} </strong>{{ statusMessage }}</p>
               </div>
             </div>
 
             <div v-if="allocatedExpiredMessage" class="status-box status-box--danger status-box--compact">
-              <ion-icon class="status-box__icon" :icon="alertCircle"></ion-icon>
+              <i class="pi pi-exclamation-circle status-box__icon" aria-hidden="true"></i>
               <div class="status-box__content">
                 <p>{{ allocatedExpiredMessage }}</p>
               </div>
             </div>
 
-            <ion-button expand="block" class="confirm-button" :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn">
-              <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
-              {{ t("mobile.glueConfirm.confirmReturnButton") }}
-            </ion-button>
+            <Button class="confirm-button w-full" icon="pi pi-verified" :disabled="isConfirmButtonDisabled"
+              :label="t('mobile.glueConfirm.confirmReturnButton')" @click="handleConfirmReturn" />
 
           </div>
         </section>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
-import {
-  IonButton,
-  IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonModal,
-  IonPage,
-  IonSpinner,
-  IonToolbar,
-} from "@ionic/vue";
-import { alertCircle, checkmarkCircle, shieldCheckmarkOutline } from "ionicons/icons";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from '@/store/lineChemical';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
@@ -181,29 +167,11 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-  const receiveType = getLineReceiveType(lineChemicalInfo.value);
-  const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
-  const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
-  const isProductLineMatched =
-    !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
-
-  const lineChemicalMasterId = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId);
-  const allocatedCompareValue = getAllocatedGlueCompareValue(allocatedGlueInfo.value);
-  const isGlueMatched =
-    !!lineChemicalMasterId &&
-    !!allocatedCompareValue &&
-    lineChemicalMasterId === allocatedCompareValue;
-
-  // UseProductLine: khớp theo chuyền; nếu có chemicalMasterId thì vẫn kiểm tra keo.
-  // if (receiveType === 'UseProductLine') {
-  //   if (lineChemicalMasterId) {
-  //     return isProductLineMatched && isGlueMatched;
-  //   }
-  //   return isProductLineMatched;
-  // }
-
-  // UseLineChemical / QR cũ: chỉ kiểm tra keo khớp.
-  return isGlueMatched;
+  const lineGlueName = normalizeGlueName(
+    lineChemicalInfo.value.glueName || lineChemicalInfo.value.layoutLineChemicalName
+  );
+  const allocatedGlueName = normalizeGlueName(allocatedGlueInfo.value.glueName);
+  return !!lineGlueName && !!allocatedGlueName && lineGlueName === allocatedGlueName;
 });
 
 const isAllocatedGlueExpired = computed(() => {
@@ -243,7 +211,7 @@ const statusClass = computed<StatusBoxClass>(() => {
 });
 
 const statusIcon = computed(() => {
-  return statusClass.value === "status-box--danger" ? alertCircle : checkmarkCircle;
+  return statusClass.value === "status-box--danger" ? "pi-exclamation-circle" : "pi-check-circle";
 });
 
 function normalizeQrText(value: string) {
@@ -256,6 +224,12 @@ function normalizeCompareValue(value: any) {
   }
 
   return String(value).trim();
+}
+
+function normalizeGlueName(value: any) {
+  return normalizeCompareValue(value)
+    .replace(/\s+/g, " ")
+    .toUpperCase();
 }
 
 function hasPayloadValue(value: any) {
@@ -362,14 +336,6 @@ function getAllocatedProductLineIds(info: any) {
   }
 
   return normalizeProductLineIdList(info?.productLineId);
-}
-
-function getAllocatedGlueCompareValue(info: any) {
-  if (hasPayloadValue(info?.noSeparateGlueId)) {
-    return normalizeCompareValue(info?.materialCode);
-  }
-
-  return normalizeCompareValue(info?.glueId);
 }
 
 function getLineReceiveType(data: any): string {
@@ -894,16 +860,9 @@ function getAllocatedDisplayRows(info: any) {
 </script>
 
 <style scoped lang="scss">
-.header-container {
-  ion-toolbar.header-toolbar {
-    --background: #0b56d9;
-    --color: #ffffff;
-    --min-height: 56px;
-    --padding-start: 4px;
-    --padding-end: 10px;
-    --padding-top: 6px;
-    --padding-bottom: 6px;
-  }
+.mobile-glue-header :deep(.app-header__toolbar) {
+  min-height: 56px;
+  padding-inline: 4px 10px;
 }
 
 .header-start {
@@ -916,12 +875,16 @@ function getAllocatedDisplayRows(info: any) {
 }
 
 .header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   margin: 0;
-  --padding-start: 6px;
-  --padding-end: 2px;
-  --icon-margin-end: 0;
-  --icon-margin-start: 0;
-  --color: #ffffff;
+  padding: 6px 2px 6px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
 }
 
 .header-title {
@@ -939,10 +902,12 @@ function getAllocatedDisplayRows(info: any) {
 
 .header-end {
   margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .mobile-content {
-  --background: #f6f9fd;
+  background: #f6f9fd;
 }
 
 .menu-container {
@@ -968,17 +933,18 @@ function getAllocatedDisplayRows(info: any) {
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 
-  ion-card-header {
+  &__header {
     padding: 24px 24px 16px;
   }
 
-  ion-card-title {
+  &__title {
+    margin: 0;
     color: #081a36;
     font-weight: 700;
-    font-size: 18px !important;
+    font-size: 18px;
   }
 
-  ion-card-content {
+  &__body {
     padding: 0 24px 24px;
   }
 }
@@ -1064,28 +1030,15 @@ function getAllocatedDisplayRows(info: any) {
 .confirm-button {
   overflow: hidden;
   margin: 0;
-  border-radius: 16px;
+  border-radius: 16px !important;
   font-weight: 500;
   text-transform: none;
   font-size: 15px !important;
   min-height: 50px;
 
-  ion-icon {
-    margin-right: 10px;
-  }
-
-  &::part(native) {
-    border-radius: 16px;
-  }
-
-  &[disabled],
-  &--disabled {
+  &:disabled {
     opacity: 0.48;
     pointer-events: none;
-  }
-
-  &--disabled::part(native) {
-    cursor: not-allowed;
   }
 }
 
@@ -1161,69 +1114,6 @@ function getAllocatedDisplayRows(info: any) {
   }
 }
 
-.return-confirm-modal {
-  --width: min(90vw, 360px);
-  --height: auto;
-  --border-radius: 20px;
-  --box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
-}
-
-.return-confirm-dialog {
-  padding: 26px 22px 12px;
-  border-radius: 20px;
-  background: #ffffff;
-  text-align: center;
-
-  &__icon {
-    width: 48px;
-    height: 48px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    border-radius: 50%;
-    background: #eaf2ff;
-    color: #0b72ed;
-
-    ion-icon {
-      font-size: 1.8rem;
-    }
-  }
-
-  &__title {
-    margin: 0 0 10px;
-    color: #081a36;
-    font-size: 16px !important;
-    font-weight: 700;
-  }
-
-  &__message {
-    margin: 0;
-    color: #475569;
-    font-size: 14px !important;
-    line-height: 1.5;
-    word-break: break-word;
-
-    strong {
-      color: #081a36;
-      font-weight: 700;
-    }
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 22px;
-  }
-
-  &__button-spinner {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-  }
-}
-
 @media (min-width: 768px) {
   .menu-container {
     max-width: 660px;
@@ -1236,18 +1126,18 @@ function getAllocatedDisplayRows(info: any) {
 
   .qr-container {
     border-radius: 22px;
+  }
 
-    ion-card-header {
-      padding: 28px 30px 18px;
-    }
+  .qr-container__header {
+    padding: 28px 30px 18px;
+  }
 
-    ion-card-title {
-      font-size: 1.72rem;
-    }
+  .qr-container__title {
+    font-size: 1.72rem;
+  }
 
-    ion-card-content {
-      padding: 0 30px 30px;
-    }
+  .qr-container__body {
+    padding: 0 30px 30px;
   }
 
   .qr-scan-field {
@@ -1281,7 +1171,6 @@ function getAllocatedDisplayRows(info: any) {
     min-height: 82px;
     border-radius: 18px;
     font-size: 1.5rem;
-    --border-radius: 18px;
   }
 
   .status-box {
@@ -1292,42 +1181,6 @@ function getAllocatedDisplayRows(info: any) {
 
     &__icon {
       font-size: 2.8rem;
-    }
-  }
-
-  .return-confirm-modal {
-    --width: min(82vw, 460px);
-    --border-radius: 24px;
-  }
-
-  .return-confirm-dialog {
-    padding: 34px 30px 16px;
-    border-radius: 24px;
-
-    &__icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 18px;
-
-      ion-icon {
-        font-size: 2.4rem;
-      }
-    }
-
-    &__title {
-      font-size: 1.7rem;
-    }
-
-    &__message {
-      font-size: 1.18rem;
-    }
-
-    &__actions {
-      margin-top: 28px;
-
-      ion-button {
-        font-size: 1.05rem;
-      }
     }
   }
 }

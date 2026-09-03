@@ -1,27 +1,43 @@
 /* ==========================================================================
-   GLOBAL CSS - IONIC & PRIMEVUE
+   GLOBAL CSS - APP SHELL & PRIMEVUE
    ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- 0. FONT SIZE CONTROLS (chỉnh 2 biến này, tách biệt Ionic / PrimeVue) --- */
+/* --- 0. FONT SIZE CONTROLS --- */
 :root {
-    /* Ionic: ion-title, ion-label, ion-button, ion-item... */
-    --ion-font-size-base: 16px;
+    --app-font-size-base: 16px;
+    --app-padding: 16px;
 
     /* PrimeVue: DataTable, Select, InputText, Button, DatePicker... */
     --primevue-font-size-base: 20px;
+
+    /* Safe area theo máy (notch / home indicator / edge-to-edge) */
+    --app-safe-area-top: env(safe-area-inset-top, 0px);
+    --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --app-safe-area-left: env(safe-area-inset-left, 0px);
+    --app-safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* --- 1. BASE HTML & BODY (Ionic) --- */
+/* Dialog / Toast: inset ngang khi máy có notch cạnh */
+.p-dialog-mask {
+    padding-left: var(--app-safe-area-left);
+    padding-right: var(--app-safe-area-right);
+}
+
+.p-toast {
+    top: calc(1rem + var(--app-safe-area-top)) !important;
+    padding-left: var(--app-safe-area-left);
+    padding-right: var(--app-safe-area-right);
+}
+
+/* --- 1. BASE HTML & BODY --- */
 html {
-    /* Mốc rem chung — gắn với Ionic, KHÔNG dùng để scale PrimeVue */
-    font-size: var(--ion-font-size-base) !important;
+    font-size: var(--app-font-size-base) !important;
 }
 
 body {
     font-family: 'Inter', sans-serif !important;
-    --ion-font-size: var(--ion-font-size-base) !important;
-    font-size: var(--ion-font-size);
+    font-size: var(--app-font-size-base);
 }
 
 /* Tắt chớp xanh mặc định của iOS/Android khi tap vào màn hình */
@@ -74,32 +90,6 @@ body {
     padding: 6px !important;
 }
 
-/* --- 3. IONIC OVERRIDES --- */
-ion-list {
-    padding: 0 !important;
-}
-
-.custom-error-alert {
-    --backdrop-opacity: 0.6;
-}
-
-.custom-error-alert .alert-sub-title {
-    color: #eb445a !important;
-    font-weight: bold !important;
-    text-transform: uppercase;
-}
-
-.custom-error-alert .alert-message {
-    color: #333 !important;
-    font-size: var(--ion-font-size-base) !important;
-}
-
-.custom-error-alert .highlight-point {
-    color: #2fdf75;
-    font-size: 1.2em;
-    text-decoration: underline;
-}
-
 .no-padding {
     padding: 5px 0 !important;
 }
@@ -109,12 +99,10 @@ ion-list {
     flex-direction: column;
     gap: 10px;
     height: 100%;
-    padding: 10px 20px;
     max-width: 1400px;
-    margin: 0 auto;
 }
 
-/* Chỉ scale PrimeVue trong layout tablet — không đụng Ionic */
+/* Chỉ scale PrimeVue trong layout tablet */
 .main-container .p-component,
 .main-container .p-inputtext,
 .main-container .p-select,

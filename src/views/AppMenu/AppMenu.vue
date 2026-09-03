@@ -1,27 +1,31 @@
 <template>
-  <ion-page>
-    <ion-header class="ion-no-border header-container">
-      <ion-toolbar color="primary" class="header-toolbar">
-        <div slot="start" class="header-start">
+  <AppPage>
+    <AppHeader no-border class="app-menu-header">
+      <template #start>
+        <div class="header-start">
           <h1 class="header-title">{{ t('appMenu.title') }}</h1>
         </div>
-        <div slot="end" class="header-end">
+      </template>
+      <template #end>
+        <div class="header-end">
           <component :is="networkStatusIconComp" v-if="networkStatusIconComp" />
           <LocaleSelect :device-scope="isTablet ? 'tablet' : 'mobile'" />
-          <ion-button fill="clear" class="logout-btn" @click="handleLogout">
-            <ion-icon slot="icon-only" :icon="logOutOutline"></ion-icon>
-          </ion-button>
+          <button type="button" class="logout-btn" :aria-label="t('appMenu.logout')" @click="handleLogout">
+            <i class="pi pi-sign-out" aria-hidden="true" />
+          </button>
         </div>
-      </ion-toolbar>
-      <component :is="MobileOfflineNotice" v-if="!isTablet && MobileOfflineNotice" />
-    </ion-header>
+      </template>
+      <template #after>
+        <component :is="MobileOfflineNotice" v-if="!isTablet && MobileOfflineNotice" />
+      </template>
+    </AppHeader>
 
-    <ion-content class="ion-padding custom-content">
+    <AppContent class="custom-content" :scroll="true" :padding="true">
       <div class="menu-container">
         <div class="welcome-banner animate__animated animate__fadeInDown">
           <div class="welcome-text">
-            <h2 v-if="isTablet">{{ t('appMenu.tabletH2title') }}</h2>
-            <h2 v-else>{{ t('mobile.appMenu.hello') }}</h2>
+            <h2 v-if="isTablet">{{ t('appMenu.tabletH2title', { name: authStore.user?.employeeName }) }}</h2>
+            <h2 v-else>{{ t('mobile.appMenu.hello', { name: authStore.user?.employeeName }) }}</h2>
             <p v-if="isTablet">{{ t('appMenu.tabletSubtitle') }}</p>
             <p v-else>{{ t('mobile.appMenu.system') }}</p>
             <component :is="PendingQueueButton" v-if="!isTablet && PendingQueueButton" placement="appMenu" />
@@ -32,9 +36,9 @@
 
           <template v-if="isTablet">
             <div v-for="(feature, index) in tabletFeatures" :key="index" class="feature-card shadow-sm"
-              @click="navigate(feature.path)">
+              :class="{ 'feature-card--disabled': isNavigating }" @click="navigate(feature.path)">
               <div class="icon-wrapper" :style="{ background: feature.bgLight }">
-                <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
+                <i :class="feature.icon" :style="{ color: feature.color }" aria-hidden="true" />
               </div>
               <div class="card-content">
                 <h3>{{ feature.title }}</h3>
@@ -45,9 +49,9 @@
 
           <template v-if="!isTablet">
             <div v-for="(feature, index) in mobileFeatures" :key="index" class="feature-card-mobile shadow-sm"
-              :class="{ 'feature-card--disabled': feature.disabled }" @click="navigateFeature(feature)">
+              :class="{ 'feature-card--disabled': feature.disabled || isNavigating }" @click="navigateFeature(feature)">
               <div class="icon-wrapper" :style="{ background: feature.bgLight }">
-                <ion-icon :icon="feature.icon" :style="{ color: feature.color }"></ion-icon>
+                <i :class="feature.icon" :style="{ color: feature.color }" aria-hidden="true" />
               </div>
               <div class="card-content">
                 <h3>{{ feature.title }}</h3>
@@ -58,28 +62,25 @@
           </template>
         </div>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
-import {
-  IonPage, IonHeader, IonToolbar, IonContent,
-  IonIcon, IonButton, alertController
-} from '@ionic/vue';
-import {
-  scaleOutline, logOutOutline, qrCodeOutline, readerOutline,
-  checkmarkDoneOutline, gitCompareOutline, gitMergeOutline, search
-} from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useOfflineStore } from '@/store/offline';
 import { useOfflineLoginStore } from '@/store/offlineLogin';
 import { ref, computed, onMounted, onUnmounted, shallowRef, type Component, type ShallowRef } from 'vue';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 import { resolveAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
 import { clearGlueOfflineData } from '@/services/glueOfflineData.service';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { showAppConfirm } from '@/services/confirmBridge';
+import { startRouteLoadingVisible } from '@/router/loading';
+import { preloadMenuRouteChunk, preloadMenuRouteChunks } from '@/views/AppMenu/menuRouteChunks';
+import { warmNativeMenuChunks } from '@/router/routeChunks';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -88,6 +89,7 @@ const offlineLoginStore = useOfflineLoginStore();
 
 // --- LOGIC NHẬN DIỆN THIẾT BỊ ---
 const isTablet = ref(window.innerWidth >= 768);
+const isNavigating = ref(false);
 
 const networkStatusIconComp: ShallowRef<Component | null> = shallowRef(null);
 const MobileOfflineNotice: ShallowRef<Component | null> = shallowRef(null);
@@ -130,6 +132,13 @@ onMounted(() => {
     void loadMobileShell();
     void offlineStore.refreshQueueCounts();
   }
+
+  // Preload ngay khi vào menu (không đợi idle) — lần bấm sau gần như warm.
+  void warmNativeMenuChunks(isTablet.value);
+  const paths = isTablet.value
+    ? tabletFeatures.value.map((f) => f.path)
+    : mobileFeatures.value.map((f) => f.path);
+  void preloadMenuRouteChunks(paths);
 });
 
 onUnmounted(() => {
@@ -146,7 +155,7 @@ const tabletFeatures = computed(() => {
       path: '/list-mix-glue',
       title: t('appMenu.features.mixGlue.title'),
       description: t('appMenu.features.mixGlue.description'),
-      icon: scaleOutline,
+      icon: 'pi pi-box',
       color: '#0ea5e9',
       bgLight: '#e0f2fe'
     },
@@ -154,7 +163,7 @@ const tabletFeatures = computed(() => {
       path: '/list-separate-mixed-glue-management',
       title: t('appMenu.features.separateMixedGlue.title'),
       description: t('appMenu.features.separateMixedGlue.description'),
-      icon: gitMergeOutline,
+      icon: 'pi pi-sitemap',
       color: '#f59e0b',
       bgLight: '#fef3c7'
     },
@@ -162,7 +171,7 @@ const tabletFeatures = computed(() => {
       path: '/glue-return-log',
       title: t('appMenu.features.glueReturnLog.title'),
       description: t('appMenu.features.glueReturnLog.description'),
-      icon: readerOutline,
+      icon: 'pi pi-book',
       color: '#8b5cf6',
       bgLight: '#ede9fe'
     },
@@ -179,7 +188,7 @@ const mobileFeatures = computed(() => {
         path: '/mobile',
         title: t('mobile.appMenu.glueConfirm'),
         description: t('mobile.appMenu.description'),
-        icon: gitCompareOutline,
+        icon: 'pi pi-arrow-right-arrow-left',
         color: '#f59e0b',
         bgLight: '#fef3c7'
       },
@@ -187,7 +196,7 @@ const mobileFeatures = computed(() => {
         path: '/mobile/glue-return',
         title: t('mobile.appMenu.glueReturn'),
         description: t('mobile.appMenu.glueReturnDescription'),
-        icon: qrCodeOutline,
+        icon: 'pi pi-qrcode',
         color: '#8b5cf6',
         bgLight: '#ede9fe'
       },
@@ -195,7 +204,7 @@ const mobileFeatures = computed(() => {
         path: '/mobile/glue-return-in-room',
         title: t('mobile.appMenu.glueReturnInRoom'),
         description: t('mobile.appMenu.glueReturnInRoomDescription'),
-        icon: qrCodeOutline,
+        icon: 'pi pi-qrcode',
         color: '#ec4899',
         bgLight: '#fce7f3'
       },
@@ -203,7 +212,7 @@ const mobileFeatures = computed(() => {
         path: '/mobile/glue-info-check',
         title: t('mobile.appMenu.glueInfoCheck'),
         description: t('mobile.appMenu.glueInfoCheckDescription'),
-        icon: search,
+        icon: 'pi pi-search',
         color: '#0ea5e9',
         bgLight: '#e0f2fe',
         disabled: !authStore.isOnline,
@@ -217,7 +226,7 @@ const mobileFeatures = computed(() => {
       path: '/mobile/glue-check-list',
       title: t('mobile.appMenu.glueCheckList'),
       description: t('mobile.appMenu.glueCheckListDescription'),
-      icon: checkmarkDoneOutline,
+      icon: 'pi pi-check-circle',
       color: '#10b981',
       bgLight: '#d1fae5'
     });
@@ -231,28 +240,39 @@ type AppMenuFeature = {
   disabled?: boolean;
 };
 
-// Hàm điều hướng chung
-const navigate = (path: string) => {
-  router.push(path);
-};
-
-const navigateFeature = (feature: AppMenuFeature) => {
-  if (feature.disabled) {
+// Bật overlay → paint → push ngay (preload chạy nền, không chặn click).
+const navigate = async (path: string) => {
+  if (isNavigating.value || router.currentRoute.value.path === path) {
     return;
   }
 
-  navigate(feature.path);
+  isNavigating.value = true;
+  try {
+    await startRouteLoadingVisible();
+    void preloadMenuRouteChunk(path);
+    await router.push(path);
+  } catch (error) {
+    console.error('[AppMenu] navigate failed:', path, error);
+    isNavigating.value = false;
+  }
+};
+
+const navigateFeature = (feature: AppMenuFeature) => {
+  if (feature.disabled || isNavigating.value) {
+    return;
+  }
+
+  void navigate(feature.path);
 };
 
 
 const showLogoutBlockedAlert = async () => {
-  const alert = await alertController.create({
+  await showAppConfirm({
     header: t('mobile.offlineQueue.logoutBlockedTitle'),
     message: t('mobile.offlineQueue.logoutBlockedMessage'),
-    buttons: [t('mobile.offlineQueue.close')],
+    acceptLabel: t('mobile.offlineQueue.close'),
+    alertOnly: true,
   });
-
-  await alert.present();
 };
 
 const handleLogout = async () => {
@@ -277,18 +297,8 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.header-container {
-  --background: #0b56d9;
-}
-
-.header-toolbar {
-  --background: #0b56d9;
-  --color: #ffffff;
-  --min-height: 50px;
-  --padding-start: 12px;
-  --padding-end: 8px;
-  --padding-top: 6px;
-  --padding-bottom: 6px;
+.app-menu-header :deep(.app-header__toolbar) {
+  padding-inline: 20px;
 }
 
 .header-start {
@@ -321,29 +331,38 @@ const handleLogout = async () => {
 }
 
 .logout-btn {
-  --color: #fff;
-  --background-hover: rgba(255, 255, 255, 0.12);
-  --border-radius: 999px;
-  --padding-start: 8px;
-  --padding-end: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
   width: 44px;
   height: 44px;
   min-width: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
 }
 
-.logout-btn ion-icon {
+.logout-btn:hover,
+.logout-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+.logout-btn .pi {
   font-size: 1.75rem;
 }
 
 .custom-content {
-  --background: #f4f7f9;
+  background: #f4f7f9;
 }
 
 .menu-container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 10px;
 }
 
 .welcome-banner {
@@ -358,7 +377,7 @@ const handleLogout = async () => {
 }
 
 .welcome-text h2 {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: #1e293b;
   margin: 0 0 8px 0;
@@ -431,7 +450,7 @@ const handleLogout = async () => {
   justify-content: center;
 }
 
-.icon-wrapper ion-icon {
+.icon-wrapper .pi {
   font-size: 32px;
 }
 
@@ -450,16 +469,8 @@ const handleLogout = async () => {
 }
 
 @media (min-width: 768px) {
-  .menu-container {
-    padding: 20px;
-  }
-
-  .welcome-banner {
-    padding: 35px;
-  }
-
   .welcome-text h2 {
-    font-size: 2.2rem;
+    font-size: 1.5rem;
   }
 
   .welcome-text p {
@@ -490,8 +501,6 @@ const handleLogout = async () => {
   }
 
   .logout-btn {
-    --padding-start: 6px;
-    --padding-end: 6px;
     width: 40px;
     height: 40px;
     min-width: 40px;

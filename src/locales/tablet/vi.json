@@ -9,7 +9,7 @@
   "appMenu": {
     "title": "Trang chủ",
     "logout": "Đăng xuất",
-    "tabletH2title": "Xin chào!",
+    "tabletH2title": "Xin chào {name}!",
     "tabletSubtitle": "Hệ thống quản lý trộn keo",
     "features": {
       "mixGlue": {

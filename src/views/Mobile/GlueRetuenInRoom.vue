@@ -1,21 +1,25 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" class="header-toolbar">
-        <div slot="start" class="header-start">
-          <ion-button fill="clear" class="header-back" @click="goBack">
+  <AppPage>
+    <AppHeader no-border class="mobile-glue-header">
+      <template #start>
+        <div class="header-start">
+          <button type="button" class="header-back" @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
             <h1 class="header-title">{{ t('mobile.glueReturnInRoom.title') }}</h1>
-          </ion-button>
+          </button>
         </div>
-        <ion-buttons slot="end" class="header-end">
+      </template>
+      <template #end>
+        <div class="header-end">
           <NetworkStatusIcon />
-        </ion-buttons>
-      </ion-toolbar>
-      <MobileOfflineNotice />
-    </ion-header>
+        </div>
+      </template>
+      <template #after>
+        <MobileOfflineNotice />
+      </template>
+    </AppHeader>
 
-    <ion-content class="mobile-content">
+    <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="form-panel">
           <div class="form-field">
@@ -49,22 +53,13 @@
             @click="confirmReturnQr" />
         </section>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonPage,
-  IonToolbar,
-} from '@ionic/vue';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -80,6 +75,7 @@ import { useOfflineStore } from '@/store/offline';
 import { useAppToast } from '@/composables/useAppToast';
 import { McScanFill } from '@kalimahapps/vue-icons/mc';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 
 type ProductLineOption = {
   productLineId: number;
@@ -479,16 +475,9 @@ async function confirmReturnQr() {
 </script>
 
 <style scoped lang="scss">
-.header-container {
-  ion-toolbar.header-toolbar {
-    --background: #0b56d9;
-    --color: #ffffff;
-    --min-height: 56px;
-    --padding-start: 4px;
-    --padding-end: 10px;
-    --padding-top: 6px;
-    --padding-bottom: 6px;
-  }
+.mobile-glue-header :deep(.app-header__toolbar) {
+  min-height: 56px;
+  padding-inline: 4px 10px;
 }
 
 .header-start {
@@ -501,12 +490,16 @@ async function confirmReturnQr() {
 }
 
 .header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   margin: 0;
-  --padding-start: 6px;
-  --padding-end: 2px;
-  --icon-margin-end: 0;
-  --icon-margin-start: 0;
-  --color: #ffffff;
+  padding: 6px 2px 6px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
 }
 
 .header-title {
@@ -524,10 +517,12 @@ async function confirmReturnQr() {
 
 .header-end {
   margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .mobile-content {
-  --background: #f6f9fd;
+  background: #f6f9fd;
 }
 
 .menu-container {

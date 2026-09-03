@@ -1,7 +1,7 @@
 <template>
 
-  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px"
+  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl no-separate-glue-table">
+    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable :scrollHeight="scrollHeight"
       class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
       selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
@@ -91,9 +91,12 @@ withDefaults(defineProps<{
   disabled?: boolean;
   /** Đang gửi API complete / chiết — chặn spam nút gọi BE. */
   isSubmitting?: boolean;
+  /** Chiều cao vùng scroll body DataTable (px string). */
+  scrollHeight?: string;
 }>(), {
   disabled: false,
   isSubmitting: false,
+  scrollHeight: '200px',
 });
 
 const emit = defineEmits([
@@ -107,3 +110,35 @@ const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(5).fill({}));
 const tableWrapperRef = ref<HTMLElement | null>(null);
 </script>
+
+<style scoped>
+.no-separate-glue-table :deep(.p-datatable-table-container),
+.no-separate-glue-table :deep(.p-datatable-wrapper),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body) {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #e2e8f0;
+}
+
+.no-separate-glue-table :deep(.p-datatable-table-container::-webkit-scrollbar),
+.no-separate-glue-table :deep(.p-datatable-wrapper::-webkit-scrollbar),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar) {
+  width: 10px;
+}
+
+.no-separate-glue-table :deep(.p-datatable-table-container::-webkit-scrollbar-track),
+.no-separate-glue-table :deep(.p-datatable-wrapper::-webkit-scrollbar-track),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar-track) {
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+
+.no-separate-glue-table :deep(.p-datatable-table-container::-webkit-scrollbar-thumb),
+.no-separate-glue-table :deep(.p-datatable-wrapper::-webkit-scrollbar-thumb),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar-thumb) {
+  background: #64748b;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+}
+</style>

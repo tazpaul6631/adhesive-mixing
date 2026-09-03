@@ -1,28 +1,25 @@
 <template>
-  <ion-page :class="{ 'list-mix-glue--scanning': isScanning }">
+  <AppPage :page-class="{ 'list-mix-glue--scanning': isScanning }">
     <div class="no-mix-icon-preload" aria-hidden="true">
       <BsPaintBucket />
       <BsBucket />
     </div>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 0px !important;">
-        <div class="flex align-items-center justify-content-between">
-          <ion-buttons slot="start">
-            <ion-button @click="goBack">
-              <i class="pi pi-angle-left text-xl mr-1"></i>
-              <ion-title class="no-padding" style="line-height: 50px;">{{ t('appMenu.features.mixGlue.title')
-              }}</ion-title>
-            </ion-button>
-          </ion-buttons>
-          <div class="flex align-items-center gap-2 mr-2">
-            <NetworkStatusIcon />
-            <LocaleSelect device-scope="tablet" />
-          </div>
+    <AppHeader no-border class="tablet-list-header">
+      <template #start>
+        <button type="button" class="header-back" @click="goBack">
+          <i class="pi pi-angle-left text-xl mr-1"></i>
+          <h1 class="header-title">{{ t('appMenu.features.mixGlue.title') }}</h1>
+        </button>
+      </template>
+      <template #end>
+        <div class="flex align-items-center gap-2 mr-2">
+          <NetworkStatusIcon />
+          <LocaleSelect device-scope="tablet" />
         </div>
-      </ion-toolbar>
-    </ion-header>
+      </template>
+    </AppHeader>
 
-    <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
+    <AppContent class="list-mix-glue-content" :scroll="true" :padding="true">
       <div class="main-container max-w-full mx-auto list-mix-glue-page"
         :class="[pageClass, { 'list-mix-glue-layer--hidden': isScanning }]">
         <div class="surface-card p-0 shadow-1 border-round-xl list-mix-glue-card">
@@ -32,12 +29,6 @@
               <i class="pi pi-list mr-2"></i>{{ t('listMixGlue.sectionTitle') }}
             </span>
             <div class="flex align-items-center gap-2">
-              <!-- <IconField class="list-mix-glue-filter">
-                <InputIcon class="pi pi-search" />
-                <InputText v-model="chemicalMasterNameFilter" type="search"
-                  :placeholder="t('listMixGlue.filter.gluePlaceholder')"
-                  :aria-label="t('listMixGlue.filter.gluePlaceholder')" fluid />
-              </IconField> -->
               <div v-if="isPrinting" class="print-progress-chip">
                 <i class="pi pi-spin pi-spinner" style="font-size:0.85rem"></i>
                 <span>{{ progress.current }}/{{ progress.total }}</span>
@@ -65,7 +56,7 @@
                 :title="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
                 :aria-label="t('listMixGlue.print.pendingButtonTitle', { count: pendingCount })"
                 @click="openPendingPrintDialog" />
-              <BluetoothPrinterStatus ref="bluetoothRef" />
+              <BluetoothPrinterStatus v-if="showPrinterUi" ref="bluetoothRef" />
             </div>
           </div>
 
@@ -201,7 +192,7 @@
           </div>
         </div>
       </div>
-    </ion-content>
+    </AppContent>
 
     <div v-if="isScanning" class="scan-camera-overlay">
       <div class="scan-camera-content">
@@ -228,8 +219,8 @@
       </div>
     </div>
 
-    <BatchPrintRetryDialog v-model:visible="showRetryDialog" locale-scope="listMixGlue" :failed-items="failedItems"
-      :loading="isPrinting" @retry="handleRetryPrint" />
+    <BatchPrintRetryDialog v-if="showPrinterUi" v-model:visible="showRetryDialog" locale-scope="listMixGlue"
+      :failed-items="failedItems" :loading="isPrinting" @retry="handleRetryPrint" />
 
     <Dialog v-model:visible="showMlnsDialog" modal
       :header="t('listMixGlue.mlnsDialog.title') + ' ' + (pendingConfirmRow?.workOrderMasterName ?? '')"
@@ -289,15 +280,13 @@
           @click="submitPrintAuthPassword" />
       </template>
     </Dialog>
-  </ion-page>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
-  onIonViewWillEnter, onIonViewDidEnter, onIonViewDidLeave, useBackButton
-} from '@ionic/vue';
-import { ref, nextTick, computed } from 'vue';
+defineOptions({ name: 'ListMixGlue' });
+
+import { ref, nextTick, computed, defineAsyncComponent } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useMixingDevicesStore, resolveRequiredDeviceType } from '@/store/mixingDevices';
 import format from '@/mixins/format';
@@ -307,8 +296,6 @@ import { useAppToast } from '@/composables/useAppToast';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 import mixGlueApi from '@/api/mixGlue';
 import employeeApi from '@/api/employee';
-import BluetoothPrinterStatus from '@/components/BluetoothPrinterStatus.vue';
-import BatchPrintRetryDialog from '@/components/BatchPrintRetryDialog.vue';
 import { useTabletBarcodeScan } from '@/composables/useTabletBarcodeScan';
 import { parsePrintQueueFromBe } from '@/services/mixGluePrintQueue';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
@@ -317,6 +304,9 @@ import { usePrintQueue, type PrintQueueEntry, type PrintJobResult } from '@/comp
 import { useLabelPrintGapConfirm } from '@/composables/useLabelPrintGapConfirm';
 import { ensureGapConfirmed, resetLabelPrintSession } from '@/services/labelPrintSession';
 import LocaleSelect from '@/components/LocaleSelect.vue';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
+import { useAppBackButton } from '@/composables/useAppBackButton';
+import { usePageLifecycle } from '@/composables/usePageLifecycle';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import {
   computeLazyTableTotalRecords,
@@ -332,6 +322,12 @@ import { useScrollToSelectedTableRow } from '@/composables/useScrollToSelectedTa
 import { BsBucket, BsPaintBucket } from '@kalimahapps/vue-icons/bs';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
+const BluetoothPrinterStatus = defineAsyncComponent(
+  () => import('@/components/BluetoothPrinterStatus.vue'),
+);
+const BatchPrintRetryDialog = defineAsyncComponent(
+  () => import('@/components/BatchPrintRetryDialog.vue'),
+);
 const router = useRouter();
 const authStore = useAuthStore();
 const mixingDevicesStore = useMixingDevicesStore();
@@ -381,6 +377,8 @@ const { scrollToRowByDataKey } = useScrollToSelectedTableRow(tableWrapperRef);
 const { showToast } = useAppToast();
 const draftStore = useMixGlueDraftStore();
 const bluetoothRef = ref<any>(null);
+/** Mount bluetooth/print UI sau khi list đã bắt đầu fetch — vào trang nhanh hơn. */
+const showPrinterUi = ref(false);
 const printingWorkOrderId = ref<string | null>(null);
 const showRetryDialog = ref(false);
 const lastPrintTotal = ref(0);
@@ -699,7 +697,7 @@ const isPrintRowLoading = (workOrderMasterId?: string) =>
 const isRowProcessing = (workOrderMasterId?: string) =>
   isScanning.value || isRowPrintProcessing(workOrderMasterId) || isAnyRowBusy();
 
-useBackButton(10, (processNextHandler) => {
+useAppBackButton(10, (processNextHandler) => {
   if (isScanning.value) {
     void cancelScan();
     return;
@@ -1546,7 +1544,10 @@ const restorePendingPrintJob = async () => {
 const fetchWorkOrders = async (page: number, pageSize: number) => {
   const requestId = startRequest();
   isLoadingLine.value = true;
-  lineDetails.value = createSkeletonRows(pageSize);
+  // keep-alive re-enter: giữ rows cũ, tránh flash skeleton.
+  if (lineDetails.value.length === 0) {
+    lineDetails.value = createSkeletonRows(pageSize);
+  }
 
   try {
     const payload = {
@@ -1626,22 +1627,6 @@ const goBack = () => {
   router.push('/app-menu');
 };
 
-onIonViewWillEnter(() => {
-  currentPage.value = 1;
-  resetLabelPrintSession();
-  clearMixPrintQueue();
-  void (async () => {
-    await fetchWorkOrders(1, rowsPerPage.value);
-    await restorePendingPrintJob();
-  })();
-});
-
-onIonViewDidEnter(async () => {
-  await nextTick();
-  await nextTick();
-  bluetoothRef.value?.initBluetooth?.();
-});
-
 /**
  * Thả hàng list khỏi heap khi rời page (menu / detail).
  * Giữ: printedWorkOrderIds, pending print (memory + storage), selectedItem, filter.
@@ -1652,16 +1637,81 @@ const releaseListTableMemory = () => {
   lineDetails.value = [];
 };
 
-onIonViewDidLeave(() => {
-  if (isScanning.value) {
-    void cancelScan();
-  }
-  bluetoothRef.value?.pauseBluetooth?.();
-  releaseListTableMemory();
+usePageLifecycle({
+  onEnter: () => {
+    currentPage.value = 1;
+    showPrinterUi.value = false;
+
+    // Kick API trước mọi việc nặng (BT/print UI) — giảm khoảng trống ~7s trước request.
+    const fetchPromise = fetchWorkOrders(1, rowsPerPage.value);
+
+    resetLabelPrintSession();
+    clearMixPrintQueue();
+
+    // Hoãn mount BT/dialog sau khi fetch đã schedule + frame paint.
+    void nextTick(() => {
+      requestAnimationFrame(() => {
+        showPrinterUi.value = true;
+      });
+    });
+
+    // Restore pending sau fetch — không chặn onEnter/onAfterEnter.
+    void fetchPromise.then(() => restorePendingPrintJob());
+  },
+  onAfterEnter: () => {
+    // BluetoothPrinterStatus tự init onMounted; gọi lại khi ref đã có (re-enter keep-alive).
+    void nextTick(() => {
+      bluetoothRef.value?.initBluetooth?.();
+    });
+    // Warm management ngoài critical path — tránh tranh CPU lúc vào list.
+    window.setTimeout(() => {
+      void import('@/views/Tablet/MixGlue/MixGlueManagement.vue');
+      void import('@/components/ElectronicScale.vue');
+      void import('@/components/ScaleDevicePicker.vue');
+    }, 2000);
+  },
+  onLeave: () => {
+    if (isScanning.value) {
+      void cancelScan();
+    }
+    bluetoothRef.value?.pauseBluetooth?.();
+    showPrinterUi.value = false;
+    // keep-alive: không clear table — lần vào lại hiện data cũ trong lúc refetch.
+  },
 });
 </script>
 
 <style scoped>
+.tablet-list-header :deep(.app-header__toolbar) {
+  min-height: 50px;
+  padding-inline: 4px 8px;
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 4px 4px 4px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 50px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .text-wrap {
   word-break: break-word;
   white-space: normal;
@@ -1714,10 +1764,6 @@ onIonViewDidLeave(() => {
 .list-mix-glue-table-wrap {
   width: 100%;
   max-width: 100%;
-}
-
-.tablet-page--inch87.list-mix-glue-page {
-  padding: 0.5rem 0.625rem;
 }
 
 .tablet-page--inch87 .list-mix-glue-card-head {
@@ -1790,21 +1836,20 @@ onIonViewDidLeave(() => {
 <style>
 body.barcode-scanner-active,
 html.barcode-scanner-active,
-ion-app.barcode-scanner-active {
+.app-shell.barcode-scanner-active {
   visibility: hidden;
   background: transparent !important;
   --background: transparent;
-  --ion-background-color: transparent;
 }
 
 body.barcode-scanner-active .scan-camera-overlay,
 html.barcode-scanner-active .scan-camera-overlay,
-ion-app.barcode-scanner-active .scan-camera-overlay {
+.app-shell.barcode-scanner-active .scan-camera-overlay {
   visibility: visible;
 }
 
-body.barcode-scanner-active ion-content,
-body.barcode-scanner-active .ion-page,
+body.barcode-scanner-active .app-page,
+body.barcode-scanner-active .app-content,
 body.barcode-scanner-active .list-mix-glue-content {
   --background: transparent;
   background: transparent !important;

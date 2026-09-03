@@ -121,7 +121,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { useBackButton } from '@ionic/vue';
+import { useAppBackButton } from '@/composables/useAppBackButton';
 import { BarcodeScanner, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import type { PluginListenerHandle } from '@capacitor/core';
 import employee from '@/api/employee';
@@ -333,6 +333,7 @@ const updateDeviceType = () => {
 onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
   await syncLocaleForDevice();
+  // Warm chunk trong lúc user nhìn/form login — giảm 7s lúc bấm menu.
   void prefetchPostLoginRoute(isNative);
   if (!isTablet.value) {
     void prefetchAppMenuMobileShell();
@@ -348,7 +349,7 @@ onUnmounted(() => {
 const setScannerUiActive = (active: boolean) => {
   document.body.classList.toggle('barcode-scanner-active', active);
   document.documentElement.classList.toggle('barcode-scanner-active', active);
-  document.querySelector('ion-app')?.classList.toggle('barcode-scanner-active', active);
+  document.querySelector('.app-shell')?.classList.toggle('barcode-scanner-active', active);
 };
 
 const cleanupScanner = async () => {
@@ -374,7 +375,7 @@ const cancelScan = async () => {
 };
 
 // Tablet: nút Back vật lý thoát chế độ quét thay vì thoát app
-useBackButton(10, (processNextHandler) => {
+useAppBackButton(10, (processNextHandler) => {
   if (isTablet.value && isScanning.value) {
     void cancelScan();
     return;
@@ -550,7 +551,8 @@ const getLoginErrorMessage = (error: any, fallback: string) => {
 };
 
 const navigateAfterLogin = async () => {
-  await prefetchPostLoginRoute(isNative);
+  // Warm song song — không await (tránh chặn vào app-menu).
+  void prefetchPostLoginRoute(isNative);
 
   if (isNative) {
     if (!isTablet.value) {
@@ -558,7 +560,7 @@ const navigateAfterLogin = async () => {
     }
     await router.push('/app-menu');
     if (isTablet.value) {
-      prefetchTabletRoutesIdle();
+      void prefetchTabletRoutesIdle();
     }
   } else {
     await router.push('/dashboard');
@@ -1581,24 +1583,23 @@ const processScannedData = async (scannedCode: string) => {
 <style>
 body.barcode-scanner-active,
 html.barcode-scanner-active,
-ion-app.barcode-scanner-active {
+.app-shell.barcode-scanner-active {
   visibility: hidden;
   background: transparent !important;
   --background: transparent;
-  --ion-background-color: transparent;
 }
 
 body.barcode-scanner-active .scan-camera-overlay,
 html.barcode-scanner-active .scan-camera-overlay,
-ion-app.barcode-scanner-active .scan-camera-overlay,
+.app-shell.barcode-scanner-active .scan-camera-overlay,
 body.barcode-scanner-active .login-loading-overlay,
 html.barcode-scanner-active .login-loading-overlay,
-ion-app.barcode-scanner-active .login-loading-overlay {
+.app-shell.barcode-scanner-active .login-loading-overlay {
   visibility: visible;
 }
 
-body.barcode-scanner-active ion-content,
-body.barcode-scanner-active .ion-page,
+body.barcode-scanner-active .app-page,
+body.barcode-scanner-active .app-content,
 body.barcode-scanner-active .mobile-login-wrapper,
 body.barcode-scanner-active .form-container,
 body.barcode-scanner-active .tablet-login-form {

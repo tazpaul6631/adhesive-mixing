@@ -79,7 +79,7 @@
       }
     },
     "appMenu": {
-      "hello": "您好！",
+      "hello": "您好 {name}！",
       "system": "行動端管理系統",
       "glueConfirm": "確認發膠",
       "description": "使用手機相機掃描 QR Code",

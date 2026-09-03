@@ -79,7 +79,7 @@
       }
     },
     "appMenu": {
-      "hello": "Xin chào!",
+      "hello": "Xin chào {name}!",
       "system": "Hệ thống quản lý trên Mobile",
       "glueConfirm": "Xác nhận phát keo",
       "description": "Sử dụng camera điện thoại để quét mã vạch",

@@ -1,24 +1,21 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 0px !important;">
-        <div class="flex align-items-center justify-content-between">
-          <ion-buttons slot="start">
-            <ion-button @click="goBack">
-              <i class="pi pi-angle-left text-xl mr-1"></i>
-              <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
-              }}</ion-title>
-            </ion-button>
-          </ion-buttons>
-          <div class="flex align-items-center gap-2 mr-2">
-            <NetworkStatusIcon />
-            <LocaleSelect device-scope="tablet" />
-          </div>
+  <AppPage>
+    <AppHeader no-border class="tablet-list-header">
+      <template #start>
+        <button type="button" class="header-back" @click="goBack">
+          <i class="pi pi-angle-left text-xl mr-1"></i>
+          <h1 class="header-title">{{ t('listGlueReturnLog.pageTitle') }}</h1>
+        </button>
+      </template>
+      <template #end>
+        <div class="flex align-items-center gap-2 mr-2">
+          <NetworkStatusIcon />
+          <LocaleSelect device-scope="tablet" />
         </div>
-      </ion-toolbar>
-    </ion-header>
+      </template>
+    </AppHeader>
 
-    <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
+    <AppContent class="list-mix-glue-content" :scroll="true" :padding="true">
       <div class="main-container max-w-full mx-auto list-glue-return-page" :class="pageClass">
         <div class="surface-card p-0 shadow-1 border-round-xl list-glue-return-card">
           <div
@@ -26,7 +23,7 @@
             <span class="list-glue-return-section-title">
               <i class="pi pi-list mr-2"></i>{{ t('listGlueReturnLog.sectionTitle') }}
             </span>
-            <ScaleDevicePicker :session-id="glueReturnLogScaleSessionId" />
+            <ScaleDevicePicker v-if="showScaleUi" :session-id="glueReturnLogScaleSessionId" />
           </div>
           <div class="surface-100 list-glue-return-toolbar">
             <div class="grid formgrid align-items-end">
@@ -37,7 +34,7 @@
               </div>
 
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
-                <ElectronicScaleGlueReturn :scale-session-id="glueReturnLogScaleSessionId" hide-scale-picker
+                <ElectronicScaleGlueReturn v-if="showScaleUi" :scale-session-id="glueReturnLogScaleSessionId" hide-scale-picker
                   :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
                   :locked-weight="showReturnWeight(selectedItem) ? String(selectedItem?.returnWeight ?? '') : ''"
                   :disable-confirm="!selectedItem || !!selectedItem?.scaleConfirmed || isRowApiSubmitted(selectedItem)"
@@ -129,19 +126,18 @@
           </div>
         </div>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+defineOptions({ name: 'ListGlueReturnLog' });
+
+import { ref, computed, nextTick, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
-  onIonViewWillEnter,
-  onIonViewWillLeave,
-} from '@ionic/vue';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 import { useAppToast } from '@/composables/useAppToast';
+import { usePageLifecycle } from '@/composables/usePageLifecycle';
 import dayjs from 'dayjs';
 import {
   computeLazyTableTotalRecords,
@@ -155,8 +151,6 @@ import format from '@/mixins/format';
 import glueReturnLogApi from '@/api/glueReturnLog';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
-import ElectronicScaleGlueReturn from '@/components/ElectronicScaleGlueReturn.vue';
-import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
 import {
   useGlueReturnLogPendingStore,
   type GlueReturnLogPendingEntry,
@@ -165,6 +159,13 @@ import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+
+const ElectronicScaleGlueReturn = defineAsyncComponent(
+  () => import('@/components/ElectronicScaleGlueReturn.vue'),
+);
+const ScaleDevicePicker = defineAsyncComponent(
+  () => import('@/components/ScaleDevicePicker.vue'),
+);
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
 
@@ -191,6 +192,8 @@ const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const pendingStore = useGlueReturnLogPendingStore();
 const { startAutoConnect, stopAutoConnect } = useScaleManager();
+/** Hoãn scale UI — fetch list trước, không đổi logic cân. */
+const showScaleUi = ref(false);
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 
 const {
@@ -366,7 +369,9 @@ const syncSelectedItem = () => {
 const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
   const requestId = startRequest();
   isLoadingLine.value = true;
-  lineDetails.value = createSkeletonRows(pageSize);
+  if (lineDetails.value.length === 0) {
+    lineDetails.value = createSkeletonRows(pageSize);
+  }
 
   try {
     const payload = {
@@ -564,19 +569,59 @@ const releaseListTableMemory = () => {
   lineDetails.value = [];
 };
 
-onIonViewWillEnter(() => {
-  currentPage.value = 1;
-  startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void fetchGlueReturnLogs(1, rowsPerPage.value);
-});
+usePageLifecycle({
+  onEnter: () => {
+    currentPage.value = 1;
+    showScaleUi.value = false;
 
-onIonViewWillLeave(() => {
-  stopAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  releaseListTableMemory();
+    void fetchGlueReturnLogs(1, rowsPerPage.value);
+
+    void nextTick(() => {
+      requestAnimationFrame(() => {
+        showScaleUi.value = true;
+        startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
+      });
+    });
+  },
+  onLeave: () => {
+    stopAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
+    showScaleUi.value = false;
+    // keep-alive: không clear table — lần vào lại hiện data cũ trong lúc refetch.
+  },
 });
 </script>
 
 <style scoped>
+.tablet-list-header :deep(.app-header__toolbar) {
+  min-height: 50px;
+  padding-inline: 4px 8px;
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 4px 4px 4px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 50px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .list-glue-return-page {
   width: 100%;
 }
@@ -608,10 +653,6 @@ onIonViewWillLeave(() => {
   display: block;
   line-height: 1.35;
   word-break: break-word;
-}
-
-.tablet-page--inch87.list-glue-return-page {
-  padding: 0.5rem 0.625rem;
 }
 
 .tablet-page--inch87 .list-glue-return-card-head {

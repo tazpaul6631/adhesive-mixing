@@ -1,6 +1,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { useRoute, onBeforeRouteLeave, useRouter } from 'vue-router';
-import { onIonViewDidEnter, onIonViewWillEnter, onIonViewWillLeave, useBackButton, alertController } from '@ionic/vue';
+import { useAppBackButton } from '@/composables/useAppBackButton';
+import { usePageLifecycle } from '@/composables/usePageLifecycle';
 import { useAppToast } from '@/composables/useAppToast';
 import { useAuthStore } from '@/store/auth';
 import { useMixGlueDraftStore, isSeparateDraftRestorable, hasDraftSeparateTableData, normalizeDraftWorkOrderId } from '@/store/mixGlueDraft';
@@ -707,41 +708,54 @@ export function useSeparateMixedGlueManagement() {
     await saveDraftToStoreOnly();
   };
 
+  const showExitDialog = ref(false);
+  const isExitConfirming = ref(false);
+  let exitResolve: ((ok: boolean) => void) | null = null;
+
   const alertExitPage = (): Promise<boolean> =>
     new Promise(resolve => {
-      void (async () => {
-        const alert = await alertController.create({
-          header: t('separateMixedGlue.exitAlert.header'),
-          message: t('separateMixedGlue.exitAlert.message'),
-          buttons: [
-            { text: t('separateMixedGlue.exitAlert.stay'), role: 'cancel', handler: () => resolve(false) },
-            {
-              text: t('separateMixedGlue.exitAlert.exit'),
-              role: 'confirm',
-              cssClass: 'text-red-500',
-              handler: () => {
-                void (async () => {
-                  if (!(await requireOnline())) {
-                    resolve(false);
-                    return;
-                  }
-                  // Navigate ngay, không chờ API — tránh delay
-                  isDirty.value = false;
-                  resolve(true);
-                  try {
-                    const payload = buildSeparateGlueExitPayload(getPayloadContext());
-                    await separateGlue.postSeparateGlueCommand(payload);
-                  } catch (error) {
-                    console.error(error);
-                  }
-                })();
-              },
-            },
-          ],
-        });
-        await alert.present();
-      })();
+      exitResolve = resolve;
+      showExitDialog.value = true;
     });
+
+  const settleExitDialog = (ok: boolean) => {
+    showExitDialog.value = false;
+    isExitConfirming.value = false;
+    const resolve = exitResolve;
+    exitResolve = null;
+    resolve?.(ok);
+  };
+
+  const onExitStay = () => {
+    settleExitDialog(false);
+  };
+
+  const onExitConfirm = async () => {
+    if (isExitConfirming.value) return;
+    isExitConfirming.value = true;
+
+    if (!(await requireOnline())) {
+      settleExitDialog(false);
+      return;
+    }
+
+    // Navigate ngay, không chờ API — tránh delay
+    isDirty.value = false;
+    settleExitDialog(true);
+
+    try {
+      const payload = buildSeparateGlueExitPayload(getPayloadContext());
+      await separateGlue.postSeparateGlueCommand(payload);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const onExitDialogHide = () => {
+    if (exitResolve) {
+      settleExitDialog(false);
+    }
+  };
 
   const navigateToSeparateList = () => {
     router.replace('/list-separate-mixed-glue-management');
@@ -758,7 +772,7 @@ export function useSeparateMixedGlueManagement() {
     navigateToSeparateList();
   };
 
-  useBackButton(10, () => {
+  useAppBackButton(10, () => {
     if (!isDirty.value) {
       void persistDraftOnLeave();
       navigateToSeparateList();
@@ -774,25 +788,28 @@ export function useSeparateMixedGlueManagement() {
     return alertExitPage();
   });
 
-  onIonViewDidEnter(async () => {
-    await nextTick();
-  });
-
-  onIonViewWillLeave(() => {
-    void (async () => {
+  usePageLifecycle({
+    onEnter: () => {
+      const workOrderMasterId = normalizeDraftWorkOrderId(route.query.workOrderMasterId as string);
+      if (workOrderMasterId) {
+        void fetchWorkOrderDetail(workOrderMasterId);
+        return;
+      }
+      isLoadingLine.value = false;
+    },
+    onLeave: async () => {
       await persistDraftOnLeave();
       await draftStore.flushPersist();
-    })();
+    },
   });
 
-  onIonViewWillEnter(() => {
-    const workOrderMasterId = normalizeDraftWorkOrderId(route.query.workOrderMasterId as string);
-    if (workOrderMasterId) {
+  watch(
+    () => normalizeDraftWorkOrderId(route.query.workOrderMasterId as string),
+    (workOrderMasterId, prev) => {
+      if (!workOrderMasterId || workOrderMasterId === prev) return;
       void fetchWorkOrderDetail(workOrderMasterId);
-      return;
-    }
-    isLoadingLine.value = false;
-  });
+    },
+  );
 
   return {
     headerInfo,
@@ -821,5 +838,10 @@ export function useSeparateMixedGlueManagement() {
     isCompleting,
     isCompleteButtonDisabled,
     goBack,
+    showExitDialog,
+    isExitConfirming,
+    onExitStay,
+    onExitConfirm,
+    onExitDialogHide,
   };
 }

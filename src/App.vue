@@ -1,16 +1,33 @@
 <template>
-  <ion-app>
-    <ion-router-outlet />
+  <div class="app-shell">
+    <!--
+      keep-alive theo meta.keepAlive (không dùng :include tên SFC).
+      Lazy route async wrapper không mang tên ListMixGlue → :include trước đây không cache.
+    -->
+    <router-view v-slot="{ Component, route: viewRoute }">
+      <keep-alive :max="5">
+        <component
+          :is="Component"
+          v-if="Component && viewRoute.meta.keepAlive"
+          :key="String(viewRoute.name || viewRoute.path)"
+        />
+      </keep-alive>
+      <component
+        :is="Component"
+        v-if="Component && !viewRoute.meta.keepAlive"
+        :key="String(viewRoute.name || viewRoute.path)"
+      />
+    </router-view>
     <RouteLoadingOverlay />
     <AppToast />
+    <AppConfirm />
     <OfflineDataLoading v-if="shouldShowMobileOfflineLoading" :is-open="shouldShowMobileOfflineLoading"
       :title="mobileOfflineLoadingTitle" :note="mobileOfflineLoadingNote" :current="mobileOfflineLoadingCurrent"
       :total="mobileOfflineLoadingTotal" />
-  </ion-app>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet, useBackButton, useIonRouter } from '@ionic/vue';
 import { App } from '@capacitor/app';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -21,12 +38,13 @@ import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from './store/auth';
 import { useOfflineStore } from '@/store/offline';
+import { useAppBackButton } from '@/composables/useAppBackButton';
 import RouteLoadingOverlay from '@/components/RouteLoadingOverlay.vue';
 import OfflineDataLoading from '@/views/Mobile/components/OfflineDataLoading.vue';
+import AppConfirm from '@/components/AppConfirm.vue';
 
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
-const ionRouter = useIonRouter();
 const route = useRoute();
 const { t } = useI18n();
 const isTablet = ref(typeof window !== 'undefined' ? window.innerWidth >= 768 : false);
@@ -56,11 +74,13 @@ const mobileOfflineLoadingTotal = computed(() => (
   isMobileOfflineSyncStep.value ? offlineStore.syncTotal : offlineStore.downloadTotal
 ));
 
-// Xử lý nút Back vật lý trên Android
-useBackButton(-1, () => {
-  if (!ionRouter.canGoBack()) {
-    App.exitApp();
+// Fallback thấp nhất: có history → back; hết stack → thoát app.
+useAppBackButton(-1, (_processNextHandler, canGoBack) => {
+  if (canGoBack) {
+    window.history.back();
+    return;
   }
+  void App.exitApp();
 });
 
 const updateDeviceType = () => {
@@ -183,10 +203,21 @@ onMounted(async () => {
   // Tự động ẩn Splash Screen sau khi app đã load xong
   await SplashScreen.hide();
 
-  // Cấu hình Status Bar (ví dụ: nền trắng, chữ đen)
+  // Cấu hình Status Bar — overlay để WebView nhận safe-area-inset
   const info = await Device.getInfo();
   if (info.platform !== 'web') {
-    await StatusBar.setStyle({ style: Style.Light });
+    try {
+      await StatusBar.setOverlaysWebView({ overlay: true });
+    } catch {
+      // Một số máy/OS có thể không hỗ trợ overlay
+    }
+/* Style.Dark = chữ/icon sáng trên nền header primary xanh */
+    await StatusBar.setStyle({ style: Style.Dark });
+    try {
+      await StatusBar.setBackgroundColor({ color: '#0b56d9' });
+    } catch {
+      // iOS có thể bỏ qua background color
+    }
   }
 });
 
@@ -196,3 +227,22 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style>
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.app-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  background: var(--app-shell-bg, #ffffff);
+}
+</style>

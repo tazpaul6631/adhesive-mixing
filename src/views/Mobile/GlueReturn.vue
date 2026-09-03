@@ -1,29 +1,33 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" class="header-toolbar">
-        <div slot="start" class="header-start">
-          <ion-button fill="clear" class="header-back" @click="goBack">
+  <AppPage>
+    <AppHeader no-border class="mobile-glue-header">
+      <template #start>
+        <div class="header-start">
+          <button type="button" class="header-back" @click="goBack">
             <i class="pi pi-angle-left text-xl mr-1"></i>
             <h1 class="header-title">{{ t("mobile.glueReturn.title") }}</h1>
-          </ion-button>
+          </button>
         </div>
-        <ion-buttons slot="end" class="header-end">
+      </template>
+      <template #end>
+        <div class="header-end">
           <NetworkStatusIcon />
-        </ion-buttons>
-      </ion-toolbar>
-      <MobileOfflineNotice />
-    </ion-header>
+        </div>
+      </template>
+      <template #after>
+        <MobileOfflineNotice />
+      </template>
+    </AppHeader>
 
-    <ion-content class="mobile-content">
+    <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="qr-panel">
           <div class="qr-panel__body">
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueReturn.qrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueReturn.qrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
                 <button type="button" class="qr-scan-field" @click="openScanner">
                   <span v-if="!returnQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueReturn.scanPlaceholder") }}
@@ -43,14 +47,14 @@
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-card class="qr-container line-qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueReturn.lineQrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article class="qr-container line-qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueReturn.lineQrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
 
                 <button type="button" class="line-scan-add-button" :disabled="!pendingReturnGlueInfo"
                   @click="openLineScanner">
@@ -87,45 +91,29 @@
                       <button type="button" class="line-chemical-card__delete"
                         :aria-label="t('mobile.glueReturn.removeLineItem')"
                         @click.stop="removeLineChemicalItem(item.id)">
-                        <ion-icon :icon="trashOutline"></ion-icon>
+                        <i class="pi pi-trash" aria-hidden="true"></i>
                       </button>
                     </div>
                   </div>
                 </div>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-button expand="block" class="confirm-button" :disabled="!canSubmitReturn" @click="confirmReturnQr">
-              <ion-spinner v-if="isSubmittingReturn" name="crescent" slot="start"
-                class="confirm-button__spinner"></ion-spinner>
-              <ion-icon v-else slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
-              {{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.confirmButton") }}
-            </ion-button>
+            <Button class="confirm-button w-full"
+              :icon="isSubmittingReturn ? 'pi pi-spin pi-spinner' : 'pi pi-verified'"
+              :disabled="!canSubmitReturn"
+              :label="isSubmittingReturn ? t('mobile.glueReturn.submittingButton') : t('mobile.glueReturn.confirmButton')"
+              @click="confirmReturnQr" />
           </div>
         </section>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  IonButton,
-  IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonPage,
-  IonSpinner,
-  IonToolbar,
-} from '@ionic/vue';
-import { shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -140,6 +128,7 @@ import { useOfflineStore } from '@/store/offline';
 import { useAppToast } from '@/composables/useAppToast';
 import { McScanFill } from '@kalimahapps/vue-icons/mc';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 
 interface LineChemicalItem {
   id: string;
@@ -578,16 +567,9 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
 </script>
 
 <style scoped lang="scss">
-.header-container {
-  ion-toolbar.header-toolbar {
-    --background: #0b56d9;
-    --color: #ffffff;
-    --min-height: 56px;
-    --padding-start: 4px;
-    --padding-end: 10px;
-    --padding-top: 6px;
-    --padding-bottom: 6px;
-  }
+.mobile-glue-header :deep(.app-header__toolbar) {
+  min-height: 56px;
+  padding-inline: 4px 10px;
 }
 
 .header-start {
@@ -600,12 +582,16 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
 }
 
 .header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   margin: 0;
-  --padding-start: 6px;
-  --padding-end: 2px;
-  --icon-margin-end: 0;
-  --icon-margin-start: 0;
-  --color: #ffffff;
+  padding: 6px 2px 6px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
 }
 
 .header-title {
@@ -623,10 +609,12 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
 
 .header-end {
   margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .mobile-content {
-  --background: #f6f9fd;
+  background: #f6f9fd;
 }
 
 .menu-container {
@@ -650,17 +638,18 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 
-  ion-card-header {
+  &__header {
     padding: 24px 24px 16px;
   }
 
-  ion-card-title {
+  &__title {
+    margin: 0;
     color: #081a36;
-    font-size: 18px !important;
+    font-size: 18px;
     font-weight: 700;
   }
 
-  ion-card-content {
+  &__body {
     padding: 0 24px 24px;
   }
 }
@@ -736,12 +725,10 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   }
 }
 
-.line-qr-container {
-  ion-card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
+.line-qr-container .qr-container__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .line-scan-description {
@@ -877,8 +864,8 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
     color: #ee4646;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 
-    ion-icon {
-      font-size: 20px !important;
+    .pi {
+      font-size: 20px;
     }
 
     &:active {
@@ -891,21 +878,13 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
 .confirm-button {
   overflow: hidden;
   margin: 0;
-  border-radius: 16px;
+  border-radius: 16px !important;
   font-size: 15px !important;
   font-weight: 500;
   min-height: 50px;
   text-transform: none;
 
-  ion-icon {
-    margin-right: 10px;
-  }
-
-  &::part(native) {
-    border-radius: 16px;
-  }
-
-  &[disabled] {
+  &:disabled {
     opacity: 0.48;
     pointer-events: none;
   }
@@ -941,14 +920,14 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
 
   .qr-container {
     border-radius: 22px;
+  }
 
-    ion-card-header {
-      padding: 28px 30px 18px;
-    }
+  .qr-container__header {
+    padding: 28px 30px 18px;
+  }
 
-    ion-card-content {
-      padding: 0 30px 30px;
-    }
+  .qr-container__body {
+    padding: 0 30px 30px;
   }
 
   .qr-scan-field {
@@ -1006,7 +985,6 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   .confirm-button {
     min-height: 82px;
     border-radius: 18px;
-    --border-radius: 18px;
   }
 }
 </style>

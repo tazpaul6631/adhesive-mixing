@@ -1,5 +1,9 @@
-import { createRouter, createWebHashHistory } from '@ionic/vue-router';
-import { RouteRecordRaw } from 'vue-router';
+/**
+ * vue-router thuần + AppPage shell.
+ */
+import { nextTick } from 'vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { Capacitor } from '@capacitor/core';
 import MainLayout from '../views/MainLayout.vue';
@@ -25,6 +29,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true },
     children: [
       {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/DashboardPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: '404',
         name: 'NotFound',
         component: () => import('@/views/404NotFoundPage/NotFoundPage.vue')
@@ -35,12 +45,13 @@ const routes: Array<RouteRecordRaw> = [
     path: '/app-menu',
     name: 'AppMenu',
     component: AppMenu,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, skipRouteLoading: true }
   },
   {
     path: '/list-mix-glue',
+    name: 'ListMixGlue',
     component: () => import('@/views/Tablet/MixGlue/ListMixGlue.vue'),
-    meta: { requiresAuth: true, requiresMixGlueRoom: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true, keepAlive: true }
   },
   {
     path: '/mix-glue-management',
@@ -49,8 +60,9 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/list-separate-mixed-glue-management',
+    name: 'ListSeparateMixedglue',
     component: () => import('@/views/Tablet/Separate/ListSeparateMixedglue.vue'),
-    meta: { requiresAuth: true, requiresMixGlueRoom: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true, keepAlive: true }
   },
   {
     path: '/separate-mixed-glue-management',
@@ -59,8 +71,9 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/glue-return-log',
+    name: 'ListGlueReturnLog',
     component: () => import('@/views/Tablet/GlueReturnLog/ListGlueReturnLog.vue'),
-    meta: { requiresAuth: true, requiresMixGlueRoom: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true, keepAlive: true }
   },
   {
     path: '/mobile',
@@ -153,11 +166,14 @@ router.beforeEach((to, from, next) => {
 });
 
 router.afterEach(() => {
-  stopRouteLoading();
+  // Đợi trang đích mount/paint rồi mới bắt đầu đếm tắt overlay.
+  void nextTick(() => {
+    stopRouteLoading();
+  });
 });
 
 router.onError(() => {
-  stopRouteLoading();
+  stopRouteLoading({ force: true });
 });
 
 export default router;

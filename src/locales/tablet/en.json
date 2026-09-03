@@ -9,7 +9,7 @@
   "appMenu": {
     "title": "Home",
     "logout": "Log out",
-    "tabletH2title": "Hello!",
+    "tabletH2title": "Hello {name}!",
     "tabletSubtitle": "Mix glue management system",
     "features": {
       "mixGlue": {
