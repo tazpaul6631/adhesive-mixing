@@ -63,10 +63,12 @@
         bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex justify-content-center">
-            <Button icon="pi pi-plus" severity="success" :disabled="disabled"
+            <Button icon="pi pi-plus" severity="success"
+              :disabled="disabled || isSubmitting"
+              :loading="isSubmitting"
               :aria-label="t('separateMixedGlue.table.addAriaLabel')" @click.stop="$emit('chiet-row', data)" />
 
-            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" :disabled="disabled"
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" :disabled="disabled || isSubmitting"
               :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="$emit('delete-row', data)" />
           </div>
         </template>
@@ -81,13 +83,18 @@ import format from '@/mixins/format';
 import { normalizeWeightUnit } from '@/utils/weightUnit';
 import { useAppLocale } from '@/composables/useAppLocale';
 
-const props = defineProps<{
+withDefaults(defineProps<{
   isLoading: boolean;
   noMixChemicals: any[];
   headerTotalWeight: string | number;
   selectedItem: any;
   disabled?: boolean;
-}>();
+  /** Đang gửi API complete / chiết — chặn spam nút gọi BE. */
+  isSubmitting?: boolean;
+}>(), {
+  disabled: false,
+  isSubmitting: false,
+});
 
 const emit = defineEmits([
   'row-click',

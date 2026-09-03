@@ -19,8 +19,7 @@
     </ion-header>
 
     <ion-content class="ion-padding mix-glue-management-content" :scroll-y="false">
-      <div class="mix-glue-layout main-container max-w-full mx-auto page-content-loading-host">
-        <PageContentLoadingOverlay :visible="isPageDataLoading || isCompleting" />
+      <div class="mix-glue-layout main-container max-w-full mx-auto">
         <!-- Thông tin header — cố định, không scroll -->
         <div class="mix-glue-header-card surface-card p-2 shadow-1 border-round-xl">
           <div class="grid align-items-end">
@@ -45,9 +44,10 @@
               <div class="flex gap-2 justify-content-end">
                 <Button :icon="hidenTable1 ? 'pi pi-eye' : 'pi pi-eye-slash'" outlined class="mr-2 button-lg"
                   @click="handleHidenTable1" />
-                <Button :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isNavigatingAway"
-                  :loading="isCompleting" icon="pi pi-check-circle" severity="success" class="button-lg"
-                  @click="handleComplete" />
+                <Button
+                  :disabled="mixGlueConfirm || hasWorkOrderDataErrors || isCompleting || isChietPending || isNavigatingAway || isPageDataLoading"
+                  :loading="isCompleting || isChietPending" icon="pi pi-check-circle" severity="success"
+                  class="button-lg" @click="handleComplete" />
               </div>
             </div>
           </div>
@@ -177,8 +177,9 @@
                   <div class="table-wrapper">
                     <NoSeparateGlue :is-loading="isLoadingComponent" :no-mix-chemicals="noMixComponents"
                       :header-total-weight="headerInfo.totalWeight" :disabled="mixGlueConfirm"
-                      v-model:selectedItem="selectedItemNoMix" @row-click="onNoMixRowClick"
-                      @delete-row="handleDeleteNoMixComponent" @chiet-row="handleChietRow" />
+                      :is-submitting="isCompleting || isChietPending" v-model:selectedItem="selectedItemNoMix"
+                      @row-click="onNoMixRowClick" @delete-row="handleDeleteNoMixComponent"
+                      @chiet-row="handleChietRow" />
                   </div>
                 </div>
               </template>
@@ -231,7 +232,6 @@ import NoSeparateGlue from '@/views/Tablet/Separate/components/NoSeparateGlue.vu
 import { useMixGlueNoMixChiet } from '@/views/Tablet/MixGlue/useMixGlueNoMixChiet';
 import LocaleSelect from '@/components/LocaleSelect.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
-import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useMixGlueLabelBatchPrint } from '@/composables/useMixGlueLabelBatchPrint';
@@ -287,7 +287,7 @@ const handleRetryPrint = async () => {
   if (!(await ensureGapConfirmed())) return;
 
   if (!(await bluetoothRef.value?.verifyHardwareConnected?.())) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.printerNotConnected'), life: 6000 });
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.printerNotConnected'), life: 3000 });
     return;
   }
 
@@ -356,7 +356,7 @@ const buildPrintMixGlueLabelPayload = (row: any) => {
 
 const handlePrintComponent = async (row: any) => {
   if (!row.weighingTime) {
-    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.notConfirmed'), life: 6000 });
+    showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.notConfirmed'), life: 3000 });
     return;
   }
   if (isPrintingComponent.value) return;
@@ -370,7 +370,7 @@ const handlePrintComponent = async (row: any) => {
     if (!bluetoothRef.value?.isConnected?.()) {
       const ready = await ensurePrinterReady();
       if (!ready) {
-        showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 6000 });
+        showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('listMixGlue.toast.componentLabel.printerNotConnected'), life: 3000 });
         return;
       }
     }
@@ -444,7 +444,7 @@ const restorePendingPrintJob = async () => {
     severity: 'info',
     summary: t('listMixGlue.toast.warning'),
     detail: t('listMixGlue.toast.pendingRestored', { count: restored.failedItems.length }),
-    life: 6000,
+    life: 3000,
   });
 };
 // ============================================================================
@@ -714,6 +714,7 @@ const {
   handleChietRow,
   handleConfirmNoMixWeight,
   isRowWeighed,
+  isChietPending,
 } = useMixGlueNoMixChiet({
   headerInfo,
   mixGlueConfirm,
@@ -724,6 +725,8 @@ const {
   activeNoMixComponent,
   selectedItemNoMix,
   noMixMixingProcess,
+  isCompleting,
+  isNavigatingAway,
   saveDraftSnapshot: () => saveDraftSnapshot(),
   completeNoMixGlue: () => completeNoMixGlue(),
 });
@@ -895,7 +898,7 @@ const validateBeforeNoMixComplete = async (): Promise<string | null> => {
 };
 
 const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' = 'complete-button') => {
-  if (isCompleting.value || isNavigatingAway.value) return;
+  if (isCompleting.value || isNavigatingAway.value || isPageDataLoading.value) return;
 
   isCompleting.value = true;
   try {
@@ -907,7 +910,7 @@ const handleCompleteNoMixGlue = async (source: 'complete-button' | 'chiet-row' =
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: validationError,
-        life: 6000,
+        life: 3000,
       });
       return;
     }
@@ -966,12 +969,12 @@ const handleCompleteMixGlue = async () => {
       rows.some(item => !item.actualWeight || Number(item.actualWeight) <= 0);
 
     if (hasMixChemicals.value && hasIncompleteRows(componentDetailsFull.value)) {
-      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 6000 });
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteWeighing'), life: 3000 });
       return;
     }
 
     if (hasNoMixChemicals.value && hasIncompleteRows(noMixComponents.value)) {
-      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 6000 });
+      showToast({ severity: 'warn', summary: t('listMixGlue.toast.warning'), detail: t('mixGlueManagement.toast.incompleteNoMixWeighing'), life: 3000 });
       return;
     }
 
@@ -1006,7 +1009,7 @@ const handleCompleteMixGlue = async () => {
 };
 
 const handleComplete = async () => {
-  if (isCompleting.value || isNavigatingAway.value) return;
+  if (isCompleting.value || isChietPending.value || isNavigatingAway.value || isPageDataLoading.value) return;
   if (isNoMixGlue.value) {
     await handleCompleteNoMixGlue();
     return;
@@ -1123,7 +1126,7 @@ const openMixComponentDialog = () => {
       severity: 'warn',
       summary: t('listMixGlue.toast.warning'),
       detail: t('separateMixedGlue.toast.weighBeforeAdd', { name: unweighed.materialName }),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
@@ -1177,7 +1180,7 @@ const handleSaveNewComponent = async (newComponentData: {
   toleranceGrams: number;
 }) => {
   if (!componentDetailsFull.value.length) {
-    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 3000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.baseNotFound'), life: 6000 });
     return;
   }
 
@@ -1238,7 +1241,7 @@ const fetchMaterialsForRows = async (
         }));
     }
   } catch (error) {
-    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 3000 });
+    showToast({ severity: 'error', summary: t('listMixGlue.toast.error'), detail: t('mixGlueManagement.toast.loadMaterialsFailed'), life: 6000 });
   } finally {
     loadingFlag.value = false;
   }
@@ -1264,7 +1267,7 @@ const blockBackIfPrinting = (): boolean => {
     severity: 'warn',
     summary: t('listMixGlue.toast.warning'),
     detail: t('mixGlueManagement.toast.printBackBlocked'),
-    life: 6000,
+    life: 3000,
   });
   return true;
 };
@@ -1371,6 +1374,8 @@ onIonViewWillLeave(async () => {
   if (currentWorkOrderId.value && isDirty.value) {
     await saveDraftSnapshot();
   }
+  // Đảm bảo bản debounce cuối đã ghi Preferences trước khi rời trang.
+  await draftStore.flushPersist();
 });
 
 onIonViewWillEnter(() => {
@@ -1389,11 +1394,6 @@ onIonViewWillEnter(() => {
 <style scoped>
 .mix-glue-management-content {
   --overflow: hidden;
-}
-
-.page-content-loading-host {
-  position: relative;
-  min-height: 12rem;
 }
 
 .mix-glue-layout {

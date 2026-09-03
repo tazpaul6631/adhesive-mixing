@@ -1,13 +1,12 @@
 import mixGlue from '@/api/mixGlue';
 import { notifyPrintInterrupted, takeTsplMediaPrefix } from '@/services/labelPrintSession';
+import {
+  parsePrintQueueFromBe,
+  type MixGluePrintItem,
+} from '@/services/mixGluePrintQueue';
 
-export interface MixGluePrintItem {
-  id: string;
-  labelIndex: number;
-  workOrderMasterId: string;
-  mixGlueMasterId: string;
-  workOrderMasterName?: string;
-}
+export type { MixGluePrintItem };
+export { parsePrintQueueFromBe };
 
 export type MixGluePrintFailureReason =
   | 'bluetooth_disconnect'
@@ -61,7 +60,10 @@ const TSPL_PASTE_QR_BOTTOM_Y = 365;
 const TSPL_PASTE_QR_XMUL = 9;
 const TSPL_PASTE_QR_YMUL = 9;
 
-const tsplEscapeForQuote = (s: string) => String(s).replace(/"/g, "'");
+const tsplEscapeForQuote = (s: string) =>
+  String(s)
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/"/g, "'");
 
 /** Tọa độ lần in thứ 2 — offset theo hướng baseline của rotation. */
 const tsplBoldSimCoords = (x: number, y: number, rotation: number, offset: number) => {
@@ -360,45 +362,6 @@ QRCODE 380,240,H,5,A,0,"${action}/${payload.factoryId}/${mixGlueMasterId}"
   tspl += 'PRINT 1,1\n';
 
   return tspl;
-}
-
-export function parsePrintQueueFromBe(
-  scanData: any,
-  respData: any,
-  row: Partial<MixGluePrintItem>
-): MixGluePrintItem[] {
-  const data = scanData?.data;
-  const fromBe = data?.items ?? data?.printList ?? data?.mixGlues;
-
-  let rawItems: Array<{ workOrderMasterId: string; mixGlueMasterId: string; workOrderMasterName?: string }> = [];
-
-  if (Array.isArray(fromBe) && fromBe.length > 0) {
-    rawItems = fromBe
-      .map((item: any) => ({
-        workOrderMasterId: String(item.workOrderMasterId || row.workOrderMasterId || ''),
-        mixGlueMasterId: String(item.mixGlueMasterId || ''),
-        workOrderMasterName: item.workOrderMasterName || row.workOrderMasterName,
-      }))
-      .filter((item) => item.workOrderMasterId && item.mixGlueMasterId);
-  } else {
-    const ids = new Set<string>();
-    if (respData?.mixGlueMasterId) ids.add(String(respData.mixGlueMasterId));
-    (respData?.mixGlues || []).forEach((item: any) => {
-      if (item.mixGlueMasterId) ids.add(String(item.mixGlueMasterId));
-    });
-
-    rawItems = [...ids].map((mixGlueMasterId) => ({
-      workOrderMasterId: String(row.workOrderMasterId || respData?.workOrderMasterId || ''),
-      mixGlueMasterId,
-      workOrderMasterName: row.workOrderMasterName || respData?.workOrderMasterName,
-    }));
-  }
-
-  return rawItems.map((item, index) => ({
-    ...item,
-    id: `${item.workOrderMasterId}-${item.mixGlueMasterId}`,
-    labelIndex: index + 1,
-  }));
 }
 
 const mixGlueFailureMessage: Record<MixGluePrintFailureReason, string> = {

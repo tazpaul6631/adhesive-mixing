@@ -120,7 +120,7 @@ const handleScaleSelect = async () => {
       severity: 'warn',
       summary: t('electronicScale.toast.connectFailed'),
       detail: t('electronicScale.toast.connectFailedDetail'),
-      life: 6000,
+      life: 3000,
     });
   } finally {
     isScaleSelectConnecting.value = false;
@@ -140,7 +140,7 @@ const handleRefresh = async () => {
         severity: 'warn',
         summary: t('electronicScale.toast.connectFailed'),
         detail: t('electronicScale.toast.connectFailedDetail'),
-        life: 6000,
+        life: 3000,
       });
       return;
     }
@@ -150,7 +150,7 @@ const handleRefresh = async () => {
         severity: 'info',
         summary: t('electronicScale.toast.reconnecting'),
         detail: t('electronicScale.toast.reconnectingMultiScale'),
-        life: 6000,
+        life: 3000,
       });
       return;
     }
@@ -159,7 +159,7 @@ const handleRefresh = async () => {
       severity: 'info',
       summary: t('electronicScale.toast.reconnecting'),
       detail: t('electronicScale.toast.reconnectingDetail'),
-      life: 6000,
+      life: 3000,
     });
   } catch (error) {
     console.error('[ScaleDevicePicker] refresh failed:', error);
@@ -167,7 +167,7 @@ const handleRefresh = async () => {
       severity: 'warn',
       summary: t('electronicScale.toast.connectFailed'),
       detail: t('electronicScale.toast.connectFailedDetail'),
-      life: 6000,
+      life: 3000,
     });
   } finally {
     isRefreshing.value = false;

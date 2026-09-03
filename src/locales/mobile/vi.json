@@ -85,6 +85,8 @@
       "description": "Sử dụng camera điện thoại để quét mã vạch",
       "glueReturn": "Quét keo trả về",
       "glueReturnDescription": "Quét thùng keo trả về sau khi xác nhận chuyền",
+      "glueReturnInRoom": "Quét keo trả về trong phòng pha keo",
+      "glueReturnInRoomDescription": "Quét thùng keo trả về ngay trong phòng pha keo",
       "glueInfoCheck": "Tra cứu thông tin thùng keo",
       "glueInfoCheckDescription": "Kiểm tra thông tin thùng keo phát",
       "glueCheckList": "Tuần tra kiểm phòng pha keo",
@@ -98,7 +100,7 @@
       "confirmButton": "Xác nhận trả keo",
       "confirmDialogTitle": "Xác nhận thùng keo trả về",
       "confirmDialogMessage": "Xác nhận trả về thùng keo đã quét?",
-      "cancelButton": "HỦY",
+      "cancelButton": "Hủy",
       "okButton": "OK",
       "submittingButton": "Đang gửi...",
       "fields": {
@@ -124,6 +126,32 @@
       "lineScanDisabledHint": "Vui lòng quét mã QR thùng keo trả về trước.",
       "lineListTitle": "Đã quét {count} chuyền",
       "removeLineItem": "Xóa keo chuyền"
+    },
+    "glueReturnInRoom": {
+      "title": "Quét keo trả về trong phòng pha keo",
+      "productLineLabel": "Chuyền",
+      "productLinePlaceholder": "Chọn chuyền",
+      "qrTitle": "Mã QR thùng keo trả về",
+      "scanPlaceholder": "Quét mã QR thùng keo trả về",
+      "confirmButton": "Xác nhận trả keo",
+      "confirmDialogTitle": "Xác nhận thùng keo trả về",
+      "confirmDialogMessage": "Xác nhận trả về thùng keo đã quét?",
+      "cancelButton": "Hủy",
+      "okButton": "OK",
+      "fields": {
+        "glueLabel": "Keo:"
+      },
+      "messages": {
+        "cameraPermission": "Cần cấp quyền camera để quét mã QR!",
+        "invalidQr": "Mã QR không hợp lệ. Vui lòng quét lại mã QR thùng keo trả về.",
+        "noGlueData": "Không có dữ liệu thùng keo trả về.",
+        "loadError": "Không thể lấy thông tin mã QR thùng keo trả về. Vui lòng kiểm tra kết nối API!",
+        "returnSuccess": "Trả về thành công",
+        "returnConfirmError": "Không thể tạo log trả về thùng keo. Vui lòng thử lại!",
+        "productLineLoadError": "Không thể tải danh sách chuyền. Vui lòng thử lại!",
+        "factoryMissing": "Không tìm thấy mã nhà máy.",
+        "departmentMissing": "Không tìm thấy mã bộ phận."
+      }
     },
     "glueInfoCheck": {
       "title": "Tra cứu thông tin thùng keo",
@@ -166,8 +194,10 @@
       "notOkResult": "Có vấn đề",
       "noteLabel": "Ghi chú",
       "notePlaceholder": "Nhập ghi chú nếu có",
-      "cancelButton": "HỦY",
-      "submitButton": "Submit",
+      "abnormalLabel": "Loại vấn đề",
+      "abnormalPlaceholder": "Chọn loại vấn đề",
+      "cancelButton": "Hủy",
+      "submitButton": "Gửi",
       "messages": {
         "cameraPermission": "Cần cấp quyền camera để quét mã kiểm tra!",
         "invalidQr": "Mã kiểm tra không hợp lệ hoặc không có dữ liệu!",
@@ -175,9 +205,11 @@
         "submitSuccess": "Đã gửi thông tin kiểm tra thành công.",
         "submitError": "Không thể gửi thông tin kiểm tra. Vui lòng thử lại!",
         "noCheckListData": "Không tìm thấy dữ liệu kiểm tra.",
-        "cancelSuccess": "Đã hủy phiếu kiểm tra"
+        "cancelSuccess": "Đã hủy phiếu kiểm tra",
+        "abnormalLoadError": "Không thể tải danh sách loại vấn đề. Vui lòng thử lại!",
+        "abnormalOffline": "Đang offline — vui lòng nhập ghi chú hoặc kết nối mạng để chọn loại vấn đề."
       },
-      "submitRequired": "Vui lòng nhập ghi chú trước khi gửi."
+      "submitRequired": "Vui lòng chọn loại vấn đề hoặc nhập ghi chú trước khi gửi."
     },
     "common": {
       "offlineLocalData": "Không có mạng - Đang sử dụng dữ liệu cục bộ"
@@ -198,5 +230,24 @@
       "title": "Đang đồng bộ dữ liệu",
       "note": "Vui lòng đợi trong giây lát. Dữ liệu offline đang được gửi lên hệ thống."
     }
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "Không tìm thấy dữ liệu khởi tạo",
+    "DATA_NOT_FOUND": "Không tìm thấy dữ liệu.",
+    "CREATE_SUCCESS": "Thêm mới thành công",
+    "LOGIN_INFO_NOT_FOUND": "Không tìm thấy thông tin đăng nhập",
+    "WRONG_PASSWORD": "Mật khẩu không chính xác",
+    "USER_NOT_AUTHORIZED": "Bạn chưa được phân quyền để truy cập ứng dụng",
+    "LOGIN_SUCCESS": "Đăng nhập thành công",
+    "CONFIRM_SUCCESS": "Xác nhận thành công",
+    "QIP_CONFIRM_FAIL": "Xác nhận thất bại, bạn không phải QIP vui lòng liên hệ Admin để kiểm tra",
+    "LINE_GLUE_CONFIRM_SUCCESS": "Xác nhận phát keo chuyền thành công",
+    "GLUE_ALREADY_SEPARATE": "Xác nhận phát keo không thành công. Do keo này đã được chiết",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "Xác nhận trả keo thành công",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "Xác nhận keo trả về thành công",
+    "PRINT_SUCCESS": "In thành công",
+    "DATA_ALREADY_EXISTS": "Dữ liệu đã tồn tại",
+    "SYNC_SUCCESS": "Đồng bộ dữ liệu thành công",
+    "CONFIRM_FAIL": "Xác nhận thất bại"
   }
 }

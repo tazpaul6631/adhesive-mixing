@@ -139,6 +139,8 @@ import { useOfflineStore } from '@/store/offline';
 import { useOfflineLoginStore } from '@/store/offlineLogin';
 import { prefetchPostLoginRoute, prefetchTabletRoutesIdle } from '@/router/routeChunks';
 import { prefetchAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+
 
 type SelectOption = { label: string; value: string };
 
@@ -404,7 +406,7 @@ const beginFrontCameraScan = async () => {
       await processScannedData(scannedValue);
     } catch (error) {
       console.error('Lỗi khi xử lý mã quét:', error);
-      handleLoginError(scannedValue);
+      handleLoginError(scannedValue, error);
     }
   });
 
@@ -531,7 +533,20 @@ const downloadOfflineDataAfterLogin = async (userData: any, fallbackFactoryId = 
 };
 
 const getLoginErrorMessage = (error: any, fallback: string) => {
-  return error?.response?.data?.message || error?.message || fallback;
+  const apiMessage = error?.response?.data?.message;
+  const rawMessage = typeof error?.message === 'string' ? error.message.trim() : '';
+  const isNetworkish =
+    !error?.response
+    || rawMessage === 'Network Error'
+    || error?.code === 'ERR_NETWORK'
+    || error?.code === 'ECONNABORTED'
+    || rawMessage.toLowerCase().includes('timeout');
+
+  return resolveCatchErrorMessage(
+    t,
+    isNetworkish ? '' : (apiMessage || rawMessage),
+    fallback,
+  );
 };
 
 const navigateAfterLogin = async () => {
@@ -583,15 +598,19 @@ const handleLoginResponse = async (response: any, loginCode: string, fallbackFac
 
   code.value = loginCode;
   errorLogin.value = true;
-  errorMessage.value = response.data?.message || t('login.loginFailed');
+  errorMessage.value = resolveCatchErrorMessage(
+    t,
+    response.data?.message,
+    t('login.loginFailed'),
+  );
   resetLoginLoading();
   return false;
 };
 
-const handleLoginError = (loginCode: string) => {
+const handleLoginError = (loginCode: string, error?: any) => {
   code.value = loginCode;
   errorLogin.value = true;
-  errorMessage.value = t('login.serverMaintenance');
+  errorMessage.value = getLoginErrorMessage(error, t('login.serverMaintenance'));
   offlineStore.resetDownloadState();
   offlineStore.resetSyncState();
   resetLoginLoading();
@@ -628,7 +647,7 @@ const handleTabletLogin = async () => {
     await handleLoginResponse(response, payload.employeeId, payload.factoryId);
   } catch (error: any) {
     console.error('Lỗi đăng nhập tablet:', error);
-    handleLoginError(payload.employeeId);
+    handleLoginError(payload.employeeId, error);
   }
 };
 
@@ -709,7 +728,7 @@ const processScannedData = async (scannedCode: string) => {
     await handleLoginResponse(response, scannedCode);
   } catch (error: any) {
     console.error('Lỗi gọi API đăng nhập:', error);
-    handleLoginError(scannedCode);
+    handleLoginError(scannedCode, error);
   }
 };
 </script>

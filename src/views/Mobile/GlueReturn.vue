@@ -1,12 +1,14 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t("mobile.glueReturn.title") }}</ion-title>
-        <ion-buttons slot="end">
+      <ion-toolbar color="primary" class="header-toolbar">
+        <div slot="start" class="header-start">
+          <ion-button fill="clear" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t("mobile.glueReturn.title") }}</h1>
+          </ion-button>
+        </div>
+        <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
         </ion-buttons>
       </ion-toolbar>
@@ -22,15 +24,8 @@
                 <ion-card-title>{{ t("mobile.glueReturn.qrTitle") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  @click="openScanner"
-                >
-                  <span
-                    v-if="!returnQrText"
-                    class="qr-scan-field__text qr-scan-field__text--empty"
-                  >
+                <button type="button" class="qr-scan-field" @click="openScanner">
+                  <span v-if="!returnQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueReturn.scanPlaceholder") }}
                   </span>
                   <div v-else-if="pendingReturnGlueInfo" class="qr-scan-field__info">
@@ -57,12 +52,8 @@
               </ion-card-header>
               <ion-card-content>
 
-                <button
-                  type="button"
-                  class="line-scan-add-button"
-                  :disabled="!pendingReturnGlueInfo"
-                  @click="openLineScanner"
-                >
+                <button type="button" class="line-scan-add-button" :disabled="!pendingReturnGlueInfo"
+                  @click="openLineScanner">
                   <span>{{ t("mobile.glueReturn.lineScanAddButton") }}</span>
                   <span class="confirm-button__icon">
                     <McScanFill />
@@ -78,15 +69,9 @@
                     {{ t("mobile.glueReturn.lineListTitle", { count: lineChemicalItems.length }) }}
                   </div>
 
-                  <div
-                    class="line-chemical-list__items"
-                    :class="{ 'line-chemical-list__items--scrollable': lineChemicalItems.length >= 2 }"
-                  >
-                    <div
-                      v-for="item in lineChemicalItems"
-                      :key="item.id"
-                      class="line-chemical-card"
-                    >
+                  <div class="line-chemical-list__items"
+                    :class="{ 'line-chemical-list__items--scrollable': lineChemicalItems.length >= 2 }">
+                    <div v-for="item in lineChemicalItems" :key="item.id" class="line-chemical-card">
                       <div class="line-chemical-card__main">
                         <div class="line-chemical-card__row">
                           <span class="line-chemical-card__label">{{ t("mobile.glueReturn.fields.lineLabel") }}</span>
@@ -99,12 +84,9 @@
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        class="line-chemical-card__delete"
+                      <button type="button" class="line-chemical-card__delete"
                         :aria-label="t('mobile.glueReturn.removeLineItem')"
-                        @click.stop="removeLineChemicalItem(item.id)"
-                      >
+                        @click.stop="removeLineChemicalItem(item.id)">
                         <ion-icon :icon="trashOutline"></ion-icon>
                       </button>
                     </div>
@@ -113,62 +95,23 @@
               </ion-card-content>
             </ion-card>
 
-            <ion-button
-              expand="block"
-              class="confirm-button"
-              :disabled="!canSubmitReturn"
-              @click="openConfirmDialog"
-            >
-              <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
-              {{ t("mobile.glueReturn.confirmButton") }}
+            <ion-button expand="block" class="confirm-button" :disabled="!canSubmitReturn" @click="confirmReturnQr">
+              <ion-spinner v-if="isSubmittingReturn" name="crescent" slot="start"
+                class="confirm-button__spinner"></ion-spinner>
+              <ion-icon v-else slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
+              {{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.confirmButton") }}
             </ion-button>
           </div>
         </section>
       </div>
-
-      <ion-modal
-        :is-open="isConfirmDialogOpen"
-        class="return-confirm-modal"
-        :backdrop-dismiss="false"
-        @didDismiss="closeConfirmDialog"
-      >
-        <div class="return-confirm-dialog">
-          <div class="return-confirm-dialog__icon">
-            <ion-icon :icon="alertCircle"></ion-icon>
-          </div>
-          <h2 class="return-confirm-dialog__title">{{ t("mobile.glueReturn.confirmDialogTitle") }}</h2>
-          <div class="return-confirm-dialog__message">
-            <span>{{ t("mobile.glueReturn.confirmDialogMessage") }}</span>
-          </div>
-          <div class="return-confirm-dialog__actions">
-            <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="closeConfirmDialog">
-              {{ t("mobile.glueReturn.cancelButton") }}
-            </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click.stop="confirmReturnQr">
-              <ion-spinner v-if="isSubmittingReturn" name="crescent" class="return-confirm-dialog__button-spinner"></ion-spinner>
-              <span>{{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.okButton") }}</span>
-            </ion-button>
-          </div>
-        </div>
-      </ion-modal>
-
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="bottom"
-        :color="toastColor"
-        :css-class="toastCssClass"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonCard,
@@ -178,14 +121,11 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonModal,
   IonPage,
   IonSpinner,
-  IonTitle,
-  IonToast,
   IonToolbar,
 } from '@ionic/vue';
-import { alertCircle, shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
+import { shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -197,7 +137,9 @@ import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
 interface LineChemicalItem {
   id: string;
@@ -211,19 +153,19 @@ interface LineChemicalItem {
 }
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
+const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const returnQrText = ref('');
 const pendingReturnGlueInfo = ref<any>(null);
 const lineChemicalItems = ref<LineChemicalItem[]>([]);
-const isConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
-const showSuccessToast = ref(false);
-const toastMessage = ref('');
-const toastColor = ref<string | undefined>('success');
-const toastCssClass = ref('');
-
 const hasLineChemicalMismatch = computed(() => lineChemicalItems.value.some((item) => !item.isMatched));
 const hasLineChemicalData = computed(() => lineChemicalItems.value.length > 0);
 const canSubmitReturn = computed(() => {
@@ -320,7 +262,7 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
   const systemUrl = getSystemQrUrl(qrText);
 
   if (!systemUrl) {
-    return { data: null, status: 'invalid' as const };
+    return { data: null, status: 'invalid' as const, message: '' };
   }
 
   const userId = getCurrentUserId();
@@ -334,19 +276,23 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
     const response = await fetch(systemUrl.toString(), { method: 'GET', headers });
 
     if (!response.ok) {
-      return { data: null, status: 'invalid' as const };
+      return { data: null, status: 'invalid' as const, message: '' };
     }
 
     const responseData = await response.json();
 
     if (responseData?.success === false || !responseData?.data) {
-      return { data: null, status: 'noData' as const };
+      return {
+        data: null,
+        status: 'noData' as const,
+        message: typeof responseData?.message === 'string' ? responseData.message : 'DATA_NOT_FOUND',
+      };
     }
 
-    return { data: responseData.data, status: 'success' as const };
+    return { data: responseData.data, status: 'success' as const, message: responseData?.message || '' };
   } catch (error) {
     console.error('Không thể gọi URL QR hệ thống:', error);
-    return { data: null, status: 'invalid' as const };
+    return { data: null, status: 'invalid' as const, message: '' };
   }
 }
 
@@ -368,7 +314,12 @@ async function triggerMismatchFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerMismatchFeedback();
-  alert(message);
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueReturn.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 function resetReturnField() {
@@ -385,16 +336,17 @@ function resetReturnWorkflow() {
   resetLineChemicalList();
 }
 
-function closeConfirmDialog() {
-  isConfirmDialogOpen.value = false;
-}
-
 async function openScanner() {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueReturn.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueReturn.title'),
+        detail: t('mobile.glueReturn.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -421,7 +373,11 @@ async function openScanner() {
 
     if (result.status === 'noData' || !result.data) {
       resetReturnWorkflow();
-      await showWarningAlert(t('mobile.glueReturn.messages.noGlueData'));
+      await showWarningAlert(resolveCatchErrorMessage(
+        t,
+        (result as any).message || 'DATA_NOT_FOUND',
+        t('catchError.DATA_NOT_FOUND'),
+      ));
       return;
     }
 
@@ -438,7 +394,12 @@ async function openScanner() {
     resetLineChemicalList();
   } catch (error) {
     console.error('Lỗi khi quét mã QR:', error);
-    alert(t('mobile.glueReturn.messages.loadError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueReturn.title'),
+      detail: t('mobile.glueReturn.messages.loadError'),
+      life: 3000,
+    });
   }
 }
 
@@ -474,7 +435,12 @@ async function openLineScanner() {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueReturn.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueReturn.title'),
+        detail: t('mobile.glueReturn.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -499,7 +465,11 @@ async function openLineScanner() {
     }
 
     if (result.status === 'noData' || !result.data) {
-      await showWarningAlert(t('mobile.glueReturn.messages.noLineData'));
+      await showWarningAlert(resolveCatchErrorMessage(
+        t,
+        (result as any).message || 'DATA_NOT_FOUND',
+        t('catchError.DATA_NOT_FOUND'),
+      ));
       return;
     }
 
@@ -528,20 +498,17 @@ async function openLineScanner() {
     lineChemicalItems.value = [...lineChemicalItems.value, item];
   } catch (error) {
     console.error('Lỗi khi quét mã QR thùng keo chuyền:', error);
-    alert(t('mobile.glueReturn.messages.loadLineError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueReturn.title'),
+      detail: t('mobile.glueReturn.messages.loadLineError'),
+      life: 3000,
+    });
   }
-}
-
-function openConfirmDialog() {
-  if (!canSubmitReturn.value) {
-    return;
-  }
-
-  isConfirmDialogOpen.value = true;
 }
 
 async function confirmReturnQr() {
-  if (!pendingReturnGlueInfo.value || !hasLineChemicalData.value || hasLineChemicalMismatch.value) {
+  if (!canSubmitReturn.value || !pendingReturnGlueInfo.value || !hasLineChemicalData.value || hasLineChemicalMismatch.value) {
     return;
   }
 
@@ -562,9 +529,8 @@ async function confirmReturnQr() {
     if (!authStore.isOnline) {
       await addOfflineQueueItem('ReturnGlue', 'api/mobile/gluereturnlog/create', 'POST', payload);
       await offlineStore.refreshQueueCounts();
-      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      notifyToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       resetReturnWorkflow();
-      closeConfirmDialog();
       return;
     }
 
@@ -575,37 +541,88 @@ async function confirmReturnQr() {
       throw new Error(responseData?.message || t('mobile.glueReturn.messages.returnConfirmError'));
     }
 
-    showToast(t('mobile.glueReturn.messages.returnSuccess'));
+    notifyToast(resolveCatchErrorMessage(
+      t,
+      responseData?.message || 'GLUE_RETURN_CONFIRM_SUCCESS',
+      t('catchError.GLUE_RETURN_CONFIRM_SUCCESS'),
+    ));
     resetReturnWorkflow();
-    closeConfirmDialog();
   } catch (error) {
     console.error('Không thể tạo log trả keo:', error);
-    alert(error instanceof Error ? error.message : t('mobile.glueReturn.messages.returnConfirmError'));
+    const rawMessage = (error as any)?.response?.data?.message
+      || (error instanceof Error ? error.message : '');
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueReturn.title'),
+      detail: resolveCatchErrorMessage(
+        t,
+        rawMessage,
+        t('mobile.glueReturn.messages.returnConfirmError'),
+      ),
+      life: 3000,
+    });
   } finally {
     isSubmittingReturn.value = false;
   }
 }
 
-function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
-  toastMessage.value = message;
-  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
-  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
-  showSuccessToast.value = true;
+function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  showToast({
+    severity: type === 'offlineQueue' ? 'warn' : 'success',
+    summary: type === 'offlineQueue'
+      ? t('mobile.offlineQueue.title')
+      : t('mobile.glueReturn.title'),
+    detail: message,
+  });
 }
 </script>
 
 <style scoped lang="scss">
 .header-container {
-  ion-toolbar {
+  ion-toolbar.header-toolbar {
     --background: #0b56d9;
     --color: #ffffff;
+    --min-height: 56px;
+    --padding-start: 4px;
+    --padding-end: 10px;
+    --padding-top: 6px;
+    --padding-bottom: 6px;
   }
+}
 
-  ion-title {
-    color: #ffffff;
-    font-size: 18px !important;
-    font-weight: 700;
-  }
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+  padding-inline-end: 8px;
+}
+
+.header-back {
+  margin: 0;
+  --padding-start: 6px;
+  --padding-end: 2px;
+  --icon-margin-end: 0;
+  --icon-margin-start: 0;
+  --color: #ffffff;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
 }
 
 .mobile-content {
@@ -902,7 +919,7 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   justify-content: center;
   flex: 0 0 22px;
   line-height: 1;
-  color:rgba(0, 0, 0, 0.582)
+  color: rgba(0, 0, 0, 0.582)
 }
 
 .confirm-button__icon :deep(svg) {
@@ -911,62 +928,9 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   display: block;
 }
 
-.return-confirm-modal {
-  --width: min(90vw, 360px);
-  --height: auto;
-  --border-radius: 20px;
-  --box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
-}
-
-.return-confirm-dialog {
-  padding: 26px 22px 12px;
-  border-radius: 20px;
-  background: #ffffff;
-  text-align: center;
-
-  &__icon {
-    width: 48px;
-    height: 48px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    border-radius: 50%;
-    background: #eaf2ff;
-    color: #0b72ed;
-
-    ion-icon {
-      font-size: 1.8rem;
-    }
-  }
-
-  &__title {
-    margin: 0 0 10px;
-    color: #081a36;
-    font-size: 16px !important;
-    font-weight: 700;
-  }
-
-  &__message {
-    margin: 0;
-    color: #475569;
-    font-size: 14px !important;
-    line-height: 1.5;
-    word-break: break-word;
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 22px;
-  }
-
-  &__button-spinner {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-  }
+.confirm-button__spinner {
+  width: 22px;
+  height: 22px;
 }
 
 @media (min-width: 768px) {
@@ -1043,38 +1007,6 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     min-height: 82px;
     border-radius: 18px;
     --border-radius: 18px;
-  }
-
-  .return-confirm-modal {
-    --width: min(82vw, 460px);
-    --border-radius: 24px;
-  }
-
-  .return-confirm-dialog {
-    padding: 34px 30px 16px;
-    border-radius: 24px;
-
-    &__icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 18px;
-
-      ion-icon {
-        font-size: 2.4rem;
-      }
-    }
-
-    &__title {
-      font-size: 1.7rem !important;
-    }
-
-    &__message {
-      font-size: 1.18rem !important;
-    }
-
-    &__actions {
-      margin-top: 28px;
-    }
   }
 }
 </style>

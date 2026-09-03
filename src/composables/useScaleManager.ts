@@ -362,6 +362,11 @@ const parseScalePayload = (raw: string) => {
 
   dataBuffer += cleanRaw;
 
+  // USB nhiễu không có \n/\r có thể phình buffer vô hạn trên máy RAM thấp.
+  if (dataBuffer.length > 4096) {
+    dataBuffer = dataBuffer.slice(-1024);
+  }
+
   if (!dataBuffer.includes('\n') && !dataBuffer.includes('\r')) {
     return;
   }
@@ -747,6 +752,8 @@ export function useScaleManager() {
     }
 
     pauseMonitoring();
+    // Ngắt USB khi rời trang cân — tránh giữ port + reconnect storm khi màn tắt/wake.
+    void disconnectHardware();
   };
 
   const releaseScaleConnection = () => {

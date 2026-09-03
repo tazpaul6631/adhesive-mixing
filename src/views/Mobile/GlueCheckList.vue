@@ -1,12 +1,14 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t('mobile.glueCheckList.title') }}</ion-title>
-        <ion-buttons slot="end">
+      <ion-toolbar color="primary" class="header-toolbar">
+        <div slot="start" class="header-start">
+          <ion-button fill="clear" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t('mobile.glueCheckList.title') }}</h1>
+          </ion-button>
+        </div>
+        <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
         </ion-buttons>
       </ion-toolbar>
@@ -18,30 +20,25 @@
         <section class="check-panel">
           <ion-button expand="block" class="confirm-button" :disabled="isLoadingScan" @click="openScanner">
             <ion-spinner v-if="isLoadingScan" name="crescent"></ion-spinner>
-           <span v-else class="confirm-button__content">
-            <span class="confirm-button__icon">
-              <McScanFill />
+            <span v-else class="confirm-button__content">
+              <span class="confirm-button__icon">
+                <McScanFill />
+              </span>
+              <span class="confirm-button__text">
+                {{ t('mobile.glueCheckList.scanButton') }}
+              </span>
             </span>
-            <span class="confirm-button__text">
-              {{ t('mobile.glueCheckList.scanButton') }}
-            </span>
-          </span>
           </ion-button>
         </section>
       </div>
 
-      <ion-modal
-        :is-open="isCheckDialogOpen"
-        class="check-form-modal"
-        :backdrop-dismiss="false"
-        @didDismiss="closeCheckDialog"
-      >
+      <ion-modal :is-open="isCheckDialogOpen" class="check-form-modal" :backdrop-dismiss="false"
+        @didDismiss="closeCheckDialog">
         <div class="check-form-dialog">
-          <div class="check-form-dialog__icon">
-            <ion-icon :icon="clipboardOutline"></ion-icon>
+          <div class="check-form-dialog__header">
+            <ion-icon :icon="clipboardOutline" class="check-form-dialog__header-icon"></ion-icon>
+            <h2 class="check-form-dialog__title">{{ t('mobile.glueCheckList.dialogTitle') }}</h2>
           </div>
-
-          <h2 class="check-form-dialog__title">{{ t('mobile.glueCheckList.dialogTitle') }}</h2>
 
           <div class="check-form-dialog__content">
             <div class="check-form-dialog__issue-row">
@@ -52,67 +49,56 @@
             <div class="check-form-dialog__field">
               <label class="check-form-dialog__label">{{ t('mobile.glueCheckList.resultLabel') }}</label>
               <button type="button" class="check-result-switch" @click="toggleCheckResult">
-                <span
-                  class="check-result-switch__option"
-                  :class="{ 'check-result-switch__option--ok-active': checkResult }"
-                >
+                <span class="check-result-switch__option"
+                  :class="{ 'check-result-switch__option--ok-active': checkResult }">
                   {{ t('mobile.glueCheckList.okResult') }}
                 </span>
-                <span
-                  class="check-result-switch__option"
-                  :class="{ 'check-result-switch__option--not-ok-active': !checkResult }"
-                >
+                <span class="check-result-switch__option"
+                  :class="{ 'check-result-switch__option--not-ok-active': !checkResult }">
                   {{ t('mobile.glueCheckList.notOkResult') }}
                 </span>
               </button>
             </div>
 
-            <div class="check-form-dialog__field">
+            <div v-if="!checkResult" class="check-form-dialog__field">
+              <label class="check-form-dialog__label">{{ t('mobile.glueCheckList.abnormalLabel') }}</label>
+              <Select v-model="selectedAbnormalItemId" class="check-form-dialog__select w-full"
+                :options="abnormalOptions" option-label="checkListAbnormalName" option-value="checkListAbnormalItemId"
+                :placeholder="t('mobile.glueCheckList.abnormalPlaceholder')" :loading="isLoadingAbnormalOptions"
+                :disabled="isSubmittingForm || isLoadingAbnormalOptions" show-clear append-to="body"
+                @show="loadAbnormalOptions" @change="onAbnormalSelectChange" />
+            </div>
+
+            <div v-if="!hasAbnormalSelection" class="check-form-dialog__field">
               <label class="check-form-dialog__label" for="glue-check-note">
                 {{ t('mobile.glueCheckList.noteLabel') }}
               </label>
-              <textarea
-                id="glue-check-note"
-                v-model="checkNote"
-                class="check-form-dialog__textarea"
-                :placeholder="t('mobile.glueCheckList.notePlaceholder')"
-                rows="3"
-              ></textarea>
-              <p v-if="isIssueNoteRequired" class="check-form-dialog__note-message">
-                {{ t('mobile.glueCheckList.submitRequired') }}
+              <textarea id="glue-check-note" v-model="checkNote" class="check-form-dialog__textarea"
+                :placeholder="t('mobile.glueCheckList.notePlaceholder')" rows="3"
+                :disabled="isSubmittingForm"></textarea>
+              <p v-if="isIssueDetailRequired" class="check-form-dialog__note-message" role="alert">
+                <span class="check-form-dialog__required-asterisk" aria-hidden="true">*</span>
+                <span>{{ t('mobile.glueCheckList.submitRequired') }}</span>
               </p>
             </div>
           </div>
 
           <div class="check-form-dialog__actions">
-            <ion-button fill="clear" color="medium" :disabled="isSubmittingForm" @click="cancelCheckForm">
-              {{ t('mobile.glueCheckList.cancelButton') }}
-            </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingForm || isIssueNoteRequired" @click="submitCheckForm">
-              <ion-spinner v-if="isSubmittingForm" name="crescent"></ion-spinner>
-              <span v-else>{{ t('mobile.glueCheckList.submitButton') }}</span>
-            </ion-button>
+            <Button :label="t('mobile.glueCheckList.cancelButton')" severity="secondary" :disabled="isSubmittingForm"
+              @click="cancelCheckForm" />
+            <Button :label="t('mobile.glueCheckList.submitButton')" severity="primary" :loading="isSubmittingForm"
+              :disabled="isSubmittingForm || isIssueDetailRequired" @click="submitCheckForm" />
           </div>
         </div>
       </ion-modal>
-
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="bottom"
-        :color="toastColor"
-        :css-class="toastCssClass"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
@@ -121,8 +107,6 @@ import {
   IonModal,
   IonPage,
   IonSpinner,
-  IonTitle,
-  IonToast,
   IonToolbar,
 } from '@ionic/vue';
 import { clipboardOutline } from 'ionicons/icons';
@@ -131,33 +115,50 @@ import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/store/auth';
 import checkListApi from '@/api/checkList';
-import { findCheckListOfflineData } from '@/services/glueOfflineData.service';
+import { findCheckListAbnormalOfflineData, findCheckListOfflineData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
-import { barcodeOutline, qrCode } from "ionicons/icons";
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
+const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const scannedCheckQr = ref<{ factoryId: string; cliId: string } | null>(null);
 const scannedCheckItem = ref<any>(null);
 const checkResult = ref(true);
 const checkNote = ref('');
+const selectedAbnormalItemId = ref<number | string | null>(null);
+const abnormalOptions = ref<Array<{
+  factoryId?: string;
+  checkListAbnormalItemId: number | string;
+  checkListAbnormalName: string;
+  checkListItemId?: number | string;
+}>>([]);
+const isLoadingAbnormalOptions = ref(false);
+const hasLoadedAbnormalOptions = ref(false);
 const isCheckDialogOpen = ref(false);
 const isLoadingScan = ref(false);
 const isSubmittingForm = ref(false);
-const showSuccessToast = ref(false);
-const toastMessage = ref('');
-const toastColor = ref<string | undefined>('success');
-const toastCssClass = ref('');
-
 const checkIssueName = computed(() => normalizeValue(scannedCheckItem.value?.checkListName));
-const isIssueNoteRequired = computed(() => !checkResult.value && !checkNote.value.trim());
+const hasAbnormalSelection = computed(
+  () => selectedAbnormalItemId.value !== null && selectedAbnormalItemId.value !== undefined && selectedAbnormalItemId.value !== ''
+);
+/** Có vấn đề thì bắt buộc chọn bất thường hoặc nhập ghi chú. */
+const isIssueDetailRequired = computed(
+  () => !checkResult.value && !hasAbnormalSelection.value && !checkNote.value.trim()
+);
 
 function normalizeValue(value: any) {
   if (value === null || value === undefined) {
@@ -209,12 +210,121 @@ async function resolveCheckListItem(factoryId: string, cliId: string) {
   return {
     data: responseData?.data ?? null,
     success: !!responseData?.success && !!responseData?.data,
-    message: responseData?.message || t('mobile.glueCheckList.messages.noCheckListData'),
+    message: resolveCatchErrorMessage(
+      t,
+      responseData?.message,
+      t('mobile.glueCheckList.messages.noCheckListData'),
+    ),
   };
 }
 
 function toggleCheckResult() {
   checkResult.value = !checkResult.value;
+
+  if (checkResult.value) {
+    selectedAbnormalItemId.value = null;
+    return;
+  }
+
+  // Chọn "Có vấn đề" — sẵn sàng load list khi mở Select.
+  hasLoadedAbnormalOptions.value = false;
+}
+
+function onAbnormalSelectChange() {
+  if (hasAbnormalSelection.value) {
+    checkNote.value = '';
+  }
+}
+
+async function loadAbnormalOptions() {
+  if (checkResult.value || isLoadingAbnormalOptions.value) {
+    return;
+  }
+
+  if (hasLoadedAbnormalOptions.value && abnormalOptions.value.length > 0) {
+    return;
+  }
+
+  const factoryId = normalizeValue(
+    scannedCheckQr.value?.factoryId || scannedCheckItem.value?.factoryId
+  );
+  const checkListItemId = scannedCheckItem.value?.checkListItemId
+    ?? scannedCheckQr.value?.cliId
+    ?? '';
+
+  if (!factoryId || checkListItemId === '' || checkListItemId === null || checkListItemId === undefined) {
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueCheckList.title'),
+      detail: t('mobile.glueCheckList.messages.noCheckListData'),
+      life: 3000,
+    });
+    return;
+  }
+
+  isLoadingAbnormalOptions.value = true;
+  try {
+    let items: any[] = [];
+
+    if (!authStore.isOnline) {
+      const offlineResult = await findCheckListAbnormalOfflineData(factoryId, checkListItemId);
+      items = offlineResult.data;
+
+      if (items.length === 0) {
+        abnormalOptions.value = [];
+        hasLoadedAbnormalOptions.value = true;
+        showToast({
+          severity: 'warn',
+          summary: t('mobile.glueCheckList.title'),
+          detail: t('mobile.glueCheckList.messages.abnormalOffline'),
+          life: 3000,
+        });
+        return;
+      }
+    } else {
+      const response = await checkListApi.getCheckList(factoryId, checkListItemId);
+      const responseData = response?.data as any;
+
+      if (responseData?.success === false) {
+        throw new Error(
+          resolveCatchErrorMessage(
+            t,
+            responseData?.message,
+            t('mobile.glueCheckList.messages.abnormalLoadError'),
+          ),
+        );
+      }
+
+      items = Array.isArray(responseData?.data)
+        ? responseData.data
+        : Array.isArray(responseData)
+          ? responseData
+          : [];
+    }
+
+    abnormalOptions.value = items.filter((item: any) =>
+      item?.checkListAbnormalItemId !== null
+      && item?.checkListAbnormalItemId !== undefined
+      && normalizeValue(item?.checkListAbnormalName)
+    );
+    hasLoadedAbnormalOptions.value = true;
+  } catch (error) {
+    console.error('Không thể tải danh sách bất thường:', error);
+    abnormalOptions.value = [];
+    hasLoadedAbnormalOptions.value = false;
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueCheckList.title'),
+      detail: resolveCatchErrorMessage(
+        t,
+        error instanceof Error ? error.message : '',
+        t('mobile.glueCheckList.messages.abnormalLoadError'),
+      ),
+      life: 3000,
+    });
+  } finally {
+    isLoadingAbnormalOptions.value = false;
+  }
 }
 
 async function triggerWarningFeedback() {
@@ -227,7 +337,12 @@ async function triggerWarningFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerWarningFeedback();
-  alert(message);
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueCheckList.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 function resetCheckForm() {
@@ -235,6 +350,10 @@ function resetCheckForm() {
   scannedCheckItem.value = null;
   checkResult.value = true;
   checkNote.value = '';
+  selectedAbnormalItemId.value = null;
+  abnormalOptions.value = [];
+  hasLoadedAbnormalOptions.value = false;
+  isLoadingAbnormalOptions.value = false;
 }
 
 async function openScanner() {
@@ -246,7 +365,12 @@ async function openScanner() {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueCheckList.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueCheckList.title'),
+        detail: t('mobile.glueCheckList.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -282,10 +406,18 @@ async function openScanner() {
     scannedCheckItem.value = result.data;
     checkResult.value = true;
     checkNote.value = '';
+    selectedAbnormalItemId.value = null;
+    abnormalOptions.value = [];
+    hasLoadedAbnormalOptions.value = false;
     isCheckDialogOpen.value = true;
   } catch (error) {
     console.error('Lỗi khi quét mã kiểm tra:', error);
-    alert(t('mobile.glueCheckList.messages.scanError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueCheckList.title'),
+      detail: t('mobile.glueCheckList.messages.scanError'),
+      life: 3000,
+    });
   } finally {
     isLoadingScan.value = false;
   }
@@ -310,7 +442,12 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
   }
 
   if (!scannedCheckQr.value || !scannedCheckItem.value) {
-    alert(t('mobile.glueCheckList.messages.noCheckListData'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueCheckList.title'),
+      detail: t('mobile.glueCheckList.messages.noCheckListData'),
+      life: 3000,
+    });
     return;
   }
 
@@ -322,45 +459,63 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
     checkListItemId: String(scannedCheckItem.value.checkListItemId ?? '').trim(),
     checkTime: dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'),
     result: checkResult.value,
-    note: checkNote.value.trim(),
+    note: hasAbnormalSelection.value ? '' : checkNote.value.trim(),
     recordStatus,
     createrId: userId,
     updaterId: userId,
+    checkListAbnormalItemId: hasAbnormalSelection.value
+      ? selectedAbnormalItemId.value
+      : 0,
   };
-
-  console.group(`[GlueCheckList] POST /api/mobile/checklist/create`);
-  console.info('Request payload:', payload);
 
   try {
     if (!authStore.isOnline) {
       await addOfflineQueueItem('GlueCheckList', 'api/mobile/checklist/create', 'POST', payload);
       await offlineStore.refreshQueueCounts();
-      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      if (recordStatus !== 'C') {
+        notifyToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      }
       resetAndCloseCheckDialog();
       return;
     }
 
     const response = await checkListApi.createCheckList(payload);
-    console.info('Response:', response?.data ?? response);
 
     const responseData = response.data as any;
 
     if (!responseData.success || responseData.data !== true) {
-      throw new Error(responseData.message || t('mobile.glueCheckList.messages.submitError'));
+      throw new Error(
+        resolveCatchErrorMessage(
+          t,
+          responseData.message,
+          t('mobile.glueCheckList.messages.submitError'),
+        ),
+      );
     }
 
-    showToast(recordStatus === 'C'
-      ? t('mobile.glueCheckList.messages.cancelSuccess')
-      : t('mobile.glueCheckList.messages.submitSuccess'));
+    if (recordStatus !== 'C') {
+      notifyToast(
+        resolveCatchErrorMessage(
+          t,
+          responseData.message,
+          t('mobile.glueCheckList.messages.submitSuccess'),
+        ),
+      );
+    }
     resetAndCloseCheckDialog();
   } catch (error) {
     console.error('Không thể gửi thông tin kiểm tra:', error);
 
-    const errorMessage = error instanceof Error && error.message
-      ? error.message
-      : t('mobile.glueCheckList.messages.submitError');
-
-    alert(errorMessage);
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueCheckList.title'),
+      detail: resolveCatchErrorMessage(
+        t,
+        error instanceof Error ? error.message : '',
+        t('mobile.glueCheckList.messages.submitError'),
+      ),
+      life: 3000,
+    });
   } finally {
     isSubmittingForm.value = false;
     console.groupEnd();
@@ -368,6 +523,9 @@ async function sendCheckForm(recordStatus: '1' | 'C') {
 }
 
 async function submitCheckForm() {
+  if (isIssueDetailRequired.value) {
+    return;
+  }
   await sendCheckForm('1');
 }
 
@@ -375,26 +533,64 @@ async function cancelCheckForm() {
   await sendCheckForm('C');
 }
 
-function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
-  toastMessage.value = message;
-  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
-  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
-  showSuccessToast.value = true;
+function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  showToast({
+    severity: type === 'offlineQueue' ? 'warn' : 'success',
+    summary: type === 'offlineQueue'
+      ? t('mobile.offlineQueue.title')
+      : t('mobile.glueCheckList.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 </script>
 
 <style scoped lang="scss">
 .header-container {
-  ion-toolbar {
+  ion-toolbar.header-toolbar {
     --background: #0b56d9;
     --color: #ffffff;
+    --min-height: 56px;
+    --padding-start: 4px;
+    --padding-end: 10px;
+    --padding-top: 6px;
+    --padding-bottom: 6px;
   }
+}
 
-  ion-title {
-    color: #ffffff;
-    font-size: 18px !important;
-    font-weight: 700;
-  }
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+  padding-inline-end: 8px;
+}
+
+.header-back {
+  margin: 0;
+  --padding-start: 6px;
+  --padding-end: 2px;
+  --icon-margin-end: 0;
+  --icon-margin-start: 0;
+  --color: #ffffff;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
 }
 
 .mobile-content {
@@ -476,29 +672,27 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   padding: 26px 22px 12px;
   border-radius: 20px;
   background: #ffffff;
-  text-align: center;
 
-  &__icon {
-    width: 48px;
-    height: 48px;
-    display: inline-flex;
+  &__header {
+    display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 12px;
-    border-radius: 50%;
-    background: #eaf2ff;
-    color: #0b72ed;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
 
-    ion-icon {
-      font-size: 1.8rem;
-    }
+  &__header-icon {
+    flex-shrink: 0;
+    color: #0b72ed;
+    font-size: 1.6rem;
   }
 
   &__title {
-    margin: 0 0 18px;
+    margin: 0;
     color: #081a36;
     font-size: 16px !important;
     font-weight: 700;
+    line-height: 1.3;
   }
 
   &__content {
@@ -543,8 +737,6 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     font-size: 15px !important;
     font-weight: 700;
     line-height: 1.45;
-    text-align: left;
-    white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
@@ -571,14 +763,39 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
       border-color: #0b72ed;
       box-shadow: 0 0 0 3px rgba(11, 114, 237, 0.12);
     }
+
+    &--disabled,
+    &:disabled {
+      color: #94a3b8;
+      background: #f8fafc;
+      cursor: not-allowed;
+    }
+
+    &--error {
+      border-color: #f87171;
+      background: #fffbfb;
+
+      &:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+      }
+    }
+  }
+
+  &__select {
+    width: 100%;
   }
 
   &__note-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
     margin: 0;
-    color: #64748b;
+    padding: 0;
     font-size: 12px !important;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.45;
+    color: #94a3b8;
   }
 
   &__actions {
@@ -586,6 +803,14 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     justify-content: flex-end;
     gap: 6px;
     margin-top: 22px;
+  }
+
+  &__required-asterisk {
+    flex-shrink: 0;
+    color: #dc2626;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
   }
 }
 
@@ -606,22 +831,18 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   align-items: center;
   justify-content: center;
   min-height: 38px;
-  border: 1px solid transparent;
   border-radius: 12px;
   color: #94a3b8;
   font-size: 14px !important;
   font-weight: 800;
   background: transparent;
-  transition: all 0.16s ease;
 
   &--ok-active {
-    border-color: #16a34a;
     color: #ffffff;
     background: #16a34a;
   }
 
   &--not-ok-active {
-    border-color: #dc2626;
     color: #ffffff;
     background: #dc2626;
   }
@@ -647,18 +868,8 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     padding: 34px 30px 16px;
     border-radius: 24px;
 
-    &__icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 18px;
-
-      ion-icon {
-        font-size: 2.4rem;
-      }
-    }
-
     &__title {
-      font-size: 1.7rem !important;
+      font-size: 18px !important;
     }
   }
 }

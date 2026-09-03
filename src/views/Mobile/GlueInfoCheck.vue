@@ -1,12 +1,14 @@
 <template>
   <ion-page>
     <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
-        <ion-buttons slot="end">
+      <ion-toolbar color="primary" class="header-toolbar">
+        <div slot="start" class="header-start">
+          <ion-button fill="clear" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t('mobile.glueInfoCheck.title') }}</h1>
+          </ion-button>
+        </div>
+        <ion-buttons slot="end" class="header-end">
           <NetworkStatusIcon />
         </ion-buttons>
       </ion-toolbar>
@@ -41,11 +43,7 @@
               </ion-card-header>
               <ion-card-content>
                 <div class="info-content">
-                  <div
-                    v-for="field in returnInfoFields"
-                    :key="field.label"
-                    class="info-content__row"
-                  >
+                  <div v-for="field in returnInfoFields" :key="field.label" class="info-content__row">
                     <span class="info-content__label">{{ field.label }}</span>
                     <span class="info-content__value">{{ field.value }}</span>
                   </div>
@@ -61,8 +59,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
-  IonBackButton,
+  IonButton,
   IonButtons,
   IonCard,
   IonCardContent,
@@ -73,10 +72,8 @@ import {
   IonIcon,
   IonPage,
   IonSpinner,
-  IonTitle,
   IonToolbar,
 } from '@ionic/vue';
-import { barcodeOutline } from 'ionicons/icons';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -84,7 +81,8 @@ import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
 type ResolveGlueQrResult = {
@@ -93,7 +91,13 @@ type ResolveGlueQrResult = {
 };
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
+const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const returnQrText = ref('');
 const returnQrInfo = ref<any | null>(null);
@@ -235,7 +239,12 @@ async function triggerWarningFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerWarningFeedback();
-  alert(message);
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueInfoCheck.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQrResult> {
@@ -300,7 +309,12 @@ async function openScanner() {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueInfoCheck.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueInfoCheck.title'),
+        detail: t('mobile.glueInfoCheck.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -365,7 +379,12 @@ async function handleGlueInfoScanResult(value: string) {
   } catch (error) {
     console.error('Không thể lấy thông tin QR thùng keo phát:', error);
     resetGlueInfo();
-    alert(t('mobile.glueInfoCheck.messages.loadError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueInfoCheck.title'),
+      detail: t('mobile.glueInfoCheck.messages.loadError'),
+      life: 3000,
+    });
   } finally {
     isLoadingQr.value = false;
   }
@@ -373,17 +392,51 @@ async function handleGlueInfoScanResult(value: string) {
 </script>
 
 <style scoped lang="scss">
-.header-back-button {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+.header-container {
+  ion-toolbar.header-toolbar {
+    --background: #0b56d9;
+    --color: #ffffff;
+    --min-height: 56px;
+    --padding-start: 4px;
+    --padding-end: 10px;
+    --padding-top: 6px;
+    --padding-bottom: 6px;
+  }
+}
+
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+  padding-inline-end: 8px;
+}
+
+.header-back {
+  margin: 0;
+  --padding-start: 6px;
+  --padding-end: 2px;
+  --icon-margin-end: 0;
+  --icon-margin-start: 0;
   --color: #ffffff;
-  --icon-font-size: 2rem;
-  --padding-start: 0;
-  --padding-end: 0;
-  --min-width: 54px;
-  --min-height: 54px;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
 }
 
 .mobile-content {
@@ -490,7 +543,7 @@ async function handleGlueInfoScanResult(value: string) {
   justify-content: center;
   flex: 0 0 22px;
   line-height: 1;
-  color:rgba(0, 0, 0, 0.582)
+  color: rgba(0, 0, 0, 0.582)
 }
 
 .confirm-button__icon :deep(svg) {

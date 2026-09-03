@@ -29,6 +29,12 @@
   "listMixGlue": {
     "sectionTitle": "Mix glue list",
     "empty": "No data to display at the moment.",
+    "deviceUsage": {
+      "small": "Small",
+      "large": "Large",
+      "smallTitle": "Small devices in use {inUse}/{total}",
+      "largeTitle": "Large devices in use {inUse}/{total}"
+    },
     "filter": {
       "gluePlaceholder": "Filter by glue name"
     },
@@ -82,7 +88,8 @@
       "gapConfirmOk": "Gap aligned — continue",
       "gapConfirmCancel": "Cancel",
       "queuedTitle": "Waiting to print",
-      "busyPendingToast": "There are pending labels. Please finish them before printing a new order."
+      "busyPendingToast": "There are pending labels. Please finish them before printing a new order.",
+      "busyPrintingToast": "Print authentication in progress. Please finish before selecting another order."
     },
     "toast": {
       "warning": "Warning",
@@ -90,7 +97,13 @@
       "error": "Error",
       "draftNotFound": "Work order draft not found.",
       "confirmSuccess": "Work order confirmed!",
+      "mixStartSuccess": "Confirmed start of glue mixing",
+      "mixCompleteSuccess": "Confirmed glue mixing completed",
       "confirmFailed": "Confirmation failed!",
+      "noMixingDeviceAvailable": "No mixing device available. Please wait for another device to finish.",
+      "noSmallMixingDeviceAvailable": "All 'Small' mixing devices are busy. Please wait for a 'Small' device to finish before continuing.",
+      "noLargeMixingDeviceAvailable": "All 'Large' mixing devices are busy. Please wait for a 'Large' device to finish before continuing.",
+      "mixingDeviceAssignmentMissing": "No mixing device assigned to this order. Please refresh the list or contact IT.",
       "noMixConfirmSuccess": "No-decant confirmation completed.",
       "separateConfirmSuccess": "Decant confirmation completed.",
       "noMixConfirmFailed": "No-decant confirmation failed.",
@@ -179,7 +192,8 @@
       "gapConfirmMessage": "Replace the paper roll and align the gap (first label at print head). Tap Confirm when ready to continue — the next label will not send a GAP command.",
       "gapConfirmOk": "Gap aligned — continue",
       "gapConfirmCancel": "Cancel",
-      "queuedTitle": "Waiting to print"
+      "queuedTitle": "Waiting to print",
+      "busyPrintingToast": "Print authentication in progress. Please finish before selecting another order."
     },
     "toast": {
       "warning": "Warning",
@@ -202,8 +216,8 @@
     "management": {
       "pageTitle": "Mixed glue repackaging",
       "sections": {
-        "mixedGlueBucket": "Mixed glue repackaging bucket requirement details",
-        "noMixGlue": "Non-mixed glue usage requirement details"
+        "mixedGlueBucket": "Mixed glue repackaging bucket requirement.",
+        "noMixGlue": "Non-mixed glue repackaging bucket requirement."
       }
     },
     "table": {
@@ -456,5 +470,24 @@
     "offlineSyncTitle": "Syncing data",
     "offlineSyncNote": "Please wait. Offline data is being uploaded to the system.",
     "invalidOfflineUser": "Invalid user."
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "Initialization data not found",
+    "DATA_NOT_FOUND": "Data not found.",
+    "CREATE_SUCCESS": "Created successfully",
+    "LOGIN_INFO_NOT_FOUND": "Login information not found",
+    "WRONG_PASSWORD": "Incorrect password",
+    "USER_NOT_AUTHORIZED": "You are not authorized to access this application",
+    "LOGIN_SUCCESS": "Login successful",
+    "CONFIRM_SUCCESS": "Confirmed successfully",
+    "QIP_CONFIRM_FAIL": "Confirmation failed. You are not a QIP. Please contact Admin to check",
+    "LINE_GLUE_CONFIRM_SUCCESS": "Line glue issue confirmed successfully",
+    "GLUE_ALREADY_SEPARATE": "Glue issue confirmation failed because this glue has already been separated",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "Glue return confirmed successfully",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "Returned glue confirmed successfully",
+    "PRINT_SUCCESS": "Printed successfully",
+    "DATA_ALREADY_EXISTS": "Data already exists",
+    "SYNC_SUCCESS": "Data synced successfully",
+    "CONFIRM_FAIL": "Confirmation failed"
   }
 }

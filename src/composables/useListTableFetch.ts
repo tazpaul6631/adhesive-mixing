@@ -36,6 +36,14 @@ export function parseCursorPagedMeta(
   };
 }
 
+/** Placeholder rows để DataTable hiện Skeleton ngay khi mount (trước fetch). */
+export function createSkeletonRows<T extends object = Record<string, never>>(
+  count: number
+): Partial<T>[] {
+  const n = Math.max(0, Math.floor(count));
+  return Array.from({ length: n }, () => ({} as Partial<T>));
+}
+
 /** Chống race khi fetch list nhiều lần (đổi trang, re-enter, lazy DataTable). */
 export function useListTableFetch() {
   let fetchRequestId = 0;

@@ -15,13 +15,8 @@ buildscript {
 // 2. Lệnh đọc variables đưa xuống dưới khối buildscript
 apply from: "variables.gradle"
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
-}
+// Repositories live in settings.gradle (dependencyResolutionManagement) —
+// avoid allprojects.repositories to prevent PREFER_SETTINGS duplicate warnings.
 
 subprojects {
     afterEvaluate { project ->

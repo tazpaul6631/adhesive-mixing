@@ -40,47 +40,52 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/list-mix-glue',
     component: () => import('@/views/Tablet/MixGlue/ListMixGlue.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/mix-glue-management',
     component: () => import('@/views/Tablet/MixGlue/MixGlueManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/list-separate-mixed-glue-management',
     component: () => import('@/views/Tablet/Separate/ListSeparateMixedglue.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/separate-mixed-glue-management',
     component: () => import('@/views/Tablet/Separate/SeparateMixedGlueManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/glue-return-log',
     component: () => import('@/views/Tablet/GlueReturnLog/ListGlueReturnLog.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/mobile',
     component: () => import('@/views/Mobile/GlueConfirm.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
   },
   {
     path: '/mobile/glue-return',
     component: () => import('@/views/Mobile/GlueReturn.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
+  },
+  {
+    path: '/mobile/glue-return-in-room',
+    component: () => import('@/views/Mobile/GlueRetuenInRoom.vue'),
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
   },
   {
     path: '/mobile/glue-info-check',
     component: () => import('@/views/Mobile/GlueInfoCheck.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
   },
   {
     path: '/mobile/glue-check-list',
     component: () => import('@/views/Mobile/GlueCheckList.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresQip: true }
   },
   {
     path: '/:catchAll(.*)',
@@ -118,6 +123,21 @@ router.beforeEach((to, from, next) => {
     }
   } else if (to.path === '/app-menu') {
     return next('/dashboard');
+  }
+
+  // 4. Tablet mix-glue room: chỉ vào khi isMixGlueRoom === true
+  if (to.meta.requiresMixGlueRoom && !authStore.canUseMixGlueRoom) {
+    return next(isApp ? '/app-menu' : '/dashboard');
+  }
+
+  // 5. Mobile mix-glue phone features
+  if (to.meta.requiresMixGluePhone && !authStore.canUseMixGluePhone) {
+    return next(isApp ? '/app-menu' : '/dashboard');
+  }
+
+  // 6. QIP check-list
+  if (to.meta.requiresQip && !authStore.canUseQip) {
+    return next(isApp ? '/app-menu' : '/dashboard');
   }
 
   if (document.activeElement instanceof HTMLElement) {

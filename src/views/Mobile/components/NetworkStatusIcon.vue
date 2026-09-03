@@ -13,7 +13,7 @@ import { cloudOfflineOutline, wifiOutline, wifi } from 'ionicons/icons';
 import { Network } from '@capacitor/network';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { useAuthStore } from '@/store/auth';
-import { BxWifi, BxWifiOff } from '@kalimahapps/vue-icons';
+import { BxWifi, BxWifiOff } from '@kalimahapps/vue-icons/bx';
 
 const authStore = useAuthStore();
 let networkListener: PluginListenerHandle | null = null;
