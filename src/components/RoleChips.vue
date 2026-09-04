@@ -1,6 +1,5 @@
 <template>
-  <div v-if="chips.length" class="role-chips" :class="isTablet ? 'role-chips--tablet' : 'role-chips--mobile'"
-    aria-label="roles">
+  <div v-if="isTablet && chips.length" class="role-chips" aria-label="roles">
     <span v-for="chip in chips" :key="chip.key" class="role-chip" :class="chip.className">
       {{ chip.label }}
     </span>
@@ -17,24 +16,23 @@ const isTablet = ref(window.innerWidth >= 768);
 const { t, syncLocaleForDevice } = useAppLocale(() => (isTablet.value ? 'tablet' : 'mobile'));
 
 const chips = computed(() => {
-  const chipLabel = (key: 'qip' | 'mixGlueRoom' | 'mixGluePhone') =>
-    isTablet.value ? t(`appMenu.roleChips.${key}`) : t(`mobile.appMenu.roleChips.${key}`);
+  if (!isTablet.value) return [];
 
   const next: Array<{ key: string; label: string; className: string }> = [];
   if (authStore.user?.isQip) {
-    next.push({ key: 'qip', label: chipLabel('qip'), className: 'role-chip--qip' });
+    next.push({ key: 'qip', label: t('appMenu.roleChips.qip'), className: 'role-chip--qip' });
   }
   if (authStore.user?.isMixGlueRoom) {
     next.push({
       key: 'mixGlueRoom',
-      label: chipLabel('mixGlueRoom'),
+      label: t('appMenu.roleChips.mixGlueRoom'),
       className: 'role-chip--room',
     });
   }
   if (authStore.user?.isMixGluePhone) {
     next.push({
       key: 'mixGluePhone',
-      label: chipLabel('mixGluePhone'),
+      label: t('appMenu.roleChips.mixGluePhone'),
       className: 'role-chip--phone',
     });
   }
@@ -65,34 +63,20 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
-  max-width: min(52vw, 16rem);
-}
-
-.role-chips--tablet {
   gap: 6px;
-  max-width: none;
 }
 
 .role-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 4px 10px;
   border-radius: 999px;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
-}
-
-.role-chips--mobile .role-chip {
-  padding: 2px 7px;
-  font-size: 0.65rem;
-}
-
-.role-chips--tablet .role-chip {
-  padding: 4px 10px;
-  font-size: 0.75rem;
 }
 
 .role-chip--qip {
