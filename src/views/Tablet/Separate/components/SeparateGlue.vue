@@ -25,18 +25,6 @@
         </template>
       </Column>
 
-      <!-- Tạm ẩn: chọn đơn yêu cầu
-      <Column field="productLineName" header="Đơn yêu cầu" headerClass="dt-col-input" bodyClass="dt-col-input">
-        <template #body="{ data }">
-          <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
-          <MultiSelect v-else v-model="data.selectedRequestDetailIds" :options="getAvailableRequestDetails(data)"
-            :maxSelectedLabels="1" optionLabel="label" optionValue="requestDetailId" filter
-            selectedItemsLabel="{0} đơn yêu cầu" placeholder="Chọn đơn yêu cầu" class="w-full" appendTo="body"
-            :disabled="isViewMode" @change="handleRequestDetailChange(data)" />
-        </template>
-      </Column>
-      -->
-
       <Column :header="t('separateMixedGlue.table.columns.bucket')" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
@@ -81,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
@@ -89,7 +77,7 @@ import dayjs from "dayjs";
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAdaptiveTableScrollHeight } from '@/composables/useAdaptiveTableScrollHeight';
 import { useAppLocale } from '@/composables/useAppLocale';
-import { ensureBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
+import { ensureBucketOptions, getCachedBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 import {
   sortBucketsByClosestCapacity,
   sumSelectedBucketCapacityKg,
@@ -330,28 +318,47 @@ const handleDeleteRow = (rowData: any) => {
   emit('delete-row', rowData);
 };
 
-const fetchBucketList = async () => {
+const fetchBucketList = async (options?: { force?: boolean }) => {
   const factoryId = authStore.user?.factoryId || '';
+  if (!factoryId) return;
+
+  // Stale-while-revalidate: hiện cache ngay nếu có.
+  const cached = getCachedBucketOptions(factoryId);
+  if (cached.length > 0) {
+    bucketList.value = cached;
+    syncStoredBucketIdTypes();
+  }
 
   if (bucketLoadPromise) {
     await bucketLoadPromise;
     return;
   }
 
-  // Mỗi lần mở Select → luôn gọi API (force) và cập nhật cache
+  const hasLocalData = bucketList.value.length > 0;
+  const force = options?.force === true;
+
   bucketLoadPromise = (async () => {
-    isLoadingBuckets.value = true;
+    // Chỉ khóa/spinner khi chưa có data (lần đầu).
+    if (!hasLocalData) {
+      isLoadingBuckets.value = true;
+    }
     try {
-      bucketList.value = await ensureBucketOptions(factoryId, { force: true });
+      const next = await ensureBucketOptions(factoryId, { force });
+      if (next.length > 0) {
+        bucketList.value = next;
+      } else if (!hasLocalData) {
+        bucketList.value = [];
+      }
     } catch (error) {
       console.error('Lỗi khi tải danh sách thùng chứa', error);
-      bucketList.value = [];
-      showToast({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: t('common.checkNetwork'),
-        life: 6000,
-      });
+      if (bucketList.value.length === 0) {
+        showToast({
+          severity: 'error',
+          summary: t('listMixGlue.toast.error'),
+          detail: t('common.checkNetwork'),
+          life: 6000,
+        });
+      }
     } finally {
       isLoadingBuckets.value = false;
       bucketLoadPromise = null;
@@ -364,8 +371,9 @@ const fetchBucketList = async () => {
 
 const handleBucketSelectShow = (rowData: any, rowIndex: number) => {
   bucketBeforeChangeByIndex.value[rowIndex] = rowData?.selectedBucketId ?? rowData?.bucketId ?? null;
-  if (props.isViewMode || props.disabled || isLoadingBuckets.value) return;
-  void fetchBucketList();
+  if (props.isViewMode || props.disabled) return;
+  // Có cache → list mở ngay; API refresh nền. Chưa có → loading lần đầu.
+  void fetchBucketList({ force: true });
 };
 
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
@@ -382,6 +390,11 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
     ?? null;
   emit('update-bucket', { row: rowData, previousBucketId, newBucketId });
 };
+
+onMounted(() => {
+  // Prefetch: hydrate cache / fetch 1 lần khi vào bảng, không force.
+  void fetchBucketList({ force: false });
+});
 
 defineExpose({
   shouldBlockAddRow,

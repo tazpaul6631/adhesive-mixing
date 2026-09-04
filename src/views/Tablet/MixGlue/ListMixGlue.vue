@@ -27,6 +27,10 @@
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-mix-glue-card-head">
             <span class="list-mix-glue-section-title">
               <i class="pi pi-list mr-2"></i>{{ t('listMixGlue.sectionTitle') }}
+              <template v-if="authStore.canUseQip">
+                | <Button icon="pi pi-refresh" size="large" class="list-mix-glue-refresh-btn" :loading="isLoadingLine"
+                  :disabled="isLoadingLine" :aria-label="t('listMixGlue.refreshAriaLabel')" @click="refreshData" />
+              </template>
             </span>
             <div class="flex align-items-center gap-2">
               <div v-if="isPrinting" class="print-progress-chip">
@@ -116,7 +120,7 @@
                 </template>
               </Column>
 
-              <Column :header="t('listMixGlue.columns.glueConfirm')" :exportable="false"
+              <Column v-if="!authStore.canUseQip" :header="t('listMixGlue.columns.glueConfirm')" :exportable="false"
                 headerClass="dt-col-action-glue" bodyClass="dt-col-action-glue">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
@@ -168,7 +172,7 @@
                 </template>
               </Column>
 
-              <Column :header="t('listMixGlue.columns.noMixConfirm')" :exportable="false"
+              <Column v-if="!authStore.canUseQip" :header="t('listMixGlue.columns.noMixConfirm')" :exportable="false"
                 headerClass="dt-col-action-glue" bodyClass="dt-col-action-glue">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="50%" height="1rem" />
@@ -229,7 +233,7 @@
         <p class="m-0 text-600 line-height-3">{{ t('listMixGlue.mlnsDialog.hint') }}</p>
         <div class="flex flex-column gap-2">
           <label for="mlnsInput" class="font-semibold text-900">{{ t('listMixGlue.mlnsDialog.inputLabel') }}</label>
-          <InputText id="mlnsInput" v-model="mlnsInput" class="w-full"
+          <InputText id="mlnsInput" name="mlnsInput" v-model="mlnsInput" class="w-full"
             :placeholder="t('listMixGlue.mlnsDialog.placeholder')" inputmode="numeric" autocomplete="off"
             :disabled="isMlnsSubmitting" @update:model-value="onMlnsInputUpdate" @keyup.enter="submitMlnsDialog" />
         </div>
@@ -256,7 +260,7 @@
           }}</label>
           <div class="flex align-items-center gap-2">
             <IconField class="flex-1 w-full print-auth-password-field">
-              <InputText id="printAuthPassword" v-model="printAuthPassword"
+              <InputText id="printAuthPassword" name="printAuthPassword" v-model="printAuthPassword"
                 :type="showPrintAuthPassword ? 'text' : 'password'" class="w-full"
                 :placeholder="t('listMixGlue.printAuthDialog.passwordPlaceholder')" autocomplete="off"
                 :disabled="isPrintAuthBusy" @keyup.enter="submitPrintAuthPassword" />
@@ -1176,6 +1180,22 @@ const onPrintClick = (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
+  // QIP đã login: in luôn, không mở modal xác thực.
+  if (authStore.canUseQip) {
+    const employeeId = String(authStore.user?.employeeId ?? '').trim();
+    if (!employeeId) {
+      showToast({
+        severity: 'error',
+        summary: t('listMixGlue.toast.error'),
+        detail: t('listMixGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      return;
+    }
+    void enqueuePrintWithEmployee(row, employeeId);
+    return;
+  }
+
   pendingPrintRow.value = row;
   printAuthPassword.value = '';
   showPrintAuthPassword.value = false;
@@ -1614,6 +1634,11 @@ const onPageLine = (event: { page: number; rows: number }) => {
   void fetchWorkOrders(currentPage.value, rowsPerPage.value);
 };
 
+const refreshData = () => {
+  if (isLoadingLine.value) return;
+  void fetchWorkOrders(currentPage.value, rowsPerPage.value);
+};
+
 const goBack = () => {
   if (mixPrintQueueCount.value > 0) {
     showToast({
@@ -1712,6 +1737,32 @@ usePageLifecycle({
   text-overflow: ellipsis;
 }
 
+.list-mix-glue-refresh-btn {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  color: #1dd81d !important;
+  background: #ffffff !important;
+}
+
+.list-mix-glue-refresh-btn :deep(.p-button-icon) {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.list-mix-glue-refresh-btn:not(:disabled):hover {
+  background: #ffffff !important;
+  color: #1dd81d !important;
+}
+
+.list-mix-glue-refresh-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.list-mix-glue-refresh-btn:disabled {
+  opacity: 0.75;
+}
+
 .text-wrap {
   word-break: break-word;
   white-space: normal;
@@ -1783,7 +1834,6 @@ usePageLifecycle({
 }
 
 .tablet-page--inch11.list-mix-glue-page {
-  padding: 0.875rem 1.125rem;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;

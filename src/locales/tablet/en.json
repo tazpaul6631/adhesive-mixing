@@ -11,6 +11,11 @@
     "logout": "Log out",
     "tabletH2title": "Hello {name}!",
     "tabletSubtitle": "Mix glue management system",
+    "roleChips": {
+      "qip": "QIP",
+      "mixGlueRoom": "Mix glue",
+      "mixGluePhone": "Glue delivery"
+    },
     "features": {
       "mixGlue": {
         "title": "Mixed glue list management",
@@ -28,6 +33,8 @@
   },
   "listMixGlue": {
     "sectionTitle": "Mix glue list",
+    "refreshTitle": "Refresh list",
+    "refreshAriaLabel": "Refresh list",
     "empty": "No data to display at the moment.",
     "deviceUsage": {
       "small": "Small",

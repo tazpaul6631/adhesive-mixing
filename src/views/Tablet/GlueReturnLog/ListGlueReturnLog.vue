@@ -34,8 +34,8 @@
               </div>
 
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
-                <ElectronicScaleGlueReturn v-if="showScaleUi" :scale-session-id="glueReturnLogScaleSessionId" hide-scale-picker
-                  :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
+                <ElectronicScaleGlueReturn v-if="showScaleUi" :scale-session-id="glueReturnLogScaleSessionId"
+                  hide-scale-picker :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
                   :locked-weight="showReturnWeight(selectedItem) ? String(selectedItem?.returnWeight ?? '') : ''"
                   :disable-confirm="!selectedItem || !!selectedItem?.scaleConfirmed || isRowApiSubmitted(selectedItem)"
                   @confirm-weight="handleScaleConfirmWeight" />
@@ -666,7 +666,6 @@ usePageLifecycle({
 }
 
 .tablet-page--inch11.list-glue-return-page {
-  padding: 0.875rem 1.125rem;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;

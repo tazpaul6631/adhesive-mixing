@@ -9,7 +9,8 @@
           <h1 v-if="title" class="app-header__title">{{ title }}</h1>
         </slot>
       </div>
-      <div v-if="$slots.end" class="app-header__end">
+      <div class="app-header__end">
+        <RoleChips />
         <slot name="end" />
       </div>
     </div>
@@ -18,6 +19,11 @@
 </template>
 
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue';
+
+/** Async để tránh circular chunk: RoleChips → auth → router → layout → AppHeader. */
+const RoleChips = defineAsyncComponent(() => import('@/components/RoleChips.vue'));
+
 defineProps<{
   title?: string;
   noBorder?: boolean;
@@ -54,6 +60,7 @@ defineProps<{
 
 .app-header__end {
   margin-inline-start: auto;
+  gap: 8px;
 }
 
 .app-header__content {

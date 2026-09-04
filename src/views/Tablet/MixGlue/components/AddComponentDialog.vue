@@ -6,7 +6,7 @@
       <div class="flex flex-column gap-2">
         <label for="name" class="font-bold text-900">{{ t('mixGlueManagement.addComponentDialog.nameLabel') }}</label>
 
-        <Select id="name" v-model="selectedMaterial" :options="materialsList" optionLabel="materialName"
+        <Select id="name" name="name" v-model="selectedMaterial" :options="materialsList" optionLabel="materialName"
           :placeholder="t('mixGlueManagement.addComponentDialog.namePlaceholder')" class="w-full" filter
           :invalid="submitted && !selectedMaterial" :loading="isLoadingMaterials" @show="$emit('fetch-materials')"
           showClear />
@@ -21,7 +21,7 @@
           unit: selectedWeightUnit
         })
         }}</label>
-        <InputNumber id="weight" v-model="weight" :suffix="weightUnitSuffix" :min="0"
+        <InputNumber id="weight" name="weight" v-model="weight" :suffix="weightUnitSuffix" :min="0"
           :invalid="submitted && weight === null" class="w-full" />
         <small v-if="submitted && weight === null" class="text-red-500">
           {{ t('mixGlueManagement.addComponentDialog.weightRequired', { unit: selectedWeightUnit }) }}
@@ -32,7 +32,7 @@
         <label for="toleranceGrams" class="font-bold text-900">
           {{ t('mixGlueManagement.addComponentDialog.toleranceGramsLabel') }}
         </label>
-        <InputNumber id="toleranceGrams" v-model="toleranceGrams" suffix=" g" :min="0"
+        <InputNumber id="toleranceGrams" name="toleranceGrams" v-model="toleranceGrams" suffix=" g" :min="0"
           :invalid="submitted && (toleranceGrams === null || toleranceGrams <= 0)" class="w-full" />
         <small v-if="submitted && (toleranceGrams === null || toleranceGrams <= 0)" class="text-red-500">
           {{ t('mixGlueManagement.addComponentDialog.toleranceGramsRequired') }}

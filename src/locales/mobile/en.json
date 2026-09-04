@@ -81,6 +81,11 @@
     "appMenu": {
       "hello": "Hello {name}!",
       "system": "Mobile Management System",
+      "roleChips": {
+        "qip": "QIP",
+        "mixGlueRoom": "Mix glue",
+        "mixGluePhone": "Glue delivery"
+      },
       "glueConfirm": "Confirm Glue Delivery",
       "description": "Use the phone camera to scan QR codes",
       "glueReturn": "Return glue scan",

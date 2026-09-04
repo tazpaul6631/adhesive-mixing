@@ -22,8 +22,7 @@
     <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="check-panel">
-          <Button class="confirm-button w-full" :disabled="isLoadingScan"
-            :loading="isLoadingScan" @click="openScanner">
+          <Button class="confirm-button w-full" :disabled="isLoadingScan" :loading="isLoadingScan" @click="openScanner">
             <span v-if="!isLoadingScan" class="confirm-button__content">
               <span class="confirm-button__icon">
                 <McScanFill />
@@ -550,7 +549,6 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   gap: 2px;
   min-width: 0;
   max-width: calc(100vw - 88px);
-  padding-inline-end: 8px;
 }
 
 .header-back {

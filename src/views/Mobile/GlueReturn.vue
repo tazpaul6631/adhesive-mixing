@@ -100,8 +100,7 @@
             </article>
 
             <Button class="confirm-button w-full"
-              :icon="isSubmittingReturn ? 'pi pi-spin pi-spinner' : 'pi pi-verified'"
-              :disabled="!canSubmitReturn"
+              :icon="isSubmittingReturn ? 'pi pi-spin pi-spinner' : 'pi pi-verified'" :disabled="!canSubmitReturn"
               :label="isSubmittingReturn ? t('mobile.glueReturn.submittingButton') : t('mobile.glueReturn.confirmButton')"
               @click="confirmReturnQr" />
           </div>
@@ -578,7 +577,6 @@ function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'succes
   gap: 2px;
   min-width: 0;
   max-width: calc(100vw - 88px);
-  padding-inline-end: 8px;
 }
 
 .header-back {

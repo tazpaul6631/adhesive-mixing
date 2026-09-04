@@ -14,7 +14,7 @@ export const getCachedBucketOptions = (factoryId: string): BucketOption[] => {
 };
 
 /**
- * @param force true = luôn gọi API (mở Select). false = chỉ trả cache / fetch khi chưa có (không dùng cho Complete).
+ * @param force true = luôn gọi API (refresh nền khi mở Select). false = trả cache nếu có, không thì fetch.
  */
 export const ensureBucketOptions = async (
   factoryId: string,

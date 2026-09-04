@@ -11,6 +11,11 @@
     "logout": "Đăng xuất",
     "tabletH2title": "Xin chào {name}!",
     "tabletSubtitle": "Hệ thống quản lý trộn keo",
+    "roleChips": {
+      "qip": "QIP",
+      "mixGlueRoom": "Pha keo",
+      "mixGluePhone": "Phát keo"
+    },
     "features": {
       "mixGlue": {
         "title": "Quản lý danh sách keo trộn hỗn hợp",
@@ -28,6 +33,8 @@
   },
   "listMixGlue": {
     "sectionTitle": "Danh sách trộn keo",
+    "refreshTitle": "Làm mới danh sách",
+    "refreshAriaLabel": "Làm mới danh sách",
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
     "deviceUsage": {
       "small": "Máy nhỏ",

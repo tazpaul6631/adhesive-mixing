@@ -26,16 +26,16 @@
             <div class="tablet-login-form shadow-sm">
               <div class="field-group">
                 <label for="company" class="field-label">{{ t('login.company') }}</label>
-                <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
-                  optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
+                <Select id="company" name="company" v-model="selectedCompany" :options="companyOptions"
+                  optionLabel="label" optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
                   :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies"
                   @show="handleCompanySelectShow" />
               </div>
 
               <div class="field-group">
                 <label for="factory" class="field-label">{{ t('login.factory') }}</label>
-                <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
-                  optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
+                <Select id="factory" name="factory" v-model="selectedFactory" :options="factoryOptions"
+                  optionLabel="label" optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
                   :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
                   :loading="isLoadingFactories" @show="handleFactorySelectShow" />
               </div>
@@ -44,8 +44,9 @@
                 <label for="employeeId" class="field-label">{{ t('login.account') }}</label>
                 <IconField>
                   <InputIcon class="pi pi-user" />
-                  <InputText id="employeeId" v-model="employeeId" :placeholder="t('login.employeeIdPlaceholder')"
-                    class="w-full" :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
+                  <InputText id="employeeId" name="employeeId" v-model="employeeId"
+                    :placeholder="t('login.employeeIdPlaceholder')" class="w-full"
+                    :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
                 </IconField>
               </div>
 
@@ -53,7 +54,7 @@
                 <label for="password" class="field-label">{{ t('login.password') }}</label>
                 <IconField>
                   <InputIcon class="pi pi-lock" />
-                  <InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
+                  <InputText id="password" name="password" v-model="password" :type="showPassword ? 'text' : 'password'"
                     placeholder="********" class="w-full"
                     :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn"
                     @keyup.enter="handleTabletLogin" />

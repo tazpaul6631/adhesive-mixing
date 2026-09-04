@@ -81,6 +81,11 @@
     "appMenu": {
       "hello": "Xin chào {name}!",
       "system": "Hệ thống quản lý trên Mobile",
+      "roleChips": {
+        "qip": "QIP",
+        "mixGlueRoom": "Pha keo",
+        "mixGluePhone": "Phát keo"
+      },
       "glueConfirm": "Xác nhận phát keo",
       "description": "Sử dụng camera điện thoại để quét mã vạch",
       "glueReturn": "Quét keo trả về",

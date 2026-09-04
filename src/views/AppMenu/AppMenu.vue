@@ -306,7 +306,6 @@ const handleLogout = async () => {
   align-items: center;
   min-width: 0;
   max-width: calc(100vw - 180px);
-  padding-inline-end: 8px;
 }
 
 .header-title {
@@ -371,9 +370,6 @@ const handleLogout = async () => {
   padding: 25px;
   margin-bottom: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .welcome-text h2 {

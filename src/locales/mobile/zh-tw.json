@@ -81,6 +81,11 @@
     "appMenu": {
       "hello": "您好 {name}！",
       "system": "行動端管理系統",
+      "roleChips": {
+        "qip": "QIP",
+        "mixGlueRoom": "調膠",
+        "mixGluePhone": "發膠"
+      },
       "glueConfirm": "確認發膠",
       "description": "使用手機相機掃描 QR Code",
       "glueReturn": "掃描退回膠水",

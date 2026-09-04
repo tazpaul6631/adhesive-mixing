@@ -393,7 +393,6 @@ async function handleGlueInfoScanResult(value: string) {
   gap: 2px;
   min-width: 0;
   max-width: calc(100vw - 88px);
-  padding-inline-end: 8px;
 }
 
 .header-back {

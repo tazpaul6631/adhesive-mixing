@@ -50,6 +50,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Layout shell cùng chunk — tránh circular reexport AppHeader qua index.ts.
+          if (id.includes(`${path.sep}components${path.sep}layout${path.sep}`)) {
+            return 'app-layout';
+          }
           // App feature chunks (src) — tách BT/print/scale khỏi page shell.
           if (
             id.includes(`${path.sep}BluetoothPrinterStatus`)

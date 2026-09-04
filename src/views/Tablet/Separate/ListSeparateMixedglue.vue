@@ -25,12 +25,6 @@
               <i class="pi pi-list mr-2"></i>{{ t('listSeparateMixedGlue.sectionTitle') }}
             </span>
             <div class="flex align-items-center gap-2 list-separate-card-head-actions">
-              <!-- <IconField class="list-separate-glue-filter">
-                <InputIcon class="pi pi-search" />
-                <InputText v-model="chemicalMasterNameFilter" type="search"
-                  :placeholder="t('listSeparateMixedGlue.filter.gluePlaceholder')"
-                  :aria-label="t('listSeparateMixedGlue.filter.gluePlaceholder')" fluid />
-              </IconField> -->
               <div v-if="isPrinting" class="print-progress-chip">
                 <i class="pi pi-spin pi-spinner" style="font-size:0.85rem"></i>
                 <span>{{ progress.current }}/{{ progress.total }}</span>
@@ -171,7 +165,7 @@
           }}</label>
           <div class="flex align-items-center gap-2">
             <IconField class="flex-1 w-full print-auth-password-field">
-              <InputText id="printAuthPassword" v-model="printAuthPassword"
+              <InputText id="printAuthPassword" name="printAuthPassword" v-model="printAuthPassword"
                 :type="showPrintAuthPassword ? 'text' : 'password'" class="w-full"
                 :placeholder="t('listSeparateMixedGlue.printAuthDialog.passwordPlaceholder')" autocomplete="off"
                 :disabled="isPrintAuthBusy" @keyup.enter="submitPrintAuthPassword" />
@@ -707,6 +701,22 @@ const onPrintClick = (row: Partial<WorkOrderMaster>) => {
     return;
   }
 
+  // QIP đã login: in luôn, không mở modal xác thực.
+  if (authStore.canUseQip) {
+    const employeeId = String(authStore.user?.employeeId ?? '').trim();
+    if (!employeeId) {
+      showToast({
+        severity: 'error',
+        summary: t('listSeparateMixedGlue.toast.error'),
+        detail: t('listSeparateMixedGlue.toast.invalidEmployeeCard'),
+        life: 6000,
+      });
+      return;
+    }
+    void enqueuePrintWithEmployee(row, employeeId);
+    return;
+  }
+
   pendingPrintRow.value = row;
   printAuthPassword.value = '';
   showPrintAuthPassword.value = false;
@@ -1193,7 +1203,6 @@ usePageLifecycle({
 
 /* 11.0" — layout trang */
 .tablet-page--inch11.list-separate-page {
-  padding: 0.875rem 1.125rem;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
