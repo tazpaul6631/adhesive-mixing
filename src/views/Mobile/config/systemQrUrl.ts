@@ -43,6 +43,24 @@ function extractQrApiPath(qrText: string): string | null {
   return apiParts.join("/") || null;
 }
 
+/** Segment sau `s/` trên QR: lc | llc | mgm | sg | nsg ... */
+export function getGlueQrCode(qrText: string): string | null {
+  const relativePath = extractQrApiPath(qrText);
+  if (!relativePath) {
+    return null;
+  }
+
+  const parts = relativePath
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const scanIndex = parts.findIndex((part) => part.toLowerCase() === "s");
+  const codeIndex = scanIndex >= 0 ? scanIndex + 1 : 0;
+  const code = (parts[codeIndex] || "").toLowerCase();
+  return code || null;
+}
+
 export function buildSystemQrUrl(qrText: string) {
   const relativePath = extractQrApiPath(qrText);
 

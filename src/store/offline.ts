@@ -93,9 +93,13 @@ export const useOfflineStore = defineStore('offline', {
       this.lastDownloadCounts = null;
 
       try {
-        this.lastDownloadCounts = await downloadAndSaveGlueOfflineData(factoryId, departmentId, (progress) => {
-          this.setDownloadProgress(progress);
-        });
+        this.lastDownloadCounts = await downloadAndSaveGlueOfflineData(
+          factoryId,
+          departmentId,
+          (progress) => {
+            this.setDownloadProgress(progress);
+          }
+        );
 
         return this.lastDownloadCounts;
       } catch (error: any) {

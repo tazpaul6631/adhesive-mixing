@@ -116,7 +116,7 @@ import { useLineChemicalStore } from '@/store/lineChemical';
 import { AppPage, AppHeader, AppContent } from '@/components/layout';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
-import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { buildSystemQrUrl, getGlueQrCode } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
@@ -125,6 +125,7 @@ import { McScanFill } from '@kalimahapps/vue-icons/mc';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
 type ConfirmScanTarget = "line" | "allocated";
+type LineQrKind = "lc" | "llc";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
 type GlueQrType = "lineChemical" | "mixGlue" | "separateGlue" | "noSeparateGlue";
 type ResolveGlueQrResult = {
@@ -342,6 +343,23 @@ function getLineReceiveType(data: any): string {
   return normalizeCompareValue(data?.type);
 }
 
+function getLineQrKind(qrText: string, data?: any): LineQrKind | null {
+  const code = getGlueQrCode(qrText);
+  if (code === "lc" || code === "llc") {
+    return code;
+  }
+
+  if (hasPayloadValue(data?.layoutLineChemicalId) && !hasPayloadValue(data?.lineChemicalId)) {
+    return "llc";
+  }
+
+  if (hasPayloadValue(data?.lineChemicalId) || hasPayloadValue(data?.productLineId)) {
+    return "lc";
+  }
+
+  return null;
+}
+
 function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null {
   if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
     return null;
@@ -349,11 +367,14 @@ function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null 
 
   const userId = getCurrentUserId();
   const receiveType = getLineReceiveType(lineChemicalInfo.value);
+  const lineQrKind = (lineChemicalInfo.value._lineQrKind as LineQrKind | undefined)
+    ?? getLineQrKind(lineQrRawText.value, lineChemicalInfo.value);
   const lineChemicalId = normalizeCompareValue(lineChemicalInfo.value.lineChemicalId);
   const layoutLineChemicalId = normalizeCompareValue(
     lineChemicalInfo.value.layoutLineChemicalId
   );
-  const productLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
+  // BE không còn nhận productLineId khi confirm.
+  // const productLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
 
   const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
@@ -362,15 +383,16 @@ function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null 
     scanFailed,
   };
 
-  // type từ QR scan: UseProductLine → chỉ productLineId;
-  // UseLineChemical → chỉ lineChemicalId / layoutLineChemicalId.
-  if (receiveType === 'UseProductLine') {
-    if (!productLineId) {
+  // s/llc → layoutLineChemicalId (llcqrdata). s/lc → id theo type / lcqrdata.
+  if (lineQrKind === "llc") {
+    if (!layoutLineChemicalId) {
       return null;
     }
-    payload.productLineId = productLineId;
-  } else if (receiveType === 'UseLineChemical') {
-    // QR cũ: lineChemicalId; QR mới /s/llc: layoutLineChemicalId — cần ít nhất một.
+    payload.layoutLineChemicalId = layoutLineChemicalId;
+  } else if (receiveType === "UseProductLine" || receiveType === "UseLineChemical") {
+    // UseProductLine: không gửi productLineId — dùng lineChemicalId / layoutLineChemicalId.
+    // if (!productLineId) return null;
+    // payload.productLineId = productLineId;
     if (!lineChemicalId && !layoutLineChemicalId) {
       return null;
     }
@@ -380,19 +402,27 @@ function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null 
     if (layoutLineChemicalId) {
       payload.layoutLineChemicalId = layoutLineChemicalId;
     }
+  } else if (receiveType === "UseLayoutLineChemical") {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    payload.layoutLineChemicalId = layoutLineChemicalId;
   } else {
-    // QR không có type: giữ hành vi cũ — gửi các id có sẵn.
-    if (!lineChemicalId && !layoutLineChemicalId) {
-      return null;
-    }
-    if (lineChemicalId) {
-      payload.lineChemicalId = lineChemicalId;
-    }
-    if (layoutLineChemicalId) {
+    if (layoutLineChemicalId && !lineChemicalId) {
       payload.layoutLineChemicalId = layoutLineChemicalId;
-    }
-    if (productLineId) {
-      payload.productLineId = productLineId;
+    } else {
+      if (!lineChemicalId && !layoutLineChemicalId) {
+        return null;
+      }
+      if (lineChemicalId) {
+        payload.lineChemicalId = lineChemicalId;
+      }
+      if (layoutLineChemicalId) {
+        payload.layoutLineChemicalId = layoutLineChemicalId;
+      }
+      // if (productLineId) {
+      //   payload.productLineId = productLineId;
+      // }
     }
   }
 
@@ -512,6 +542,9 @@ function getGlueQrType(data: any): GlueQrType | null {
     hasPayloadValue(data?.lineChemicalId) ||
     hasPayloadValue(data?.layoutLineChemicalId);
   const hasProductLineId = hasPayloadValue(data?.productLineId);
+  const hasLayoutLineId = hasPayloadValue(data?.layoutLineChemicalId);
+  const hasLayoutGlueName =
+    hasPayloadValue(data?.glueName) || hasPayloadValue(data?.layoutLineChemicalName);
 
   if (receiveType === 'UseProductLine') {
     if (hasProductLineId) {
@@ -525,6 +558,18 @@ function getGlueQrType(data: any): GlueQrType | null {
       return "lineChemical";
     }
     return null;
+  }
+
+  if (receiveType === 'UseLayoutLineChemical') {
+    if (hasLayoutLineId && hasLayoutGlueName) {
+      return "lineChemical";
+    }
+    return null;
+  }
+
+  // Offline llcqrdata thường không có type — nhận layoutLineChemicalId + tên keo / glueId.
+  if (hasLayoutLineId && (hasLayoutGlueName || hasPayloadValue(data?.glueId))) {
+    return "lineChemical";
   }
 
   if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
@@ -625,7 +670,7 @@ async function openScanner(target: ConfirmScanTarget) {
 
     if (barcodes && barcodes.length > 0) {
       const scannedValue = barcodes[0].rawValue;
-
+      console.log('scannedValue', scannedValue);
       if (scannedValue) {
         await handleConfirmScanResult(target, scannedValue);
       } else {
@@ -658,6 +703,13 @@ async function handleLineQrScanResult(qrText: string) {
   isLoadingLineQr.value = true;
 
   try {
+    const lineQrKind = getLineQrKind(qrText);
+    if (lineQrKind !== "lc" && lineQrKind !== "llc") {
+      resetLineQrField();
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidLineQr"));
+      return;
+    }
+
     const result = await resolveGlueQr(qrText);
 
     if (result.status === "invalid") {
@@ -681,7 +733,10 @@ async function handleLineQrScanResult(qrText: string) {
     }
 
     lineQrRawText.value = qrText;
-    const normalized = normalizeLineChemicalScanData(result.data);
+    const normalized = {
+      ...normalizeLineChemicalScanData(result.data),
+      _lineQrKind: lineQrKind,
+    };
     lineChemicalInfo.value = normalized;
     lineQrText.value = formatLineChemicalDisplay(normalized);
     resetConfirmReturnStatus();

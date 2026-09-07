@@ -80,7 +80,7 @@
     },
     "appMenu": {
       "hello": "Xin chào {name}!",
-      "system": "Hệ thống quản lý trên Mobile",
+      "system": "Hệ thống phòng pha keo trên Mobile",
       "roleChips": {
         "qip": "QIP",
         "mixGlueRoom": "Pha keo",

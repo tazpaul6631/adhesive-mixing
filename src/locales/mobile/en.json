@@ -80,7 +80,7 @@
     },
     "appMenu": {
       "hello": "Hello {name}!",
-      "system": "Mobile Management System",
+      "system": "Glue mixing room system on Mobile",
       "roleChips": {
         "qip": "QIP",
         "mixGlueRoom": "Mix glue",

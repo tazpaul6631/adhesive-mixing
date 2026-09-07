@@ -80,7 +80,7 @@
     },
     "appMenu": {
       "hello": "您好 {name}！",
-      "system": "行動端管理系統",
+      "system": "行動端膠水調配室系統",
       "roleChips": {
         "qip": "QIP",
         "mixGlueRoom": "調膠",

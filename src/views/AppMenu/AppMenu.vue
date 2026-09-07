@@ -367,7 +367,7 @@ const handleLogout = async () => {
 .welcome-banner {
   background: white;
   border-radius: 20px;
-  padding: 25px;
+  padding: 15px;
   margin-bottom: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }

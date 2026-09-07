@@ -9,6 +9,7 @@ export interface UserData {
   isMixGlueRoom?: boolean;
   isMixGluePhone?: boolean;
   isQip?: boolean;
+  receiveType?: string;
   mixingDevices?: unknown[];
   [key: string]: any;
 }
