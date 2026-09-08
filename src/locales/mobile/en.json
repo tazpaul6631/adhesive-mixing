@@ -136,6 +136,7 @@
       "title": "Scan glue return in mixing room",
       "productLineLabel": "Line",
       "productLinePlaceholder": "Select a line",
+      "productLineFilterPlaceholder": "Search line",
       "qrTitle": "Returned glue bucket QR code",
       "scanPlaceholder": "Scan the returned glue QR code",
       "confirmButton": "Confirm return",
@@ -144,6 +145,7 @@
       "cancelButton": "Cancel",
       "okButton": "OK",
       "fields": {
+        "lineLabel": "Line:",
         "glueLabel": "Glue:"
       },
       "messages": {
@@ -155,7 +157,8 @@
         "returnConfirmError": "Unable to create the glue return log. Please try again!",
         "productLineLoadError": "Unable to load the product line list. Please try again!",
         "factoryMissing": "Factory ID not found.",
-        "departmentMissing": "Department ID not found."
+        "departmentMissing": "Department ID not found.",
+        "lineMismatchWarning": "The selected line differs from the line on the bucket label. You can still confirm if this is correct."
       }
     },
     "glueInfoCheck": {

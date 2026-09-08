@@ -25,7 +25,8 @@
           <div class="form-field">
             <label class="form-field__label">{{ t('mobile.glueReturnInRoom.productLineLabel') }}</label>
             <Select v-model="selectedProductLineId" class="w-full" :options="productLineOptions"
-              option-label="productLineName" option-value="productLineId"
+              option-label="productLineName" option-value="productLineId" filter resetFilterOnHide
+              :filter-placeholder="t('mobile.glueReturnInRoom.productLineFilterPlaceholder')"
               :placeholder="t('mobile.glueReturnInRoom.productLinePlaceholder')" :loading="isLoadingProductLines"
               :disabled="isSubmittingReturn" show-clear append-to="body" @before-show="loadProductLines" />
           </div>
@@ -37,6 +38,10 @@
                 {{ t('mobile.glueReturnInRoom.scanPlaceholder') }}
               </span>
               <div v-else class="qr-scan-field__info">
+                <div v-if="scannedProductLineName" class="qr-scan-field__info-row">
+                  <span class="qr-scan-field__info-label">{{ t('mobile.glueReturnInRoom.fields.lineLabel') }}</span>
+                  <span class="qr-scan-field__info-value">{{ scannedProductLineName }}</span>
+                </div>
                 <div class="qr-scan-field__info-row">
                   <span class="qr-scan-field__info-label">{{ t('mobile.glueReturnInRoom.fields.glueLabel') }}</span>
                   <span class="qr-scan-field__info-value">{{ pendingReturnGlueInfo.glueName || '-' }}</span>
@@ -46,6 +51,13 @@
                 <McScanFill />
               </span>
             </button>
+          </div>
+
+          <div v-if="hasProductLineMismatch" class="status-box status-box--warn">
+            <i class="pi pi-exclamation-circle status-box__icon" aria-hidden="true"></i>
+            <div class="status-box__content">
+              <p>{{ t('mobile.glueReturnInRoom.messages.lineMismatchWarning') }}</p>
+            </div>
           </div>
 
           <Button :label="t('mobile.glueReturnInRoom.confirmButton')" icon="pi pi-check"
@@ -58,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
@@ -78,7 +90,7 @@ import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 import { AppPage, AppHeader, AppContent } from '@/components/layout';
 
 type ProductLineOption = {
-  productLineId: number;
+  productLineId: string;
   productLineName: string;
 };
 
@@ -92,16 +104,42 @@ const goBack = () => {
   router.push('/app-menu');
 };
 
-const selectedProductLineId = ref<number | null>(null);
+const selectedProductLineId = ref<string | null>(null);
 const productLineOptions = ref<ProductLineOption[]>([]);
 const isLoadingProductLines = ref(false);
 
 const pendingReturnGlueInfo = ref<any>(null);
 const isSubmittingReturn = ref(false);
 
+const scannedProductLineName = computed(() => {
+  return normalizeCompareValue(pendingReturnGlueInfo.value?.productLineName);
+});
+
+const scannedProductLineIds = computed(() => {
+  return getScannedProductLineIds(pendingReturnGlueInfo.value);
+});
+
+const hasValidReturnGlueId = computed(() => {
+  return isValidReturnGlueId(getReturnGlueIdValue(pendingReturnGlueInfo.value));
+});
+
+const hasProductLineMismatch = computed(() => {
+  if (selectedProductLineId.value == null || !pendingReturnGlueInfo.value) {
+    return false;
+  }
+
+  const scannedIds = scannedProductLineIds.value;
+  if (!scannedIds.length) {
+    return false;
+  }
+
+  return !scannedIds.includes(normalizeCompareValue(selectedProductLineId.value));
+});
+
 const canSubmitReturn = computed(() => {
   return selectedProductLineId.value != null
     && !!pendingReturnGlueInfo.value
+    && hasValidReturnGlueId.value
     && !isSubmittingReturn.value;
 });
 
@@ -119,6 +157,24 @@ function getNestedValue(source: any, path: string[]) {
 
 function hasPayloadValue(value: any) {
   return value !== null && value !== undefined && normalizeCompareValue(value) !== '';
+}
+
+function normalizeProductLineIdList(value: any): string[] {
+  const values = Array.isArray(value) ? value : (hasPayloadValue(value) ? [value] : []);
+  return [...new Set(values.map(normalizeCompareValue).filter(Boolean))];
+}
+
+function getScannedProductLineIds(info: any): string[] {
+  const fromIds = normalizeProductLineIdList(info?.productLineIds);
+  if (fromIds.length) {
+    return fromIds;
+  }
+
+  return normalizeProductLineIdList(info?.productLineId);
+}
+
+function isValidReturnGlueId(value: string) {
+  return hasPayloadValue(value) && value !== '0';
 }
 
 function getCurrentUserId() {
@@ -169,19 +225,11 @@ function getBarcodeValue(barcode: { rawValue?: string; displayValue?: string }) 
 }
 
 function getReturnGlueIdValue(info: any) {
-  if (hasPayloadValue(info?.mixGlueMasterId)) {
-    return Number(info.mixGlueMasterId);
+  if (hasPayloadValue(info?.glueId)) {
+    return normalizeCompareValue(info.glueId);
   }
 
-  if (hasPayloadValue(info?.separateGlueId)) {
-    return Number(info.separateGlueId);
-  }
-
-  if (hasPayloadValue(info?.noSeparateGlueId)) {
-    return Number(info.noSeparateGlueId);
-  }
-
-  return 0;
+  return '';
 }
 
 function getGlueQrType(data: any) {
@@ -268,6 +316,12 @@ async function showWarningAlert(message: string) {
   });
 }
 
+watch(hasProductLineMismatch, async (isMismatch) => {
+  if (isMismatch) {
+    await showWarningAlert(t('mobile.glueReturnInRoom.messages.lineMismatchWarning'));
+  }
+});
+
 function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
   showToast({
     severity: type === 'offlineQueue' ? 'warn' : 'success',
@@ -320,11 +374,12 @@ async function loadProductLines() {
     }
 
     const items = Array.isArray(responseData?.data) ? responseData.data : [];
-    productLineOptions.value = items.filter((item: any) =>
-      item?.productLineId !== null
-      && item?.productLineId !== undefined
-      && normalizeCompareValue(item?.productLineName)
-    );
+    productLineOptions.value = items
+      .map((item: any) => ({
+        productLineId: normalizeCompareValue(item?.productLineId),
+        productLineName: normalizeCompareValue(item?.productLineName),
+      }))
+      .filter((item: ProductLineOption) => item.productLineId && item.productLineId !== '0' && item.productLineName);
   } catch (error) {
     console.error('Không thể tải danh sách chuyền:', error);
     productLineOptions.value = [];
@@ -403,6 +458,12 @@ async function openScanner() {
       return;
     }
 
+    if (!isValidReturnGlueId(getReturnGlueIdValue(result.data))) {
+      resetReturnField();
+      await showWarningAlert(t('mobile.glueReturnInRoom.messages.invalidQr'));
+      return;
+    }
+
     pendingReturnGlueInfo.value = result.data;
   } catch (error) {
     console.error('Lỗi khi quét mã QR:', error);
@@ -420,16 +481,21 @@ async function confirmReturnQr() {
     return;
   }
 
+  const returnGlueId = getReturnGlueIdValue(pendingReturnGlueInfo.value);
+  if (!isValidReturnGlueId(returnGlueId)) {
+    await showWarningAlert(t('mobile.glueReturnInRoom.messages.invalidQr'));
+    return;
+  }
+
   const userId = getCurrentUserId();
   const payload = {
     factoryId: getFactoryId(),
-    returnGlueId: getReturnGlueIdValue(pendingReturnGlueInfo.value),
-    productLineId: Number(selectedProductLineId.value),
+    returnGlueId,
+    productLineId: normalizeCompareValue(selectedProductLineId.value),
     recordStatus: '1',
     createrId: userId,
     updaterId: userId,
   };
-
   isSubmittingReturn.value = true;
 
   try {
@@ -630,6 +696,35 @@ async function confirmReturnQr() {
 
 .confirm-submit-btn {
   margin-top: 4px;
+}
+
+.status-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px !important;
+
+  &__icon {
+    flex-shrink: 0;
+    font-size: 18px !important;
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__content p {
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  &--warn {
+    border: 1px solid #fde68a;
+    color: #92400e;
+    background: #fffbeb;
+  }
 }
 
 @media (min-width: 768px) {

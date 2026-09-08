@@ -80,14 +80,27 @@ function normalizeIdArrayValue(value: any) {
 }
 
 function mapReturnGluePayload(payload: any) {
-  return {
+  const requestPayload: Record<string, any> = {
     factoryId: normalizeValue(payload?.factoryId),
     returnGlueId: normalizeIdValue(payload?.returnGlueId),
-    lineChemicalIds: normalizeIdArrayValue(payload?.lineChemicalIds),
     recordStatus: normalizeValue(payload?.recordStatus || '1'),
     createrId: normalizeValue(payload?.createrId),
     updaterId: normalizeValue(payload?.updaterId),
   };
+
+  addValueIfExists(requestPayload, 'productLineId', payload?.productLineId);
+
+  const lineChemicalIds = normalizeIdArrayValue(payload?.lineChemicalIds);
+  const layoutLineChemicalIds = normalizeIdArrayValue(payload?.layoutLineChemicalIds);
+
+  if (lineChemicalIds.length) {
+    requestPayload.lineChemicalIds = lineChemicalIds;
+  }
+  if (layoutLineChemicalIds.length) {
+    requestPayload.layoutLineChemicalIds = layoutLineChemicalIds;
+  }
+
+  return requestPayload;
 }
 
 function mapGlueCheckListPayload(payload: any) {

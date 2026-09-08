@@ -136,6 +136,7 @@
       "title": "Quét keo trả về trong phòng pha keo",
       "productLineLabel": "Chuyền",
       "productLinePlaceholder": "Chọn chuyền",
+      "productLineFilterPlaceholder": "Tìm chuyền",
       "qrTitle": "Mã QR thùng keo trả về",
       "scanPlaceholder": "Quét mã QR thùng keo trả về",
       "confirmButton": "Xác nhận trả keo",
@@ -144,6 +145,7 @@
       "cancelButton": "Hủy",
       "okButton": "OK",
       "fields": {
+        "lineLabel": "Chuyền:",
         "glueLabel": "Keo:"
       },
       "messages": {
@@ -155,7 +157,8 @@
         "returnConfirmError": "Không thể tạo log trả về thùng keo. Vui lòng thử lại!",
         "productLineLoadError": "Không thể tải danh sách chuyền. Vui lòng thử lại!",
         "factoryMissing": "Không tìm thấy mã nhà máy.",
-        "departmentMissing": "Không tìm thấy mã bộ phận."
+        "departmentMissing": "Không tìm thấy mã bộ phận.",
+        "lineMismatchWarning": "Chuyền đã chọn khác chuyền trên tem thùng. Vẫn có thể xác nhận nếu đúng."
       }
     },
     "glueInfoCheck": {

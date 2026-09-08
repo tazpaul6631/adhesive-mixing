@@ -292,53 +292,6 @@ function getCurrentUserId() {
   return authStore.user?.employeeId || authStore.token || localStorage.getItem("web_token_backup") || "";
 }
 
-function getBarcodeValue(barcode: { rawValue?: string; displayValue?: string }) {
-  return barcode.rawValue || barcode.displayValue || "";
-}
-
-function getReturnGlueIdValue(info: any) {
-  if (hasPayloadValue(info?.mixGlueMasterId)) {
-    return normalizeCompareValue(info.mixGlueMasterId);
-  }
-
-  if (hasPayloadValue(info?.separateGlueId)) {
-    return normalizeCompareValue(info.separateGlueId);
-  }
-
-  if (hasPayloadValue(info?.noSeparateGlueId)) {
-    return normalizeCompareValue(info.noSeparateGlueId);
-  }
-
-  return 0;
-}
-
-function normalizeProductLineIdList(value: any) {
-  if (Array.isArray(value)) {
-    return value
-      .map((productLineId: any) => normalizeCompareValue(productLineId))
-      .filter(Boolean);
-  }
-
-  if (!hasPayloadValue(value)) {
-    return [];
-  }
-
-  return normalizeCompareValue(value)
-    .split(",")
-    .map((productLineId: string) => productLineId.trim())
-    .filter(Boolean);
-}
-
-function getAllocatedProductLineIds(info: any) {
-  const productLineIds = normalizeProductLineIdList(info?.productLineIds);
-
-  if (productLineIds.length) {
-    return productLineIds;
-  }
-
-  return normalizeProductLineIdList(info?.productLineId);
-}
-
 function getLineReceiveType(data: any): string {
   return normalizeCompareValue(data?.type);
 }

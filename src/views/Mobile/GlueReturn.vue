@@ -120,7 +120,7 @@ import glueReturnApi from '@/api/glueReturn';
 import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
-import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { buildSystemQrUrl, getGlueQrCode } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
@@ -129,9 +129,13 @@ import { McScanFill } from '@kalimahapps/vue-icons/mc';
 import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 import { AppPage, AppHeader, AppContent } from '@/components/layout';
 
+type LineQrKind = 'lc' | 'llc';
+type GlueQrType = 'lineChemical' | 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
+
 interface LineChemicalItem {
   id: string;
   rawQrText: string;
+  lineQrKind: LineQrKind | null;
   productLineName: string;
   glueName: string;
   lineChemicalName: string;
@@ -200,30 +204,186 @@ function getReturnGlueIdValue(info: any) {
   return 0;
 }
 
-function getReturnGlueCompareValue(info: any) {
-  if (hasPayloadValue(info?.glueId)) {
-    return normalizeCompareValue(info.glueId);
-  }
-
-  if (hasPayloadValue(info?.materialCode)) {
-    return normalizeCompareValue(info.materialCode);
-  }
-
-  return '';
+function normalizeGlueName(value: any) {
+  return normalizeCompareValue(value)
+    .replace(/\s+/g, '')
+    .toLowerCase();
 }
 
-function getLineChemicalIdList() {
-  return lineChemicalItems.value
-    .map((item) => normalizeCompareValue(item.rawData?.lineChemicalId))
-    .filter(Boolean);
+function getLineReceiveType(data: any): string {
+  return normalizeCompareValue(data?.type);
+}
+
+function getLineQrKind(qrText: string, data?: any): LineQrKind | null {
+  const code = getGlueQrCode(qrText);
+  if (code === 'lc' || code === 'llc') {
+    return code;
+  }
+
+  if (hasPayloadValue(data?.layoutLineChemicalId) && !hasPayloadValue(data?.lineChemicalId)) {
+    return 'llc';
+  }
+
+  if (hasPayloadValue(data?.lineChemicalId) || hasPayloadValue(data?.productLineId)) {
+    return 'lc';
+  }
+
+  return null;
+}
+
+function normalizeLineChemicalScanData(data: any) {
+  if (!data || typeof data !== 'object') return data;
+
+  return {
+    ...data,
+    glueName: data.glueName || data.layoutLineChemicalName || '',
+    productLineName: data.productLineName || '',
+  };
+}
+
+function getLineItemDedupeKey(data: any, rawQrText: string) {
+  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
+  const layoutLineChemicalId = normalizeCompareValue(data?.layoutLineChemicalId);
+
+  if (lineChemicalId) {
+    return `lc:${lineChemicalId}`;
+  }
+
+  if (layoutLineChemicalId) {
+    return `llc:${layoutLineChemicalId}`;
+  }
+
+  return rawQrText;
+}
+
+function getLineIdsForReturnItem(item: LineChemicalItem): {
+  lineChemicalId?: string;
+  layoutLineChemicalId?: string;
+} | null {
+  const data = item.rawData;
+  const receiveType = getLineReceiveType(data);
+  const lineQrKind = item.lineQrKind ?? getLineQrKind(item.rawQrText, data);
+  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
+  const layoutLineChemicalId = normalizeCompareValue(data?.layoutLineChemicalId);
+  const result: { lineChemicalId?: string; layoutLineChemicalId?: string } = {};
+
+  if (lineQrKind === 'llc') {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    result.layoutLineChemicalId = layoutLineChemicalId;
+    return result;
+  }
+
+  if (receiveType === 'UseProductLine' || receiveType === 'UseLineChemical') {
+    if (!lineChemicalId && !layoutLineChemicalId) {
+      return null;
+    }
+    if (lineChemicalId) {
+      result.lineChemicalId = lineChemicalId;
+    }
+    if (layoutLineChemicalId) {
+      result.layoutLineChemicalId = layoutLineChemicalId;
+    }
+    return result;
+  }
+
+  if (receiveType === 'UseLayoutLineChemical') {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    result.layoutLineChemicalId = layoutLineChemicalId;
+    return result;
+  }
+
+  if (layoutLineChemicalId && !lineChemicalId) {
+    result.layoutLineChemicalId = layoutLineChemicalId;
+    return result;
+  }
+
+  if (!lineChemicalId && !layoutLineChemicalId) {
+    return null;
+  }
+
+  if (lineChemicalId) {
+    result.lineChemicalId = lineChemicalId;
+  }
+  if (layoutLineChemicalId) {
+    result.layoutLineChemicalId = layoutLineChemicalId;
+  }
+  return result;
+}
+
+function buildReturnLineIdPayload() {
+  const lineChemicalIds: string[] = [];
+  const layoutLineChemicalIds: string[] = [];
+  const seenLine = new Set<string>();
+  const seenLayout = new Set<string>();
+
+  for (const item of lineChemicalItems.value) {
+    const ids = getLineIdsForReturnItem(item);
+    if (!ids) {
+      return null;
+    }
+
+    if (ids.lineChemicalId && !seenLine.has(ids.lineChemicalId)) {
+      seenLine.add(ids.lineChemicalId);
+      lineChemicalIds.push(ids.lineChemicalId);
+    }
+
+    if (ids.layoutLineChemicalId && !seenLayout.has(ids.layoutLineChemicalId)) {
+      seenLayout.add(ids.layoutLineChemicalId);
+      layoutLineChemicalIds.push(ids.layoutLineChemicalId);
+    }
+  }
+
+  if (!lineChemicalIds.length && !layoutLineChemicalIds.length) {
+    return null;
+  }
+
+  return { lineChemicalIds, layoutLineChemicalIds };
 }
 
 function getSystemQrUrl(qrText: string) {
   return buildSystemQrUrl(qrText);
 }
 
-function getGlueQrType(data: any) {
-  if (hasPayloadValue(data?.lineChemicalId) && hasPayloadValue(data?.chemicalMasterId)) {
+function getGlueQrType(data: any): GlueQrType | null {
+  const receiveType = getLineReceiveType(data);
+  const hasLineId =
+    hasPayloadValue(data?.lineChemicalId) ||
+    hasPayloadValue(data?.layoutLineChemicalId);
+  const hasProductLineId = hasPayloadValue(data?.productLineId);
+  const hasLayoutLineId = hasPayloadValue(data?.layoutLineChemicalId);
+  const hasLayoutGlueName =
+    hasPayloadValue(data?.glueName) || hasPayloadValue(data?.layoutLineChemicalName);
+
+  if (receiveType === 'UseProductLine') {
+    if (hasProductLineId) {
+      return 'lineChemical';
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLineChemical') {
+    if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
+      return 'lineChemical';
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLayoutLineChemical') {
+    if (hasLayoutLineId && hasLayoutGlueName) {
+      return 'lineChemical';
+    }
+    return null;
+  }
+
+  if (hasLayoutLineId && (hasLayoutGlueName || hasPayloadValue(data?.glueId))) {
+    return 'lineChemical';
+  }
+
+  if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
     return 'lineChemical';
   }
 
@@ -391,19 +551,19 @@ async function openScanner() {
   }
 }
 
-function buildLineChemicalItem(data: any, rawQrText: string): LineChemicalItem {
-  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
-  const lineChemicalMasterId = normalizeCompareValue(data?.chemicalMasterId);
-  const returnGlueCompareValue = getReturnGlueCompareValue(pendingReturnGlueInfo.value);
-  const isMatched = !!lineChemicalMasterId && !!returnGlueCompareValue && lineChemicalMasterId === returnGlueCompareValue;
+function buildLineChemicalItem(data: any, rawQrText: string, lineQrKind: LineQrKind | null): LineChemicalItem {
+  const lineGlueName = normalizeGlueName(data?.glueName || data?.layoutLineChemicalName);
+  const returnGlueName = normalizeGlueName(pendingReturnGlueInfo.value?.glueName);
+  const isMatched = !!lineGlueName && !!returnGlueName && lineGlueName === returnGlueName;
 
   return {
-    id: lineChemicalId || `${Date.now()}-${lineChemicalItems.value.length}`,
+    id: getLineItemDedupeKey(data, rawQrText) || `${Date.now()}-${lineChemicalItems.value.length}`,
     rawQrText,
+    lineQrKind,
     productLineName: normalizeCompareValue(data?.productLineName),
-    glueName: normalizeCompareValue(data?.glueName),
-    lineChemicalName: normalizeCompareValue(data?.lineChemicalName),
-    chemicalMasterId: lineChemicalMasterId,
+    glueName: normalizeCompareValue(data?.glueName || data?.layoutLineChemicalName),
+    lineChemicalName: normalizeCompareValue(data?.lineChemicalName || data?.layoutLineChemicalName),
+    chemicalMasterId: normalizeCompareValue(data?.chemicalMasterId),
     isMatched,
     rawData: data,
   };
@@ -445,6 +605,12 @@ async function openLineScanner() {
       return;
     }
 
+    const lineQrKind = getLineQrKind(scannedValue);
+    if (lineQrKind !== 'lc' && lineQrKind !== 'llc') {
+      await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+      return;
+    }
+
     const result = await resolveGlueQr(scannedValue);
 
     if (result.status === 'invalid') {
@@ -468,15 +634,19 @@ async function openLineScanner() {
       return;
     }
 
-    const lineChemicalId = normalizeCompareValue(result.data?.lineChemicalId);
-    const isDuplicated = !!lineChemicalId && lineChemicalItems.value.some((item) => item.id === lineChemicalId);
+    const normalizedLineData = {
+      ...normalizeLineChemicalScanData(result.data),
+      _lineQrKind: lineQrKind,
+    };
+    const itemId = getLineItemDedupeKey(normalizedLineData, scannedValue);
+    const isDuplicated = !!itemId && lineChemicalItems.value.some((item) => item.id === itemId);
 
     if (isDuplicated) {
       await showWarningAlert(t('mobile.glueReturn.messages.duplicateLineQr'));
       return;
     }
 
-    const item = buildLineChemicalItem(result.data, scannedValue);
+    const item = buildLineChemicalItem(normalizedLineData, scannedValue, lineQrKind);
 
     if (!item.isMatched) {
       await showWarningAlert(t('mobile.glueReturn.messages.lineMismatchWarning'));
@@ -500,16 +670,27 @@ async function confirmReturnQr() {
     return;
   }
 
-  const lineChemicalIds = getLineChemicalIdList();
+  const lineIds = buildReturnLineIdPayload();
+  if (!lineIds) {
+    await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+    return;
+  }
+
   const userId = getCurrentUserId();
-  const payload = {
+  const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(pendingReturnGlueInfo.value.factoryId),
     returnGlueId: getReturnGlueIdValue(pendingReturnGlueInfo.value),
-    lineChemicalIds,
     recordStatus: '1',
     createrId: userId,
     updaterId: userId,
   };
+
+  if (lineIds.lineChemicalIds.length) {
+    payload.lineChemicalIds = lineIds.lineChemicalIds;
+  }
+  if (lineIds.layoutLineChemicalIds.length) {
+    payload.layoutLineChemicalIds = lineIds.layoutLineChemicalIds;
+  }
 
   isSubmittingReturn.value = true;
 
