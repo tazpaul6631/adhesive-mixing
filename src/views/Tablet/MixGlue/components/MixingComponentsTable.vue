@@ -1,6 +1,6 @@
 <template>
-  <div ref="tableWrapperRef" class="border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : components" scrollable scrollHeight="290px"
+  <div ref="tableWrapperRef" class="border-round-bottom-xl mix-components-table">
+    <DataTable :value="isLoading ? skeletons : components" scrollable :scrollHeight="scrollHeight"
       class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
       selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
@@ -38,7 +38,8 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
-          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
+          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? `
+            ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
         </template>
       </Column>
 
@@ -47,7 +48,8 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else>
-            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? `
+            ${normalizeWeightUnit(data.weightUnit)}` : '' }}
           </span>
         </template>
       </Column>
@@ -82,7 +84,7 @@
               :title="t('listMixGlue.toast.componentLabel.printAriaLabel')"
               @click.stop="$emit('print-row', slotProps.data)" />
             <Button v-if="slotProps.data.glueExtra && !slotProps.data.actualWeight" icon="pi pi-trash" severity="danger"
-              text :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')" :disabled="disabled"
+              :aria-label="t('mixGlueManagement.componentsTable.deleteAriaLabel')" :disabled="disabled"
               class="button-lg" @click.stop="$emit('delete-row', slotProps.data)" />
           </div>
         </template>
@@ -98,7 +100,7 @@ import { normalizeWeightUnit } from '@/utils/weightUnit';
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAppLocale } from '@/composables/useAppLocale';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   isLoading: boolean;
   components: any[];
   headerTotalWeight: string | number;
@@ -106,7 +108,14 @@ const props = defineProps<{
   disabled?: boolean;
   isPrinting?: boolean;
   printingMaterialCode?: string | null;
-}>();
+  /** Chiều cao vùng scroll body DataTable (px string). */
+  scrollHeight?: string;
+}>(), {
+  disabled: false,
+  isPrinting: false,
+  printingMaterialCode: null,
+  scrollHeight: '290px',
+});
 
 const emit = defineEmits(['row-click', 'open-new', 'delete-row', 'update:selectedItem', 'print-row']);
 
@@ -124,3 +133,35 @@ const handleOpenNew = () => {
   emit('open-new');
 };
 </script>
+
+<style scoped>
+.mix-components-table :deep(.p-datatable-table-container),
+.mix-components-table :deep(.p-datatable-wrapper),
+.mix-components-table :deep(.p-datatable-scrollable-body) {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #e2e8f0;
+}
+
+.mix-components-table :deep(.p-datatable-table-container::-webkit-scrollbar),
+.mix-components-table :deep(.p-datatable-wrapper::-webkit-scrollbar),
+.mix-components-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar) {
+  width: 10px;
+}
+
+.mix-components-table :deep(.p-datatable-table-container::-webkit-scrollbar-track),
+.mix-components-table :deep(.p-datatable-wrapper::-webkit-scrollbar-track),
+.mix-components-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar-track) {
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+
+.mix-components-table :deep(.p-datatable-table-container::-webkit-scrollbar-thumb),
+.mix-components-table :deep(.p-datatable-wrapper::-webkit-scrollbar-thumb),
+.mix-components-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar-thumb) {
+  background: #64748b;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+}
+</style>

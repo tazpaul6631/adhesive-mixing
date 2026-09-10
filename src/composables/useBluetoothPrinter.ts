@@ -531,22 +531,34 @@ const writeBufferChunked = async (buffer: ArrayBufferLike): Promise<boolean> => 
   return true;
 };
 
-const writeTspl = async (tspl: string): Promise<boolean> => {
+/** Serialize writes so two jobs never interleave TSPL chunks on BT. */
+let writeTsplChain: Promise<void> = Promise.resolve();
+
+const writeTspl = (tspl: string): Promise<boolean> => {
   if (!getBluetooth()) {
-    return false;
+    return Promise.resolve(false);
   }
 
-  printInProgress = true;
-  try {
-    if (!(await verifyHardwareConnected())) {
-      return false;
+  const run = async (): Promise<boolean> => {
+    printInProgress = true;
+    try {
+      if (!(await verifyHardwareConnected())) {
+        return false;
+      }
+
+      const dataArray = new TextEncoder().encode(tspl);
+      return writeBufferChunked(dataArray.buffer);
+    } finally {
+      printInProgress = false;
     }
+  };
 
-    const dataArray = new TextEncoder().encode(tspl);
-    return writeBufferChunked(dataArray.buffer);
-  } finally {
-    printInProgress = false;
-  }
+  const result = writeTsplChain.then(run, run);
+  writeTsplChain = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
 };
 
 export function useBluetoothPrinter(options: UseBluetoothPrinterOptions = {}) {

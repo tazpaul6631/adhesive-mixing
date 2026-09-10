@@ -19,23 +19,23 @@
         </div>
 
         <div class="input-container">
-          <ion-item lines="none" class="custom-input">
-            <ion-icon :icon="personOutline" slot="start"></ion-icon>
-            <ion-input v-model="code" label="Tài khoản quản lý" label-placement="floating"
-              placeholder="Mã số nhân viên"></ion-input>
-          </ion-item>
+          <label class="field-label" for="desktop-login-code">Tài khoản quản lý</label>
+          <div class="custom-input">
+            <i class="pi pi-user field-icon" aria-hidden="true"></i>
+            <InputText id="desktop-login-code" v-model="code" class="field-control" placeholder="Mã số nhân viên"
+              autocomplete="username" @keyup.enter="onLoginClick" />
+          </div>
 
-          <ion-item lines="none" class="custom-input ion-margin-top">
-            <ion-icon :icon="lockClosedOutline" slot="start"></ion-icon>
-            <ion-input v-model="password" type="password" label="Mật khẩu" label-placement="floating"
-              placeholder="********"></ion-input>
-          </ion-item>
+          <label class="field-label" for="desktop-login-password">Mật khẩu</label>
+          <div class="custom-input">
+            <i class="pi pi-lock field-icon" aria-hidden="true"></i>
+            <InputText id="desktop-login-password" v-model="password" type="password" class="field-control"
+              placeholder="********" autocomplete="current-password" @keyup.enter="onLoginClick" />
+          </div>
         </div>
 
-        <ion-button expand="block" class="login-btn" @click="onLoginClick">
-          VÀO HỆ THỐNG
-          <ion-icon slot="end" :icon="arrowForwardOutline"></ion-icon>
-        </ion-button>
+        <Button class="login-btn" label="VÀO HỆ THỐNG" icon="pi pi-arrow-right" icon-pos="right"
+          @click="onLoginClick" />
 
         <div class="footer-text">
           <p>© 2026 Jia Hsin IT Department - Adhesive Mixing Room</p>
@@ -47,8 +47,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonItem, IonInput, IonButton, IonIcon } from '@ionic/vue';
-import { personOutline, lockClosedOutline, arrowForwardOutline } from 'ionicons/icons';
 
 // Định nghĩa emit để truyền payload
 const emit = defineEmits<{
@@ -153,14 +151,14 @@ const onLoginClick = () => {
   margin-bottom: 20px;
   text-align: center;
 
-  &h3 {
+  h3 {
     font-size: 2rem;
     font-weight: 700;
     color: #1a1a1a;
     margin: 0 0 8px 0;
   }
 
-  &p {
+  p {
     color: #666;
     font-size: 0.95rem;
   }
@@ -170,28 +168,50 @@ const onLoginClick = () => {
   }
 }
 
+.field-label {
+  display: block;
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .custom-input {
-  --background: #f8fafc;
-  --border-radius: 12px;
-  --padding-start: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 15px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease;
 }
 
 .custom-input:focus-within {
-  border-color: var(--ion-color-primary);
+  border-color: #3880ff;
 }
 
-.custom-input ion-icon {
+.field-icon {
   color: #64748b;
-  margin-right: 10px;
+  font-size: 1.1rem;
+}
+
+.field-control {
+  flex: 1 1 auto;
+  width: 100%;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .login-btn {
-  --border-radius: 12px;
+  width: 100%;
   margin-top: 30px;
   height: 55px;
   font-weight: 700;
-  --box-shadow: 0 10px 20px rgba(56, 128, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(56, 128, 255, 0.2);
 }
 
 .footer-text {

@@ -126,7 +126,10 @@ const TSPL_PASTE_QR_BOTTOM_Y = 365;
 const TSPL_PASTE_QR_XMUL = 9;
 const TSPL_PASTE_QR_YMUL = 9;
 
-const tsplEscape = (value: string) => String(value).replace(/"/g, "'");
+const tsplEscape = (value: string) =>
+  String(value)
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/"/g, "'");
 
 const tsplBoldSimCoords = (x: number, y: number, rotation: number, offset: number) => {
   const r = ((rotation % 360) + 360) % 360;

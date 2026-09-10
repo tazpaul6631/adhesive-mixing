@@ -50,10 +50,54 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Layout shell cùng chunk — tránh circular reexport AppHeader qua index.ts.
+          if (id.includes(`${path.sep}components${path.sep}layout${path.sep}`)) {
+            return 'app-layout';
+          }
+          // App feature chunks (src) — tách BT/print/scale khỏi page shell.
+          if (
+            id.includes(`${path.sep}BluetoothPrinterStatus`)
+            || id.includes(`${path.sep}BatchPrintRetryDialog`)
+            || id.includes(`${path.sep}ElectronicScale`)
+            || id.includes(`${path.sep}ScaleDevicePicker`)
+            || id.includes(`${path.sep}useBluetoothPrinter`)
+            || id.includes(`${path.sep}useScaleManager`)
+            || id.includes(`${path.sep}useScaleKeepAwake`)
+            || id.includes(`${path.sep}useMixGlueLabelBatchPrint`)
+            || id.includes(`${path.sep}useSeparateLabelBatchPrint`)
+            || id.includes(`${path.sep}mixGlueLabelPrint`)
+            || id.includes(`${path.sep}separateMixedGlueLabelPrint`)
+            || id.includes(`${path.sep}mixPrintPendingStorage`)
+            || id.includes(`${path.sep}separatePrintPendingStorage`)
+            || id.includes(`${path.sep}mixGluePrintQueue`)
+            || id.includes(`${path.sep}usePrintQueue`)
+            || id.includes(`${path.sep}labelPrintSession`)
+            || id.includes(`${path.sep}useLabelPrintGapConfirm`)
+            || id.includes(`${path.sep}useTabletBarcodeScan`)
+            || id.includes(`${path.sep}componentWeightLabelPrint`)
+          ) {
+            return 'feature-print';
+          }
           if (id.includes('node_modules')) {
-            if (id.includes('@ionic')) return 'vendor-ionic';
+            // Keep vue-icons out of vendor-vue-core (`includes('vue')` would match "vue-icons").
+            if (id.includes('@kalimahapps/vue-icons')) {
+              return 'vendor-vue-icons';
+            }
+            if (id.includes('@capacitor-mlkit')) {
+              return 'feature-print';
+            }
             if (id.includes('primevue') || id.includes('primeicons')) return 'vendor-primevue';
-            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vendor-vue-core';
+            if (
+              id.includes(`${path.sep}vue${path.sep}`)
+              || id.includes('/vue/')
+              || id.includes('\\vue\\')
+              || id.includes('@vue')
+              || id.includes('pinia')
+              || id.includes('vue-router')
+              || id.includes('vue-i18n')
+            ) {
+              return 'vendor-vue-core';
+            }
             if (id.includes('@capacitor')) return 'vendor-capacitor';
             return 'vendor-others';
           }

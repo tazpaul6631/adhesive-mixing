@@ -3,6 +3,11 @@ import { defineStore } from 'pinia';
 import storageService from '@/services/storage.service';
 
 const STORAGE_KEY = 'mix_glue_drafts_storage';
+/** Gộp nhiều saveDraft liên tiếp thành 1 lần encrypt+Preferences — giảm peak CPU/RAM máy yếu. */
+const PERSIST_DEBOUNCE_MS = 600;
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let persistWaiters: Array<{ resolve: () => void; reject: (error: unknown) => void }> = [];
 
 export type MixGlueDraftPayload = Record<string, unknown>;
 
@@ -39,25 +44,12 @@ const hasMixTableProgress = (items: unknown): boolean =>
   );
 
 const hasNoMixDraftProgress = (draft: MixGlueDraftPayload): boolean => {
-  if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
-    return true;
-  }
-
-  const pendingByMaterial = draft.chietPendingByMaterial;
-  if (pendingByMaterial && typeof pendingByMaterial === 'object') {
-    const hasPendingChiet = Object.values(pendingByMaterial as Record<string, unknown>).some(
-      (rows) => Array.isArray(rows) && rows.length > 0
-    );
-    if (hasPendingChiet) return true;
-  }
-
   const weighed = (items: unknown) =>
     Array.isArray(items) &&
     items.some(
       (item: any) =>
         item.weighingTime ||
         (item.actualWeight && Number(item.actualWeight) > 0) ||
-        item.isChietCompleted ||
         (item.glueExtra && item.requiredWeight && Number(item.requiredWeight) > 0)
     );
 
@@ -85,18 +77,6 @@ export const isSeparateDraftRestorable = (draft: MixGlueDraftPayload | undefined
   )) {
     return true;
   }
-  if (Array.isArray(draft.extraChietList) && draft.extraChietList.length > 0) {
-    return true;
-  }
-
-  const pendingByMaterial = draft.chietPendingByMaterial;
-  if (pendingByMaterial && typeof pendingByMaterial === 'object') {
-    const hasPendingChiet = Object.values(pendingByMaterial as Record<string, unknown>).some(
-      (rows) => Array.isArray(rows) && rows.length > 0
-    );
-    if (hasPendingChiet) return true;
-  }
-
   return hasNoMixDraftProgress(draft);
 };
 
@@ -130,13 +110,48 @@ export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
       await storageService.set(STORAGE_KEY, JSON.stringify({ drafts: this.drafts }), true);
     },
 
+    /**
+     * Debounce ghi disk — RAM vẫn cập nhật ngay trong saveDraft.
+     * flushPersist() dùng khi clear / cần chắc chắn đã ghi.
+     */
+    schedulePersist(): Promise<void> {
+      return new Promise((resolve, reject) => {
+        persistWaiters.push({ resolve, reject });
+
+        if (persistTimer) {
+          clearTimeout(persistTimer);
+        }
+
+        persistTimer = setTimeout(() => {
+          void this.flushPersist();
+        }, PERSIST_DEBOUNCE_MS);
+      });
+    },
+
+    async flushPersist() {
+      if (persistTimer) {
+        clearTimeout(persistTimer);
+        persistTimer = null;
+      }
+
+      const waiters = persistWaiters.splice(0, persistWaiters.length);
+
+      try {
+        await this.persistToDisk();
+        waiters.forEach((waiter) => waiter.resolve());
+      } catch (error) {
+        waiters.forEach((waiter) => waiter.reject(error));
+        throw error;
+      }
+    },
+
     async saveDraft(workOrderMasterId: string, data: MixGlueDraftPayload) {
       const key = normalizeDraftWorkOrderId(workOrderMasterId);
       if (!key) return;
 
       await this.ensureHydrated();
       this.drafts[key] = data;
-      await this.persistToDisk();
+      await this.schedulePersist();
     },
 
     async clearDraft(workOrderMasterId: string) {
@@ -145,13 +160,13 @@ export const useMixGlueDraftStore = defineStore('mixGlueDraft', {
 
       await this.ensureHydrated();
       delete this.drafts[key];
-      await this.persistToDisk();
+      await this.flushPersist();
     },
 
     async clearAll() {
       await this.ensureHydrated();
       this.drafts = {};
-      await this.persistToDisk();
+      await this.flushPersist();
     },
 
     getDraft(workOrderMasterId: string) {

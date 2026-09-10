@@ -1,9 +1,9 @@
 import { ref, nextTick, onUnmounted } from 'vue';
 import { Capacitor } from '@capacitor/core';
-import { BarcodeScanner, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import type { PluginListenerHandle } from '@capacitor/core';
 
 type BarcodeLike = { rawValue?: string; displayValue?: string };
+type MlKitModule = typeof import('@capacitor-mlkit/barcode-scanning');
 
 export interface ScanPrompt {
   title: string;
@@ -20,7 +20,16 @@ const getBarcodeValue = (barcode: BarcodeLike) => barcode.rawValue || barcode.di
 const setScannerUiActive = (active: boolean) => {
   document.body.classList.toggle('barcode-scanner-active', active);
   document.documentElement.classList.toggle('barcode-scanner-active', active);
-  document.querySelector('ion-app')?.classList.toggle('barcode-scanner-active', active);
+  document.querySelector('.app-shell')?.classList.toggle('barcode-scanner-active', active);
+};
+
+/** Lazy-load ML Kit — không kéo plugin vào chunk lúc vào list. */
+let mlKitPromise: Promise<MlKitModule> | null = null;
+const loadMlKit = () => {
+  if (!mlKitPromise) {
+    mlKitPromise = import('@capacitor-mlkit/barcode-scanning');
+  }
+  return mlKitPromise;
 };
 
 export function useTabletBarcodeScan() {
@@ -42,6 +51,7 @@ export function useTabletBarcodeScan() {
   };
 
   const cleanupScanner = async () => {
+    const { BarcodeScanner } = await loadMlKit();
     if (scanListener) {
       await scanListener.remove().catch(() => undefined);
       scanListener = null;
@@ -66,6 +76,8 @@ export function useTabletBarcodeScan() {
   };
 
   const scanWithFrontCamera = async (): Promise<string | null> => {
+    const { BarcodeScanner, LensFacing } = await loadMlKit();
+
     return new Promise((resolve) => {
       pendingResolve = resolve;
 
@@ -98,6 +110,7 @@ export function useTabletBarcodeScan() {
     }
 
     try {
+      const { BarcodeScanner } = await loadMlKit();
       const { camera } = await BarcodeScanner.requestPermissions();
       if (camera !== 'granted' && camera !== 'limited') {
         resetScanPrompt();

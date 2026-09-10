@@ -1,30 +1,29 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 0px !important;">
-        <div class="flex align-items-center justify-content-between">
-          <ion-buttons slot="start">
-            <ion-button @click="goBack">
-              <i class="pi pi-angle-left text-xl mr-1"></i>
-              <ion-title class="no-padding" style="line-height: 50px;">{{ t('listGlueReturnLog.pageTitle')
-              }}</ion-title>
-            </ion-button>
-          </ion-buttons>
-          <LocaleSelect device-scope="tablet" select-class="mr-4" />
+  <AppPage>
+    <AppHeader no-border class="tablet-list-header">
+      <template #start>
+        <button type="button" class="header-back" @click="goBack">
+          <i class="pi pi-angle-left text-xl mr-1"></i>
+          <h1 class="header-title">{{ t('listGlueReturnLog.pageTitle') }}</h1>
+        </button>
+      </template>
+      <template #end>
+        <div class="flex align-items-center gap-2 mr-2">
+          <NetworkStatusIcon />
+          <LocaleSelect device-scope="tablet" />
         </div>
-      </ion-toolbar>
-    </ion-header>
+      </template>
+    </AppHeader>
 
-    <ion-content class="ion-padding list-mix-glue-content" :scroll-events="true">
-      <div class="main-container max-w-full mx-auto list-glue-return-page page-content-loading-host" :class="pageClass">
-        <PageContentLoadingOverlay :visible="isViewEnterLoading" />
+    <AppContent class="list-mix-glue-content" :scroll="true" :padding="true">
+      <div class="main-container max-w-full mx-auto list-glue-return-page" :class="pageClass">
         <div class="surface-card p-0 shadow-1 border-round-xl list-glue-return-card">
           <div
             class="surface-100 border-round-top-xl flex align-items-center justify-content-between list-glue-return-card-head">
             <span class="list-glue-return-section-title">
               <i class="pi pi-list mr-2"></i>{{ t('listGlueReturnLog.sectionTitle') }}
             </span>
-            <ScaleDevicePicker :session-id="glueReturnLogScaleSessionId" />
+            <ScaleDevicePicker v-if="showScaleUi" :session-id="glueReturnLogScaleSessionId" />
           </div>
           <div class="surface-100 list-glue-return-toolbar">
             <div class="grid formgrid align-items-end">
@@ -35,8 +34,8 @@
               </div>
 
               <div class="col-12 sm:col-12 lg:col-6 sm:mt-2">
-                <ElectronicScaleGlueReturn :scale-session-id="glueReturnLogScaleSessionId" hide-scale-picker
-                  :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
+                <ElectronicScaleGlueReturn v-if="showScaleUi" :scale-session-id="glueReturnLogScaleSessionId"
+                  hide-scale-picker :weight-unit="selectedItem?.returnWeightUnit || 'Kg'"
                   :locked-weight="showReturnWeight(selectedItem) ? String(selectedItem?.returnWeight ?? '') : ''"
                   :disable-confirm="!selectedItem || !!selectedItem?.scaleConfirmed || isRowApiSubmitted(selectedItem)"
                   @confirm-weight="handleScaleConfirmWeight" />
@@ -46,9 +45,9 @@
 
           <div class="overflow-x-auto border-round-bottom-xl list-glue-return-table-wrap">
             <DataTable v-model:selection="selectedItem" :value="lineDetails" lazy :totalRecords="totalRecords"
-              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight"
-              class="modern-table auto-columns-table" tableStyle="width: 100%; min-width: 0;" selectionMode="single"
-              :paginator="true" :rows="rowsPerPage" dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
+              :first="tableFirst" scrollable :scrollHeight="tableScrollHeight" class="modern-table auto-columns-table"
+              tableStyle="width: 100%; min-width: 0;" selectionMode="single" :paginator="true" :rows="rowsPerPage"
+              dataKey="glueReturnLogId" @page="onPageLine" @row-click="onRowClick"
               paginatorTemplate="PrevPageLink CurrentPageReport NextPageLink"
               currentPageReportTemplate="Hiển thị {first} đến {last}">
               <template #empty>
@@ -70,7 +69,12 @@
                 headerClass="dt-col-primary" bodyClass="dt-col-primary">
                 <template #body="{ data }">
                   <Skeleton v-if="isLoadingLine" width="80%" height="1rem" />
-                  <span v-else class="dt-cell-wrap">{{ data.lineChemicalName }}</span>
+                  <div v-else class="dt-cell-wrap line-chemical-names">
+                    <div v-for="(name, index) in splitLineChemicalNames(data.lineChemicalName)"
+                      :key="`${data.glueReturnLogId}-${index}`" class="line-chemical-names__item">
+                      {{ name }}
+                    </div>
+                  </div>
                 </template>
               </Column>
 
@@ -122,28 +126,31 @@
           </div>
         </div>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+defineOptions({ name: 'ListGlueReturnLog' });
+
+import { ref, computed, nextTick, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
-  onIonViewWillEnter,
-  onIonViewWillLeave,
-} from '@ionic/vue';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 import { useAppToast } from '@/composables/useAppToast';
+import { usePageLifecycle } from '@/composables/usePageLifecycle';
 import dayjs from 'dayjs';
-import { computeLazyTableTotalRecords, parseCursorPagedMeta, useListTableFetch } from '@/composables/useListTableFetch';
+import {
+  computeLazyTableTotalRecords,
+  createSkeletonRows,
+  parseCursorPagedMeta,
+  useListTableFetch,
+} from '@/composables/useListTableFetch';
 import { useAppLocale } from '@/composables/useAppLocale';
 import { useAuthStore } from '@/store/auth';
 import format from '@/mixins/format';
 import glueReturnLogApi from '@/api/glueReturnLog';
 import LocaleSelect from '@/components/LocaleSelect.vue';
-import ElectronicScaleGlueReturn from '@/components/ElectronicScaleGlueReturn.vue';
-import ScaleDevicePicker from '@/components/ScaleDevicePicker.vue';
+import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import {
   useGlueReturnLogPendingStore,
   type GlueReturnLogPendingEntry,
@@ -151,9 +158,14 @@ import {
 import { useScaleManager } from '@/composables/useScaleManager';
 import { useRequireOnline } from '@/composables/useRequireOnline';
 import { useTabletPageLayout } from '@/composables/useTabletPageLayout';
-import { useViewEnterLoading } from '@/composables/useViewEnterLoading';
-import PageContentLoadingOverlay from '@/components/PageContentLoadingOverlay.vue';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
+const ElectronicScaleGlueReturn = defineAsyncComponent(
+  () => import('@/components/ElectronicScaleGlueReturn.vue'),
+);
+const ScaleDevicePicker = defineAsyncComponent(
+  () => import('@/components/ScaleDevicePicker.vue'),
+);
 const GLUE_RETURN_LOG_SCALE_SESSION = 'tablet-glue-return-log';
 const glueReturnLogScaleSessionId = GLUE_RETURN_LOG_SCALE_SESSION;
 
@@ -180,6 +192,8 @@ const { t } = useAppLocale(() => 'tablet');
 const authStore = useAuthStore();
 const pendingStore = useGlueReturnLogPendingStore();
 const { startAutoConnect, stopAutoConnect } = useScaleManager();
+/** Hoãn scale UI — fetch list trước, không đổi logic cân. */
+const showScaleUi = ref(false);
 const { requireOnline, notifyOfflineFromError } = useRequireOnline();
 
 const {
@@ -187,12 +201,10 @@ const {
   tableScrollHeight,
   emptyStateMinHeight,
 } = useTabletPageLayout({ listPageWithToolbar: true });
-const { isViewEnterLoading, runWithViewEnterLoading } = useViewEnterLoading();
-
-const lineDetails = ref<Partial<GlueReturnLogItem>[]>([]);
 const totalRecords = ref(0);
 const currentPage = ref(1);
-const rowsPerPage = ref(50);
+const rowsPerPage = ref(100);
+const lineDetails = ref<Partial<GlueReturnLogItem>[]>(createSkeletonRows(rowsPerPage.value));
 const tableFirst = computed(() => (currentPage.value - 1) * rowsPerPage.value);
 const isLoadingLine = ref(true);
 const isConfirming = ref(false);
@@ -204,6 +216,13 @@ const hasLoadedGlueReturnRows = () =>
   lineDetails.value.some((row) => row.glueReturnLogId != null && row.glueReturnLogId !== '');
 
 const goBack = () => router.push('/app-menu');
+
+const splitLineChemicalNames = (value: unknown) => {
+  return String(value ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+};
 
 const isRowScaleConfirmed = (row: Partial<GlueReturnLogItem> | null | undefined) =>
   !!row?.scaleConfirmed &&
@@ -350,7 +369,9 @@ const syncSelectedItem = () => {
 const fetchGlueReturnLogs = async (page: number, pageSize: number) => {
   const requestId = startRequest();
   isLoadingLine.value = true;
-  lineDetails.value = Array.from({ length: pageSize }).map(() => ({}));
+  if (lineDetails.value.length === 0) {
+    lineDetails.value = createSkeletonRows(pageSize);
+  }
 
   try {
     const payload = {
@@ -428,7 +449,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.selectRowFirst'),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
@@ -460,7 +481,7 @@ const handleScaleConfirmWeight = (actualWeight: string) => {
   //   severity: 'info',
   //   summary: t('listGlueReturnLog.toast.success'),
   //   detail: t('listGlueReturnLog.toast.scaleSaved'),
-  //   life: 6000,
+  //   life: 3000,
   // });
 };
 
@@ -474,17 +495,18 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
       severity: 'warn',
       summary: t('listGlueReturnLog.toast.warning'),
       detail: t('listGlueReturnLog.toast.missingConfirmIds'),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
 
-  if (!(await requireOnline())) return;
-
+  // Khóa UI sớm — tránh spam khi requireOnline/API chậm
   isConfirming.value = true;
   submittingRowId.value = row.glueReturnLogId;
 
   try {
+    if (!(await requireOnline())) return;
+
     const payload = {
       factoryId: row.factoryId || authStore.user?.factoryId || '',
       glueReturnLogId: row.glueReturnLogId,
@@ -510,16 +532,26 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
     showToast({
       severity: 'success',
       summary: t('listGlueReturnLog.toast.success'),
-      detail: t('listGlueReturnLog.toast.confirmSuccess'),
+      detail: resolveCatchErrorMessage(
+        t,
+        data?.message || 'RETURNED_GLUE_CONFIRM_SUCCESS',
+        t('catchError.RETURNED_GLUE_CONFIRM_SUCCESS'),
+      ),
       life: 3000,
     });
   } catch (error) {
     if (notifyOfflineFromError(error)) return;
     console.error('Lỗi xác nhận cân trả keo:', error);
+    const rawMessage = (error as any)?.response?.data?.message
+      || (error instanceof Error ? error.message : '');
     showToast({
       severity: 'error',
       summary: t('listGlueReturnLog.toast.error'),
-      detail: t('listGlueReturnLog.toast.confirmFailed'),
+      detail: resolveCatchErrorMessage(
+        t,
+        rawMessage,
+        t('listGlueReturnLog.toast.confirmFailed'),
+      ),
       life: 6000,
     });
   } finally {
@@ -528,23 +560,66 @@ const handleSubmitGlueReturnLog = async (row: GlueReturnLogItem) => {
   }
 };
 
-onIonViewWillEnter(() => {
-  currentPage.value = 1;
-  startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
-  void runWithViewEnterLoading(async () => {
-    await fetchGlueReturnLogs(1, rowsPerPage.value);
-  });
-});
+/**
+ * Thả hàng list khỏi heap khi rời page.
+ * Giữ: selectedItem, pending cân (store). Không clear khi đang confirm.
+ */
+const releaseListTableMemory = () => {
+  if (isConfirming.value) return;
+  lineDetails.value = [];
+};
 
-onIonViewWillLeave(() => {
-  stopAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
+usePageLifecycle({
+  onEnter: () => {
+    currentPage.value = 1;
+    showScaleUi.value = false;
+
+    void fetchGlueReturnLogs(1, rowsPerPage.value);
+
+    void nextTick(() => {
+      requestAnimationFrame(() => {
+        showScaleUi.value = true;
+        startAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
+      });
+    });
+  },
+  onLeave: () => {
+    stopAutoConnect(GLUE_RETURN_LOG_SCALE_SESSION);
+    showScaleUi.value = false;
+    // keep-alive: không clear table — lần vào lại hiện data cũ trong lúc refetch.
+  },
 });
 </script>
 
 <style scoped>
-.page-content-loading-host {
-  position: relative;
-  min-height: 12rem;
+.tablet-list-header :deep(.app-header__toolbar) {
+  min-height: 50px;
+  padding-inline: 4px 8px;
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 4px 4px 4px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 50px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .list-glue-return-page {
@@ -567,8 +642,17 @@ onIonViewWillLeave(() => {
   max-width: 100%;
 }
 
-.tablet-page--inch87.list-glue-return-page {
-  padding: 0.5rem 0.625rem;
+.line-chemical-names {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.line-chemical-names__item {
+  display: block;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .tablet-page--inch87 .list-glue-return-card-head {
@@ -582,7 +666,6 @@ onIonViewWillLeave(() => {
 }
 
 .tablet-page--inch11.list-glue-return-page {
-  padding: 0.875rem 1.125rem;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;

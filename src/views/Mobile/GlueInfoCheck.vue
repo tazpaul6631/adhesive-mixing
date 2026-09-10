@@ -1,82 +1,68 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t('mobile.glueInfoCheck.title') }}</ion-title>
-        <ion-buttons slot="end">
+  <AppPage>
+    <AppHeader no-border class="mobile-glue-header">
+      <template #start>
+        <div class="header-start">
+          <button type="button" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t('mobile.glueInfoCheck.title') }}</h1>
+          </button>
+        </div>
+      </template>
+      <template #end>
+        <div class="header-end">
           <NetworkStatusIcon />
-        </ion-buttons>
-      </ion-toolbar>
-      <MobileOfflineNotice />
-    </ion-header>
+        </div>
+      </template>
+      <template #after>
+        <MobileOfflineNotice />
+      </template>
+    </AppHeader>
 
-    <ion-content class="mobile-content">
+    <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="qr-panel">
           <div class="qr-panel__body">
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t('mobile.glueInfoCheck.qrTitle') }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t('mobile.glueInfoCheck.qrTitle') }}</h2>
+              </header>
+              <div class="qr-container__body">
                 <button type="button" class="qr-scan-field" :disabled="isLoadingQr" @click="openScanner">
                   <span :class="['qr-scan-field__text', { 'qr-scan-field__text--empty': !returnQrText }]">
                     {{ returnQrText || t('mobile.glueInfoCheck.scanPlaceholder') }}
                   </span>
-                  <ion-spinner v-if="isLoadingQr" name="crescent" class="qr-scan-field__spinner"></ion-spinner>
-                  <!-- <ion-icon v-else class="qr-scan-field__icon" :icon="barcodeOutline" color="primary"></ion-icon> -->
+                  <i v-if="isLoadingQr" class="pi pi-spin pi-spinner qr-scan-field__spinner" aria-hidden="true"></i>
                   <span v-else class="confirm-button__icon">
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-card v-if="returnQrInfo" class="info-container">
-              <ion-card-header>
-                <ion-card-title>{{ t('mobile.glueInfoCheck.infoTitle') }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article v-if="returnQrInfo" class="info-container">
+              <header class="info-container__header">
+                <h2 class="info-container__title">{{ t('mobile.glueInfoCheck.infoTitle') }}</h2>
+              </header>
+              <div class="info-container__body">
                 <div class="info-content">
-                  <div
-                    v-for="field in returnInfoFields"
-                    :key="field.label"
-                    class="info-content__row"
-                  >
+                  <div v-for="field in returnInfoFields" :key="field.label" class="info-content__row">
                     <span class="info-content__label">{{ field.label }}</span>
                     <span class="info-content__value">{{ field.value }}</span>
                   </div>
                 </div>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
           </div>
         </section>
       </div>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import {
-  IonBackButton,
-  IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonPage,
-  IonSpinner,
-  IonTitle,
-  IonToolbar,
-} from '@ionic/vue';
-import { barcodeOutline } from 'ionicons/icons';
+import { useRouter } from 'vue-router';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -84,7 +70,9 @@ import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
 import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 
 type GlueQrType = 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
 type ResolveGlueQrResult = {
@@ -93,7 +81,13 @@ type ResolveGlueQrResult = {
 };
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
+const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const returnQrText = ref('');
 const returnQrInfo = ref<any | null>(null);
@@ -235,7 +229,12 @@ async function triggerWarningFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerWarningFeedback();
-  alert(message);
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueInfoCheck.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 async function resolveGlueQrFromSystemUrl(qrText: string): Promise<ResolveGlueQrResult> {
@@ -300,7 +299,12 @@ async function openScanner() {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueInfoCheck.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueInfoCheck.title'),
+        detail: t('mobile.glueInfoCheck.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -365,7 +369,12 @@ async function handleGlueInfoScanResult(value: string) {
   } catch (error) {
     console.error('Không thể lấy thông tin QR thùng keo phát:', error);
     resetGlueInfo();
-    alert(t('mobile.glueInfoCheck.messages.loadError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueInfoCheck.title'),
+      detail: t('mobile.glueInfoCheck.messages.loadError'),
+      life: 3000,
+    });
   } finally {
     isLoadingQr.value = false;
   }
@@ -373,21 +382,53 @@ async function handleGlueInfoScanResult(value: string) {
 </script>
 
 <style scoped lang="scss">
-.header-back-button {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  --color: #ffffff;
-  --icon-font-size: 2rem;
-  --padding-start: 0;
-  --padding-end: 0;
-  --min-width: 54px;
-  --min-height: 54px;
+.mobile-glue-header :deep(.app-header__toolbar) {
+  min-height: 56px;
+  padding-inline: 4px 10px;
+}
+
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 2px 6px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .mobile-content {
-  --background: #f6f9fd;
+  background: #f6f9fd;
 }
 
 .menu-container {
@@ -413,26 +454,28 @@ async function handleGlueInfoScanResult(value: string) {
   border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-
-  ion-card-header {
-    padding: 24px 24px 16px;
-  }
-
-  ion-card-title {
-    color: #081a36;
-    font-weight: 700;
-    font-size: 18px !important;
-  }
-
-  ion-card-content {
-    padding: 0 24px 24px;
-  }
 }
 
-.info-container {
-  ion-card-title {
-    text-align: center;
-  }
+.qr-container__header,
+.info-container__header {
+  padding: 24px 24px 16px;
+}
+
+.qr-container__title,
+.info-container__title {
+  margin: 0;
+  color: #081a36;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.qr-container__body,
+.info-container__body {
+  padding: 0 24px 24px;
+}
+
+.info-container__title {
+  text-align: center;
 }
 
 .qr-scan-field {
@@ -490,7 +533,7 @@ async function handleGlueInfoScanResult(value: string) {
   justify-content: center;
   flex: 0 0 22px;
   line-height: 1;
-  color:rgba(0, 0, 0, 0.582)
+  color: rgba(0, 0, 0, 0.582)
 }
 
 .confirm-button__icon :deep(svg) {
@@ -547,18 +590,21 @@ async function handleGlueInfoScanResult(value: string) {
   .qr-container,
   .info-container {
     border-radius: 22px;
+  }
 
-    ion-card-header {
-      padding: 28px 30px 18px;
-    }
+  .qr-container__header,
+  .info-container__header {
+    padding: 28px 30px 18px;
+  }
 
-    ion-card-title {
-      font-size: 16px !important;
-    }
+  .qr-container__title,
+  .info-container__title {
+    font-size: 16px;
+  }
 
-    ion-card-content {
-      padding: 0 30px 30px;
-    }
+  .qr-container__body,
+  .info-container__body {
+    padding: 0 30px 30px;
   }
 
   .qr-scan-field {

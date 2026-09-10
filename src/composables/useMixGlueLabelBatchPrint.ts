@@ -1,10 +1,9 @@
 import { computed, ref } from 'vue';
-import {
-  printMixGlueLabelsSequential,
-  type MixGlueFailedPrintItem,
-  type MixGluePrintFailureReason,
-  type MixGluePrintItem,
-  type MixGluePrintSequentialResult,
+import type { MixGluePrintItem } from '@/services/mixGluePrintQueue';
+import type {
+  MixGlueFailedPrintItem,
+  MixGluePrintFailureReason,
+  MixGluePrintSequentialResult,
 } from '@/services/mixGlueLabelPrint';
 import {
   clearMixGluePrintPending,
@@ -23,6 +22,9 @@ export interface MixGluePrintJobContext {
 export interface MixGlueBatchPrintRuntimeOptions {
   isConnected?: () => boolean;
 }
+
+/** Lazy-load TSPL/print service — không kéo mixGlueLabelPrint vào chunk list lúc setup. */
+const loadMixGlueLabelPrint = () => import('@/services/mixGlueLabelPrint');
 
 export function useMixGlueLabelBatchPrint() {
   const isPrinting = ref(false);
@@ -88,6 +90,7 @@ export function useMixGlueLabelBatchPrint() {
     progress.value = { current: 0, total: queue.length };
 
     try {
+      const { printMixGlueLabelsSequential } = await loadMixGlueLabelPrint();
       const result = await printMixGlueLabelsSequential(
         writeFn,
         queue,
@@ -146,6 +149,7 @@ export function useMixGlueLabelBatchPrint() {
     progress.value = { current: 0, total: retryQueue.length };
 
     try {
+      const { printMixGlueLabelsSequential } = await loadMixGlueLabelPrint();
       const result = await printMixGlueLabelsSequential(
         writeFn,
         retryQueue,

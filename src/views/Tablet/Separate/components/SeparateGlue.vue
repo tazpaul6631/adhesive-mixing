@@ -1,7 +1,8 @@
 <template>
-  <div ref="tableWrapperRef" class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
-    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight" tableStyle="width: 100%;"
-      class="modern-table auto-columns-table">
+  <div ref="tableWrapperRef"
+    class="separate-glue-table-wrap overflow-x-auto border-round-bottom-xl transition-all duration-300">
+    <DataTable :value="isLoading ? skeletons : orderDetails" scrollable :scrollHeight="tableScrollHeight"
+      tableStyle="width: 100%;" class="modern-table auto-columns-table">
 
       <template #empty>
         <div class="separate-glue-empty" :style="{ minHeight: emptyStateMinHeight }">
@@ -24,25 +25,13 @@
         </template>
       </Column>
 
-      <!-- Tạm ẩn: chọn đơn yêu cầu
-      <Column field="productLineName" header="Đơn yêu cầu" headerClass="dt-col-input" bodyClass="dt-col-input">
-        <template #body="{ data }">
-          <Skeleton v-if="isLoading" width="60%" height="1.5rem" class="border-round-md" />
-          <MultiSelect v-else v-model="data.selectedRequestDetailIds" :options="getAvailableRequestDetails(data)"
-            :maxSelectedLabels="1" optionLabel="label" optionValue="requestDetailId" filter
-            selectedItemsLabel="{0} đơn yêu cầu" placeholder="Chọn đơn yêu cầu" class="w-full" appendTo="body"
-            :disabled="isViewMode" @change="handleRequestDetailChange(data)" />
-        </template>
-      </Column>
-      -->
-
       <Column :header="t('separateMixedGlue.table.columns.bucket')" headerClass="dt-col-input" bodyClass="dt-col-input">
         <template #body="{ data, index }">
           <Skeleton v-if="isLoading" width="50%" height="1rem" />
           <Select v-else :key="`bucket-${index}-${bucketSelectResetKeys[index] ?? 0}`" v-model="data.selectedBucketId"
             :options="getBucketOptionsForRow(data)" optionLabel="label" optionValue="bucketId" scrollHeight="210px"
             :placeholder="t('separateMixedGlue.table.placeholders.selectBucket')" class="w-full" appendTo="body"
-            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets" filter
+            :loading="isLoadingBuckets" :disabled="isViewMode || disabled || isLoadingBuckets"
             @show="() => handleBucketSelectShow(data, index)" @change="handleBucketChange(data, index)" />
         </template>
       </Column>
@@ -69,7 +58,7 @@
         headerClass="dt-col-action" bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex justify-content-center">
-            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger" text
+            <Button v-if="!isLoading && orderDetails.length > 0" icon="pi pi-trash" severity="danger"
               :disabled="disabled" :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" class="button-lg"
               @click.stop="handleDeleteRow(data)" />
           </div>
@@ -80,23 +69,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAppToast } from '@/composables/useAppToast';
 import format from '@/mixins/format';
 import { useAuthStore } from '@/store/auth';
-import bucketApi from '@/api/bucket';
 import dayjs from "dayjs";
 import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAdaptiveTableScrollHeight } from '@/composables/useAdaptiveTableScrollHeight';
 import { useAppLocale } from '@/composables/useAppLocale';
+import { ensureBucketOptions, getCachedBucketOptions } from '@/views/Tablet/Separate/bucketOptionsCache';
 import {
-  normalizeWeightToKg,
   sortBucketsByClosestCapacity,
   sumSelectedBucketCapacityKg,
-  validateSeparateGlueAllocation,
   validateChietBucketCapacity,
   formatTargetWeightLabel,
-  formatEffectiveChietTargetLabel,
   formatChietCapacityBlockMessage,
   resolveChietTargetCapacityKg,
   getActualWeighedKg,
@@ -104,12 +90,9 @@ import {
   shouldBlockChietAddRow,
   hasChietTotalExceededActual,
   formatWeightKg,
-  WEIGHT_EPSILON,
   findBucketOptionById,
   normalizeBucketIdForSelect,
-  mapBucketOptions,
   getRowActiveBucketId,
-  pruneStaleBucketIds,
   type BucketOption,
 } from '@/views/Tablet/Separate/separateGlue.bucket';
 
@@ -124,8 +107,6 @@ const props = defineProps<{
   disabled?: boolean;
   /** Khóa nút +; không liên quan separateGlueComplete trừ khi parent truyền vào. */
   disableAddRow?: boolean;
-  /** Dùng quy tắc khớp dung tích thùng giống ChietGlueTable (TL thực tế). */
-  useChietCapacityValidation?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -157,28 +138,8 @@ const { markPendingScrollToNewRow } = useScrollToNewTableRow(
   { focusSelector: '.p-select' }
 );
 
-const clearRowBucketSelection = async (rowData: any, rowIndex: number) => {
-  rowData.selectedBucketId = null;
-  rowData.bucketId = undefined;
-  updateRowCompletionInfo(rowData);
-  bucketSelectResetKeys.value[rowIndex] = (bucketSelectResetKeys.value[rowIndex] ?? 0) + 1;
-  await nextTick();
-};
-
-const getTargetWeightKg = () =>
-  normalizeWeightToKg(props.targetWeight ?? 0, props.targetWeightUnit || 'Kg');
-
-const getEffectiveTargetWeightKg = () => (
-  props.useChietCapacityValidation
-    ? resolveChietTargetCapacityKg(props.targetWeight ?? 0, props.targetWeightUnit || 'Kg')
-    : getTargetWeightKg()
-);
-
-const getTargetWeightLabel = () => (
-  props.useChietCapacityValidation
-    ? formatEffectiveChietTargetLabel(props.targetWeight, props.targetWeightUnit || 'Kg')
-    : formatTargetWeightLabel(props.targetWeight, props.targetWeightUnit || 'Kg')
-);
+const getEffectiveTargetWeightKg = () =>
+  resolveChietTargetCapacityKg(props.targetWeight ?? 0, props.targetWeightUnit || 'Kg');
 
 const orderDetailsSelectionKey = computed(() =>
   props.orderDetails.map((row) => String(getRowActiveBucketId(row) ?? '')).join('|')
@@ -188,10 +149,6 @@ const getSelectedBucketTotalKg = () =>
   sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
 
 const shouldBlockAddRow = () => {
-  if (!props.useChietCapacityValidation) {
-    return isAllocationComplete();
-  }
-
   void orderDetailsSelectionKey.value;
   void bucketList.value.length;
 
@@ -222,16 +179,14 @@ const getBucketOptionsForRow = (currentRow: any) => {
     return bucketList.value;
   }
 
-  if (props.useChietCapacityValidation) {
-    const actualKg = getActualWeighedKg(props.targetWeight, props.targetWeightUnit || 'Kg');
-    if (actualKg > 0) {
-      return filterChietBucketOptionsForRow(
-        bucketList.value,
-        actualKg,
-        props.orderDetails,
-        currentRow
-      );
-    }
+  const actualKg = getActualWeighedKg(props.targetWeight, props.targetWeightUnit || 'Kg');
+  if (actualKg > 0) {
+    return filterChietBucketOptionsForRow(
+      bucketList.value,
+      actualKg,
+      props.orderDetails,
+      currentRow
+    );
   }
 
   const targetWeightKg = getEffectiveTargetWeightKg();
@@ -258,31 +213,6 @@ const getBucketOptionsForRow = (currentRow: any) => {
   }
 
   return options;
-};
-
-const hasStoredBucketSelection = () =>
-  props.orderDetails.some((row) => {
-    const id = row.selectedBucketId ?? row.bucketId;
-    return id != null && id !== '';
-  });
-
-const isAllocationComplete = () => {
-  const targetWeightKg = getTargetWeightKg();
-
-  if (targetWeightKg <= 0) {
-    return true;
-  }
-
-  const totalKg = sumSelectedBucketCapacityKg(props.orderDetails, bucketList.value);
-  return Math.abs(totalKg - targetWeightKg) <= WEIGHT_EPSILON;
-
-  // const requireAllRequestDetails = props.requireAllRequestDetails ?? true;
-  // if (targetWeightKg <= 0) {
-  //   return !requireAllRequestDetails || areAllRequestDetailsUsed();
-  // }
-  // const capacityMatched = Math.abs(totalKg - targetWeightKg) <= WEIGHT_EPSILON;
-  // const requestsMatched = !requireAllRequestDetails || areAllRequestDetailsUsed();
-  // return capacityMatched && requestsMatched;
 };
 
 // const areAllRequestDetailsUsed = () => {
@@ -344,14 +274,14 @@ const isRowComplete = (rowData: any) => hasBucketSelection(rowData);
 const handleAddRow = () => {
   const rows = props.orderDetails || [];
 
-  if (props.useChietCapacityValidation && rows.length > 0) {
+  if (rows.length > 0) {
     const incompleteIndex = rows.findIndex((row) => !isRowComplete(row));
     if (incompleteIndex !== -1) {
       showToast({
         severity: 'warn',
         summary: t('separateMixedGlue.toast.incomplete'),
         detail: t('separateMixedGlue.toast.selectBucketRow', { row: incompleteIndex + 1 }),
-        life: 6000,
+        life: 3000,
       });
       return;
     }
@@ -374,7 +304,7 @@ const handleAddRow = () => {
             target: actualLabel,
           })
           : formatChietCapacityBlockMessage(props.targetWeight, props.targetWeightUnit || 'Kg'),
-        life: 6000,
+        life: 3000,
       });
       return;
     }
@@ -388,30 +318,47 @@ const handleDeleteRow = (rowData: any) => {
   emit('delete-row', rowData);
 };
 
-const fetchBucketList = async () => {
+const fetchBucketList = async (options?: { force?: boolean }) => {
+  const factoryId = authStore.user?.factoryId || '';
+  if (!factoryId) return;
+
+  // Stale-while-revalidate: hiện cache ngay nếu có.
+  const cached = getCachedBucketOptions(factoryId);
+  if (cached.length > 0) {
+    bucketList.value = cached;
+    syncStoredBucketIdTypes();
+  }
+
   if (bucketLoadPromise) {
     await bucketLoadPromise;
     return;
   }
 
+  const hasLocalData = bucketList.value.length > 0;
+  const force = options?.force === true;
+
   bucketLoadPromise = (async () => {
-    isLoadingBuckets.value = true;
+    // Chỉ khóa/spinner khi chưa có data (lần đầu).
+    if (!hasLocalData) {
+      isLoadingBuckets.value = true;
+    }
     try {
-      const { data } = await bucketApi.postBucket({ factoryId: authStore.user?.factoryId || '' });
-      if (data?.success && data.data) {
-        bucketList.value = mapBucketOptions(data.data);
-      } else {
+      const next = await ensureBucketOptions(factoryId, { force });
+      if (next.length > 0) {
+        bucketList.value = next;
+      } else if (!hasLocalData) {
         bucketList.value = [];
       }
     } catch (error) {
       console.error('Lỗi khi tải danh sách thùng chứa', error);
-      bucketList.value = [];
-      showToast({
-        severity: 'error',
-        summary: t('listMixGlue.toast.error'),
-        detail: t('common.checkNetwork'),
-        life: 6000,
-      });
+      if (bucketList.value.length === 0) {
+        showToast({
+          severity: 'error',
+          summary: t('listMixGlue.toast.error'),
+          detail: t('common.checkNetwork'),
+          life: 6000,
+        });
+      }
     } finally {
       isLoadingBuckets.value = false;
       bucketLoadPromise = null;
@@ -422,19 +369,11 @@ const fetchBucketList = async () => {
   await bucketLoadPromise;
 };
 
-watch(
-  () => [props.isLoading, props.orderDetails.length, orderDetailsSelectionKey.value] as const,
-  ([loading]) => {
-    if (loading || !hasStoredBucketSelection()) return;
-    void fetchBucketList();
-  },
-  { immediate: true }
-);
-
 const handleBucketSelectShow = (rowData: any, rowIndex: number) => {
   bucketBeforeChangeByIndex.value[rowIndex] = rowData?.selectedBucketId ?? rowData?.bucketId ?? null;
-  if (props.isViewMode || props.disabled || isLoadingBuckets.value) return;
-  void fetchBucketList();
+  if (props.isViewMode || props.disabled) return;
+  // Có cache → list mở ngay; API refresh nền. Chưa có → loading lần đầu.
+  void fetchBucketList({ force: true });
 };
 
 const handleBucketChange = async (rowData: any, rowIndex: number) => {
@@ -442,20 +381,6 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
     rowData.bucketId = undefined;
   } else {
     rowData.bucketId = rowData.selectedBucketId;
-  }
-
-  if (rowData.selectedBucketId && !props.useChietCapacityValidation) {
-    const targetWeightKg = getEffectiveTargetWeightKg();
-    if (targetWeightKg > 0 && getSelectedBucketTotalKg() > targetWeightKg + WEIGHT_EPSILON) {
-      await clearRowBucketSelection(rowData, rowIndex);
-      showToast({
-        severity: 'warn',
-        summary: t('separateMixedGlue.toast.weightExceeded'),
-        detail: t('separateMixedGlue.toast.bucketCapacityExceeded', { label: getTargetWeightLabel() }),
-        life: 6000,
-      });
-      return;
-    }
   }
 
   updateRowCompletionInfo(rowData);
@@ -466,27 +391,21 @@ const handleBucketChange = async (rowData: any, rowIndex: number) => {
   emit('update-bucket', { row: rowData, previousBucketId, newBucketId });
 };
 
+onMounted(() => {
+  // Prefetch: hydrate cache / fetch 1 lần khi vào bảng, không force.
+  void fetchBucketList({ force: false });
+});
+
 defineExpose({
   shouldBlockAddRow,
   validateAllocation: () => {
-    if (props.useChietCapacityValidation) {
-      const result = validateChietBucketCapacity(
-        props.orderDetails,
-        bucketList.value,
-        props.targetWeight,
-        props.targetWeightUnit || 'Kg'
-      );
-      return result.ok ? null : result.message || t('separateMixedGlue.validation.capacityMismatchWeighed');
-    }
-
-    return validateSeparateGlueAllocation(
+    const result = validateChietBucketCapacity(
       props.orderDetails,
-      props.requestDetails,
       bucketList.value,
       props.targetWeight,
-      props.targetWeightUnit || 'Kg',
-      { requireAllRequestDetails: false }
+      props.targetWeightUnit || 'Kg'
     );
+    return result.ok ? null : result.message || t('separateMixedGlue.validation.capacityMismatchWeighed');
   },
 });
 </script>

@@ -5,6 +5,9 @@ export default {
         return request.post(`api/mobile/gluereturnlog/getqueryresult`, data, { timeout: SLOW_API_TIMEOUT });
     },
     postConfirmGlueReturnLog(data: any) {
-        return request.post(`api/mobile/gluereturnlog/confirmgrl`, data);
+        return request.post(`api/mobile/gluereturnlog/confirmgrl`, data, { withRequestBy: true });
+    },
+    postCreateGlueReturnLogInRoom(data: any) {
+        return request.post(`api/mobile/gluereturnlog/createinmgr`, data, { withRequestBy: true });
     },
 };

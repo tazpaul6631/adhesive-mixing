@@ -1,36 +1,35 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t("mobile.glueReturn.title") }}</ion-title>
-        <ion-buttons slot="end">
+  <AppPage>
+    <AppHeader no-border class="mobile-glue-header">
+      <template #start>
+        <div class="header-start">
+          <button type="button" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t("mobile.glueReturn.title") }}</h1>
+          </button>
+        </div>
+      </template>
+      <template #end>
+        <div class="header-end">
           <NetworkStatusIcon />
-        </ion-buttons>
-      </ion-toolbar>
-      <MobileOfflineNotice />
-    </ion-header>
+        </div>
+      </template>
+      <template #after>
+        <MobileOfflineNotice />
+      </template>
+    </AppHeader>
 
-    <ion-content class="mobile-content">
+    <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="qr-panel">
           <div class="qr-panel__body">
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueReturn.qrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  @click="openScanner"
-                >
-                  <span
-                    v-if="!returnQrText"
-                    class="qr-scan-field__text qr-scan-field__text--empty"
-                  >
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueReturn.qrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
+                <button type="button" class="qr-scan-field" @click="openScanner">
+                  <span v-if="!returnQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueReturn.scanPlaceholder") }}
                   </span>
                   <div v-else-if="pendingReturnGlueInfo" class="qr-scan-field__info">
@@ -48,21 +47,17 @@
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-card class="qr-container line-qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueReturn.lineQrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
+            <article class="qr-container line-qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueReturn.lineQrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
 
-                <button
-                  type="button"
-                  class="line-scan-add-button"
-                  :disabled="!pendingReturnGlueInfo"
-                  @click="openLineScanner"
-                >
+                <button type="button" class="line-scan-add-button" :disabled="!pendingReturnGlueInfo"
+                  @click="openLineScanner">
                   <span>{{ t("mobile.glueReturn.lineScanAddButton") }}</span>
                   <span class="confirm-button__icon">
                     <McScanFill />
@@ -78,15 +73,9 @@
                     {{ t("mobile.glueReturn.lineListTitle", { count: lineChemicalItems.length }) }}
                   </div>
 
-                  <div
-                    class="line-chemical-list__items"
-                    :class="{ 'line-chemical-list__items--scrollable': lineChemicalItems.length >= 2 }"
-                  >
-                    <div
-                      v-for="item in lineChemicalItems"
-                      :key="item.id"
-                      class="line-chemical-card"
-                    >
+                  <div class="line-chemical-list__items"
+                    :class="{ 'line-chemical-list__items--scrollable': lineChemicalItems.length >= 2 }">
+                    <div v-for="item in lineChemicalItems" :key="item.id" class="line-chemical-card">
                       <div class="line-chemical-card__main">
                         <div class="line-chemical-card__row">
                           <span class="line-chemical-card__label">{{ t("mobile.glueReturn.fields.lineLabel") }}</span>
@@ -99,93 +88,31 @@
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        class="line-chemical-card__delete"
+                      <button type="button" class="line-chemical-card__delete"
                         :aria-label="t('mobile.glueReturn.removeLineItem')"
-                        @click.stop="removeLineChemicalItem(item.id)"
-                      >
-                        <ion-icon :icon="trashOutline"></ion-icon>
+                        @click.stop="removeLineChemicalItem(item.id)">
+                        <i class="pi pi-trash" aria-hidden="true"></i>
                       </button>
                     </div>
                   </div>
                 </div>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-button
-              expand="block"
-              class="confirm-button"
-              :disabled="!canSubmitReturn"
-              @click="openConfirmDialog"
-            >
-              <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
-              {{ t("mobile.glueReturn.confirmButton") }}
-            </ion-button>
+            <Button class="confirm-button w-full"
+              :icon="isSubmittingReturn ? 'pi pi-spin pi-spinner' : 'pi pi-verified'" :disabled="!canSubmitReturn"
+              :label="isSubmittingReturn ? t('mobile.glueReturn.submittingButton') : t('mobile.glueReturn.confirmButton')"
+              @click="confirmReturnQr" />
           </div>
         </section>
       </div>
-
-      <ion-modal
-        :is-open="isConfirmDialogOpen"
-        class="return-confirm-modal"
-        :backdrop-dismiss="false"
-        @didDismiss="closeConfirmDialog"
-      >
-        <div class="return-confirm-dialog">
-          <div class="return-confirm-dialog__icon">
-            <ion-icon :icon="alertCircle"></ion-icon>
-          </div>
-          <h2 class="return-confirm-dialog__title">{{ t("mobile.glueReturn.confirmDialogTitle") }}</h2>
-          <div class="return-confirm-dialog__message">
-            <span>{{ t("mobile.glueReturn.confirmDialogMessage") }}</span>
-          </div>
-          <div class="return-confirm-dialog__actions">
-            <ion-button fill="clear" color="medium" :disabled="isSubmittingReturn" @click="closeConfirmDialog">
-              {{ t("mobile.glueReturn.cancelButton") }}
-            </ion-button>
-            <ion-button fill="clear" color="primary" :disabled="isSubmittingReturn" @click.stop="confirmReturnQr">
-              <ion-spinner v-if="isSubmittingReturn" name="crescent" class="return-confirm-dialog__button-spinner"></ion-spinner>
-              <span>{{ isSubmittingReturn ? t("mobile.glueReturn.submittingButton") : t("mobile.glueReturn.okButton") }}</span>
-            </ion-button>
-          </div>
-        </div>
-      </ion-modal>
-
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="bottom"
-        :color="toastColor"
-        :css-class="toastCssClass"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import {
-  IonBackButton,
-  IonButton,
-  IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonModal,
-  IonPage,
-  IonSpinner,
-  IonTitle,
-  IonToast,
-  IonToolbar,
-} from '@ionic/vue';
-import { alertCircle, shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
+import { useRouter } from 'vue-router';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from 'vue-i18n';
@@ -193,15 +120,22 @@ import glueReturnApi from '@/api/glueReturn';
 import { useAuthStore } from '@/store/auth';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
-import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { buildSystemQrUrl, getGlueQrCode } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
+
+type LineQrKind = 'lc' | 'llc';
+type GlueQrType = 'lineChemical' | 'mixGlue' | 'separateGlue' | 'noSeparateGlue';
 
 interface LineChemicalItem {
   id: string;
   rawQrText: string;
+  lineQrKind: LineQrKind | null;
   productLineName: string;
   glueName: string;
   lineChemicalName: string;
@@ -211,19 +145,19 @@ interface LineChemicalItem {
 }
 
 const { t } = useI18n();
+const router = useRouter();
 const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
+const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const returnQrText = ref('');
 const pendingReturnGlueInfo = ref<any>(null);
 const lineChemicalItems = ref<LineChemicalItem[]>([]);
-const isConfirmDialogOpen = ref(false);
 const isSubmittingReturn = ref(false);
-const showSuccessToast = ref(false);
-const toastMessage = ref('');
-const toastColor = ref<string | undefined>('success');
-const toastCssClass = ref('');
-
 const hasLineChemicalMismatch = computed(() => lineChemicalItems.value.some((item) => !item.isMatched));
 const hasLineChemicalData = computed(() => lineChemicalItems.value.length > 0);
 const canSubmitReturn = computed(() => {
@@ -270,30 +204,186 @@ function getReturnGlueIdValue(info: any) {
   return 0;
 }
 
-function getReturnGlueCompareValue(info: any) {
-  if (hasPayloadValue(info?.glueId)) {
-    return normalizeCompareValue(info.glueId);
-  }
-
-  if (hasPayloadValue(info?.materialCode)) {
-    return normalizeCompareValue(info.materialCode);
-  }
-
-  return '';
+function normalizeGlueName(value: any) {
+  return normalizeCompareValue(value)
+    .replace(/\s+/g, '')
+    .toLowerCase();
 }
 
-function getLineChemicalIdList() {
-  return lineChemicalItems.value
-    .map((item) => normalizeCompareValue(item.rawData?.lineChemicalId))
-    .filter(Boolean);
+function getLineReceiveType(data: any): string {
+  return normalizeCompareValue(data?.type);
+}
+
+function getLineQrKind(qrText: string, data?: any): LineQrKind | null {
+  const code = getGlueQrCode(qrText);
+  if (code === 'lc' || code === 'llc') {
+    return code;
+  }
+
+  if (hasPayloadValue(data?.layoutLineChemicalId) && !hasPayloadValue(data?.lineChemicalId)) {
+    return 'llc';
+  }
+
+  if (hasPayloadValue(data?.lineChemicalId) || hasPayloadValue(data?.productLineId)) {
+    return 'lc';
+  }
+
+  return null;
+}
+
+function normalizeLineChemicalScanData(data: any) {
+  if (!data || typeof data !== 'object') return data;
+
+  return {
+    ...data,
+    glueName: data.glueName || data.layoutLineChemicalName || '',
+    productLineName: data.productLineName || '',
+  };
+}
+
+function getLineItemDedupeKey(data: any, rawQrText: string) {
+  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
+  const layoutLineChemicalId = normalizeCompareValue(data?.layoutLineChemicalId);
+
+  if (lineChemicalId) {
+    return `lc:${lineChemicalId}`;
+  }
+
+  if (layoutLineChemicalId) {
+    return `llc:${layoutLineChemicalId}`;
+  }
+
+  return rawQrText;
+}
+
+function getLineIdsForReturnItem(item: LineChemicalItem): {
+  lineChemicalId?: string;
+  layoutLineChemicalId?: string;
+} | null {
+  const data = item.rawData;
+  const receiveType = getLineReceiveType(data);
+  const lineQrKind = item.lineQrKind ?? getLineQrKind(item.rawQrText, data);
+  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
+  const layoutLineChemicalId = normalizeCompareValue(data?.layoutLineChemicalId);
+  const result: { lineChemicalId?: string; layoutLineChemicalId?: string } = {};
+
+  if (lineQrKind === 'llc') {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    result.layoutLineChemicalId = layoutLineChemicalId;
+    return result;
+  }
+
+  if (receiveType === 'UseProductLine' || receiveType === 'UseLineChemical') {
+    if (!lineChemicalId && !layoutLineChemicalId) {
+      return null;
+    }
+    if (lineChemicalId) {
+      result.lineChemicalId = lineChemicalId;
+    }
+    if (layoutLineChemicalId) {
+      result.layoutLineChemicalId = layoutLineChemicalId;
+    }
+    return result;
+  }
+
+  if (receiveType === 'UseLayoutLineChemical') {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    result.layoutLineChemicalId = layoutLineChemicalId;
+    return result;
+  }
+
+  if (layoutLineChemicalId && !lineChemicalId) {
+    result.layoutLineChemicalId = layoutLineChemicalId;
+    return result;
+  }
+
+  if (!lineChemicalId && !layoutLineChemicalId) {
+    return null;
+  }
+
+  if (lineChemicalId) {
+    result.lineChemicalId = lineChemicalId;
+  }
+  if (layoutLineChemicalId) {
+    result.layoutLineChemicalId = layoutLineChemicalId;
+  }
+  return result;
+}
+
+function buildReturnLineIdPayload() {
+  const lineChemicalIds: string[] = [];
+  const layoutLineChemicalIds: string[] = [];
+  const seenLine = new Set<string>();
+  const seenLayout = new Set<string>();
+
+  for (const item of lineChemicalItems.value) {
+    const ids = getLineIdsForReturnItem(item);
+    if (!ids) {
+      return null;
+    }
+
+    if (ids.lineChemicalId && !seenLine.has(ids.lineChemicalId)) {
+      seenLine.add(ids.lineChemicalId);
+      lineChemicalIds.push(ids.lineChemicalId);
+    }
+
+    if (ids.layoutLineChemicalId && !seenLayout.has(ids.layoutLineChemicalId)) {
+      seenLayout.add(ids.layoutLineChemicalId);
+      layoutLineChemicalIds.push(ids.layoutLineChemicalId);
+    }
+  }
+
+  if (!lineChemicalIds.length && !layoutLineChemicalIds.length) {
+    return null;
+  }
+
+  return { lineChemicalIds, layoutLineChemicalIds };
 }
 
 function getSystemQrUrl(qrText: string) {
   return buildSystemQrUrl(qrText);
 }
 
-function getGlueQrType(data: any) {
-  if (hasPayloadValue(data?.lineChemicalId) && hasPayloadValue(data?.chemicalMasterId)) {
+function getGlueQrType(data: any): GlueQrType | null {
+  const receiveType = getLineReceiveType(data);
+  const hasLineId =
+    hasPayloadValue(data?.lineChemicalId) ||
+    hasPayloadValue(data?.layoutLineChemicalId);
+  const hasProductLineId = hasPayloadValue(data?.productLineId);
+  const hasLayoutLineId = hasPayloadValue(data?.layoutLineChemicalId);
+  const hasLayoutGlueName =
+    hasPayloadValue(data?.glueName) || hasPayloadValue(data?.layoutLineChemicalName);
+
+  if (receiveType === 'UseProductLine') {
+    if (hasProductLineId) {
+      return 'lineChemical';
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLineChemical') {
+    if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
+      return 'lineChemical';
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLayoutLineChemical') {
+    if (hasLayoutLineId && hasLayoutGlueName) {
+      return 'lineChemical';
+    }
+    return null;
+  }
+
+  if (hasLayoutLineId && (hasLayoutGlueName || hasPayloadValue(data?.glueId))) {
+    return 'lineChemical';
+  }
+
+  if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
     return 'lineChemical';
   }
 
@@ -320,7 +410,7 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
   const systemUrl = getSystemQrUrl(qrText);
 
   if (!systemUrl) {
-    return { data: null, status: 'invalid' as const };
+    return { data: null, status: 'invalid' as const, message: '' };
   }
 
   const userId = getCurrentUserId();
@@ -334,19 +424,23 @@ async function resolveGlueQrFromSystemUrl(qrText: string) {
     const response = await fetch(systemUrl.toString(), { method: 'GET', headers });
 
     if (!response.ok) {
-      return { data: null, status: 'invalid' as const };
+      return { data: null, status: 'invalid' as const, message: '' };
     }
 
     const responseData = await response.json();
 
     if (responseData?.success === false || !responseData?.data) {
-      return { data: null, status: 'noData' as const };
+      return {
+        data: null,
+        status: 'noData' as const,
+        message: typeof responseData?.message === 'string' ? responseData.message : 'DATA_NOT_FOUND',
+      };
     }
 
-    return { data: responseData.data, status: 'success' as const };
+    return { data: responseData.data, status: 'success' as const, message: responseData?.message || '' };
   } catch (error) {
     console.error('Không thể gọi URL QR hệ thống:', error);
-    return { data: null, status: 'invalid' as const };
+    return { data: null, status: 'invalid' as const, message: '' };
   }
 }
 
@@ -368,7 +462,12 @@ async function triggerMismatchFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerMismatchFeedback();
-  alert(message);
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueReturn.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 function resetReturnField() {
@@ -385,16 +484,17 @@ function resetReturnWorkflow() {
   resetLineChemicalList();
 }
 
-function closeConfirmDialog() {
-  isConfirmDialogOpen.value = false;
-}
-
 async function openScanner() {
   try {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueReturn.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueReturn.title'),
+        detail: t('mobile.glueReturn.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -421,7 +521,11 @@ async function openScanner() {
 
     if (result.status === 'noData' || !result.data) {
       resetReturnWorkflow();
-      await showWarningAlert(t('mobile.glueReturn.messages.noGlueData'));
+      await showWarningAlert(resolveCatchErrorMessage(
+        t,
+        (result as any).message || 'DATA_NOT_FOUND',
+        t('catchError.DATA_NOT_FOUND'),
+      ));
       return;
     }
 
@@ -438,23 +542,28 @@ async function openScanner() {
     resetLineChemicalList();
   } catch (error) {
     console.error('Lỗi khi quét mã QR:', error);
-    alert(t('mobile.glueReturn.messages.loadError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueReturn.title'),
+      detail: t('mobile.glueReturn.messages.loadError'),
+      life: 3000,
+    });
   }
 }
 
-function buildLineChemicalItem(data: any, rawQrText: string): LineChemicalItem {
-  const lineChemicalId = normalizeCompareValue(data?.lineChemicalId);
-  const lineChemicalMasterId = normalizeCompareValue(data?.chemicalMasterId);
-  const returnGlueCompareValue = getReturnGlueCompareValue(pendingReturnGlueInfo.value);
-  const isMatched = !!lineChemicalMasterId && !!returnGlueCompareValue && lineChemicalMasterId === returnGlueCompareValue;
+function buildLineChemicalItem(data: any, rawQrText: string, lineQrKind: LineQrKind | null): LineChemicalItem {
+  const lineGlueName = normalizeGlueName(data?.glueName || data?.layoutLineChemicalName);
+  const returnGlueName = normalizeGlueName(pendingReturnGlueInfo.value?.glueName);
+  const isMatched = !!lineGlueName && !!returnGlueName && lineGlueName === returnGlueName;
 
   return {
-    id: lineChemicalId || `${Date.now()}-${lineChemicalItems.value.length}`,
+    id: getLineItemDedupeKey(data, rawQrText) || `${Date.now()}-${lineChemicalItems.value.length}`,
     rawQrText,
+    lineQrKind,
     productLineName: normalizeCompareValue(data?.productLineName),
-    glueName: normalizeCompareValue(data?.glueName),
-    lineChemicalName: normalizeCompareValue(data?.lineChemicalName),
-    chemicalMasterId: lineChemicalMasterId,
+    glueName: normalizeCompareValue(data?.glueName || data?.layoutLineChemicalName),
+    lineChemicalName: normalizeCompareValue(data?.lineChemicalName || data?.layoutLineChemicalName),
+    chemicalMasterId: normalizeCompareValue(data?.chemicalMasterId),
     isMatched,
     rawData: data,
   };
@@ -474,7 +583,12 @@ async function openLineScanner() {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== 'granted' && camera !== 'limited') {
-      alert(t('mobile.glueReturn.messages.cameraPermission'));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueReturn.title'),
+        detail: t('mobile.glueReturn.messages.cameraPermission'),
+        life: 3000,
+      });
       return;
     }
 
@@ -491,6 +605,12 @@ async function openLineScanner() {
       return;
     }
 
+    const lineQrKind = getLineQrKind(scannedValue);
+    if (lineQrKind !== 'lc' && lineQrKind !== 'llc') {
+      await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+      return;
+    }
+
     const result = await resolveGlueQr(scannedValue);
 
     if (result.status === 'invalid') {
@@ -499,7 +619,11 @@ async function openLineScanner() {
     }
 
     if (result.status === 'noData' || !result.data) {
-      await showWarningAlert(t('mobile.glueReturn.messages.noLineData'));
+      await showWarningAlert(resolveCatchErrorMessage(
+        t,
+        (result as any).message || 'DATA_NOT_FOUND',
+        t('catchError.DATA_NOT_FOUND'),
+      ));
       return;
     }
 
@@ -510,15 +634,19 @@ async function openLineScanner() {
       return;
     }
 
-    const lineChemicalId = normalizeCompareValue(result.data?.lineChemicalId);
-    const isDuplicated = !!lineChemicalId && lineChemicalItems.value.some((item) => item.id === lineChemicalId);
+    const normalizedLineData = {
+      ...normalizeLineChemicalScanData(result.data),
+      _lineQrKind: lineQrKind,
+    };
+    const itemId = getLineItemDedupeKey(normalizedLineData, scannedValue);
+    const isDuplicated = !!itemId && lineChemicalItems.value.some((item) => item.id === itemId);
 
     if (isDuplicated) {
       await showWarningAlert(t('mobile.glueReturn.messages.duplicateLineQr'));
       return;
     }
 
-    const item = buildLineChemicalItem(result.data, scannedValue);
+    const item = buildLineChemicalItem(normalizedLineData, scannedValue, lineQrKind);
 
     if (!item.isMatched) {
       await showWarningAlert(t('mobile.glueReturn.messages.lineMismatchWarning'));
@@ -528,33 +656,41 @@ async function openLineScanner() {
     lineChemicalItems.value = [...lineChemicalItems.value, item];
   } catch (error) {
     console.error('Lỗi khi quét mã QR thùng keo chuyền:', error);
-    alert(t('mobile.glueReturn.messages.loadLineError'));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueReturn.title'),
+      detail: t('mobile.glueReturn.messages.loadLineError'),
+      life: 3000,
+    });
   }
-}
-
-function openConfirmDialog() {
-  if (!canSubmitReturn.value) {
-    return;
-  }
-
-  isConfirmDialogOpen.value = true;
 }
 
 async function confirmReturnQr() {
-  if (!pendingReturnGlueInfo.value || !hasLineChemicalData.value || hasLineChemicalMismatch.value) {
+  if (!canSubmitReturn.value || !pendingReturnGlueInfo.value || !hasLineChemicalData.value || hasLineChemicalMismatch.value) {
     return;
   }
 
-  const lineChemicalIds = getLineChemicalIdList();
+  const lineIds = buildReturnLineIdPayload();
+  if (!lineIds) {
+    await showWarningAlert(t('mobile.glueReturn.messages.invalidLineQr'));
+    return;
+  }
+
   const userId = getCurrentUserId();
-  const payload = {
+  const payload: Record<string, any> = {
     factoryId: normalizeCompareValue(pendingReturnGlueInfo.value.factoryId),
     returnGlueId: getReturnGlueIdValue(pendingReturnGlueInfo.value),
-    lineChemicalIds,
     recordStatus: '1',
     createrId: userId,
     updaterId: userId,
   };
+
+  if (lineIds.lineChemicalIds.length) {
+    payload.lineChemicalIds = lineIds.lineChemicalIds;
+  }
+  if (lineIds.layoutLineChemicalIds.length) {
+    payload.layoutLineChemicalIds = lineIds.layoutLineChemicalIds;
+  }
 
   isSubmittingReturn.value = true;
 
@@ -562,9 +698,8 @@ async function confirmReturnQr() {
     if (!authStore.isOnline) {
       await addOfflineQueueItem('ReturnGlue', 'api/mobile/gluereturnlog/create', 'POST', payload);
       await offlineStore.refreshQueueCounts();
-      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      notifyToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       resetReturnWorkflow();
-      closeConfirmDialog();
       return;
     }
 
@@ -575,41 +710,90 @@ async function confirmReturnQr() {
       throw new Error(responseData?.message || t('mobile.glueReturn.messages.returnConfirmError'));
     }
 
-    showToast(t('mobile.glueReturn.messages.returnSuccess'));
+    notifyToast(resolveCatchErrorMessage(
+      t,
+      responseData?.message || 'GLUE_RETURN_CONFIRM_SUCCESS',
+      t('catchError.GLUE_RETURN_CONFIRM_SUCCESS'),
+    ));
     resetReturnWorkflow();
-    closeConfirmDialog();
   } catch (error) {
     console.error('Không thể tạo log trả keo:', error);
-    alert(error instanceof Error ? error.message : t('mobile.glueReturn.messages.returnConfirmError'));
+    const rawMessage = (error as any)?.response?.data?.message
+      || (error instanceof Error ? error.message : '');
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueReturn.title'),
+      detail: resolveCatchErrorMessage(
+        t,
+        rawMessage,
+        t('mobile.glueReturn.messages.returnConfirmError'),
+      ),
+      life: 3000,
+    });
   } finally {
     isSubmittingReturn.value = false;
   }
 }
 
-function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
-  toastMessage.value = message;
-  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
-  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
-  showSuccessToast.value = true;
+function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  showToast({
+    severity: type === 'offlineQueue' ? 'warn' : 'success',
+    summary: type === 'offlineQueue'
+      ? t('mobile.offlineQueue.title')
+      : t('mobile.glueReturn.title'),
+    detail: message,
+  });
 }
 </script>
 
 <style scoped lang="scss">
-.header-container {
-  ion-toolbar {
-    --background: #0b56d9;
-    --color: #ffffff;
-  }
+.mobile-glue-header :deep(.app-header__toolbar) {
+  min-height: 56px;
+  padding-inline: 4px 10px;
+}
 
-  ion-title {
-    color: #ffffff;
-    font-size: 18px !important;
-    font-weight: 700;
-  }
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 2px 6px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .mobile-content {
-  --background: #f6f9fd;
+  background: #f6f9fd;
 }
 
 .menu-container {
@@ -633,17 +817,18 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 
-  ion-card-header {
+  &__header {
     padding: 24px 24px 16px;
   }
 
-  ion-card-title {
+  &__title {
+    margin: 0;
     color: #081a36;
-    font-size: 18px !important;
+    font-size: 18px;
     font-weight: 700;
   }
 
-  ion-card-content {
+  &__body {
     padding: 0 24px 24px;
   }
 }
@@ -719,12 +904,10 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   }
 }
 
-.line-qr-container {
-  ion-card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
+.line-qr-container .qr-container__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .line-scan-description {
@@ -860,8 +1043,8 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
     color: #ee4646;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 
-    ion-icon {
-      font-size: 20px !important;
+    .pi {
+      font-size: 20px;
     }
 
     &:active {
@@ -874,21 +1057,13 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
 .confirm-button {
   overflow: hidden;
   margin: 0;
-  border-radius: 16px;
+  border-radius: 16px !important;
   font-size: 15px !important;
   font-weight: 500;
   min-height: 50px;
   text-transform: none;
 
-  ion-icon {
-    margin-right: 10px;
-  }
-
-  &::part(native) {
-    border-radius: 16px;
-  }
-
-  &[disabled] {
+  &:disabled {
     opacity: 0.48;
     pointer-events: none;
   }
@@ -902,7 +1077,7 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   justify-content: center;
   flex: 0 0 22px;
   line-height: 1;
-  color:rgba(0, 0, 0, 0.582)
+  color: rgba(0, 0, 0, 0.582)
 }
 
 .confirm-button__icon :deep(svg) {
@@ -911,62 +1086,9 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   display: block;
 }
 
-.return-confirm-modal {
-  --width: min(90vw, 360px);
-  --height: auto;
-  --border-radius: 20px;
-  --box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
-}
-
-.return-confirm-dialog {
-  padding: 26px 22px 12px;
-  border-radius: 20px;
-  background: #ffffff;
-  text-align: center;
-
-  &__icon {
-    width: 48px;
-    height: 48px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    border-radius: 50%;
-    background: #eaf2ff;
-    color: #0b72ed;
-
-    ion-icon {
-      font-size: 1.8rem;
-    }
-  }
-
-  &__title {
-    margin: 0 0 10px;
-    color: #081a36;
-    font-size: 16px !important;
-    font-weight: 700;
-  }
-
-  &__message {
-    margin: 0;
-    color: #475569;
-    font-size: 14px !important;
-    line-height: 1.5;
-    word-break: break-word;
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 22px;
-  }
-
-  &__button-spinner {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-  }
+.confirm-button__spinner {
+  width: 22px;
+  height: 22px;
 }
 
 @media (min-width: 768px) {
@@ -977,14 +1099,14 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
 
   .qr-container {
     border-radius: 22px;
+  }
 
-    ion-card-header {
-      padding: 28px 30px 18px;
-    }
+  .qr-container__header {
+    padding: 28px 30px 18px;
+  }
 
-    ion-card-content {
-      padding: 0 30px 30px;
-    }
+  .qr-container__body {
+    padding: 0 30px 30px;
   }
 
   .qr-scan-field {
@@ -1042,39 +1164,6 @@ function showToast(message: string, type: 'success' | 'offlineQueue' = 'success'
   .confirm-button {
     min-height: 82px;
     border-radius: 18px;
-    --border-radius: 18px;
-  }
-
-  .return-confirm-modal {
-    --width: min(82vw, 460px);
-    --border-radius: 24px;
-  }
-
-  .return-confirm-dialog {
-    padding: 34px 30px 16px;
-    border-radius: 24px;
-
-    &__icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 18px;
-
-      ion-icon {
-        font-size: 2.4rem;
-      }
-    }
-
-    &__title {
-      font-size: 1.7rem !important;
-    }
-
-    &__message {
-      font-size: 1.18rem !important;
-    }
-
-    &__actions {
-      margin-top: 28px;
-    }
   }
 }
 </style>

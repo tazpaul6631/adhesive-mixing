@@ -79,12 +79,19 @@
       }
     },
     "appMenu": {
-      "hello": "Hello!",
-      "system": "Mobile Management System",
+      "hello": "Hello {name}!",
+      "system": "Glue mixing room system on Mobile",
+      "roleChips": {
+        "qip": "QIP",
+        "mixGlueRoom": "Mix glue",
+        "mixGluePhone": "Glue delivery"
+      },
       "glueConfirm": "Confirm Glue Delivery",
       "description": "Use the phone camera to scan QR codes",
       "glueReturn": "Return glue scan",
       "glueReturnDescription": "Scan returned glue buckets after confirming the production line",
+      "glueReturnInRoom": "Scan glue return in mixing room",
+      "glueReturnInRoomDescription": "Scan returned glue buckets inside the glue mixing room",
       "glueInfoCheck": "Glue Bucket Information Lookup",
       "glueInfoCheckDescription": "Check allocated glue bucket information",
       "glueCheckList": "Glue Check List",
@@ -98,7 +105,7 @@
       "confirmButton": "Confirm return",
       "confirmDialogTitle": "Confirm returned glue bucket",
       "confirmDialogMessage": "Confirm return the scanned bucket?",
-      "cancelButton": "CANCEL",
+      "cancelButton": "Cancel",
       "okButton": "OK",
       "submittingButton": "Submitting...",
       "fields": {
@@ -124,6 +131,35 @@
       "lineScanDisabledHint": "Please scan the returned glue bucket QR code first.",
       "lineListTitle": "Scanned lines: {count}",
       "removeLineItem": "Remove line glue bucket"
+    },
+    "glueReturnInRoom": {
+      "title": "Scan glue return in mixing room",
+      "productLineLabel": "Line",
+      "productLinePlaceholder": "Select a line",
+      "productLineFilterPlaceholder": "Search line",
+      "qrTitle": "Returned glue bucket QR code",
+      "scanPlaceholder": "Scan the returned glue QR code",
+      "confirmButton": "Confirm return",
+      "confirmDialogTitle": "Confirm returned glue bucket",
+      "confirmDialogMessage": "Confirm return the scanned bucket?",
+      "cancelButton": "Cancel",
+      "okButton": "OK",
+      "fields": {
+        "lineLabel": "Line:",
+        "glueLabel": "Glue:"
+      },
+      "messages": {
+        "cameraPermission": "Camera permission is required to scan the QR code!",
+        "invalidQr": "Invalid QR code. Please scan the returned glue bucket QR code again.",
+        "noGlueData": "No returned glue bucket data found.",
+        "loadError": "Unable to retrieve the returned glue bucket QR information. Please check the API connection!",
+        "returnSuccess": "Return completed successfully",
+        "returnConfirmError": "Unable to create the glue return log. Please try again!",
+        "productLineLoadError": "Unable to load the product line list. Please try again!",
+        "factoryMissing": "Factory ID not found.",
+        "departmentMissing": "Department ID not found.",
+        "lineMismatchWarning": "The selected line differs from the line on the bucket label. You can still confirm if this is correct."
+      }
     },
     "glueInfoCheck": {
       "title": "Glue Bucket Information Lookup",
@@ -166,9 +202,11 @@
       "notOkResult": "Not OK",
       "noteLabel": "Note",
       "notePlaceholder": "Enter notes if any",
-      "cancelButton": "CANCEL",
+      "abnormalLabel": "Issue type",
+      "abnormalPlaceholder": "Select issue type",
+      "cancelButton": "Cancel",
       "submitButton": "Submit",
-      "submitRequired": "Please enter a note before submitting.",
+      "submitRequired": "Please select an issue type or enter a note before submitting.",
       "messages": {
         "cameraPermission": "Camera permission is required to scan the inspection code!",
         "invalidQr": "Invalid inspection code or no data found!",
@@ -176,7 +214,9 @@
         "submitSuccess": "Inspection information submitted successfully.",
         "submitError": "Unable to submit inspection information. Please try again!",
         "noCheckListData": "No inspection data found.",
-        "cancelSuccess": "Inspection form cancelled"
+        "cancelSuccess": "Inspection form cancelled",
+        "abnormalLoadError": "Unable to load issue types. Please try again!",
+        "abnormalOffline": "You are offline — please enter a note or connect to select an issue type."
       }
     },
     "common": {
@@ -198,5 +238,24 @@
       "title": "Syncing data",
       "note": "Please wait. Offline data is being uploaded to the system."
     }
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "Initialization data not found",
+    "DATA_NOT_FOUND": "Data not found.",
+    "CREATE_SUCCESS": "Created successfully",
+    "LOGIN_INFO_NOT_FOUND": "Login information not found",
+    "WRONG_PASSWORD": "Incorrect password",
+    "USER_NOT_AUTHORIZED": "You are not authorized to access this application",
+    "LOGIN_SUCCESS": "Login successful",
+    "CONFIRM_SUCCESS": "Confirmed successfully",
+    "QIP_CONFIRM_FAIL": "Confirmation failed. You are not a QIP. Please contact Admin to check",
+    "LINE_GLUE_CONFIRM_SUCCESS": "Line glue issue confirmed successfully",
+    "GLUE_ALREADY_SEPARATE": "Glue issue confirmation failed because this glue has already been separated",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "Glue return confirmed successfully",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "Returned glue confirmed successfully",
+    "PRINT_SUCCESS": "Printed successfully",
+    "DATA_ALREADY_EXISTS": "Data already exists",
+    "SYNC_SUCCESS": "Data synced successfully",
+    "CONFIRM_FAIL": "Confirmation failed"
   }
 }

@@ -41,6 +41,7 @@
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated, watch, computed, getCurrentInstance } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useScaleManager } from '@/composables/useScaleManager';
+import { useScaleKeepAwake } from '@/composables/useScaleKeepAwake';
 import { useAppLocale } from '@/composables/useAppLocale';
 
 const toast = useToast();
@@ -199,10 +200,17 @@ const {
   startAutoConnect,
   stopAutoConnect,
 } = useScaleManager();
+const { requestKeepAwake, releaseKeepAwake } = useScaleKeepAwake();
 const scaleSessionId = props.scaleSessionId ?? getCurrentInstance()?.uid ?? `scale-${Date.now()}`;
 
 const beginScaleSession = () => {
   startAutoConnect(scaleSessionId);
+  void requestKeepAwake();
+};
+
+const endScaleSession = () => {
+  stopAutoConnect(scaleSessionId);
+  void releaseKeepAwake();
 };
 
 // Đồng bộ trạng thái kết nối ra UI — chỉ "đã kết nối" khi thực sự nhận được dữ liệu cân
@@ -290,7 +298,7 @@ const confirmWeight = () => {
       severity: 'warn',
       summary: t('electronicScale.toast.noTargetWeight'),
       detail: t('electronicScale.toast.noTargetWeightDetail'),
-      life: 4000
+      life: 3000
     });
     return;
   }
@@ -301,7 +309,7 @@ const confirmWeight = () => {
       severity: 'warn',
       summary: t('electronicScale.toast.zeroWeight'),
       detail: t('electronicScale.toast.zeroWeightDetail'),
-      life: 6000,
+      life: 3000,
     });
     return;
   }
@@ -347,7 +355,7 @@ const confirmWeight = () => {
     detail: props.enforceTolerance
       ? t('electronicScale.toast.successWithinTolerance')
       : t('electronicScale.toast.successConfirmed'),
-    life: 6000
+    life: 3000
   });
 };
 
@@ -362,11 +370,11 @@ onActivated(() => {
 });
 
 onDeactivated(() => {
-  stopAutoConnect(scaleSessionId);
+  endScaleSession();
 });
 
 onUnmounted(() => {
-  stopAutoConnect(scaleSessionId);
+  endScaleSession();
 });
 </script>
 

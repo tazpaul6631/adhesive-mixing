@@ -51,14 +51,20 @@ function addValueIfExists(target: Record<string, any>, key: string, value: any) 
 function mapReceiveGluePayload(payload: any) {
   const requestPayload: Record<string, any> = {
     factoryId: normalizeValue(payload?.factoryId),
-    productLineId: normalizeValue(payload?.productLineId),
     updaterId: normalizeValue(payload?.updaterId),
   };
 
+  addValueIfExists(requestPayload, 'productLineId', payload?.productLineId);
+  addValueIfExists(requestPayload, 'lineChemicalId', payload?.lineChemicalId);
+  addValueIfExists(requestPayload, 'layoutLineChemicalId', payload?.layoutLineChemicalId);
   addValueIfExists(requestPayload, 'mixGlueMasterId', payload?.mixGlueMasterId);
   addValueIfExists(requestPayload, 'separateGlueId', payload?.separateGlueId);
   addValueIfExists(requestPayload, 'noSeparateGlueId', payload?.noSeparateGlueId);
   addValueIfExists(requestPayload, 'receivedBy', payload?.receivedBy);
+
+  if (typeof payload?.scanFailed === 'boolean') {
+    requestPayload.scanFailed = payload.scanFailed;
+  }
 
   return requestPayload;
 }
@@ -74,14 +80,27 @@ function normalizeIdArrayValue(value: any) {
 }
 
 function mapReturnGluePayload(payload: any) {
-  return {
+  const requestPayload: Record<string, any> = {
     factoryId: normalizeValue(payload?.factoryId),
     returnGlueId: normalizeIdValue(payload?.returnGlueId),
-    lineChemicalIds: normalizeIdArrayValue(payload?.lineChemicalIds),
     recordStatus: normalizeValue(payload?.recordStatus || '1'),
     createrId: normalizeValue(payload?.createrId),
     updaterId: normalizeValue(payload?.updaterId),
   };
+
+  addValueIfExists(requestPayload, 'productLineId', payload?.productLineId);
+
+  const lineChemicalIds = normalizeIdArrayValue(payload?.lineChemicalIds);
+  const layoutLineChemicalIds = normalizeIdArrayValue(payload?.layoutLineChemicalIds);
+
+  if (lineChemicalIds.length) {
+    requestPayload.lineChemicalIds = lineChemicalIds;
+  }
+  if (layoutLineChemicalIds.length) {
+    requestPayload.layoutLineChemicalIds = layoutLineChemicalIds;
+  }
+
+  return requestPayload;
 }
 
 function mapGlueCheckListPayload(payload: any) {

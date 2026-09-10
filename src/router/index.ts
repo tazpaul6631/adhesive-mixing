@@ -1,5 +1,9 @@
-import { createRouter, createWebHashHistory } from '@ionic/vue-router';
-import { RouteRecordRaw } from 'vue-router';
+/**
+ * vue-router thuần + AppPage shell.
+ */
+import { nextTick } from 'vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { Capacitor } from '@capacitor/core';
 import MainLayout from '../views/MainLayout.vue';
@@ -25,6 +29,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true },
     children: [
       {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/DashboardPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: '404',
         name: 'NotFound',
         component: () => import('@/views/404NotFoundPage/NotFoundPage.vue')
@@ -35,52 +45,60 @@ const routes: Array<RouteRecordRaw> = [
     path: '/app-menu',
     name: 'AppMenu',
     component: AppMenu,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, skipRouteLoading: true }
   },
   {
     path: '/list-mix-glue',
+    name: 'ListMixGlue',
     component: () => import('@/views/Tablet/MixGlue/ListMixGlue.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true, keepAlive: true }
   },
   {
     path: '/mix-glue-management',
     component: () => import('@/views/Tablet/MixGlue/MixGlueManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/list-separate-mixed-glue-management',
+    name: 'ListSeparateMixedglue',
     component: () => import('@/views/Tablet/Separate/ListSeparateMixedglue.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true, keepAlive: true }
   },
   {
     path: '/separate-mixed-glue-management',
     component: () => import('@/views/Tablet/Separate/SeparateMixedGlueManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true }
   },
   {
     path: '/glue-return-log',
+    name: 'ListGlueReturnLog',
     component: () => import('@/views/Tablet/GlueReturnLog/ListGlueReturnLog.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGlueRoom: true, keepAlive: true }
   },
   {
     path: '/mobile',
     component: () => import('@/views/Mobile/GlueConfirm.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
   },
   {
     path: '/mobile/glue-return',
     component: () => import('@/views/Mobile/GlueReturn.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
+  },
+  {
+    path: '/mobile/glue-return-in-room',
+    component: () => import('@/views/Mobile/GlueRetuenInRoom.vue'),
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
   },
   {
     path: '/mobile/glue-info-check',
     component: () => import('@/views/Mobile/GlueInfoCheck.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresMixGluePhone: true }
   },
   {
     path: '/mobile/glue-check-list',
     component: () => import('@/views/Mobile/GlueCheckList.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresQip: true }
   },
   {
     path: '/:catchAll(.*)',
@@ -120,6 +138,21 @@ router.beforeEach((to, from, next) => {
     return next('/dashboard');
   }
 
+  // 4. Tablet mix-glue room: chỉ vào khi isMixGlueRoom === true
+  if (to.meta.requiresMixGlueRoom && !authStore.canUseMixGlueRoom) {
+    return next(isApp ? '/app-menu' : '/dashboard');
+  }
+
+  // 5. Mobile mix-glue phone features
+  if (to.meta.requiresMixGluePhone && !authStore.canUseMixGluePhone) {
+    return next(isApp ? '/app-menu' : '/dashboard');
+  }
+
+  // 6. QIP check-list
+  if (to.meta.requiresQip && !authStore.canUseQip) {
+    return next(isApp ? '/app-menu' : '/dashboard');
+  }
+
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
@@ -133,11 +166,14 @@ router.beforeEach((to, from, next) => {
 });
 
 router.afterEach(() => {
-  stopRouteLoading();
+  // Đợi trang đích mount/paint rồi mới bắt đầu đếm tắt overlay.
+  void nextTick(() => {
+    stopRouteLoading();
+  });
 });
 
 router.onError(() => {
-  stopRouteLoading();
+  stopRouteLoading({ force: true });
 });
 
 export default router;

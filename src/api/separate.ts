@@ -2,7 +2,7 @@ import request from "@/services/apiService";
 
 export default {
     postSeparateGlueCommand(data: any) {
-        return request.post(`api/mobile/separateglue/command`, data)
+        return request.post(`api/mobile/separateglue/command`, data, { withRequestBy: true })
     },
     postSGQueryResult(data: any) {
         return request.post(`api/mobile/separateglue/sgqueryresult`, data)
@@ -11,9 +11,9 @@ export default {
         return request.post(`api/mobile/separateglue/nsgqueryresult`, data)
     },
     postConfirmSG(data: any) {
-        return request.post(`api/mobile/separateglue/confirmsg`, data)
+        return request.post(`api/mobile/separateglue/confirmsg`, data, { withRequestBy: true })
     },
     postConfirmNSG(data: any) {
-        return request.post(`api/mobile/separateglue/confirmnsg`, data)
+        return request.post(`api/mobile/separateglue/confirmnsg`, data, { withRequestBy: true })
     }
 };

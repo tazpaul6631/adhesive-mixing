@@ -26,4 +26,12 @@ export default {
   getCheckListQrData(factoryId: string) {
     return request.get(`api/mobile/offline/cliqrdata/${encodeURIComponent(factoryId)}`);
   },
+
+  getCheckListAbnormalItemQrData(factoryId: string) {
+    return request.get(`api/mobile/offline/claiqrdata/${encodeURIComponent(factoryId)}`);
+  },
+
+  getLineLayoutChemicalQrData(factoryId: string, departmentId: string) {
+    return request.get(`api/mobile/offline/llcqrdata/${encodeURIComponent(factoryId)}/${encodeURIComponent(departmentId)}`);
+  },
 };

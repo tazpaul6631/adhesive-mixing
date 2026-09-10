@@ -1,10 +1,16 @@
 import { defineStore } from 'pinia';
 import storageService from '@/services/storage.service';
 import router from '@/router';
+import { useMixingDevicesStore } from '@/store/mixingDevices';
 
 export interface UserData {
   employeeId: string;
   name?: string;
+  isMixGlueRoom?: boolean;
+  isMixGluePhone?: boolean;
+  isQip?: boolean;
+  receiveType?: string;
+  mixingDevices?: unknown[];
   [key: string]: any;
 }
 
@@ -19,6 +25,9 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.token,
     getUserName: (state) => state.user?.name || state.user?.employeeId || 'Guest',
+    canUseMixGlueRoom: (state) => Boolean(state.user?.isMixGlueRoom),
+    canUseMixGluePhone: (state) => Boolean(state.user?.isMixGluePhone),
+    canUseQip: (state) => Boolean(state.user?.isQip),
   },
 
   actions: {
@@ -27,6 +36,8 @@ export const useAuthStore = defineStore('auth', {
       this.user = userData;
 
       localStorage.setItem('web_token_backup', userData.employeeId);
+
+      useMixingDevicesStore().setFromLogin(userData?.mixingDevices);
     },
 
     setNetworkStatus(status: boolean) {
@@ -39,6 +50,7 @@ export const useAuthStore = defineStore('auth', {
       this.lastSync = null;
 
       localStorage.removeItem('web_token_backup');
+      useMixingDevicesStore().clear();
 
       // Tạm thời comment await storageService.clear() nếu không muốn mất dữ liệu drafts của user hiện tại
       // Hoặc chỉ gọi localStorage.clear(), sessionStorage.clear() 

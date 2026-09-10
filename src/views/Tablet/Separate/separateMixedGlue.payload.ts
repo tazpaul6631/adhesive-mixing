@@ -37,7 +37,6 @@ export const isSeparateGlueRowReady = (item: any) => {
 
 const NO_CHIET_RECORD_STATUS = '1';
 const CHIET_MAIN_RECORD_STATUS = 'C';
-const CHIET_EXTRA_RECORD_STATUS = '1';
 
 const hasPersistedSeparateGlueLineId = (value: unknown): boolean =>
   value != null && value !== '' && String(value) !== '0';
@@ -283,22 +282,6 @@ const buildNoMixInMixCompleteSeparateGlues = (
   );
 };
 
-const collectChietModalRequestDetailIds = (
-  extraChietList: any[],
-  materialCode: unknown
-): Array<string | number> => {
-  const ids = new Set<string>();
-
-  extraChietList
-    .filter((extra) => String(extra.glueId) === String(materialCode))
-    .forEach((extra) => {
-      toApiRequestDetailIds(extra.selectedRequestDetailIds ?? extra.requestDetailIds)
-        .forEach((id) => ids.add(String(id)));
-    });
-
-  return [...ids].map((id) => toApiId(id));
-};
-
 const normalizeApiNoSeparateGlueItem = (
   item: any,
   defaultTime?: string,
@@ -522,66 +505,21 @@ const buildNoSeparateGlues = (
   ctx: PayloadBuildContext,
   defaultTime: string,
   forceRecordStatus?: string
-) => {
-  const result: Array<Record<string, unknown>> = [];
-
+) => (
   ctx.noMixComponents
     .filter(item => item.actualWeight && Number(item.actualWeight) > 0)
-    .forEach((item) => {
-      const materialCode = item.materialCode;
-      const glueWeight = Number(item.actualWeight) || 0;
-      const glueWeightUnit = item.weightUnit || 'Kg';
-      const confirmDate = item.confirmDate || defaultTime;
-
-      if (!item.isChietCompleted) {
-        result.push({
-          materialCode: toApiId(materialCode),
-          glueWeight,
-          glueWeightUnit,
-          bucketId: toApiId(0, 0),
-          glueExtra: !!item.glueExtra,
-          recordStatus: forceRecordStatus ?? NO_CHIET_RECORD_STATUS,
-          confirmDate,
-          seq: 1,
-          requestDetailIds: [],
-        });
-        return;
-      }
-
-      result.push({
-        materialCode: toApiId(materialCode),
-        glueWeight,
-        glueWeightUnit,
-        bucketId: toApiId(item.bucketId ?? 0, 0),
-        glueExtra: !!item.glueExtra,
-        recordStatus: forceRecordStatus ?? (item.recordStatus || CHIET_MAIN_RECORD_STATUS),
-        confirmDate,
-        seq: 1,
-        requestDetailIds: collectChietModalRequestDetailIds(ctx.extraChietList, materialCode),
-      });
-
-      ctx.extraChietList
-        .filter(extra => String(extra.glueId) === String(materialCode))
-        .filter(isSeparateGlueRowForSubmit)
-        .forEach((extra, extraIndex) => {
-          result.push({
-            materialCode: toApiId(materialCode),
-            glueWeight,
-            glueWeightUnit,
-            bucketId: toApiId(extra.bucketId ?? extra.selectedBucketId),
-            glueExtra: extra.glueExtra != null ? !!extra.glueExtra : !!item.glueExtra,
-            recordStatus: forceRecordStatus ?? (extra.recordStatus || CHIET_EXTRA_RECORD_STATUS),
-            confirmDate: extra.confirmDate || defaultTime,
-            seq: extraIndex + 2,
-            requestDetailIds: toApiRequestDetailIds(
-              extra.selectedRequestDetailIds ?? extra.requestDetailIds
-            ),
-          });
-        });
-    });
-
-  return result;
-};
+    .map((item) => ({
+      materialCode: toApiId(item.materialCode),
+      glueWeight: Number(item.actualWeight) || 0,
+      glueWeightUnit: item.weightUnit || 'Kg',
+      bucketId: toApiId(item.bucketId ?? 0, 0),
+      glueExtra: !!item.glueExtra,
+      recordStatus: forceRecordStatus ?? NO_CHIET_RECORD_STATUS,
+      confirmDate: item.confirmDate || defaultTime,
+      seq: 1,
+      requestDetailIds: [],
+    }))
+);
 
 export const buildSeparateGlueCommandPayload = (
   ctx: PayloadBuildContext,

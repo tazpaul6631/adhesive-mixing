@@ -9,8 +9,13 @@
   "appMenu": {
     "title": "Trang chủ",
     "logout": "Đăng xuất",
-    "tabletH2title": "Xin chào!",
-    "tabletSubtitle": "Hệ thống quản lý trộn keo",
+    "tabletH2title": "Xin chào {name}!",
+    "tabletSubtitle": "Hệ thống phòng pha keo trên tablet",
+    "roleChips": {
+      "qip": "QIP",
+      "mixGlueRoom": "Pha keo",
+      "mixGluePhone": "Phát keo"
+    },
     "features": {
       "mixGlue": {
         "title": "Quản lý danh sách keo trộn hỗn hợp",
@@ -28,7 +33,15 @@
   },
   "listMixGlue": {
     "sectionTitle": "Danh sách trộn keo",
+    "refreshTitle": "Làm mới danh sách",
+    "refreshAriaLabel": "Làm mới danh sách",
     "empty": "Hiện tại chưa có dữ liệu để hiển thị.",
+    "deviceUsage": {
+      "small": "Máy nhỏ",
+      "large": "Máy lớn",
+      "smallTitle": "Máy nhỏ đang dùng {inUse}/{total}",
+      "largeTitle": "Máy lớn đang dùng {inUse}/{total}"
+    },
     "filter": {
       "gluePlaceholder": "Lọc theo tên keo"
     },
@@ -38,6 +51,7 @@
       "totalWeight": "TL yêu cầu (KG)",
       "updater": "Nhân viên điều công",
       "updateDate": "Ngày điều công",
+      "requestTime": "Thời gian lãnh",
       "glueConfirm": "Trộn keo hỗn hợp",
       "noMixConfirm": "Xác nhận chiết keo",
       "separateConfirm": "Xác nhận chiết keo",
@@ -53,7 +67,7 @@
     },
     "printAuthDialog": {
       "title": "Xác thực QIP để in tem",
-      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "hint": "QIP nhập mật khẩu hoặc quét thẻ nhân viên cho đơn {workOrderMasterName}.",
       "passwordLabel": "Mật khẩu",
       "passwordPlaceholder": "Nhập mật khẩu",
       "scanButton": "Quét mã QIP",
@@ -81,7 +95,8 @@
       "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
       "gapConfirmOk": "Đã căn gap — tiếp tục",
       "gapConfirmCancel": "Hủy",
-      "busyPendingToast": "Đang có tem chờ in. Vui lòng xử lý xong trước khi in đơn mới."
+      "busyPendingToast": "Đang có tem chờ in. Vui lòng xử lý xong trước khi in đơn mới.",
+      "busyPrintingToast": "Đang xác thực in. Vui lòng hoàn tất trước khi chọn đơn khác."
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -89,7 +104,13 @@
       "error": "Lỗi",
       "draftNotFound": "Không tìm thấy bản nháp đơn điều công.",
       "confirmSuccess": "Đã xác nhận đơn điều công!",
+      "mixStartSuccess": "Xác nhận bắt đầu trộn keo",
+      "mixCompleteSuccess": "Xác nhận đã trộn keo xong",
       "confirmFailed": "Xác nhận thất bại!",
+      "noMixingDeviceAvailable": "Không còn máy trộn khả dụng. Vui lòng chờ máy khác hoàn tất.",
+      "noSmallMixingDeviceAvailable": "Toàn bộ máy 'Nhỏ' đang hoạt động. Vui lòng chờ máy 'Nhỏ' hoàn tất để tiếp tục.",
+      "noLargeMixingDeviceAvailable": "Toàn bộ máy 'Lớn' đang hoạt động. Vui lòng chờ máy 'Lớn' hoàn tất để tiếp tục.",
+      "mixingDeviceAssignmentMissing": "Không tìm thấy máy đã gắn cho đơn này. Vui lòng tải lại danh sách hoặc liên hệ IT.",
       "noMixConfirmSuccess": "Đã xác nhận không chiết!",
       "separateConfirmSuccess": "Đã xác nhận chiết!",
       "noMixConfirmFailed": "Xác nhận không chiết thất bại!",
@@ -150,7 +171,7 @@
     },
     "printAuthDialog": {
       "title": "Xác thực QIP để in tem",
-      "hint": "Nhập mật khẩu QIP cho đơn {workOrderMasterName}, hoặc quét thẻ nhân viên.",
+      "hint": "QIP nhập mật khẩu hoặc quét thẻ nhân viên cho đơn {workOrderMasterName}.",
       "passwordLabel": "Mật khẩu",
       "passwordPlaceholder": "Nhập mật khẩu",
       "scanButton": "Quét mã QIP",
@@ -178,7 +199,8 @@
       "gapConfirmTitle": "Căn gap giấy",
       "gapConfirmMessage": "Vui lòng thay cuộn giấy mới và căn gap (đặt tem đầu sát đầu in). Bấm Xác nhận khi đã căn xong để tiếp tục in — tem tiếp theo sẽ không gửi lệnh GAP.",
       "gapConfirmOk": "Đã căn gap — tiếp tục",
-      "gapConfirmCancel": "Hủy"
+      "gapConfirmCancel": "Hủy",
+      "busyPrintingToast": "Đang xác thực in. Vui lòng hoàn tất trước khi chọn đơn khác."
     },
     "toast": {
       "warning": "Cảnh báo",
@@ -201,8 +223,8 @@
     "management": {
       "pageTitle": "Chiết keo trộn hỗn hợp",
       "sections": {
-        "mixedGlueBucket": "Chi tiết yêu cầu thùng chiết keo trộn hỗn hợp",
-        "noMixGlue": "Chi tiết yêu cầu sử dụng keo không trộn"
+        "mixedGlueBucket": "Chi tiết yêu cầu thùng chiết keo trộn.",
+        "noMixGlue": "Chi tiết yêu cầu thùng chiết keo không trộn."
       }
     },
     "table": {
@@ -220,23 +242,7 @@
         "selectBucket": "Chọn thùng chứa"
       },
       "deleteAriaLabel": "Xóa",
-      "addAriaLabel": "Thêm",
-      "viewAriaLabel": "Xem"
-    },
-    "addComponentDialog": {
-      "title": "Thêm thành phần",
-      "nameLabel": "Tên thành phần",
-      "namePlaceholder": "Chọn thành phần",
-      "nameRequired": "Tên thành phần là bắt buộc.",
-      "weightLabel": "TL thực tế",
-      "weightRequired": "Vui lòng nhập số ({unit})"
-    },
-    "chietDialog": {
-      "title": "Chiết keo theo thùng chứa",
-      "currentGlue": "Keo đang chiết",
-      "weighedWeight": "TL đã cân",
-      "capacityMustMatch": "Tổng TL thùng chứa phải khớp TL đã cân",
-      "viewOnly": "Chỉ xem"
+      "addAriaLabel": "Thêm"
     },
     "toast": {
       "restore": "Đã khôi phục",
@@ -246,37 +252,27 @@
       "locked": "Không thể chỉnh sửa",
       "completeFirst": "Đơn điều công này đã hoàn thành chiết, không thể thêm hoặc xóa.",
       "noMixAddRowRequired": "Keo không trộn: vui lòng thêm dòng và chọn thùng chứa trước khi xác nhận.",
+      "mixAddRowRequired": "Keo trộn hỗn hợp: vui lòng thêm ít nhất một dòng và chọn thùng chứa trước khi xác nhận.",
+      "bucketListRequired": "Vui lòng mở chọn thùng chứa ít nhất một lần để tải danh sách trước khi kiểm tra dung tích / xác nhận.",
       "separateNoChangesToSubmit": "Không có thay đổi thêm dòng, chọn thùng hoặc xóa dòng. Không cần gửi lại.",
       "completeSuccess": "Hoàn thành",
       "completeSuccessDetail": "Đã gửi dữ liệu thành công",
       "completeFailed": "Không thể xác nhận hoàn thành",
-      "weighingComplete": "Hoàn thành",
-      "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
-      "addSuccess": "Thành công",
-      "addSuccessDetail": "Đã thêm thành phần",
       "deleteSuccess": "Đã xóa",
       "deleteSuccessDetail": "Xóa thành phần thành công",
-      "loadMaterialsFailed": "Không thể tải thành phần",
       "notWeighed": "Chưa cân",
       "weighBeforeAdd": "Vui lòng cân keo {name} trước khi thêm thành phần.",
       "weighBeforeChiet": "Vui lòng cân keo {name} trước khi chiết.",
-      "chietSaved": "Đã lưu chiết",
-      "chietSavedDetail": "Thông tin chiết đã được tạm lưu",
       "selectBucketRow": "Vui lòng chọn thùng chứa ở dòng {row} trước khi thêm dòng mới.",
-      "selectBucketRowShort": "Vui lòng chọn thùng chứa ở dòng {row}.",
       "allocationComplete": "Đã chiết xong",
       "weightExceeded": "Vượt trọng lượng",
       "bucketCapacityExceeded": "Tổng TL thùng chứa vượt quá {label}. Vui lòng chọn thùng phù hợp hơn.",
-      "addRowMin": "Vui lòng thêm ít nhất một dòng và chọn thùng chứa.",
-      "notWeighedForChiet": "Keo {name} chưa có TL cân. Vui lòng cân trước khi chiết.",
       "invalid": "Không hợp lệ",
       "mixedGlueSelectBucket": "Keo trộn hỗn hợp dòng {row}: vui lòng chọn thùng chứa.",
       "mixedGluePrefix": "Keo trộn hỗn hợp: {message}",
       "noMixSelectBucket": "Keo không trộn dòng {row}: vui lòng chọn thùng chứa.",
       "noMixPrefix": "Keo không trộn: {message}",
-      "noMixWeighFirst": "Keo không trộn {name}: vui lòng hoàn thành cân trước.",
-      "chietSelectBucket": "Keo {name} chiết dòng {row}: vui lòng chọn thùng chứa.",
-      "chietPrefix": "Keo {name} chiết: {message}"
+      "noMixWeighFirst": "Keo không trộn {name}: vui lòng hoàn thành cân trước."
     },
     "confirmDelete": {
       "title": "Xác nhận xóa",
@@ -430,8 +426,6 @@
       "saveSuccess": "Lưu thành công",
       "saveSuccessDetail": "Dữ liệu đã lưu. Vui lòng quay lại danh sách để xác nhận!",
       "saveFailed": "Không thể lưu dữ liệu",
-      "weighingComplete": "Hoàn thành",
-      "weighingCompleteDetail": "Đã cân xong tất cả các thành phần.",
       "baseNotFound": "Không tìm thấy keo trộn cơ bản",
       "addSuccess": "Thành công",
       "addSuccessDetail": "Đã thêm thành phần",
@@ -483,5 +477,24 @@
     "offlineSyncTitle": "Đang đồng bộ dữ liệu",
     "offlineSyncNote": "Vui lòng đợi trong giây lát. Dữ liệu đã lưu offline đang được gửi lên hệ thống.",
     "invalidOfflineUser": "Người dùng không hợp lệ."
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "Không tìm thấy dữ liệu khởi tạo",
+    "DATA_NOT_FOUND": "Không tìm thấy dữ liệu.",
+    "CREATE_SUCCESS": "Thêm mới thành công",
+    "LOGIN_INFO_NOT_FOUND": "Không tìm thấy thông tin đăng nhập",
+    "WRONG_PASSWORD": "Mật khẩu không chính xác",
+    "USER_NOT_AUTHORIZED": "Bạn chưa được phân quyền để truy cập ứng dụng",
+    "LOGIN_SUCCESS": "Đăng nhập thành công",
+    "CONFIRM_SUCCESS": "Xác nhận thành công",
+    "QIP_CONFIRM_FAIL": "Xác nhận thất bại, bạn không phải QIP vui lòng liên hệ Admin để kiểm tra",
+    "LINE_GLUE_CONFIRM_SUCCESS": "Xác nhận phát keo chuyền thành công",
+    "GLUE_ALREADY_SEPARATE": "Xác nhận phát keo không thành công. Do keo này đã được chiết",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "Xác nhận trả keo thành công",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "Xác nhận keo trả về thành công",
+    "PRINT_SUCCESS": "In thành công",
+    "DATA_ALREADY_EXISTS": "Dữ liệu đã tồn tại",
+    "SYNC_SUCCESS": "Đồng bộ dữ liệu thành công",
+    "CONFIRM_FAIL": "Xác nhận thất bại"
   }
 }

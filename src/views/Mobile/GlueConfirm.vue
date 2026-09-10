@@ -1,46 +1,48 @@
 <template>
-  <ion-page>
-    <ion-header class="header-container">
-      <ion-toolbar color="primary" style="padding: 8px !important;">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/app-menu"></ion-back-button>
-        </ion-buttons>
-        <ion-title>{{ t("mobile.glueConfirm.title") }}</ion-title>
-        <ion-buttons slot="end">
+  <AppPage>
+    <AppHeader no-border class="mobile-glue-header">
+      <template #start>
+        <div class="header-start">
+          <button type="button" class="header-back" @click="goBack">
+            <i class="pi pi-angle-left text-xl mr-1"></i>
+            <h1 class="header-title">{{ t("mobile.glueConfirm.title") }}</h1>
+          </button>
+        </div>
+      </template>
+      <template #end>
+        <div class="header-end">
           <NetworkStatusIcon />
-        </ion-buttons>
-      </ion-toolbar>
-      <MobileOfflineNotice />
-    </ion-header>
+        </div>
+      </template>
+      <template #after>
+        <MobileOfflineNotice />
+      </template>
+    </AppHeader>
 
-    <ion-content class="mobile-content">
+    <AppContent class="mobile-content" :scroll="true" :padding="false">
       <div class="menu-container">
         <section class="qr-panel">
           <div class="qr-panel__body">
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueConfirm.lineQrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  @click="openScanner('line')"
-                >
-                  <span
-                    v-if="!lineQrText"
-                    class="qr-scan-field__text qr-scan-field__text--empty"
-                  >
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueConfirm.lineQrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
+                <button type="button" class="qr-scan-field" @click="openScanner('line')">
+                  <span v-if="!lineQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="lineChemicalInfo" class="qr-scan-field__info">
-                    <div class="qr-scan-field__info-row">
-                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel") }}</span>
+                    <div v-if="lineChemicalInfo.productLineName" class="qr-scan-field__info-row">
+                      <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.productLineLabel")
+                      }}</span>
                       <span class="qr-scan-field__info-value">{{ lineChemicalInfo.productLineName }}</span>
                     </div>
                     <div class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ t("mobile.glueConfirm.fields.glueLabel") }}</span>
-                      <span class="qr-scan-field__info-value">{{ lineChemicalInfo.glueName }}</span>
+                      <span class="qr-scan-field__info-value">{{
+                        lineChemicalInfo.glueName || lineChemicalInfo.layoutLineChemicalName
+                      }}</span>
                     </div>
                   </div>
                   <span v-else class="qr-scan-field__text">
@@ -50,31 +52,20 @@
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
-            <ion-card class="qr-container">
-              <ion-card-header>
-                <ion-card-title>{{ t("mobile.glueConfirm.allocatedQrTitle") }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <button
-                  type="button"
-                  class="qr-scan-field"
-                  @click="openScanner('allocated')"
-                >
-                  <span
-                    v-if="!allocatedQrText"
-                    class="qr-scan-field__text qr-scan-field__text--empty"
-                  >
+            <article class="qr-container">
+              <header class="qr-container__header">
+                <h2 class="qr-container__title">{{ t("mobile.glueConfirm.allocatedQrTitle") }}</h2>
+              </header>
+              <div class="qr-container__body">
+                <button type="button" class="qr-scan-field" @click="openScanner('allocated')">
+                  <span v-if="!allocatedQrText" class="qr-scan-field__text qr-scan-field__text--empty">
                     {{ t("mobile.glueConfirm.scanPlaceholder") }}
                   </span>
                   <div v-else-if="allocatedDisplayRows.length" class="qr-scan-field__info">
-                    <div
-                      v-for="row in allocatedDisplayRows"
-                      :key="row.label"
-                      class="qr-scan-field__info-row"
-                    >
+                    <div v-for="row in allocatedDisplayRows" :key="row.label" class="qr-scan-field__info-row">
                       <span class="qr-scan-field__info-label">{{ row.label }}</span>
                       <span class="qr-scan-field__info-value">{{ row.value }}</span>
                     </div>
@@ -86,86 +77,55 @@
                     <McScanFill />
                   </span>
                 </button>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </article>
 
             <div v-if="statusMessage" class="status-box" :class="statusClass">
-              <ion-icon class="status-box__icon" :icon="statusIcon"></ion-icon>
+              <i :class="['pi', 'status-box__icon', statusIcon]" aria-hidden="true"></i>
               <div class="status-box__content">
                 <p><strong>{{ t("mobile.glueConfirm.statusLabel") }} </strong>{{ statusMessage }}</p>
               </div>
             </div>
 
             <div v-if="allocatedExpiredMessage" class="status-box status-box--danger status-box--compact">
-              <ion-icon class="status-box__icon" :icon="alertCircle"></ion-icon>
+              <i class="pi pi-exclamation-circle status-box__icon" aria-hidden="true"></i>
               <div class="status-box__content">
                 <p>{{ allocatedExpiredMessage }}</p>
               </div>
             </div>
 
-            <ion-button
-              expand="block"
-              class="confirm-button"
-              :disabled="isConfirmButtonDisabled"
-              @click="handleConfirmReturn"
-            >
-              <ion-icon slot="start" :icon="shieldCheckmarkOutline"></ion-icon>
-              {{ t("mobile.glueConfirm.confirmReturnButton") }}
-            </ion-button>
+            <Button class="confirm-button w-full" icon="pi pi-verified" :disabled="isConfirmButtonDisabled"
+              :label="t('mobile.glueConfirm.confirmReturnButton')" @click="handleConfirmReturn" />
 
           </div>
         </section>
       </div>
-
-      <ion-toast
-        :is-open="showSuccessToast"
-        :message="toastMessage"
-        duration="1800"
-        position="bottom"
-        :color="toastColor"
-        :css-class="toastCssClass"
-        @didDismiss="showSuccessToast = false"
-      ></ion-toast>
-    </ion-content>
-  </ion-page>
+    </AppContent>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
-import {
-  IonBackButton,
-  IonButton,
-  IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonModal,
-  IonPage,
-  IonSpinner,
-  IonTitle,
-  IonToast,
-  IonToolbar,
-} from "@ionic/vue";
-import { alertCircle, barcodeOutline, checkmarkCircle, shieldCheckmarkOutline } from "ionicons/icons";
+import { useRouter } from "vue-router";
 import { BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { useI18n } from "vue-i18n";
 import glueReturnApi from "@/api/glueReturn";
 import { useAuthStore } from "@/store/auth";
 import { useLineChemicalStore } from '@/store/lineChemical';
+import { AppPage, AppHeader, AppContent } from '@/components/layout';
 import MobileOfflineNotice from '@/views/Mobile/components/MobileOfflineNotice.vue';
 import NetworkStatusIcon from '@/views/Mobile/components/NetworkStatusIcon.vue';
-import { buildSystemQrUrl } from "@/views/Mobile/config/systemQrUrl";
+import { buildSystemQrUrl, getGlueQrCode } from "@/views/Mobile/config/systemQrUrl";
 import { findGlueOfflineQrData } from '@/services/glueOfflineData.service';
 import { addOfflineQueueItem } from '@/services/offlineQueue.service';
 import { useOfflineStore } from '@/store/offline';
-import { McScanFill } from '@kalimahapps/vue-icons';
+import { useAppToast } from '@/composables/useAppToast';
+import { McScanFill } from '@kalimahapps/vue-icons/mc';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
 
 type ConfirmScanTarget = "line" | "allocated";
+type LineQrKind = "lc" | "llc";
 type StatusBoxClass = "status-box--default" | "status-box--success" | "status-box--danger";
 type GlueQrType = "lineChemical" | "mixGlue" | "separateGlue" | "noSeparateGlue";
 type ResolveGlueQrResult = {
@@ -174,9 +134,15 @@ type ResolveGlueQrResult = {
 };
 
 const authStore = useAuthStore();
+const router = useRouter();
 const lineChemicalStore = useLineChemicalStore();
 const offlineStore = useOfflineStore();
 const { t } = useI18n();
+const { showToast } = useAppToast();
+
+const goBack = () => {
+  router.push('/app-menu');
+};
 
 const lineQrText = ref("");
 const allocatedQrText = ref("");
@@ -186,14 +152,12 @@ const lineChemicalInfo = ref<any>(null);
 const allocatedGlueInfo = ref<any>(null);
 const allocatedDisplayRows = ref<Array<{ label: string; value: string }>>([]);
 
-const showSuccessToast = ref(false);
-const toastMessage = ref("");
-const toastColor = ref<string | undefined>('success');
-const toastCssClass = ref('');
 const isConfirmReturnCompleted = ref(false);
 const isLoadingLineQr = ref(false);
 const isLoadingAllocatedQr = ref(false);
 const isConfirmingReturn = ref(false);
+
+const CONFIRM_GR_ENDPOINT = 'api/mobile/gluereturnlog/confirmgr';
 
 const isFirstTwoQrReady = computed(() => {
   return !!lineChemicalInfo.value && !!allocatedGlueInfo.value;
@@ -204,18 +168,11 @@ const isFirstTwoQrMatched = computed(() => {
     return false;
   }
 
-// Tạm thời không kiểm tra chuyền, chỉ kiểm tra keo có khớp hay không.
-  // const lineProductLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
-  // const allocatedProductLineIds = getAllocatedProductLineIds(allocatedGlueInfo.value);
-  // const isProductLineMatched = !!lineProductLineId && allocatedProductLineIds.includes(lineProductLineId);
-
-  const lineChemicalMasterId = normalizeCompareValue(lineChemicalInfo.value.chemicalMasterId);
-  const allocatedCompareValue = getAllocatedGlueCompareValue(allocatedGlueInfo.value);
-  const isGlueMatched = !!lineChemicalMasterId && !!allocatedCompareValue && lineChemicalMasterId === allocatedCompareValue;
-
-  return isGlueMatched; // Check mỗi Keo có khớp hay không
-  // Check cả Chuyền và Keo thì mở ở dưới
-  // return isProductLineMatched && isGlueMatched;
+  const lineGlueName = normalizeGlueName(
+    lineChemicalInfo.value.glueName || lineChemicalInfo.value.layoutLineChemicalName
+  );
+  const allocatedGlueName = normalizeGlueName(allocatedGlueInfo.value.glueName);
+  return !!lineGlueName && !!allocatedGlueName && lineGlueName === allocatedGlueName;
 });
 
 const isAllocatedGlueExpired = computed(() => {
@@ -255,7 +212,7 @@ const statusClass = computed<StatusBoxClass>(() => {
 });
 
 const statusIcon = computed(() => {
-  return statusClass.value === "status-box--danger" ? alertCircle : checkmarkCircle;
+  return statusClass.value === "status-box--danger" ? "pi-exclamation-circle" : "pi-check-circle";
 });
 
 function normalizeQrText(value: string) {
@@ -268,6 +225,12 @@ function normalizeCompareValue(value: any) {
   }
 
   return String(value).trim();
+}
+
+function normalizeGlueName(value: any) {
+  return normalizeCompareValue(value)
+    .replace(/\s+/g, "")
+    .toLowerCase();
 }
 
 function hasPayloadValue(value: any) {
@@ -317,84 +280,252 @@ async function triggerMismatchFeedback() {
 
 async function showWarningAlert(message: string) {
   await triggerMismatchFeedback();
-  alert(message);
-}
-
-function notifyMismatchIfNeeded() {
-  if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
-    return;
-  }
-
-  if (!isFirstTwoQrMatched.value) {
-    void triggerMismatchFeedback();
-  }
+  showToast({
+    severity: 'warn',
+    summary: t('mobile.glueConfirm.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 function getCurrentUserId() {
   return authStore.user?.employeeId || authStore.token || localStorage.getItem("web_token_backup") || "";
 }
 
-function getBarcodeValue(barcode: { rawValue?: string; displayValue?: string }) {
-  return barcode.rawValue || barcode.displayValue || "";
+function getLineReceiveType(data: any): string {
+  return normalizeCompareValue(data?.type);
 }
 
-function getReturnGlueIdValue(info: any) {
-  if (hasPayloadValue(info?.mixGlueMasterId)) {
-    return normalizeCompareValue(info.mixGlueMasterId);
+function getLineQrKind(qrText: string, data?: any): LineQrKind | null {
+  const code = getGlueQrCode(qrText);
+  if (code === "lc" || code === "llc") {
+    return code;
   }
 
-  if (hasPayloadValue(info?.separateGlueId)) {
-    return normalizeCompareValue(info.separateGlueId);
+  if (hasPayloadValue(data?.layoutLineChemicalId) && !hasPayloadValue(data?.lineChemicalId)) {
+    return "llc";
   }
 
-  if (hasPayloadValue(info?.noSeparateGlueId)) {
-    return normalizeCompareValue(info.noSeparateGlueId);
+  if (hasPayloadValue(data?.lineChemicalId) || hasPayloadValue(data?.productLineId)) {
+    return "lc";
   }
 
-  return 0;
+  return null;
 }
 
-function normalizeProductLineIdList(value: any) {
-  if (Array.isArray(value)) {
-    return value
-      .map((productLineId: any) => normalizeCompareValue(productLineId))
-      .filter(Boolean);
+function buildConfirmGrPayload(scanFailed: boolean): Record<string, any> | null {
+  if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
+    return null;
   }
 
-  if (!hasPayloadValue(value)) {
-    return [];
+  const userId = getCurrentUserId();
+  const receiveType = getLineReceiveType(lineChemicalInfo.value);
+  const lineQrKind = (lineChemicalInfo.value._lineQrKind as LineQrKind | undefined)
+    ?? getLineQrKind(lineQrRawText.value, lineChemicalInfo.value);
+  const lineChemicalId = normalizeCompareValue(lineChemicalInfo.value.lineChemicalId);
+  const layoutLineChemicalId = normalizeCompareValue(
+    lineChemicalInfo.value.layoutLineChemicalId
+  );
+  // BE không còn nhận productLineId khi confirm.
+  // const productLineId = normalizeCompareValue(lineChemicalInfo.value.productLineId);
+
+  const payload: Record<string, any> = {
+    factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
+    updaterId: userId,
+    receivedBy: userId,
+    scanFailed,
+  };
+
+  // s/llc → layoutLineChemicalId (llcqrdata). s/lc → id theo type / lcqrdata.
+  if (lineQrKind === "llc") {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    payload.layoutLineChemicalId = layoutLineChemicalId;
+  } else if (receiveType === "UseProductLine" || receiveType === "UseLineChemical") {
+    // UseProductLine: không gửi productLineId — dùng lineChemicalId / layoutLineChemicalId.
+    // if (!productLineId) return null;
+    // payload.productLineId = productLineId;
+    if (!lineChemicalId && !layoutLineChemicalId) {
+      return null;
+    }
+    if (lineChemicalId) {
+      payload.lineChemicalId = lineChemicalId;
+    }
+    if (layoutLineChemicalId) {
+      payload.layoutLineChemicalId = layoutLineChemicalId;
+    }
+  } else if (receiveType === "UseLayoutLineChemical") {
+    if (!layoutLineChemicalId) {
+      return null;
+    }
+    payload.layoutLineChemicalId = layoutLineChemicalId;
+  } else {
+    if (layoutLineChemicalId && !lineChemicalId) {
+      payload.layoutLineChemicalId = layoutLineChemicalId;
+    } else {
+      if (!lineChemicalId && !layoutLineChemicalId) {
+        return null;
+      }
+      if (lineChemicalId) {
+        payload.lineChemicalId = lineChemicalId;
+      }
+      if (layoutLineChemicalId) {
+        payload.layoutLineChemicalId = layoutLineChemicalId;
+      }
+      // if (productLineId) {
+      //   payload.productLineId = productLineId;
+      // }
+    }
   }
 
-  return normalizeCompareValue(value)
-    .split(",")
-    .map((productLineId: string) => productLineId.trim())
-    .filter(Boolean);
+  const { mixGlueMasterId, separateGlueId, noSeparateGlueId } = allocatedGlueInfo.value;
+  if (hasPayloadValue(mixGlueMasterId)) payload.mixGlueMasterId = mixGlueMasterId;
+  if (hasPayloadValue(separateGlueId)) payload.separateGlueId = separateGlueId;
+  if (hasPayloadValue(noSeparateGlueId)) payload.noSeparateGlueId = noSeparateGlueId;
+
+  return payload;
 }
 
-function getAllocatedProductLineIds(info: any) {
-  const productLineIds = normalizeProductLineIdList(info?.productLineIds);
-
-  if (productLineIds.length) {
-    return productLineIds;
-  }
-
-  return normalizeProductLineIdList(info?.productLineId);
+async function enqueueConfirmGrPayload(payload: Record<string, any>) {
+  await addOfflineQueueItem('ReceiveGlue', CONFIRM_GR_ENDPOINT, 'POST', payload);
+  await offlineStore.refreshQueueCounts();
 }
 
-function getAllocatedGlueCompareValue(info: any) {
-  if (hasPayloadValue(info?.noSeparateGlueId)) {
-    return normalizeCompareValue(info?.materialCode);
+async function submitConfirmGrPayload(
+  payload: Record<string, any>,
+  options: { silent?: boolean; fallbackToQueueOnFailure?: boolean } = {}
+): Promise<string | boolean> {
+  if (!authStore.isOnline) {
+    await enqueueConfirmGrPayload(payload);
+    return true;
   }
 
-  return normalizeCompareValue(info?.glueId);
+  try {
+    const response = await glueReturnApi.glueReturnConfirm(payload);
+    const responseData = response.data as any;
+
+    if (!responseData.success || responseData.data !== true) {
+      if (options.fallbackToQueueOnFailure) {
+        await enqueueConfirmGrPayload(payload);
+        return true;
+      }
+      if (options.silent) {
+        console.warn('[GlueConfirm] confirmgr rejected:', responseData.message);
+        return false;
+      }
+      throw new Error(responseData.message || '');
+    }
+
+    return typeof responseData.message === 'string' ? responseData.message : true;
+  } catch (error) {
+    if (options.fallbackToQueueOnFailure) {
+      try {
+        await enqueueConfirmGrPayload(payload);
+        return true;
+      } catch (queueError) {
+        console.error('[GlueConfirm] fallback queue failed:', queueError);
+        return false;
+      }
+    }
+    if (options.silent) {
+      console.error('[GlueConfirm] confirmgr failed:', error);
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function logScanMismatch() {
+  if (!lineChemicalInfo.value || !allocatedGlueInfo.value || isFirstTwoQrMatched.value) {
+    return;
+  }
+
+  const payload = buildConfirmGrPayload(true);
+  if (!payload) {
+    return;
+  }
+
+  await submitConfirmGrPayload(payload, { silent: true, fallbackToQueueOnFailure: true });
+}
+
+async function notifyMismatchIfNeeded() {
+  if (!lineChemicalInfo.value || !allocatedGlueInfo.value) {
+    return;
+  }
+
+  if (isFirstTwoQrMatched.value) {
+    return;
+  }
+
+  await triggerMismatchFeedback();
+  await logScanMismatch();
+}
+
+function saveLineChemicalSessionAfterConfirm() {
+  const info = lineChemicalInfo.value;
+  lineChemicalStore.setLineChemicalSession({
+    lineChemicalId: info?.lineChemicalId ?? info?.layoutLineChemicalId ?? null,
+    productLineId: info?.productLineId ?? null,
+    factoryId: allocatedGlueInfo.value?.factoryId ?? null,
+    productLineName: info?.productLineName ?? null,
+    glueName: info?.glueName || info?.layoutLineChemicalName || null,
+    confirmedAt: new Date().toISOString(),
+  });
 }
 
 function getSystemQrUrl(qrText: string) {
   return buildSystemQrUrl(qrText);
 }
 
+/** Chuẩn hóa data QR chuyền: hỗ trợ lineChemicalId (cũ) và layoutLineChemicalId (/s/llc). */
+function normalizeLineChemicalScanData(data: any) {
+  if (!data || typeof data !== 'object') return data;
+
+  return {
+    ...data,
+    glueName: data.glueName || data.layoutLineChemicalName || '',
+    productLineName: data.productLineName || '',
+  };
+}
+
 function getGlueQrType(data: any): GlueQrType | null {
-  if (hasPayloadValue(data?.lineChemicalId) && hasPayloadValue(data?.chemicalMasterId)) {
+  const receiveType = getLineReceiveType(data);
+  const hasLineId =
+    hasPayloadValue(data?.lineChemicalId) ||
+    hasPayloadValue(data?.layoutLineChemicalId);
+  const hasProductLineId = hasPayloadValue(data?.productLineId);
+  const hasLayoutLineId = hasPayloadValue(data?.layoutLineChemicalId);
+  const hasLayoutGlueName =
+    hasPayloadValue(data?.glueName) || hasPayloadValue(data?.layoutLineChemicalName);
+
+  if (receiveType === 'UseProductLine') {
+    if (hasProductLineId) {
+      return "lineChemical";
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLineChemical') {
+    if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
+      return "lineChemical";
+    }
+    return null;
+  }
+
+  if (receiveType === 'UseLayoutLineChemical') {
+    if (hasLayoutLineId && hasLayoutGlueName) {
+      return "lineChemical";
+    }
+    return null;
+  }
+
+  // Offline llcqrdata thường không có type — nhận layoutLineChemicalId + tên keo / glueId.
+  if (hasLayoutLineId && (hasLayoutGlueName || hasPayloadValue(data?.glueId))) {
+    return "lineChemical";
+  }
+
+  if (hasLineId && hasPayloadValue(data?.chemicalMasterId)) {
     return "lineChemical";
   }
 
@@ -479,7 +610,12 @@ async function openScanner(target: ConfirmScanTarget) {
     const { camera } = await BarcodeScanner.requestPermissions();
 
     if (camera !== "granted" && camera !== "limited") {
-      alert(t("mobile.glueConfirm.messages.cameraPermission"));
+      showToast({
+        severity: 'warn',
+        summary: t('mobile.glueConfirm.title'),
+        detail: t("mobile.glueConfirm.messages.cameraPermission"),
+        life: 3000,
+      });
       return;
     }
 
@@ -487,7 +623,7 @@ async function openScanner(target: ConfirmScanTarget) {
 
     if (barcodes && barcodes.length > 0) {
       const scannedValue = barcodes[0].rawValue;
-
+      console.log('scannedValue', scannedValue);
       if (scannedValue) {
         await handleConfirmScanResult(target, scannedValue);
       } else {
@@ -513,8 +649,6 @@ async function handleConfirmScanResult(target: ConfirmScanTarget, value: string)
   if (target === "allocated") {
     await handleAllocatedQrScanResult(normalizedValue);
   }
-
-  closeCurrentToast();
 }
 
 async function handleLineQrScanResult(qrText: string) {
@@ -522,6 +656,13 @@ async function handleLineQrScanResult(qrText: string) {
   isLoadingLineQr.value = true;
 
   try {
+    const lineQrKind = getLineQrKind(qrText);
+    if (lineQrKind !== "lc" && lineQrKind !== "llc") {
+      resetLineQrField();
+      await showWarningAlert(t("mobile.glueConfirm.messages.invalidLineQr"));
+      return;
+    }
+
     const result = await resolveGlueQr(qrText);
 
     if (result.status === "invalid") {
@@ -545,14 +686,23 @@ async function handleLineQrScanResult(qrText: string) {
     }
 
     lineQrRawText.value = qrText;
-    lineChemicalInfo.value = result.data;
-    lineQrText.value = formatLineChemicalDisplay(result.data);
+    const normalized = {
+      ...normalizeLineChemicalScanData(result.data),
+      _lineQrKind: lineQrKind,
+    };
+    lineChemicalInfo.value = normalized;
+    lineQrText.value = formatLineChemicalDisplay(normalized);
     resetConfirmReturnStatus();
-    notifyMismatchIfNeeded();
+    await notifyMismatchIfNeeded();
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo chuyền:", error);
     resetLineQrField();
-    alert(t("mobile.glueConfirm.messages.loadLineError"));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueConfirm.title'),
+      detail: t("mobile.glueConfirm.messages.loadLineError"),
+      life: 3000,
+    });
   } finally {
     isLoadingLineQr.value = false;
   }
@@ -590,17 +740,20 @@ async function handleAllocatedQrScanResult(qrText: string) {
     allocatedDisplayRows.value = getAllocatedDisplayRows(result.data);
     allocatedQrText.value = formatAllocatedGlueDisplay(result.data);
     resetConfirmReturnStatus();
-    notifyMismatchIfNeeded();
+    await notifyMismatchIfNeeded();
   } catch (error) {
     console.error("Không thể lấy thông tin QR thùng keo phát:", error);
     resetAllocatedQrField();
-    alert(t("mobile.glueConfirm.messages.loadAllocatedError"));
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueConfirm.title'),
+      detail: t("mobile.glueConfirm.messages.loadAllocatedError"),
+      life: 3000,
+    });
   } finally {
     isLoadingAllocatedQr.value = false;
   }
 }
-
-
 
 async function handleConfirmReturn() {
   if (isConfirmButtonDisabled.value || !lineChemicalInfo.value || !allocatedGlueInfo.value) {
@@ -610,70 +763,28 @@ async function handleConfirmReturn() {
   isConfirmingReturn.value = true;
 
   try {
-    const payload: Record<string, any> = {
-      factoryId: normalizeCompareValue(allocatedGlueInfo.value.factoryId),
-      updaterId: getCurrentUserId(),
-      productLineId: normalizeCompareValue(lineChemicalInfo.value?.productLineId),
-    };
-
-    const mixGlueMasterId = allocatedGlueInfo.value.mixGlueMasterId;
-    const separateGlueId = allocatedGlueInfo.value.separateGlueId;
-    const noSeparateGlueId = allocatedGlueInfo.value.noSeparateGlueId;
-
-    if (hasPayloadValue(mixGlueMasterId)) {
-      payload.mixGlueMasterId = mixGlueMasterId;
-    }
-
-    if (hasPayloadValue(separateGlueId)) {
-      payload.separateGlueId = separateGlueId;
-    }
-
-    if (hasPayloadValue(noSeparateGlueId)) {
-      payload.noSeparateGlueId = noSeparateGlueId;
+    const payload = buildConfirmGrPayload(false);
+    if (!payload) {
+      return;
     }
 
     if (!authStore.isOnline) {
-      await addOfflineQueueItem('ReceiveGlue', 'api/mobile/gluereturnlog/confirmgr', 'POST', payload);
-      await offlineStore.refreshQueueCounts();
-
-      lineChemicalStore.setLineChemicalSession({
-        lineChemicalId: lineChemicalInfo.value?.lineChemicalId ?? null,
-        productLineId: lineChemicalInfo.value?.productLineId ?? null,
-        factoryId: allocatedGlueInfo.value?.factoryId ?? null,
-        productLineName: lineChemicalInfo.value?.productLineName ?? null,
-        glueName: lineChemicalInfo.value?.glueName ?? null,
-        confirmedAt: new Date().toISOString(),
-      });
-
-      showToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
+      await submitConfirmGrPayload(payload);
+      saveLineChemicalSessionAfterConfirm();
+      notifyToast(t('mobile.offlineQueue.saved'), 'offlineQueue');
       resetAllocatedQrField();
       resetLineQrField();
       return;
     }
 
-    console.group("[GlueConfirm] POST /api/mobile/gluereturnlog/confirmgr");
-    console.info("Request payload:", payload);
-
     try {
-      const response = await glueReturnApi.glueReturnConfirm(payload);
-      console.info("Response:", response?.data ?? response);
-
-      const responseData = response.data as any;
-
-      if (!responseData.success || responseData.data !== true) {
-        throw new Error(responseData.message || "");
-      }
-
-      lineChemicalStore.setLineChemicalSession({
-        lineChemicalId: lineChemicalInfo.value?.lineChemicalId ?? null,
-        productLineId: lineChemicalInfo.value?.productLineId ?? null,
-        factoryId: allocatedGlueInfo.value?.factoryId ?? null,
-        productLineName: lineChemicalInfo.value?.productLineName ?? null,
-        glueName: lineChemicalInfo.value?.glueName ?? null,
-        confirmedAt: new Date().toISOString(),
-      });
-
-      showToast(t("mobile.glueConfirm.messages.confirmSuccess"));
+      const result = await submitConfirmGrPayload(payload);
+      saveLineChemicalSessionAfterConfirm();
+      notifyToast(resolveCatchErrorMessage(
+        t,
+        typeof result === 'string' ? result : 'LINE_GLUE_CONFIRM_SUCCESS',
+        t('catchError.LINE_GLUE_CONFIRM_SUCCESS'),
+      ));
       resetAllocatedQrField();
       resetLineQrField();
     } finally {
@@ -682,11 +793,19 @@ async function handleConfirmReturn() {
   } catch (error) {
     console.error("Không thể xác nhận:", error);
 
-    const errorMessage = error instanceof Error && error.message
-      ? error.message
-      : t("mobile.glueConfirm.messages.confirmError");
+    const rawMessage = (error as any)?.response?.data?.message
+      || (error instanceof Error ? error.message : '');
 
-    alert(errorMessage);
+    showToast({
+      severity: 'warn',
+      summary: t('mobile.glueConfirm.title'),
+      detail: resolveCatchErrorMessage(
+        t,
+        rawMessage,
+        t('mobile.glueConfirm.messages.confirmError'),
+      ),
+      life: 3000,
+    });
   } finally {
     isConfirmingReturn.value = false;
   }
@@ -711,19 +830,24 @@ function resetConfirmReturnStatus() {
   isConfirmReturnCompleted.value = false;
 }
 
-function showToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
-  toastMessage.value = message;
-  toastColor.value = type === 'offlineQueue' ? undefined : 'success';
-  toastCssClass.value = type === 'offlineQueue' ? 'offline-queue-toast' : '';
-  showSuccessToast.value = true;
-}
-
-function closeCurrentToast() {
-  showSuccessToast.value = false;
+function notifyToast(message: string, type: 'success' | 'offlineQueue' = 'success') {
+  showToast({
+    severity: type === 'offlineQueue' ? 'warn' : 'success',
+    summary: type === 'offlineQueue'
+      ? t('mobile.offlineQueue.title')
+      : t('mobile.glueConfirm.title'),
+    detail: message,
+    life: 3000,
+  });
 }
 
 function formatLineChemicalDisplay(info: any) {
-  return formatGlueDisplay(info);
+  const glueName = info?.glueName || info?.layoutLineChemicalName || '';
+  const productLineName = info?.productLineName || '';
+  if (productLineName) {
+    return `${t("mobile.glueConfirm.fields.productLineLabel")} ${productLineName}\n${t("mobile.glueConfirm.fields.glueLabel")} ${glueName}`;
+  }
+  return `${t("mobile.glueConfirm.fields.glueLabel")} ${glueName}`;
 }
 
 function formatGlueDisplay(info: any) {
@@ -744,21 +868,53 @@ function getAllocatedDisplayRows(info: any) {
 </script>
 
 <style scoped lang="scss">
-.header-back-button {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  --color: #ffffff;
-  --icon-font-size: 2rem;
-  --padding-start: 0;
-  --padding-end: 0;
-  --min-width: 54px;
-  --min-height: 54px;
+.mobile-glue-header :deep(.app-header__toolbar) {
+  min-height: 56px;
+  padding-inline: 4px 10px;
+}
+
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100vw - 88px);
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 2px 6px 6px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.header-end {
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .mobile-content {
-  --background: #f6f9fd;
+  background: #f6f9fd;
 }
 
 .menu-container {
@@ -784,17 +940,18 @@ function getAllocatedDisplayRows(info: any) {
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 
-  ion-card-header {
+  &__header {
     padding: 24px 24px 16px;
   }
 
-  ion-card-title {
+  &__title {
+    margin: 0;
     color: #081a36;
     font-weight: 700;
-    font-size: 18px !important;
+    font-size: 18px;
   }
 
-  ion-card-content {
+  &__body {
     padding: 0 24px 24px;
   }
 }
@@ -880,28 +1037,15 @@ function getAllocatedDisplayRows(info: any) {
 .confirm-button {
   overflow: hidden;
   margin: 0;
-  border-radius: 16px;
+  border-radius: 16px !important;
   font-weight: 500;
   text-transform: none;
   font-size: 15px !important;
   min-height: 50px;
 
-  ion-icon {
-    margin-right: 10px;
-  }
-
-  &::part(native) {
-    border-radius: 16px;
-  }
-
-  &[disabled],
-  &--disabled {
+  &:disabled {
     opacity: 0.48;
     pointer-events: none;
-  }
-
-  &--disabled::part(native) {
-    cursor: not-allowed;
   }
 }
 
@@ -913,7 +1057,7 @@ function getAllocatedDisplayRows(info: any) {
   justify-content: center;
   flex: 0 0 22px;
   line-height: 1;
-  color:rgba(0, 0, 0, 0.582)
+  color: rgba(0, 0, 0, 0.582)
 }
 
 .confirm-button__icon :deep(svg) {
@@ -977,69 +1121,6 @@ function getAllocatedDisplayRows(info: any) {
   }
 }
 
-.return-confirm-modal {
-  --width: min(90vw, 360px);
-  --height: auto;
-  --border-radius: 20px;
-  --box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
-}
-
-.return-confirm-dialog {
-  padding: 26px 22px 12px;
-  border-radius: 20px;
-  background: #ffffff;
-  text-align: center;
-
-  &__icon {
-    width: 48px;
-    height: 48px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    border-radius: 50%;
-    background: #eaf2ff;
-    color: #0b72ed;
-
-    ion-icon {
-      font-size: 1.8rem;
-    }
-  }
-
-  &__title {
-    margin: 0 0 10px;
-    color: #081a36;
-    font-size: 16px !important;
-    font-weight: 700;
-  }
-
-  &__message {
-    margin: 0;
-    color: #475569;
-    font-size: 14px !important;
-    line-height: 1.5;
-    word-break: break-word;
-
-    strong {
-      color: #081a36;
-      font-weight: 700;
-    }
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 22px;
-  }
-
-  &__button-spinner {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-  }
-}
-
 @media (min-width: 768px) {
   .menu-container {
     max-width: 660px;
@@ -1052,18 +1133,18 @@ function getAllocatedDisplayRows(info: any) {
 
   .qr-container {
     border-radius: 22px;
+  }
 
-    ion-card-header {
-      padding: 28px 30px 18px;
-    }
+  .qr-container__header {
+    padding: 28px 30px 18px;
+  }
 
-    ion-card-title {
-      font-size: 1.72rem;
-    }
+  .qr-container__title {
+    font-size: 1.72rem;
+  }
 
-    ion-card-content {
-      padding: 0 30px 30px;
-    }
+  .qr-container__body {
+    padding: 0 30px 30px;
   }
 
   .qr-scan-field {
@@ -1097,7 +1178,6 @@ function getAllocatedDisplayRows(info: any) {
     min-height: 82px;
     border-radius: 18px;
     font-size: 1.5rem;
-    --border-radius: 18px;
   }
 
   .status-box {
@@ -1108,42 +1188,6 @@ function getAllocatedDisplayRows(info: any) {
 
     &__icon {
       font-size: 2.8rem;
-    }
-  }
-
-  .return-confirm-modal {
-    --width: min(82vw, 460px);
-    --border-radius: 24px;
-  }
-
-  .return-confirm-dialog {
-    padding: 34px 30px 16px;
-    border-radius: 24px;
-
-    &__icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 18px;
-
-      ion-icon {
-        font-size: 2.4rem;
-      }
-    }
-
-    &__title {
-      font-size: 1.7rem;
-    }
-
-    &__message {
-      font-size: 1.18rem;
-    }
-
-    &__actions {
-      margin-top: 28px;
-
-      ion-button {
-        font-size: 1.05rem;
-      }
     }
   }
 }

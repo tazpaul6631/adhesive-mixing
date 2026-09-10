@@ -7,14 +7,12 @@ import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import { useMixGlueDraftStore } from '@/store/mixGlueDraft';
 
-import { IonicVue } from '@ionic/vue';
-
 import PrimeComponents from '@/plugins/prime';
 import ToastService from 'primevue/toastservice';
+import ConfirmationService from 'primevue/confirmationservice';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 
-import '@ionic/vue/css/core.css';
 import './theme/variables.css';
 import './theme/toast.css';
 import './theme/datatable.css';
@@ -23,8 +21,8 @@ import 'primeflex/primeflex.css';
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 
+// Router: vue-router thuần + <router-view />. Shell: .app-shell (không còn Ionic).
 const app = createApp(App)
-  .use(IonicVue)
   .use(pinia)
   .use(router)
   .use(i18n)
@@ -33,7 +31,7 @@ const app = createApp(App)
       preset: Aura,
       options: {
         prefix: 'p',
-        darkModeSelector: '.ion-palette-dark',
+        darkModeSelector: false,
       }
     },
     ripple: true,
@@ -46,7 +44,8 @@ const app = createApp(App)
   })
   // --- KÍCH HOẠT ĐĂNG KÝ COMPONENT TẠI ĐÂY ---
   .use(PrimeComponents)
-  .use(ToastService);
+  .use(ToastService)
+  .use(ConfirmationService);
 
 router.isReady().then(async () => {
   await initAppLocale(window.innerWidth);

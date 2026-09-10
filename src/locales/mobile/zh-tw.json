@@ -79,12 +79,19 @@
       }
     },
     "appMenu": {
-      "hello": "您好！",
-      "system": "行動端管理系統",
+      "hello": "您好 {name}！",
+      "system": "行動端膠水調配室系統",
+      "roleChips": {
+        "qip": "QIP",
+        "mixGlueRoom": "調膠",
+        "mixGluePhone": "發膠"
+      },
       "glueConfirm": "確認發膠",
       "description": "使用手機相機掃描 QR Code",
       "glueReturn": "掃描退回膠水",
       "glueReturnDescription": "在確認產線後掃描退回膠桶",
+      "glueReturnInRoom": "調膠室內掃描退回膠水",
+      "glueReturnInRoomDescription": "在調膠室內掃描退回膠桶",
       "glueInfoCheck": "膠桶資訊查詢",
       "glueInfoCheckDescription": "查看發放膠桶資訊",
       "glueCheckList": "膠水檢查清單",
@@ -124,6 +131,35 @@
       "lineScanDisabledHint": "請先掃描退回膠桶 QR Code。",
       "lineListTitle": "已掃描 {count} 條產線",
       "removeLineItem": "刪除產線膠桶"
+    },
+    "glueReturnInRoom": {
+      "title": "調膠室內掃描退回膠水",
+      "productLineLabel": "產線",
+      "productLinePlaceholder": "選擇產線",
+      "productLineFilterPlaceholder": "搜尋產線",
+      "qrTitle": "退回膠桶 QR Code",
+      "scanPlaceholder": "掃描退回膠桶 QR Code",
+      "confirmButton": "確認退回",
+      "confirmDialogTitle": "確認退回膠桶",
+      "confirmDialogMessage": "確認退回已掃描的膠桶？",
+      "cancelButton": "取消",
+      "okButton": "OK",
+      "fields": {
+        "lineLabel": "產線：",
+        "glueLabel": "膠水："
+      },
+      "messages": {
+        "cameraPermission": "需要授權相機才能掃描 QR Code！",
+        "invalidQr": "QR Code 無效，請重新掃描退回膠桶 QR Code。",
+        "noGlueData": "找不到退回膠桶資料。",
+        "loadError": "無法取得退回膠桶 QR 資訊，請檢查 API 連線！",
+        "returnSuccess": "退回成功",
+        "returnConfirmError": "無法建立退回膠桶紀錄，請再試一次！",
+        "productLineLoadError": "無法載入產線清單，請再試一次！",
+        "factoryMissing": "找不到廠別代碼。",
+        "departmentMissing": "找不到部門代碼。",
+        "lineMismatchWarning": "所選產線與膠桶標籤上的產線不同。若確認無誤仍可送出。"
+      }
     },
     "glueInfoCheck": {
       "title": "膠桶資訊查詢",
@@ -166,6 +202,8 @@
       "notOkResult": "Not OK",
       "noteLabel": "備註",
       "notePlaceholder": "如有需要，請輸入備註",
+      "abnormalLabel": "問題類型",
+      "abnormalPlaceholder": "請選擇問題類型",
       "cancelButton": "取消",
       "submitButton": "送出",
       "messages": {
@@ -175,9 +213,11 @@
         "submitSuccess": "檢查資訊已成功送出。",
         "submitError": "無法送出檢查資訊，請再試一次！",
         "noCheckListData": "找不到檢查資料。",
-        "cancelSuccess": "已取消檢查表"
+        "cancelSuccess": "已取消檢查表",
+        "abnormalLoadError": "無法載入問題類型，請再試一次！",
+        "abnormalOffline": "目前離線 — 請輸入備註，或連線後再選擇問題類型。"
       },
-      "submitRequired": "請先填寫問題備註再提交。"
+      "submitRequired": "請先選擇問題類型或填寫備註再提交。"
     },
     "common": {
       "offlineLocalData": "無網路連線 - 使用本地資料"
@@ -198,5 +238,24 @@
       "title": "正在同步資料",
       "note": "請稍候，離線資料正在上傳至系統。"
     }
+  },
+  "catchError": {
+    "INIT_DATA_NOT_FOUND": "找不到初始化資料",
+    "DATA_NOT_FOUND": "找不到資料。",
+    "CREATE_SUCCESS": "新增成功",
+    "LOGIN_INFO_NOT_FOUND": "找不到登入資訊",
+    "WRONG_PASSWORD": "密碼不正確",
+    "USER_NOT_AUTHORIZED": "您尚未被授權存取此應用程式",
+    "LOGIN_SUCCESS": "登入成功",
+    "CONFIRM_SUCCESS": "確認成功",
+    "QIP_CONFIRM_FAIL": "確認失敗，您不是 QIP，請聯繫管理員檢查",
+    "LINE_GLUE_CONFIRM_SUCCESS": "產線發膠確認成功",
+    "GLUE_ALREADY_SEPARATE": "發膠確認失敗，此膠水已分裝",
+    "GLUE_RETURN_CONFIRM_SUCCESS": "退膠確認成功",
+    "RETURNED_GLUE_CONFIRM_SUCCESS": "退回膠水確認成功",
+    "PRINT_SUCCESS": "列印成功",
+    "DATA_ALREADY_EXISTS": "資料已存在",
+    "SYNC_SUCCESS": "資料同步成功",
+    "CONFIRM_FAIL": "確認失敗"
   }
 }

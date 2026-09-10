@@ -1,7 +1,7 @@
 <template>
 
-  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl">
-    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable scrollHeight="200px"
+  <div ref="tableWrapperRef" class="overflow-x-auto border-round-bottom-xl no-separate-glue-table">
+    <DataTable :value="isLoading ? skeletons : noMixChemicals" scrollable :scrollHeight="scrollHeight"
       class="modern-table auto-columns-table" tableStyle="width: 100%;" @row-click="(e) => $emit('row-click', e)"
       selectionMode="single" dataKey="materialCode" :selection="selectedItem"
       @update:selection="$emit('update:selectedItem', $event)">
@@ -10,13 +10,6 @@
         <div style="text-align: center; height: 100px; align-content: center;">
           <i class="pi pi-inbox" style="font-size: 2rem; color: #9ca3af; margin-bottom: 1rem;"></i>
           <p style="margin: 0; color: #6b7280;">{{ t('listMixGlue.empty') }}</p>
-        </div>
-      </template>
-
-      <template #footer>
-        <div v-if="!isNoMixGlue" class="flex justify-start">
-          <Button rounded outlined severity="warn" icon="pi pi-plus" size="large" :disabled="disabled"
-            @click="handleOpenNew" />
         </div>
       </template>
 
@@ -32,7 +25,8 @@
         bodyClass="dt-col-weight">
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
-          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
+          <span v-else>{{ format.formatDisplayWeight(data.glueWeight) }}{{ data.glueWeight ? `
+            ${normalizeWeightUnit(data.weightUnit)}` : '' }}</span>
         </template>
       </Column>
 
@@ -41,7 +35,8 @@
         <template #body="{ data }">
           <Skeleton v-if="isLoading" width="60%" height="1rem" />
           <span v-else>
-            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? ` ${normalizeWeightUnit(data.weightUnit)}` : '' }}
+            {{ format.formatDisplayWeight(data.actualWeight) }}{{ data.actualWeight ? `
+            ${normalizeWeightUnit(data.weightUnit)}` : '' }}
           </span>
         </template>
       </Column>
@@ -68,13 +63,12 @@
         bodyClass="dt-col-action">
         <template #body="{ data }">
           <div class="flex justify-content-center">
-            <Button v-if="!data.isChietCompleted" icon="pi pi-plus" severity="success" text :disabled="disabled"
+            <Button icon="pi pi-plus" severity="success"
+              :disabled="disabled || isSubmitting"
+              :loading="isSubmitting"
               :aria-label="t('separateMixedGlue.table.addAriaLabel')" @click.stop="$emit('chiet-row', data)" />
 
-            <Button v-if="data.isChietCompleted" icon="pi pi-eye" severity="primary" text
-              :aria-label="t('separateMixedGlue.table.viewAriaLabel')" @click.stop="$emit('view-row', data)" />
-
-            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" text :disabled="disabled"
+            <Button v-if="data.glueExtra" icon="pi pi-trash" severity="danger" :disabled="disabled || isSubmitting"
               :aria-label="t('separateMixedGlue.table.deleteAriaLabel')" @click.stop="$emit('delete-row', data)" />
           </div>
         </template>
@@ -87,38 +81,64 @@
 import { ref } from 'vue';
 import format from '@/mixins/format';
 import { normalizeWeightUnit } from '@/utils/weightUnit';
-import { useScrollToNewTableRow } from '@/composables/useScrollToNewTableRow';
 import { useAppLocale } from '@/composables/useAppLocale';
 
-const props = defineProps<{
+withDefaults(defineProps<{
   isLoading: boolean;
   noMixChemicals: any[];
   headerTotalWeight: string | number;
   selectedItem: any;
   disabled?: boolean;
-  isNoMixGlue?: boolean;
-}>();
+  /** Đang gửi API complete / chiết — chặn spam nút gọi BE. */
+  isSubmitting?: boolean;
+  /** Chiều cao vùng scroll body DataTable (px string). */
+  scrollHeight?: string;
+}>(), {
+  disabled: false,
+  isSubmitting: false,
+  scrollHeight: '200px',
+});
 
 const emit = defineEmits([
   'row-click',
-  'open-new',
   'delete-row',
   'update:selectedItem',
   'chiet-row',
-  'view-row'
 ]);
 
 const { t } = useAppLocale(() => 'tablet');
 const skeletons = ref(new Array(5).fill({}));
 const tableWrapperRef = ref<HTMLElement | null>(null);
-
-const { markPendingScrollToNewRow } = useScrollToNewTableRow(
-  tableWrapperRef,
-  () => props.noMixChemicals.length
-);
-
-const handleOpenNew = () => {
-  markPendingScrollToNewRow();
-  emit('open-new');
-};
 </script>
+
+<style scoped>
+.no-separate-glue-table :deep(.p-datatable-table-container),
+.no-separate-glue-table :deep(.p-datatable-wrapper),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body) {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #e2e8f0;
+}
+
+.no-separate-glue-table :deep(.p-datatable-table-container::-webkit-scrollbar),
+.no-separate-glue-table :deep(.p-datatable-wrapper::-webkit-scrollbar),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar) {
+  width: 10px;
+}
+
+.no-separate-glue-table :deep(.p-datatable-table-container::-webkit-scrollbar-track),
+.no-separate-glue-table :deep(.p-datatable-wrapper::-webkit-scrollbar-track),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar-track) {
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+
+.no-separate-glue-table :deep(.p-datatable-table-container::-webkit-scrollbar-thumb),
+.no-separate-glue-table :deep(.p-datatable-wrapper::-webkit-scrollbar-thumb),
+.no-separate-glue-table :deep(.p-datatable-scrollable-body::-webkit-scrollbar-thumb) {
+  background: #64748b;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+}
+</style>

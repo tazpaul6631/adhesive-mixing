@@ -1,25 +1,21 @@
 <template>
   <span class="network-status-icon" :class="statusClass" :title="statusLabel" :aria-label="statusLabel">
-    <!-- <ion-icon :icon="statusIcon"></ion-icon> -->
-    <BxWifi v-if="isOnline"/>
-    <BxWifiOff v-else/>
+    <BxWifi v-if="isOnline" />
+    <BxWifiOff v-else />
   </span>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue';
-import { IonIcon } from '@ionic/vue';
-import { cloudOfflineOutline, wifiOutline, wifi } from 'ionicons/icons';
 import { Network } from '@capacitor/network';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { useAuthStore } from '@/store/auth';
-import { BxWifi, BxWifiOff } from '@kalimahapps/vue-icons';
+import { BxWifi, BxWifiOff } from '@kalimahapps/vue-icons/bx';
 
 const authStore = useAuthStore();
 let networkListener: PluginListenerHandle | null = null;
 
 const isOnline = computed(() => authStore.isOnline);
-const statusIcon = computed(() => (isOnline.value ? wifi : wifi));
 const statusClass = computed(() => (isOnline.value ? 'network-status-icon--online' : 'network-status-icon--offline'));
 const statusLabel = computed(() => (isOnline.value ? 'Online' : 'Offline'));
 
@@ -44,22 +40,11 @@ onUnmounted(() => {
 
 <style scoped>
 .network-status-icon {
-  width: px;
-  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  /* background: rgb(255, 255, 255); */
   flex-shrink: 0;
-}
-
-.network-status-icon ion-icon {
-  font-size: 1.35rem;
-}
-
-.network-status-icon {
-  font-size: 1.25rem;
+  font-size: 2.5rem;
 }
 
 .network-status-icon--online {

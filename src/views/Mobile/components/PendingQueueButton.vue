@@ -4,10 +4,15 @@
       {{ t('mobile.offlineQueue.pendingData') }} ({{ pendingCount }})
     </button>
 
-    <ion-modal
-      :is-open="isSummaryModalOpen"
+    <Dialog
+      v-model:visible="isSummaryModalOpen"
+      modal
+      :closable="false"
+      :draggable="false"
+      :showHeader="false"
       class="pending-queue-summary-modal"
-      @didDismiss="closeSummaryModal"
+      :style="{ width: 'min(92vw, 420px)' }"
+      @hide="closeSummaryModal"
     >
       <div class="pending-queue-summary">
         <div class="pending-queue-summary__header">
@@ -31,22 +36,13 @@
             <span class="pending-queue-summary__count">{{ item.count }}</span>
           </div>
         </div>
-
-        <!--
-          Accordion/detail UI intentionally removed from display.
-          If detailed pending records are needed again later, restore it here by using:
-          - listPendingQueueItems(queueType)
-          - OfflineQueueItem
-          - OfflineQueueType
-        -->
       </div>
-    </ion-modal>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { IonModal } from '@ionic/vue';
 import { useAuthStore } from '@/store/auth';
 import { useOfflineStore } from '@/store/offline';
 import type { OfflineQueueType } from '@/services/offlineQueue.service';
@@ -144,11 +140,14 @@ onMounted(() => {
   color: #b45309;
 }
 
-.pending-queue-summary-modal {
-  --width: min(90vw, 420px);
-  --height: auto;
-  --border-radius: 24px;
-  --box-shadow: 0 22px 70px rgba(15, 23, 42, 0.28);
+.pending-queue-summary-modal :deep(.p-dialog-header) {
+  display: none;
+}
+
+.pending-queue-summary-modal :deep(.p-dialog-content) {
+  padding: 0;
+  border-radius: 24px;
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.28);
 }
 
 .pending-queue-summary {

@@ -1,12 +1,10 @@
 import { computed, ref } from 'vue';
-import {
-  fetchSeparatePrintBatchFromWorkOrder,
-  printSeparateLabelsSequential,
-  type FailedPrintItem,
-  type FetchSeparatePrintBatchOptions,
-  type PrintFailureReason,
-  type SeparatePrintBatchResult,
-  type SeparatePrintItem,
+import type {
+  FailedPrintItem,
+  FetchSeparatePrintBatchOptions,
+  PrintFailureReason,
+  SeparatePrintBatchResult,
+  SeparatePrintItem,
 } from '@/services/separateMixedGlueLabelPrint';
 import {
   clearSeparatePrintPending,
@@ -26,6 +24,9 @@ export interface PrintJobContext {
 export interface SeparateBatchPrintRuntimeOptions {
   isConnected?: () => boolean;
 }
+
+/** Lazy-load TSPL/print service — không kéo separateMixedGlueLabelPrint vào chunk list lúc setup. */
+const loadSeparateMixedGlueLabelPrint = () => import('@/services/separateMixedGlueLabelPrint');
 
 export function useSeparateLabelBatchPrint() {
   const isPrinting = ref(false);
@@ -79,8 +80,10 @@ export function useSeparateLabelBatchPrint() {
     return result;
   };
 
-  const preparePrintBatch = (options: FetchSeparatePrintBatchOptions) =>
-    fetchSeparatePrintBatchFromWorkOrder(options);
+  const preparePrintBatch = async (options: FetchSeparatePrintBatchOptions) => {
+    const { fetchSeparatePrintBatchFromWorkOrder } = await loadSeparateMixedGlueLabelPrint();
+    return fetchSeparatePrintBatchFromWorkOrder(options);
+  };
 
   const restorePendingFromStorage = async (): Promise<SeparatePrintPendingState | null> => {
     const saved = await loadSeparatePrintPending();
@@ -122,6 +125,7 @@ export function useSeparateLabelBatchPrint() {
     progress.value = { current: 0, total: queue.length };
 
     try {
+      const { printSeparateLabelsSequential } = await loadSeparateMixedGlueLabelPrint();
       const result = await printSeparateLabelsSequential({
         writeFn,
         items: queue,
@@ -178,6 +182,7 @@ export function useSeparateLabelBatchPrint() {
     progress.value = { current: 0, total: retryQueue.length };
 
     try {
+      const { printSeparateLabelsSequential } = await loadSeparateMixedGlueLabelPrint();
       const result = await printSeparateLabelsSequential({
         writeFn,
         items: retryQueue,

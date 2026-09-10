@@ -26,16 +26,16 @@
             <div class="tablet-login-form shadow-sm">
               <div class="field-group">
                 <label for="company" class="field-label">{{ t('login.company') }}</label>
-                <Select id="company" v-model="selectedCompany" :options="companyOptions" optionLabel="label"
-                  optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
+                <Select id="company" name="company" v-model="selectedCompany" :options="companyOptions"
+                  optionLabel="label" optionValue="value" :placeholder="t('login.selectCompany')" class="w-full"
                   :disabled="isLoading || isLoggingIn || isLoadingCompanies" :loading="isLoadingCompanies"
                   @show="handleCompanySelectShow" />
               </div>
 
               <div class="field-group">
                 <label for="factory" class="field-label">{{ t('login.factory') }}</label>
-                <Select id="factory" v-model="selectedFactory" :options="factoryOptions" optionLabel="label"
-                  optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
+                <Select id="factory" name="factory" v-model="selectedFactory" :options="factoryOptions"
+                  optionLabel="label" optionValue="value" :placeholder="t('login.selectFactory')" class="w-full"
                   :disabled="!isFactoryFieldEnabled || isLoading || isLoggingIn || isLoadingFactories"
                   :loading="isLoadingFactories" @show="handleFactorySelectShow" />
               </div>
@@ -44,8 +44,9 @@
                 <label for="employeeId" class="field-label">{{ t('login.account') }}</label>
                 <IconField>
                   <InputIcon class="pi pi-user" />
-                  <InputText id="employeeId" v-model="employeeId" :placeholder="t('login.employeeIdPlaceholder')"
-                    class="w-full" :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
+                  <InputText id="employeeId" name="employeeId" v-model="employeeId"
+                    :placeholder="t('login.employeeIdPlaceholder')" class="w-full"
+                    :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn" />
                 </IconField>
               </div>
 
@@ -53,7 +54,7 @@
                 <label for="password" class="field-label">{{ t('login.password') }}</label>
                 <IconField>
                   <InputIcon class="pi pi-lock" />
-                  <InputText id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
+                  <InputText id="password" name="password" v-model="password" :type="showPassword ? 'text' : 'password'"
                     placeholder="********" class="w-full"
                     :disabled="!isCredentialFieldsEnabled || isLoading || isLoggingIn"
                     @keyup.enter="handleTabletLogin" />
@@ -121,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { useBackButton } from '@ionic/vue';
+import { useAppBackButton } from '@/composables/useAppBackButton';
 import { BarcodeScanner, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import type { PluginListenerHandle } from '@capacitor/core';
 import employee from '@/api/employee';
@@ -139,6 +140,8 @@ import { useOfflineStore } from '@/store/offline';
 import { useOfflineLoginStore } from '@/store/offlineLogin';
 import { prefetchPostLoginRoute, prefetchTabletRoutesIdle } from '@/router/routeChunks';
 import { prefetchAppMenuMobileShell } from '@/views/AppMenu/appMenuMobileShell';
+import { resolveCatchErrorMessage } from '@/utils/catchErrorMessage';
+
 
 type SelectOption = { label: string; value: string };
 
@@ -331,6 +334,7 @@ const updateDeviceType = () => {
 onMounted(async () => {
   window.addEventListener('resize', updateDeviceType);
   await syncLocaleForDevice();
+  // Warm chunk trong lúc user nhìn/form login — giảm 7s lúc bấm menu.
   void prefetchPostLoginRoute(isNative);
   if (!isTablet.value) {
     void prefetchAppMenuMobileShell();
@@ -346,7 +350,7 @@ onUnmounted(() => {
 const setScannerUiActive = (active: boolean) => {
   document.body.classList.toggle('barcode-scanner-active', active);
   document.documentElement.classList.toggle('barcode-scanner-active', active);
-  document.querySelector('ion-app')?.classList.toggle('barcode-scanner-active', active);
+  document.querySelector('.app-shell')?.classList.toggle('barcode-scanner-active', active);
 };
 
 const cleanupScanner = async () => {
@@ -372,7 +376,7 @@ const cancelScan = async () => {
 };
 
 // Tablet: nút Back vật lý thoát chế độ quét thay vì thoát app
-useBackButton(10, (processNextHandler) => {
+useAppBackButton(10, (processNextHandler) => {
   if (isTablet.value && isScanning.value) {
     void cancelScan();
     return;
@@ -404,7 +408,7 @@ const beginFrontCameraScan = async () => {
       await processScannedData(scannedValue);
     } catch (error) {
       console.error('Lỗi khi xử lý mã quét:', error);
-      handleLoginError(scannedValue);
+      handleLoginError(scannedValue, error);
     }
   });
 
@@ -531,11 +535,25 @@ const downloadOfflineDataAfterLogin = async (userData: any, fallbackFactoryId = 
 };
 
 const getLoginErrorMessage = (error: any, fallback: string) => {
-  return error?.response?.data?.message || error?.message || fallback;
+  const apiMessage = error?.response?.data?.message;
+  const rawMessage = typeof error?.message === 'string' ? error.message.trim() : '';
+  const isNetworkish =
+    !error?.response
+    || rawMessage === 'Network Error'
+    || error?.code === 'ERR_NETWORK'
+    || error?.code === 'ECONNABORTED'
+    || rawMessage.toLowerCase().includes('timeout');
+
+  return resolveCatchErrorMessage(
+    t,
+    isNetworkish ? '' : (apiMessage || rawMessage),
+    fallback,
+  );
 };
 
 const navigateAfterLogin = async () => {
-  await prefetchPostLoginRoute(isNative);
+  // Warm song song — không await (tránh chặn vào app-menu).
+  void prefetchPostLoginRoute(isNative);
 
   if (isNative) {
     if (!isTablet.value) {
@@ -543,7 +561,7 @@ const navigateAfterLogin = async () => {
     }
     await router.push('/app-menu');
     if (isTablet.value) {
-      prefetchTabletRoutesIdle();
+      void prefetchTabletRoutesIdle();
     }
   } else {
     await router.push('/dashboard');
@@ -583,15 +601,19 @@ const handleLoginResponse = async (response: any, loginCode: string, fallbackFac
 
   code.value = loginCode;
   errorLogin.value = true;
-  errorMessage.value = response.data?.message || t('login.loginFailed');
+  errorMessage.value = resolveCatchErrorMessage(
+    t,
+    response.data?.message,
+    t('login.loginFailed'),
+  );
   resetLoginLoading();
   return false;
 };
 
-const handleLoginError = (loginCode: string) => {
+const handleLoginError = (loginCode: string, error?: any) => {
   code.value = loginCode;
   errorLogin.value = true;
-  errorMessage.value = t('login.serverMaintenance');
+  errorMessage.value = getLoginErrorMessage(error, t('login.serverMaintenance'));
   offlineStore.resetDownloadState();
   offlineStore.resetSyncState();
   resetLoginLoading();
@@ -628,7 +650,7 @@ const handleTabletLogin = async () => {
     await handleLoginResponse(response, payload.employeeId, payload.factoryId);
   } catch (error: any) {
     console.error('Lỗi đăng nhập tablet:', error);
-    handleLoginError(payload.employeeId);
+    handleLoginError(payload.employeeId, error);
   }
 };
 
@@ -709,7 +731,7 @@ const processScannedData = async (scannedCode: string) => {
     await handleLoginResponse(response, scannedCode);
   } catch (error: any) {
     console.error('Lỗi gọi API đăng nhập:', error);
-    handleLoginError(scannedCode);
+    handleLoginError(scannedCode, error);
   }
 };
 </script>
@@ -1562,24 +1584,23 @@ const processScannedData = async (scannedCode: string) => {
 <style>
 body.barcode-scanner-active,
 html.barcode-scanner-active,
-ion-app.barcode-scanner-active {
+.app-shell.barcode-scanner-active {
   visibility: hidden;
   background: transparent !important;
   --background: transparent;
-  --ion-background-color: transparent;
 }
 
 body.barcode-scanner-active .scan-camera-overlay,
 html.barcode-scanner-active .scan-camera-overlay,
-ion-app.barcode-scanner-active .scan-camera-overlay,
+.app-shell.barcode-scanner-active .scan-camera-overlay,
 body.barcode-scanner-active .login-loading-overlay,
 html.barcode-scanner-active .login-loading-overlay,
-ion-app.barcode-scanner-active .login-loading-overlay {
+.app-shell.barcode-scanner-active .login-loading-overlay {
   visibility: visible;
 }
 
-body.barcode-scanner-active ion-content,
-body.barcode-scanner-active .ion-page,
+body.barcode-scanner-active .app-page,
+body.barcode-scanner-active .app-content,
 body.barcode-scanner-active .mobile-login-wrapper,
 body.barcode-scanner-active .form-container,
 body.barcode-scanner-active .tablet-login-form {
