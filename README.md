@@ -138,3 +138,7 @@ npx cap sync
 # Thêm 
 implementation fileTree(dir: 'src/main/libs', include: ['*.jar', '*.aar'])
 implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+
+# serial
+port.write(buffer, 1000);
+int result = buffer.length;
